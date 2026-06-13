@@ -1,0 +1,50 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_secure_storage (6.0.0):
+    - Flutter
+  - fluwx (0.0.1):
+    - Flutter
+    - fluwx/pay (= 0.0.1)
+  - fluwx/pay (0.0.1):
+    - Flutter
+    - WechatOpenSDK-XCFramework (~> 2.0.5)
+  - permission_handler_apple (9.4.8):
+    - Flutter
+  - share_plus (0.0.1):
+    - Flutter
+  - WechatOpenSDK-XCFramework (2.0.5)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - fluwx (from `.symlinks/plugins/fluwx/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
+
+SPEC REPOS:
+  trunk:
+    - WechatOpenSDK-XCFramework
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_secure_storage:
+    :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  fluwx:
+    :path: ".symlinks/plugins/fluwx/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  fluwx: 2ef787502fccb3f3596b380509001a8ea71cbbff
+  permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
+  share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
+  WechatOpenSDK-XCFramework: ff342ae616bb86df3d236aca38059dfd4bc4a949
+
+PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+
+COCOAPODS: 1.16.2

@@ -1,0 +1,77 @@
+# 微否生产编排:server + postgres + redis(自托管,与同主机 jifou/oneclaw/deepclaw 并存)
+# host 端口 8083->8080,公网 HTTPS 由共享 oneclaw-nginx 反代(见 deploy/nginx-weifou.conf)。
+services:
+  server:
+    build: .
+    container_name: weifou-server
+    restart: always
+    ports:
+      - "8083:8080"
+    env_file:
+      - .env
+    environment:
+      PORT: "8080"
+      ENV: production
+      GIN_MODE: release
+      # config.go 直接读 DATABASE_URL / REDIS_URL —— 这里是唯一真源,指向同网容器。
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER required}:${DB_PASSWORD:?DB_PASSWORD required}@postgres:5432/${DB_NAME:?DB_NAME required}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      # Go 在临近上限前主动 GC,避免被 OOM killer 干掉(整机仅 3.6G)。
+      GOMEMLIMIT: 320MiB
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [weifou-net]
+    deploy:
+      resources:
+        limits:
+          memory: 448M
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: weifou-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME required}
+      POSTGRES_USER: ${DB_USER:?DB_USER required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+    volumes:
+      - weifou-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [weifou-net]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    container_name: weifou-redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 192mb --maxmemory-policy allkeys-lru
+    volumes:
+      - weifou-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [weifou-net]
+    deploy:
+      resources:
+        limits:
+          memory: 224M
+
+volumes:
+  weifou-pg-data:
+  weifou-redis-data:
+
+networks:
+  weifou-net:
+    driver: bridge
+    name: weifou-net

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "创建我的 AI 主页",
+  "usingComponents": {
+    "avatar": "/components/avatar/index"
+  }
+}

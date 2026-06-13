@@ -1,0 +1,44 @@
+<view class="alive {{(active || state !== 'idle') ? 'alive-on' : ''}}">
+  <view class="lyr lyr-float">
+    <view class="lyr lyr-sway">
+      <view class="lyr lyr-breathe">
+        <canvas
+          wx:if="{{mode === 'lottie'}}"
+          type="2d"
+          id="lottie"
+          class="lottie-canvas"
+          style="{{sizeStyle}}"
+        ></canvas>
+
+        <view wx:elif="{{mode === 'image'}}" class="img-wrap" style="{{sizeStyle}}">
+          <image
+            wx:for="{{stateImages}}"
+            wx:key="state"
+            class="state-img {{curState === item.state ? 'on' : ''}}"
+            src="{{item.src}}"
+            mode="aspectFill"
+            binderror="_imgError"
+          ></image>
+        </view>
+
+        <!-- toon：CSS 卡通脸，curState 驱动眨眼/沉思/说话 -->
+        <view wx:elif="{{mode === 'toon'}}" class="av toon toon-{{look}} s-{{curState}}" style="{{boxStyle}}">
+          <view class="t-face">
+            <view class="t-brow t-brow-l"></view>
+            <view class="t-brow t-brow-r"></view>
+            <view class="t-eye t-eye-l"></view>
+            <view class="t-eye t-eye-r"></view>
+            <view class="t-blush t-blush-l"></view>
+            <view class="t-blush t-blush-r"></view>
+            <view class="t-mouth"></view>
+          </view>
+        </view>
+
+        <view wx:else class="av av-flow" style="{{boxStyle}}">
+          <view class="fx fx-{{anim}}"></view>
+          <text class="ini" style="{{iniStyle}}">{{char}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

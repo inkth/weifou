@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+!.env.example
+server.pem
+*.pem
+certs/*.pem
+acme/
+README.md
+docs/

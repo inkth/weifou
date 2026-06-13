@@ -1,0 +1,35 @@
+<view class="ob">
+  <view class="ob-hero">
+    <avatar preset="{{avatarPreset}}" name="{{form.realName}}" seed="onboarding" size="120" state="{{avatarState}}"/>
+    <view class="ob-hero-title">先聊几句，我来替你写主页</view>
+    <view class="ob-hero-sub muted">不用填表，说说就好</view>
+  </view>
+
+  <scroll-view class="ob-msgs" scroll-y scroll-into-view="{{toLast}}" scroll-with-animation>
+    <view wx:for="{{msgs}}" wx:key="id" id="{{item.id}}" class="ob-row {{item.role}}">
+      <view class="ob-bubble {{item.role}}">{{item.text}}</view>
+    </view>
+    <view wx:if="{{thinking}}" class="ob-row ai">
+      <view class="ob-bubble ai ob-typing"><text class="dot"></text><text class="dot"></text><text class="dot"></text></view>
+    </view>
+    <view class="ob-pad" id="ob-pad-bottom"></view>
+  </scroll-view>
+
+  <view class="ob-foot">
+    <view class="ob-quick" wx:if="{{canFinish}}">
+      <view class="ob-chip strong" bindtap="onFinishNow">信息够了，先上岗 ›</view>
+    </view>
+    <view class="ob-composer">
+      <view class="ob-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
+        <view class="ob-mic-i"></view>
+      </view>
+      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" value="{{input}}"
+             confirm-type="send" bindinput="onInput" bindconfirm="onSend"
+             disabled="{{submitting || recording}}"/>
+      <view class="ob-send {{input ? '' : 'off'}}" bindtap="onSend">
+        <view class="ob-send-i"></view>
+      </view>
+    </view>
+    <view class="ob-form-link muted" bindtap="goForm">更习惯填表？切换手动填写 ›</view>
+  </view>
+</view>

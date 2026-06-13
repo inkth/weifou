@@ -1,0 +1,57 @@
+<view class="call-page">
+  <block wx:if="{{sdkReady}}">
+    <!-- 远端画面（playerList 由 TRTC SDK 维护） -->
+    <view class="remote-area">
+      <live-player
+        wx:for="{{playerList}}"
+        wx:key="streamID"
+        class="remote-player"
+        id="{{item.streamID}}"
+        src="{{item.src}}"
+        mode="RTC"
+        autoplay="{{item.hasVideo}}"
+        object-fit="fillCrop"
+        bindstatechange="_playerStateChange"
+        data-userid="{{item.userID}}"
+        data-streamtype="{{item.streamType}}"
+      />
+      <view wx:if="{{playerList.length === 0}}" class="waiting">等待对方加入…</view>
+    </view>
+
+    <!-- 本地推流（pusher 由 TRTC SDK 维护） -->
+    <live-pusher
+      wx:if="{{pusher}}"
+      class="local-pusher"
+      url="{{pusher.url}}"
+      mode="{{pusher.mode}}"
+      autopush="{{pusher.autopush}}"
+      enable-camera="{{pusher.enableCamera}}"
+      enable-mic="{{pusher.enableMic}}"
+      enable-agc="{{pusher.enableAgc}}"
+      enable-ans="{{pusher.enableAns}}"
+      aspect="{{pusher.videoAspect}}"
+      min-bitrate="{{pusher.minBitrate}}"
+      max-bitrate="{{pusher.maxBitrate}}"
+      video-width="{{pusher.videoWidth}}"
+      video-height="{{pusher.videoHeight}}"
+      object-fit="fillCrop"
+      device-position="{{pusher.frontCamera}}"
+      bindstatechange="_pusherStateChangeHandler"
+      bindnetstatus="_pusherNetStatusHandler"
+      binderror="_pusherErrorHandler"
+    />
+
+    <view class="timer">{{timerText}}</view>
+
+    <view class="controls">
+      <view class="ctrl {{micOn ? '' : 'off'}}" bindtap="toggleMic">{{micOn ? '麦克风开' : '麦克风关'}}</view>
+      <view class="ctrl {{cameraOn ? '' : 'off'}}" bindtap="toggleCamera">{{cameraOn ? '摄像头开' : '摄像头关'}}</view>
+      <view class="ctrl hangup" bindtap="hangup">挂断</view>
+    </view>
+  </block>
+
+  <view wx:else class="fallback">
+    <view class="fb-title">{{fallbackText}}</view>
+    <button class="btn-ghost" style="margin-top:48rpx;width:60%" bindtap="back">返回</button>
+  </view>
+</view>

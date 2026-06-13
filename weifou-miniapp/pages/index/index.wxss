@@ -1,0 +1,35 @@
+.page {
+  padding: 80rpx 48rpx 48rpx;
+  min-height: 100vh;
+}
+
+.hero { margin-top: 40rpx; }
+.brand {
+  font-size: 28rpx;
+  color: #8a8f9c;
+  letter-spacing: 8rpx;
+  margin-bottom: 32rpx;
+}
+.headline {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #1f2330;
+  white-space: pre-line;
+  line-height: 1.4;
+  margin-bottom: 32rpx;
+}
+.sub {
+  font-size: 28rpx;
+  white-space: pre-line;
+  line-height: 1.7;
+}
+
+.cta-area {
+  margin-top: 96rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.loading { margin-top: 96rpx; text-align: center; }
+.hint { margin-top: 80rpx; font-size: 24rpx; line-height: 1.6; }

@@ -1,0 +1,118 @@
+<view class="page" wx:if="{{profile}}">
+  <!-- 晒点：刚生成完的庆祝时刻，分享意愿峰值 -->
+  <view class="card fresh-card" wx:if="{{fresh && isMine && profile.persona}}">
+    <view class="fresh-title">🎉 你的 AI 助理上岗了</view>
+    <view class="fresh-sub muted">它已经会替你回答：</view>
+    <view class="fresh-starters">
+      <view class="fresh-starter" wx:for="{{profile.persona.starters}}" wx:key="*this">「{{item}}」</view>
+    </view>
+    <view class="fresh-actions">
+      <button class="btn-primary fresh-btn" open-type="share">发给朋友试试</button>
+      <button class="btn-ghost fresh-btn" bindtap="goChat">我先试聊一下</button>
+    </view>
+  </view>
+
+  <view class="hero card">
+    <view class="hero-row">
+      <avatar class="avatar" preset="{{profile.avatarStyle}}" name="{{profile.realName}}" seed="{{profile.id}}" size="120"/>
+      <view class="hero-meta">
+        <view class="name">{{profile.realName}}</view>
+        <view class="title-text muted">{{profile.title}}<text wx:if="{{profile.company}}"> · {{profile.company}}</text></view>
+        <view class="city muted" wx:if="{{profile.city}}">{{profile.city}}</view>
+      </view>
+    </view>
+
+    <view class="one-liner" wx:if="{{profile.persona}}">{{profile.persona.oneLiner}}</view>
+
+    <view class="tags" wx:if="{{profile.persona}}">
+      <view class="tag" wx:for="{{profile.persona.tags}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="card section" wx:if="{{profile.persona}}">
+    <view class="section-title">关于 {{profile.realName}}</view>
+    <view class="full-intro">{{profile.persona.fullIntro}}</view>
+  </view>
+
+  <view class="card section stats" wx:if="{{isMine && stats}}">
+    <view class="stat">
+      <view class="stat-num">{{stats.pv}}</view>
+      <view class="stat-label muted">访问数</view>
+    </view>
+    <view class="stat">
+      <view class="stat-num">{{stats.uv}}</view>
+      <view class="stat-label muted">访客数</view>
+    </view>
+    <view class="stat">
+      <view class="stat-num">{{stats.askCount}}</view>
+      <view class="stat-label muted">问答数</view>
+    </view>
+  </view>
+
+  <view class="card section consult" wx:if="{{!isMine && pricing.enabled}}">
+    <view class="section-title">预约付费咨询</view>
+    <view class="consult-intro muted" wx:if="{{pricing.intro}}">{{pricing.intro}}</view>
+    <view class="consult-price muted">30 分钟 ¥{{pricing.price30Yuan}} · 60 分钟 ¥{{pricing.price60Yuan}}</view>
+    <button class="btn-primary book-btn" bindtap="openSlots">选择时间预约</button>
+    <view class="consult-note muted">真人语音/视频通话，按预约时间进入</view>
+  </view>
+
+  <view class="actions">
+    <button class="btn-accent" bindtap="goChat">问 {{profile.realName}} 的 AI 助理</button>
+    <button class="btn-ghost" bindtap="openTip" wx:if="{{!isMine}}">打赏 TA</button>
+    <button class="btn-ghost" bindtap="onContact" wx:if="{{profile.contactVisible || isMine}}">联系本人</button>
+    <button class="btn-ghost" open-type="share" wx:if="{{!isMine}}">分享给好友</button>
+    <button class="btn-ghost" bindtap="goPoster" wx:if="{{isMine}}">生成分享海报</button>
+    <button class="btn-ghost" bindtap="goSettings" wx:if="{{isMine}}">设置 / 重新生成</button>
+  </view>
+
+  <!-- 裂变：访客视图的平台线索（克制、不抢主人的转化场景） -->
+  <view class="brand-foot muted" wx:if="{{!isMine}}" bindtap="goCreateOwn">微否 · 让你的 AI 助理替你先聊 ›</view>
+</view>
+
+<view wx:if="{{!profile && !loading}}" class="empty muted">主页不存在或加载失败</view>
+
+<!-- 打赏弹层 -->
+<view class="mask" wx:if="{{tipVisible}}" bindtap="closeTip">
+  <view class="tip-sheet" catchtap="noop">
+    <view class="tip-title">打赏 {{profile.realName}}</view>
+    <view class="tip-sub muted">自愿赠予，表达你的认可</view>
+    <view class="tip-amounts">
+      <view
+        class="tip-amount {{tipAmount === item ? 'active' : ''}}"
+        wx:for="{{tipPresets}}"
+        wx:key="*this"
+        data-amount="{{item}}"
+        bindtap="selectTip"
+      >¥{{item}}</view>
+    </view>
+    <input class="tip-msg" placeholder="留句话（选填）" maxlength="60" value="{{tipMessage}}" bindinput="onTipMsg"/>
+    <button class="btn-primary tip-pay" bindtap="payTip" disabled="{{tipPaying}}">
+      {{tipPaying ? '处理中…' : '确认打赏 ¥' + tipAmount}}
+    </button>
+  </view>
+</view>
+
+<!-- 选择档期弹层 -->
+<view class="mask" wx:if="{{slotsVisible}}" bindtap="closeSlots">
+  <view class="tip-sheet" catchtap="noop">
+    <view class="tip-title">选择预约时间</view>
+    <view class="tip-sub muted">支付成功后按所选时间进入通话</view>
+    <view class="slot-list">
+      <view wx:if="{{slotList.length === 0}}" class="muted slot-empty">对方暂无可约档期</view>
+      <view
+        class="slot-pick {{selectedSlotId === item.id ? 'active' : ''}}"
+        wx:for="{{slotList}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="selectSlot"
+      >
+        <view class="sp-time">{{item.timeText}}</view>
+        <view class="sp-meta muted">{{item.durationMin}} 分钟 · ¥{{item.priceYuan}}</view>
+      </view>
+    </view>
+    <button class="btn-primary tip-pay" bindtap="paySlot" disabled="{{!selectedSlotId || booking}}">
+      {{booking ? '下单中…' : '支付并预约'}}
+    </button>
+  </view>
+</view>

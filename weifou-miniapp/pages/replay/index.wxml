@@ -1,0 +1,13 @@
+<view class="page">
+  <view class="tip muted">「{{visitorName}}」与你的 AI 助理的对话</view>
+
+  <view wx:if="{{loading}}" class="empty muted">加载中…</view>
+  <view wx:if="{{!loading && !messages.length}}" class="empty muted">这个会话还没有消息</view>
+
+  <block wx:for="{{messages}}" wx:key="index">
+    <view class="msg {{item.role === 'assistant' ? 'right' : 'left'}}">
+      <view class="who muted">{{item.role === 'assistant' ? '你的 AI 助理' : visitorName}} · {{item.timeText}}</view>
+      <view class="bubble {{item.role}}">{{item.content}}</view>
+    </view>
+  </block>
+</view>

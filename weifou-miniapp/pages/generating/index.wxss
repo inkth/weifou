@@ -1,0 +1,20 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48rpx;
+}
+.spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 6rpx solid #e5e7ec;
+  border-top-color: #1f2330;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 48rpx;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.title { font-size: 32rpx; font-weight: 600; margin-bottom: 16rpx; }
+.hint { font-size: 26rpx; text-align: center; }

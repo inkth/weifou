@@ -1,0 +1,88 @@
+<view class="page">
+  <!-- 快速模式（裂变通道）：30 秒上岗，细节后补 -->
+  <view wx:if="{{quick}}" class="quick-banner">
+    <view class="quick-title">30 秒，请一位替你先聊的 AI 助理</view>
+    <view class="quick-sub muted">先上岗，之后随时补充细节让它更懂你</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title" wx:if="{{!quick}}">基础信息</view>
+
+    <view class="field">
+      <view class="label">姓名</view>
+      <input class="input" placeholder="如：张三" value="{{form.realName}}" maxlength="40" bindinput="onInput" data-key="realName"/>
+    </view>
+
+    <view class="field">
+      <view class="label">职业</view>
+      <input class="input" placeholder="如：AI 产品经理 / 创业者" value="{{form.title}}" maxlength="40" bindinput="onInput" data-key="title"/>
+    </view>
+
+    <block wx:if="{{!quick}}">
+      <view class="field">
+        <view class="label">公司（选填）</view>
+        <input class="input" placeholder="如：XX 科技" value="{{form.company}}" maxlength="60" bindinput="onInput" data-key="company"/>
+      </view>
+
+      <view class="field">
+        <view class="label">城市（选填）</view>
+        <input class="input" placeholder="如：上海" value="{{form.city}}" maxlength="40" bindinput="onInput" data-key="city"/>
+      </view>
+    </block>
+  </view>
+
+  <!-- 快速模式：一句话代替 3 问 -->
+  <view wx:if="{{quick}}" class="section">
+    <view class="field">
+      <view class="label">你最想让别人了解你什么？</view>
+      <textarea class="textarea" placeholder="一两句话：你擅长什么 / 在做什么，AI 会基于此替你介绍自己" value="{{form.quickIntro}}" maxlength="500" bindinput="onInput" data-key="quickIntro" auto-height/>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">TA 替你说话时，用什么风格？<text class="optional">（选填）</text></view>
+
+    <!-- 选中风格 → 助理形象实时联动（招聘定妆时刻） -->
+    <view wx:if="{{form.avatarStyle}}" class="assistant-preview">
+      <avatar preset="{{form.avatarStyle}}" name="{{form.realName}}" seed="preview" size="140" state="speaking"/>
+      <view class="preview-caption muted">你的助理 · 形象可在设置里再换</view>
+    </view>
+
+    <view class="style-chips">
+      <view wx:for="{{styleOptions}}" wx:key="id"
+            class="style-chip {{form.style === item.id ? 'sel' : ''}}"
+            bindtap="selectStyle" data-id="{{item.id}}">
+        <view class="style-label">{{item.label}}</view>
+        <view class="style-sub">{{item.sub}}</view>
+      </view>
+    </view>
+    <view class="hint muted">不选则由 AI 根据你的介绍自行判断</view>
+  </view>
+
+  <view wx:if="{{!quick}}" class="section">
+    <view class="section-title">3 个问题，AI 会基于此生成你的主页</view>
+
+    <view class="field">
+      <view class="label">1. 你最擅长什么？</view>
+      <textarea class="textarea" placeholder="用1-3句话描述你的核心能力" value="{{form.strengths}}" maxlength="500" bindinput="onInput" data-key="strengths" auto-height/>
+    </view>
+
+    <view class="field">
+      <view class="label">2. 最近在做什么？</view>
+      <textarea class="textarea" placeholder="目前正在投入的项目、研究或方向" value="{{form.recentWork}}" maxlength="500" bindinput="onInput" data-key="recentWork" auto-height/>
+    </view>
+
+    <view class="field">
+      <view class="label">3. 希望别人如何认识你？</view>
+      <textarea class="textarea" placeholder="你最希望对外建立的标签或印象" value="{{form.howToKnow}}" maxlength="500" bindinput="onInput" data-key="howToKnow" auto-height/>
+    </view>
+  </view>
+
+  <view class="actions">
+    <button class="btn-primary" bindtap="submit" disabled="{{submitting || !canSubmit}}">
+      {{submitting ? '生成中…' : (quick ? '让我的 AI 助理上岗' : '生成我的 AI 主页')}}
+    </button>
+    <view class="hint muted">生成约需 5–15 秒</view>
+    <view wx:if="{{quick}}" class="switch-full muted" bindtap="switchToFull">想介绍得更完整？切换完整模式 ›</view>
+  </view>
+</view>

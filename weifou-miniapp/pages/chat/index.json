@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "问我的 AI",
+  "usingComponents": {
+    "avatar": "/components/avatar/index"
+  }
+}

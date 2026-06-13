@@ -1,0 +1,81 @@
+<view class="page">
+  <view class="tabs">
+    <view class="tab {{tab === 'gaps' ? 'on' : ''}}" bindtap="switchTab" data-tab="gaps">
+      待回答{{gaps.length ? ' · ' + gaps.length : ''}}
+    </view>
+    <view class="tab {{tab === 'leads' ? 'on' : ''}}" bindtap="switchTab" data-tab="leads">
+      访客线索{{leads.length ? ' · ' + leads.length : ''}}
+    </view>
+    <view class="tab {{tab === 'knowledge' ? 'on' : ''}}" bindtap="switchTab" data-tab="knowledge">
+      知识库{{knowledge.length ? ' · ' + knowledge.length : ''}}
+    </view>
+    <view class="tab {{tab === 'sessions' ? 'on' : ''}}" bindtap="switchTab" data-tab="sessions">
+      对话{{sessions.length ? ' · ' + sessions.length : ''}}
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="muted empty">加载中…</view>
+
+  <!-- 会话回放 -->
+  <block wx:if="{{!loading && tab === 'sessions'}}">
+    <view class="tip muted">你的 AI 助理替你接待的对话，点开可回看它说了什么。</view>
+    <view wx:if="{{!sessions.length}}" class="empty muted">还没有访客对话，把主页分享出去试试</view>
+    <view class="card session-card" wx:for="{{sessions}}" wx:key="sessionId"
+          bindtap="goReplay" data-id="{{item.sessionId}}" data-name="{{item.visitorName}}">
+      <view class="lead-head">
+        <text class="lead-name">{{item.visitorName}}</text>
+        <text class="meta muted">{{item.timeText}}</text>
+      </view>
+      <view class="note session-last">{{item.lastMessage}}</view>
+      <view class="meta muted">{{item.messageCount}} 条消息 · 点击回看 ›</view>
+    </view>
+  </block>
+
+  <!-- 待回答缺口 -->
+  <block wx:if="{{!loading && tab === 'gaps'}}">
+    <view class="tip muted">访客问倒了 AI 的问题。回答一条，AI 之后就会自己答。</view>
+    <view wx:if="{{!gaps.length}}" class="empty muted">暂无待回答的问题 🎉</view>
+    <view class="card" wx:for="{{gaps}}" wx:key="id">
+      <view class="q">{{item.question}}</view>
+      <view class="meta muted">被问 {{item.askedCount}} 次</view>
+      <view class="ops">
+        <view class="op primary" bindtap="answerGap" data-id="{{item.id}}" data-q="{{item.question}}">回答</view>
+        <view class="op" bindtap="dismissGap" data-id="{{item.id}}">忽略</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 访客线索 -->
+  <block wx:if="{{!loading && tab === 'leads'}}">
+    <view class="tip muted">访客在对话里留给你的话。</view>
+    <view wx:if="{{!leads.length}}" class="empty muted">还没有访客留言</view>
+    <view class="card" wx:for="{{leads}}" wx:key="id">
+      <view class="lead-head">
+        <text class="lead-name">{{item.visitorName || '匿名访客'}}</text>
+        <text class="meta muted">{{item.timeText}}</text>
+      </view>
+      <view class="note">{{item.note}}</view>
+      <view wx:if="{{item.contact}}" class="op contact" bindtap="copyContact" data-contact="{{item.contact}}">
+        复制联系方式：{{item.contact}}
+      </view>
+    </view>
+  </block>
+
+  <!-- 知识库 -->
+  <block wx:if="{{!loading && tab === 'knowledge'}}">
+    <view class="tip muted">AI 回答访客时会优先参考这些资料。</view>
+    <view class="add-row">
+      <view class="card add half" bindtap="ingestKnowledge">✨ 粘贴资料自动整理</view>
+      <view class="card add half" bindtap="addKnowledge">＋ 手动加一条</view>
+    </view>
+    <view wx:if="{{!knowledge.length}}" class="empty muted">还没有补充资料</view>
+    <view class="card" wx:for="{{knowledge}}" wx:key="id">
+      <view wx:if="{{item.topic}}" class="q">{{item.topic}}</view>
+      <view class="note">{{item.content}}</view>
+      <view class="ops">
+        <view class="meta muted">{{item.source === 'gap' ? '来自访客提问' : '手动添加'}}</view>
+        <view class="op" bindtap="deleteKnowledge" data-id="{{item.id}}">删除</view>
+      </view>
+    </view>
+  </block>
+</view>

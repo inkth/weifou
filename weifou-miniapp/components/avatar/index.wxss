@@ -1,0 +1,238 @@
+/* ===== 活人感：多层错时 idle 动效（呼吸/漂浮/摇摆）===== */
+.alive,
+.lyr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 漂浮：整体上下浮动 */
+.lyr-float { animation: aliveFloat 4.3s ease-in-out infinite; }
+@keyframes aliveFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8rpx); }
+}
+/* 摇摆：极慢倾斜（圆形上不明显，角色/插画形象上更生动） */
+.lyr-sway { animation: aliveSway 6.7s ease-in-out infinite; }
+@keyframes aliveSway {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+/* 呼吸：缓慢缩放，最关键的“活”感 */
+.lyr-breathe {
+  transform-origin: center;
+  animation: aliveBreathe 3.1s ease-in-out infinite;
+}
+@keyframes aliveBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+/* 活跃态（如 AI 回复时）：幅度更大、节奏更快 */
+.alive-on .lyr-float { animation: aliveFloatOn 1.7s ease-in-out infinite; }
+@keyframes aliveFloatOn {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14rpx); }
+}
+.alive-on .lyr-breathe { animation: aliveBreatheOn 1.3s ease-in-out infinite; }
+@keyframes aliveBreatheOn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.075); }
+}
+.alive-on .lyr-sway { animation: aliveSway 3.3s ease-in-out infinite; }
+
+.av {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+}
+
+.lottie-canvas {
+  border-radius: 50%;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+  background: #f5f6fa;
+}
+
+/* image 形象：多状态图叠放 + 淡入淡出切换 */
+.img-wrap {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f5f6fa;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+}
+.state-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.state-img.on {
+  opacity: 1;
+}
+
+/* 基础：渐变流动，让形象“活”起来 */
+.av-flow {
+  animation: avFlow 7s ease infinite;
+}
+@keyframes avFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.ini {
+  position: relative;
+  z-index: 2;
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
+}
+
+/* 次级动效叠层 */
+.fx {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* shine：高光斜扫 */
+.fx-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(18deg);
+  animation: avShine 4.5s ease-in-out infinite;
+}
+@keyframes avShine {
+  0% { left: -60%; }
+  60% { left: 130%; }
+  100% { left: 130%; }
+}
+
+/* pulse：柔光呼吸 */
+.fx-pulse {
+  background: radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%);
+  animation: avPulse 3.2s ease-in-out infinite;
+}
+@keyframes avPulse {
+  0% { opacity: 0.25; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.25; }
+}
+
+/* flow 变体无额外叠层 */
+.fx-flow { display: none; }
+
+/* ===== toon：CSS 卡通助理脸 =====
+   五官全部用百分比定位，跟随组件 size 缩放；
+   状态：s-idle 眨眼 / s-thinking 眼睛上瞟+嘴变小 / s-speaking 嘴开合 */
+.toon { position: relative; }
+.t-face { position: absolute; inset: 0; }
+
+/* 眼睛：白底 + 深色瞳孔（::after），眨眼用 scaleY */
+.t-eye {
+  position: absolute;
+  top: 34%;
+  width: 17%;
+  height: 22%;
+  background: #ffffff;
+  border-radius: 50%;
+  animation: toonBlink 4.6s ease-in-out infinite;
+}
+.t-eye-l { left: 24%; }
+.t-eye-r { right: 24%; animation-delay: 0.08s; }
+.t-eye::after {
+  content: '';
+  position: absolute;
+  left: 30%;
+  top: 34%;
+  width: 44%;
+  height: 44%;
+  background: #1f2330;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+@keyframes toonBlink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.08); }
+}
+
+/* 嘴：默认微笑（下半圆） */
+.t-mouth {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 26%;
+  height: 13%;
+  margin-left: -13%;
+  background: #ffffff;
+  border-radius: 0 0 999rpx 999rpx;
+  transform-origin: center top;
+  transition: width 0.25s ease, height 0.25s ease, border-radius 0.25s ease;
+}
+
+/* 眉毛：默认隐藏，sharp 显示 */
+.t-brow {
+  position: absolute;
+  top: 24%;
+  width: 16%;
+  height: 4.5%;
+  background: #ffffff;
+  border-radius: 999rpx;
+  opacity: 0;
+}
+.t-brow-l { left: 25%; transform: rotate(14deg); }
+.t-brow-r { right: 25%; transform: rotate(-14deg); }
+
+/* 腮红：默认隐藏，warm/humorous 显示 */
+.t-blush {
+  position: absolute;
+  top: 56%;
+  width: 14%;
+  height: 9%;
+  background: rgba(255, 255, 255, 0.38);
+  border-radius: 50%;
+  opacity: 0;
+}
+.t-blush-l { left: 10%; }
+.t-blush-r { right: 10%; }
+
+/* —— 气质变体 —— */
+.toon-steady .t-mouth { width: 20%; height: 8%; margin-left: -10%; border-radius: 999rpx; } /* 沉稳：浅笑直线 */
+.toon-warm .t-blush { opacity: 1; }
+.toon-sharp .t-brow { opacity: 1; }
+.toon-sharp .t-eye { height: 17%; top: 37%; } /* 犀利：眯一点 */
+.toon-humorous .t-blush { opacity: 1; }
+.toon-humorous .t-mouth { width: 32%; height: 16%; margin-left: -16%; } /* 活泼：嘴更大 */
+
+/* —— 状态 —— */
+/* 沉思：瞳孔上瞟，嘴收成点 */
+.s-thinking .t-eye::after { transform: translateY(-46%) translateX(20%); }
+.s-thinking .t-mouth { width: 10%; height: 7%; margin-left: -5%; border-radius: 50%; }
+/* 说话：嘴开合 */
+.s-speaking .t-mouth {
+  border-radius: 46%;
+  animation: toonTalk 0.32s ease-in-out infinite alternate;
+}
+@keyframes toonTalk {
+  from { transform: scaleY(0.45); }
+  to { transform: scaleY(1.15); }
+}

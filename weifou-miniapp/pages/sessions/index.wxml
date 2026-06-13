@@ -1,0 +1,30 @@
+<view class="page">
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty muted">还没有通话记录</view>
+
+  <view class="card session" wx:for="{{list}}" wx:key="id">
+    <view class="row1">
+      <view class="name">{{item.realName}}</view>
+      <view class="role muted">{{item.role === 'host' ? '被咨询' : '我发起'}}</view>
+    </view>
+    <view class="row2 muted">
+      {{item.durationMin}} 分钟 · {{statusText[item.status]}}
+      <text wx:if="{{item.durationSec}}"> · 实际 {{item.durationSecText}}</text>
+    </view>
+    <view class="row2 muted" wx:if="{{item.scheduledText}}">预约时间：{{item.scheduledText}}</view>
+
+    <view class="ops">
+      <button
+        class="btn-primary op"
+        wx:if="{{item.status === 'pending' || item.status === 'ongoing'}}"
+        bindtap="enter"
+        data-id="{{item.id}}"
+      >进入通话</button>
+      <button
+        class="btn-ghost op"
+        wx:if="{{item.canRefund}}"
+        bindtap="refund"
+        data-order="{{item.orderId}}"
+      >申请退款</button>
+    </view>
+  </view>
+</view>

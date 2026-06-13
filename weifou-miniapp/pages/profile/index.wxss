@@ -1,0 +1,107 @@
+.page { padding: 32rpx 32rpx 120rpx; }
+
+.hero { margin-bottom: 24rpx; }
+.hero-row { display: flex; align-items: center; gap: 24rpx; }
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: #f0f1f5;
+}
+.hero-meta { flex: 1; min-width: 0; }
+.name { font-size: 36rpx; font-weight: 600; color: #1f2330; }
+.title-text { font-size: 26rpx; margin-top: 8rpx; }
+.city { font-size: 24rpx; margin-top: 4rpx; }
+
+.one-liner {
+  margin-top: 24rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #1f2330;
+  line-height: 1.5;
+}
+
+.tags { margin-top: 20rpx; display: flex; flex-wrap: wrap; }
+
+.section { margin-bottom: 24rpx; }
+.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; }
+.full-intro { font-size: 28rpx; line-height: 1.7; color: #2a2f40; white-space: pre-wrap; }
+
+.stats { display: flex; padding: 24rpx 0; }
+.stat { flex: 1; text-align: center; }
+.stat-num { font-size: 40rpx; font-weight: 700; color: #1f2330; }
+.stat-label { font-size: 22rpx; margin-top: 6rpx; }
+
+.actions { display: flex; flex-direction: column; gap: 20rpx; margin-top: 32rpx; }
+
+.empty { text-align: center; padding-top: 240rpx; }
+
+/* 咨询 */
+.consult-intro { font-size: 26rpx; margin-bottom: 20rpx; }
+.consult-price { font-size: 26rpx; margin-bottom: 20rpx; }
+.book-btn { margin-top: 8rpx; }
+.consult-note { font-size: 22rpx; margin-top: 20rpx; text-align: center; }
+
+/* 档期选择 */
+.slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
+.slot-empty { text-align: center; padding: 48rpx 0; }
+.slot-pick {
+  padding: 24rpx;
+  background: #f5f6fa;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  border: 2rpx solid transparent;
+}
+.slot-pick.active { border-color: #1f2330; background: #fff; }
+.sp-time { font-size: 30rpx; font-weight: 500; }
+.sp-meta { font-size: 24rpx; margin-top: 6rpx; }
+
+/* 打赏弹层 */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+.tip-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+.tip-title { font-size: 34rpx; font-weight: 600; }
+.tip-sub { font-size: 24rpx; margin-top: 8rpx; }
+.tip-amounts { display: flex; gap: 20rpx; margin: 32rpx 0; }
+.tip-amount {
+  flex: 1;
+  text-align: center;
+  padding: 28rpx 0;
+  background: #f5f6fa;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: 2rpx solid transparent;
+}
+.tip-amount.active { border-color: #1f2330; background: #fff; }
+.tip-msg {
+  background: #f5f6fa;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  font-size: 28rpx;
+  margin-bottom: 32rpx;
+}
+.tip-pay { margin-top: 8rpx; }
+
+/* —— 生成完成晒点 —— */
+.fresh-card { padding: 32rpx; text-align: center; }
+.fresh-title { font-size: 36rpx; font-weight: 700; color: #1f2330; }
+.fresh-sub { font-size: 26rpx; margin: 12rpx 0 8rpx; }
+.fresh-starters { margin-bottom: 20rpx; }
+.fresh-starter { font-size: 26rpx; color: #1f2330; line-height: 1.9; }
+.fresh-actions { display: flex; gap: 16rpx; }
+.fresh-btn { flex: 1; }
+
+/* —— 访客页脚平台线索 —— */
+.brand-foot { text-align: center; font-size: 24rpx; padding: 32rpx 0 16rpx; }

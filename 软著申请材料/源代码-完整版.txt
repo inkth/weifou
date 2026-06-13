@@ -1,0 +1,3086 @@
+/* ========== 微否软件 V1.0 客户端源代码（Flutter / Dart） ========== */
+
+//==================================================================
+// 文件: lib/main.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app.dart';
+
+void main() {
+  runApp(const ProviderScope(child: WeifouApp()));
+}
+
+//==================================================================
+// 文件: lib/app.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+
+class WeifouApp extends ConsumerWidget {
+  const WeifouApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    return MaterialApp.router(
+      title: '微否',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      routerConfig: router,
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/core/config/env.dart
+//==================================================================
+/// 全局环境配置。
+///
+/// 通过 `--dart-define` 注入，便于 dev / prod 切换，避免把密钥写死进包：
+/// flutter run --dart-define=API_BASE=https://api.weifou.com/api
+///
+/// 生产 API_BASE 必须是已备案的 HTTPS 域名（对应小程序 utils/config.js 的注意事项）。
+class Env {
+  Env._();
+
+  /// 后端 API 根地址。默认指向本地后端（模拟器/真机调试需改为局域网 IP 或 HTTPS 域名）。
+  static const String apiBase = String.fromEnvironment(
+    'API_BASE',
+    defaultValue: 'http://localhost:3000/api',
+  );
+
+  /// 微信开放平台「移动应用」AppID（区别于小程序 AppID）。登录/支付/分享用。
+  static const String wxAppId = String.fromEnvironment('WX_APP_ID');
+
+  /// iOS Universal Link，fluwx 回跳需要。
+  static const String wxUniversalLink =
+      String.fromEnvironment('WX_UNIVERSAL_LINK');
+
+  /// 分享落地页根地址，用于海报二维码（已装唤起 App，未装落 H5）。
+  static const String shareWebBase = String.fromEnvironment(
+    'SHARE_WEB_BASE',
+    defaultValue: 'https://weifou.com/p',
+  );
+
+  /// 网络超时（毫秒），与小程序 request.js 的 60s 对齐。
+  static const int httpTimeoutMs = 60000;
+
+  /// 是否显示「测试验证码登录」入口（手机号 + 654321，绕开微信授权）。
+  /// 联调阶段默认开启；上线前用 --dart-define=ENABLE_TEST_LOGIN=false 关闭，
+  /// 后端也需 ENV=production 双重兜底。
+  static const bool enableTestLogin = bool.fromEnvironment(
+    'ENABLE_TEST_LOGIN',
+    defaultValue: true,
+  );
+}
+
+//==================================================================
+// 文件: lib/core/network/api_exception.dart
+//==================================================================
+/// 统一的业务异常模型，对应小程序 request.js reject 的 `{code, message}`。
+class ApiException implements Exception {
+  ApiException(this.code, this.message);
+
+  final String code;
+  final String message;
+
+  /// 401：token 失效，需重新登录。
+  bool get isUnauthorized => code == 'UNAUTHORIZED';
+
+  @override
+  String toString() => 'ApiException($code): $message';
+}
+
+//==================================================================
+// 文件: lib/core/network/dio_client.dart
+//==================================================================
+import 'package:dio/dio.dart';
+
+import '../config/env.dart';
+import '../storage/secure_store.dart';
+import 'api_exception.dart';
+import 'interceptors.dart';
+
+/// 封装 Dio，集中拦截器与错误归一。API 层通过 get/post/patch/delete
+/// 直接拿到「已解包的 data」，与小程序 request() 返回 body.data 一致。
+class DioClient {
+  DioClient(this._store, {void Function()? onUnauthorized})
+      : _dio = Dio(
+          BaseOptions(
+            baseUrl: Env.apiBase,
+            connectTimeout: const Duration(milliseconds: Env.httpTimeoutMs),
+            receiveTimeout: const Duration(milliseconds: Env.httpTimeoutMs),
+            sendTimeout: const Duration(milliseconds: Env.httpTimeoutMs),
+            contentType: 'application/json',
+            // 让所有状态码都进入拦截器，由 ResponseInterceptor 统一判定。
+            validateStatus: (_) => true,
+          ),
+        ) {
+    _dio.interceptors.addAll([
+      AuthInterceptor(_store),
+      ClientInterceptor(),
+      ResponseInterceptor(_store, onUnauthorized: onUnauthorized),
+    ]);
+  }
+
+  final Dio _dio;
+  final SecureStore _store;
+
+  Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
+      _unwrap(() => _dio.get(path, queryParameters: query));
+
+  Future<dynamic> post(String path, {Object? data}) =>
+      _unwrap(() => _dio.post(path, data: data));
+
+  Future<dynamic> patch(String path, {Object? data}) =>
+      _unwrap(() => _dio.patch(path, data: data));
+
+  Future<dynamic> delete(String path, {Object? data}) =>
+      _unwrap(() => _dio.delete(path, data: data));
+
+  /// 把拦截器抛出的 DioException 还原成 ApiException 给上层。
+  Future<dynamic> _unwrap(Future<Response> Function() call) async {
+    try {
+      final res = await call();
+      return res.data;
+    } on DioException catch (e) {
+      if (e.error is ApiException) throw e.error as ApiException;
+      throw ApiException('NETWORK_ERROR', e.message ?? '网络异常');
+    }
+  }
+}
+
+//==================================================================
+// 文件: lib/core/network/interceptors.dart
+//==================================================================
+import 'dart:io' show Platform;
+
+import 'package:dio/dio.dart';
+
+import '../storage/secure_store.dart';
+import 'api_exception.dart';
+
+/// 注入 `Authorization: Bearer <token>`，对应 request.js 的 header 逻辑。
+class AuthInterceptor extends Interceptor {
+  AuthInterceptor(this._store);
+
+  final SecureStore _store;
+
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final token = await _store.getToken();
+    if (token != null && token.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+    handler.next(options);
+  }
+}
+
+/// 注入客户端来源标识，供后端做支付分流与 iOS 合规网关。
+/// X-Client-Type: app（区别于 miniapp）；X-Platform: ios | android。
+class ClientInterceptor extends Interceptor {
+  @override
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) {
+    options.headers['X-Client-Type'] = 'app';
+    options.headers['X-Platform'] = Platform.isIOS ? 'ios' : 'android';
+    handler.next(options);
+  }
+}
+
+/// 复刻 request.js 的响应约定：
+/// - 401 → 清 token + 抛 UNAUTHORIZED
+/// - 2xx 且 body.success != false → 解包返回 body.data
+/// - 其它 → 抛 ApiException(code, message)
+/// 网络层异常 → NETWORK_ERROR。
+class ResponseInterceptor extends Interceptor {
+  ResponseInterceptor(this._store, {this.onUnauthorized});
+
+  final SecureStore _store;
+
+  /// 401 回调，供路由层跳转登录页。
+  final void Function()? onUnauthorized;
+
+  @override
+  Future<void> onResponse(
+    Response response,
+    ResponseInterceptorHandler handler,
+  ) async {
+    final status = response.statusCode ?? 0;
+    final body = response.data is Map ? response.data as Map : const {};
+
+    if (status == 401) {
+      await _store.clearToken();
+      onUnauthorized?.call();
+      return handler.reject(
+        _wrap(response, ApiException('UNAUTHORIZED', '请重新登录')),
+      );
+    }
+
+    if (status >= 200 && status < 300 && body['success'] != false) {
+      // 解包 data，让上层直接拿到业务数据。
+      response.data = body['data'];
+      return handler.next(response);
+    }
+
+    return handler.reject(
+      _wrap(
+        response,
+        ApiException(
+          (body['code'] as String?) ?? 'HTTP_$status',
+          (body['message'] as String?) ?? '请求失败',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    // 已是包装过的业务异常，直接透传。
+    if (err.error is ApiException) return handler.next(err);
+
+    final status = err.response?.statusCode ?? 0;
+    if (status == 401) {
+      await _store.clearToken();
+      onUnauthorized?.call();
+      return handler.next(
+        _wrap(err.response, ApiException('UNAUTHORIZED', '请重新登录')),
+      );
+    }
+
+    final body = err.response?.data is Map ? err.response!.data as Map : null;
+    if (body != null) {
+      return handler.next(
+        _wrap(
+          err.response,
+          ApiException(
+            (body['code'] as String?) ?? 'HTTP_$status',
+            (body['message'] as String?) ?? '请求失败',
+          ),
+        ),
+      );
+    }
+
+    return handler.next(
+      _wrap(err.response, ApiException('NETWORK_ERROR', err.message ?? '网络异常')),
+    );
+  }
+
+  DioException _wrap(Response? response, ApiException e) => DioException(
+        requestOptions: response?.requestOptions ??
+            RequestOptions(path: ''),
+        response: response,
+        error: e,
+      );
+}
+
+//==================================================================
+// 文件: lib/core/platform/entry_gate.dart
+//==================================================================
+import 'dart:io' show Platform;
+
+/// 付费入口类型。
+enum PayEntry {
+  /// 打赏：纯赠予、不解锁任何权益。iOS 合规灰区，首版隐藏。
+  tip,
+
+  /// 付费咨询：真人一对一服务，App Store 指南 3.1.3(e) 允许第三方支付。
+  consult,
+
+  /// 虚拟权益类（解锁数字内容/额度等）：iOS 必须走 IAP，故隐藏。预留。
+  virtualGoods,
+}
+
+/// iOS 合规网关——前端主控制点（审核看的是 UI 上有没有出现违规入口）。
+///
+/// 这是「入口能力表」的本地默认值；后续可由后端 `GET /api/config/entries`
+/// 下发覆盖，使合规策略变更不必发版过审（见计划第五节）。后端 payment
+/// handler 另有 X-Platform 兜底。
+class EntryGate {
+  EntryGate._();
+
+  /// 各入口在 iOS / Android 的默认可见性。
+  static const Map<PayEntry, ({bool ios, bool android})> _defaults = {
+    PayEntry.tip: (ios: false, android: true),
+    PayEntry.consult: (ios: true, android: true),
+    PayEntry.virtualGoods: (ios: false, android: true),
+  };
+
+  /// 后端下发的覆盖值（key 为 PayEntry.name）。为空时用本地默认。
+  static Map<String, bool>? _remoteOverride;
+
+  /// 应用后端 entries 接口的结果。
+  static void applyRemote(Map<String, bool> override) {
+    _remoteOverride = override;
+  }
+
+  /// 当前平台下该入口是否可见。
+  static bool isVisible(PayEntry entry) {
+    final remote = _remoteOverride?[entry.name];
+    if (remote != null) return remote;
+    final d = _defaults[entry]!;
+    return Platform.isIOS ? d.ios : d.android;
+  }
+}
+
+//==================================================================
+// 文件: lib/core/providers.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'network/dio_client.dart';
+import 'storage/secure_store.dart';
+
+/// token 安全存储单例。
+final secureStoreProvider = Provider<SecureStore>((ref) => SecureStore());
+
+/// 全局 Dio 客户端。401 时清空 auth 状态，触发路由跳登录。
+final dioClientProvider = Provider<DioClient>((ref) {
+  final store = ref.watch(secureStoreProvider);
+  return DioClient(
+    store,
+    onUnauthorized: () {
+      // 由 auth_controller 监听并跳转；这里仅作占位，M1 接入。
+      ref.read(unauthorizedSignalProvider.notifier).state++;
+    },
+  );
+});
+
+/// 401 计数信号，路由层可监听以触发重定向。
+final unauthorizedSignalProvider = StateProvider<int>((ref) => 0);
+
+//==================================================================
+// 文件: lib/core/router/app_router.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../data/models/profile.dart';
+import '../../features/auth/auth_controller.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/chat/chat_screen.dart';
+import '../../features/chat/chats_screen.dart';
+import '../../features/create/create_screen.dart';
+import '../../features/create/persona_edit_screen.dart';
+import '../../features/home/home_screen.dart';
+import '../../features/plaza/plaza_screen.dart';
+import '../../features/poster/poster_screen.dart';
+import '../../features/profile/profile_screen.dart';
+import '../../features/settings/settings_screen.dart';
+
+/// 全局路由表 + 登录守卫。星野式底部三 Tab：广场 / 对话 / 我的。
+final routerProvider = Provider<GoRouter>((ref) {
+  final refresh = ValueNotifier<int>(0);
+  ref.listen(authControllerProvider, (_, _) => refresh.value++);
+  ref.onDispose(refresh.dispose);
+
+  return GoRouter(
+    initialLocation: '/plaza',
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
+      if (auth is AuthUnknown) return null; // 启动恢复中
+
+      final loc = state.matchedLocation;
+      // 访客可访问：登录页、广场、主页只读页。
+      final guestAllowed = loc == '/login' ||
+          loc == '/plaza' ||
+          loc.startsWith('/profile/');
+      if (auth is AuthGuest && !guestAllowed) return '/login';
+      if (auth is AuthAuthed && loc == '/login') return '/plaza';
+      return null;
+    },
+    routes: [
+      // 底部 Tab 外壳
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            _TabShell(shell: navigationShell),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/plaza',
+              name: 'plaza',
+              builder: (context, state) => const PlazaScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/chats',
+              name: 'chats',
+              builder: (context, state) => const ChatsScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/me',
+              name: 'me',
+              builder: (context, state) => const HomeScreen(),
+            ),
+          ]),
+        ],
+      ),
+      // 全屏详情页（覆盖 Tab 栏）
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/create',
+        name: 'create',
+        builder: (context, state) => const CreateScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/persona-edit',
+        name: 'persona-edit',
+        builder: (context, state) => const PersonaEditScreen(),
+      ),
+      GoRoute(
+        path: '/profile/:id',
+        name: 'profile',
+        builder: (context, state) =>
+            ProfileScreen(profileId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/chat/:profileId',
+        name: 'chat',
+        builder: (context, state) => ChatScreen(
+          profileId: state.pathParameters['profileId']!,
+          profile: state.extra is Profile ? state.extra as Profile : null,
+        ),
+      ),
+      GoRoute(
+        path: '/poster/:profileId',
+        name: 'poster',
+        builder: (context, state) =>
+            PosterScreen(profileId: state.pathParameters['profileId']!),
+      ),
+    ],
+  );
+});
+
+/// 底部导航外壳。
+class _TabShell extends StatelessWidget {
+  const _TabShell({required this.shell});
+  final StatefulNavigationShell shell;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: shell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: shell.currentIndex,
+        onDestinationSelected: (i) =>
+            shell.goBranch(i, initialLocation: i == shell.currentIndex),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: '广场',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: '对话',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: '我的',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/core/storage/secure_store.dart
+//==================================================================
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// token 安全存储，替代小程序的 wx.getStorageSync('weifou_token')。
+///
+/// iOS 走 Keychain、Android 走 EncryptedSharedPreferences，比明文存储更安全。
+class SecureStore {
+  SecureStore({FlutterSecureStorage? storage})
+      : _storage = storage ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            );
+
+  final FlutterSecureStorage _storage;
+
+  static const _kToken = 'weifou_token';
+
+  Future<String?> getToken() => _storage.read(key: _kToken);
+
+  Future<void> setToken(String token) =>
+      _storage.write(key: _kToken, value: token);
+
+  Future<void> clearToken() => _storage.delete(key: _kToken);
+}
+
+//==================================================================
+// 文件: lib/core/theme/app_theme.dart
+//==================================================================
+import 'package:flutter/material.dart';
+
+/// 与小程序 app.wxss 一致的视觉规范：墨黑主色、浅灰底、胶囊按钮。
+class AppTheme {
+  AppTheme._();
+
+  static const Color ink = Color(0xFF1F2330); // 主色 / 文字
+  static const Color bg = Color(0xFFF5F6FA); // 页面底色
+  static const Color border = Color(0xFFE5E7EC); // 描边
+  static const Color sub = Color(0xFF8A8F9C); // 次要文字
+
+  static ThemeData get light {
+    final base = ThemeData.light(useMaterial3: true);
+    return base.copyWith(
+      scaffoldBackgroundColor: bg,
+      colorScheme: base.colorScheme.copyWith(
+        primary: ink,
+        surface: Colors.white,
+      ),
+      textTheme: base.textTheme.apply(
+        bodyColor: ink,
+        displayColor: ink,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: ink,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      // 胶囊主按钮（对应 .btn-primary）。
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: ink,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(100),
+          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ),
+      // 胶囊幽灵按钮（对应 .btn-ghost）。
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ink,
+          backgroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(50),
+          side: const BorderSide(color: border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(100),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/data/api/auth_api.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers.dart';
+import '../models/auth_user.dart';
+
+/// 登录态相关接口。后端按 X-Client-Type:app 走移动应用 oauth2 分支。
+class AuthApi {
+  AuthApi(this._ref);
+
+  final Ref _ref;
+
+  /// POST /auth/login —— 用 fluwx 授权得到的 code 换 token。
+  /// 返回 (token, user)。
+  Future<({String token, AuthUser user})> login(String code) async {
+    final data = await _ref.read(dioClientProvider).post(
+      '/auth/login',
+      data: {'code': code},
+    );
+    final map = Map<String, dynamic>.from(data as Map);
+    return (
+      token: map['token'] as String,
+      user: AuthUser.fromJson(Map<String, dynamic>.from(map['user'] as Map)),
+    );
+  }
+
+  /// POST /auth/test-login —— 测试登录：手机号 + 固定验证码 654321。
+  /// 仅后端非生产环境放行，绕开微信授权用于客户端联调。
+  Future<({String token, AuthUser user})> testLogin(
+    String phone,
+    String code,
+  ) async {
+    final data = await _ref.read(dioClientProvider).post(
+      '/auth/test-login',
+      data: {'phone': phone, 'code': code},
+    );
+    final map = Map<String, dynamic>.from(data as Map);
+    return (
+      token: map['token'] as String,
+      user: AuthUser.fromJson(Map<String, dynamic>.from(map['user'] as Map)),
+    );
+  }
+
+  /// GET /user/me —— 校验 token 并取当前用户（含 profileId）。
+  Future<AuthUser> me() async {
+    final data = await _ref.read(dioClientProvider).get('/user/me');
+    return AuthUser.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+}
+
+final authApiProvider = Provider<AuthApi>((ref) => AuthApi(ref));
+
+//==================================================================
+// 文件: lib/data/api/chat_api.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers.dart';
+
+/// AI 问答返回。首版忽略 consult 成交卡片（card），随咨询功能一起推迟。
+class ChatAnswer {
+  ChatAnswer({required this.sessionId, required this.answer});
+
+  final String sessionId;
+  final String answer;
+}
+
+/// 最近对话项，对应 GET /chat/sessions/mine。
+class ChatSessionItem {
+  ChatSessionItem({
+    required this.sessionId,
+    required this.profileId,
+    required this.realName,
+    this.avatarUrl,
+    this.lastMessage,
+  });
+
+  final String sessionId;
+  final String profileId;
+  final String realName;
+  final String? avatarUrl;
+  final String? lastMessage;
+
+  factory ChatSessionItem.fromJson(Map<String, dynamic> json) =>
+      ChatSessionItem(
+        sessionId: json['sessionId'] as String,
+        profileId: json['profileId'] as String,
+        realName: json['realName'] as String? ?? '',
+        avatarUrl: json['avatarUrl'] as String?,
+        lastMessage: json['lastMessage'] as String?,
+      );
+}
+
+class ChatApi {
+  ChatApi(this._ref);
+
+  final Ref _ref;
+
+  /// POST /chat/:profileId/ask —— 需登录。提问限 200 字。
+  Future<ChatAnswer> ask(String profileId, String content) async {
+    final data = await _ref.read(dioClientProvider).post(
+      '/chat/$profileId/ask',
+      data: {'content': content},
+    );
+    final map = Map<String, dynamic>.from(data as Map);
+    return ChatAnswer(
+      sessionId: map['sessionId'] as String,
+      answer: map['answer'] as String,
+    );
+  }
+
+  /// GET /chat/sessions/mine —— 我作为访客的最近对话（需登录）。
+  Future<List<ChatSessionItem>> mySessions() async {
+    final data = await _ref.read(dioClientProvider).get('/chat/sessions/mine');
+    final list = (data as List?) ?? const [];
+    return list
+        .map((e) =>
+            ChatSessionItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+}
+
+final chatApiProvider = Provider<ChatApi>((ref) => ChatApi(ref));
+
+//==================================================================
+// 文件: lib/data/api/plaza_api.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers.dart';
+
+/// 广场卡片，对应 GET /plaza 返回项。
+class PlazaCard {
+  PlazaCard({
+    required this.profileId,
+    required this.realName,
+    this.title,
+    this.nickname,
+    this.avatarUrl,
+    this.oneLiner,
+    this.tags = const [],
+  });
+
+  final String profileId;
+  final String realName;
+  final String? title;
+  final String? nickname;
+  final String? avatarUrl;
+  final String? oneLiner;
+  final List<String> tags;
+
+  factory PlazaCard.fromJson(Map<String, dynamic> json) => PlazaCard(
+        profileId: json['profileId'] as String,
+        realName: json['realName'] as String? ?? '',
+        title: json['title'] as String?,
+        nickname: json['nickname'] as String?,
+        avatarUrl: json['avatarUrl'] as String?,
+        oneLiner: json['oneLiner'] as String?,
+        tags: (json['tags'] as List?)?.cast<String>() ?? const [],
+      );
+}
+
+class PlazaApi {
+  PlazaApi(this._ref);
+  final Ref _ref;
+
+  /// GET /plaza?sort=hot|new&q=&page= —— 无需登录。
+  Future<List<PlazaCard>> list({
+    String sort = 'new',
+    String? q,
+    int page = 1,
+  }) async {
+    final data = await _ref.read(dioClientProvider).get('/plaza', query: {
+      'sort': sort,
+      'page': page,
+      if (q != null && q.isNotEmpty) 'q': q,
+    });
+    final map = Map<String, dynamic>.from(data as Map);
+    final items = (map['items'] as List?) ?? const [];
+    return items
+        .map((e) => PlazaCard.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+}
+
+final plazaApiProvider = Provider<PlazaApi>((ref) => PlazaApi(ref));
+
+//==================================================================
+// 文件: lib/data/api/profile_api.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers.dart';
+import '../models/profile.dart';
+
+/// 创建主页的表单输入，对应后端 createReq。
+class ProfileInput {
+  ProfileInput({
+    required this.realName,
+    required this.title,
+    this.company,
+    this.city,
+    required this.strengths,
+    required this.recentWork,
+    required this.howToKnow,
+    this.avatarStyle,
+  });
+
+  final String realName;
+  final String title;
+  final String? company;
+  final String? city;
+  final String strengths;
+  final String recentWork;
+  final String howToKnow;
+  final String? avatarStyle;
+
+  Map<String, dynamic> toJson() => {
+        'realName': realName,
+        'title': title,
+        'company': ?company,
+        'city': ?city,
+        'strengths': strengths,
+        'recentWork': recentWork,
+        'howToKnow': howToKnow,
+        'avatarStyle': ?avatarStyle,
+      };
+}
+
+/// 主页相关接口。
+class ProfileApi {
+  ProfileApi(this._ref);
+
+  final Ref _ref;
+
+  /// GET /profile/:id —— 访客视图，无需登录。
+  Future<Profile> findOne(String id) async {
+    final data = await _ref.read(dioClientProvider).get('/profile/$id');
+    return Profile.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  /// GET /profile/mine —— 我的主页，未创建返回 null。
+  Future<Profile?> mine() async {
+    final data = await _ref.read(dioClientProvider).get('/profile/mine');
+    if (data == null) return null;
+    return Profile.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  /// POST /profile —— 创建/更新主页并同步生成 AI 人格（耗时，调用方需显示加载）。
+  Future<Profile> createOrUpdate(ProfileInput input) async {
+    final data =
+        await _ref.read(dioClientProvider).post('/profile', data: input.toJson());
+    return Profile.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  /// POST /profile/regenerate —— 重新生成 AI 人格。
+  Future<Profile> regenerate() async {
+    final data = await _ref.read(dioClientProvider).post('/profile/regenerate');
+    return Profile.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  /// PATCH /profile/contact —— 更新联系方式与可见性。
+  Future<void> updateContact({
+    String? wechat,
+    String? phone,
+    bool? visible,
+  }) async {
+    await _ref.read(dioClientProvider).patch('/profile/contact', data: {
+      'contactWechat': ?wechat,
+      'contactPhone': ?phone,
+      'contactVisible': ?visible,
+    });
+  }
+
+  /// PATCH /profile/avatar —— 更新形象标识。
+  Future<void> updateAvatar(String avatarStyle) async {
+    await _ref
+        .read(dioClientProvider)
+        .patch('/profile/avatar', data: {'avatarStyle': avatarStyle});
+  }
+
+  /// PATCH /profile/discoverable —— 切换"公开到人物广场"。
+  Future<void> updateDiscoverable(bool discoverable) async {
+    await _ref
+        .read(dioClientProvider)
+        .patch('/profile/discoverable', data: {'discoverable': discoverable});
+  }
+
+  /// PATCH /profile/persona —— 人设深度定制：手动微调开场白/语气/音色/一句话。
+  Future<void> updatePersona({
+    String? oneLiner,
+    String? greeting,
+    String? tone,
+    String? voiceStyle,
+  }) async {
+    await _ref.read(dioClientProvider).patch('/profile/persona', data: {
+      'oneLiner': ?oneLiner,
+      'greeting': ?greeting,
+      'tone': ?tone,
+      'voiceStyle': ?voiceStyle,
+    });
+  }
+}
+
+/// 可选音色（与后端 persona.allowedVoices 对齐，Phase B 映射 TTS 音色）。
+const kVoiceStyles = [
+  '温暖男声',
+  '沉稳男声',
+  '清朗男声',
+  '温暖女声',
+  '知性女声',
+  '活泼女声',
+];
+
+final profileApiProvider = Provider<ProfileApi>((ref) => ProfileApi(ref));
+
+/// 我的主页（响应式）。创建/编辑后 invalidate 刷新。
+final myProfileProvider = FutureProvider<Profile?>((ref) {
+  return ref.read(profileApiProvider).mine();
+});
+
+//==================================================================
+// 文件: lib/data/api/share_api.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/config/env.dart';
+import '../../core/providers.dart';
+
+/// 海报数据，对应 GET /share/bundle/:profileId。
+/// 注意：后端 wxacodeBase64 是「小程序码」，App 不用；改用本地生成指向
+/// 落地页的二维码（见 shareUrl）。
+class ShareBundle {
+  ShareBundle({
+    required this.profileId,
+    this.nickname,
+    this.realName,
+    this.avatarUrl,
+    this.oneLiner,
+    this.tags = const [],
+  });
+
+  final String profileId;
+  final String? nickname;
+  final String? realName;
+  final String? avatarUrl;
+  final String? oneLiner;
+  final List<String> tags;
+
+  /// 分享落地页：已装唤起 App，未装落 H5。
+  String get shareUrl => '${Env.shareWebBase}/$profileId';
+
+  factory ShareBundle.fromJson(Map<String, dynamic> json) => ShareBundle(
+        profileId: json['profileId'] as String,
+        nickname: json['nickname'] as String?,
+        realName: json['realName'] as String?,
+        avatarUrl: json['avatarUrl'] as String?,
+        oneLiner: json['oneLiner'] as String?,
+        tags: (json['tags'] as List?)?.cast<String>() ?? const [],
+      );
+}
+
+class ShareApi {
+  ShareApi(this._ref);
+
+  final Ref _ref;
+
+  Future<ShareBundle> bundle(String profileId) async {
+    final data =
+        await _ref.read(dioClientProvider).get('/share/bundle/$profileId');
+    return ShareBundle.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+}
+
+final shareApiProvider = Provider<ShareApi>((ref) => ShareApi(ref));
+
+//==================================================================
+// 文件: lib/data/models/auth_user.dart
+//==================================================================
+import 'package:json_annotation/json_annotation.dart';
+
+part 'auth_user.g.dart';
+
+/// 登录用户，对应 /auth/login 与 /user/me 的返回。
+@JsonSerializable()
+class AuthUser {
+  AuthUser({
+    required this.id,
+    this.nickname,
+    this.avatarUrl,
+    this.profileId,
+    this.profileStatus,
+  });
+
+  final String id;
+  final String? nickname;
+  final String? avatarUrl;
+
+  /// 当前用户的主页 ID（未创建则为 null）。/user/me 才返回。
+  final String? profileId;
+  final String? profileStatus;
+
+  bool get hasProfile => profileId != null && profileId!.isNotEmpty;
+
+  factory AuthUser.fromJson(Map<String, dynamic> json) =>
+      _$AuthUserFromJson(json);
+  Map<String, dynamic> toJson() => _$AuthUserToJson(this);
+}
+
+//==================================================================
+// 文件: lib/data/models/auth_user.g.dart
+//==================================================================
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'auth_user.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => AuthUser(
+  id: json['id'] as String,
+  nickname: json['nickname'] as String?,
+  avatarUrl: json['avatarUrl'] as String?,
+  profileId: json['profileId'] as String?,
+  profileStatus: json['profileStatus'] as String?,
+);
+
+Map<String, dynamic> _$AuthUserToJson(AuthUser instance) => <String, dynamic>{
+  'id': instance.id,
+  'nickname': instance.nickname,
+  'avatarUrl': instance.avatarUrl,
+  'profileId': instance.profileId,
+  'profileStatus': instance.profileStatus,
+};
+
+//==================================================================
+// 文件: lib/data/models/profile.dart
+//==================================================================
+import 'package:json_annotation/json_annotation.dart';
+
+part 'profile.g.dart';
+
+/// AI 人格，对应后端 publicByID 的 persona 字段。
+@JsonSerializable()
+class Persona {
+  Persona({
+    this.oneLiner,
+    this.fullIntro,
+    this.tags = const [],
+    this.starters = const [],
+    this.greeting,
+    this.tone,
+    this.voiceStyle,
+    this.avatarUrl,
+  });
+
+  final String? oneLiner;
+  final String? fullIntro;
+  final List<String> tags;
+  final List<String> starters;
+
+  /// 开场白：进入对话的首条 AI 消息（沉浸式）。
+  final String? greeting;
+
+  /// 语气/性格描述（人设深度定制可编辑）。
+  final String? tone;
+
+  /// 音色标识（Phase B TTS 用）。
+  final String? voiceStyle;
+  final String? avatarUrl;
+
+  factory Persona.fromJson(Map<String, dynamic> json) =>
+      _$PersonaFromJson(json);
+  Map<String, dynamic> toJson() => _$PersonaToJson(this);
+}
+
+/// 主页（访客视图），对应 GET /profile/:id。
+@JsonSerializable()
+class Profile {
+  Profile({
+    required this.id,
+    required this.realName,
+    required this.title,
+    this.company,
+    this.city,
+    this.nickname,
+    this.avatarUrl,
+    this.avatarStyle,
+    this.status,
+    this.contactVisible = false,
+    this.discoverable = false,
+    this.contactWechat,
+    this.contactPhone,
+    this.persona,
+  });
+
+  final String id;
+  final String realName;
+  final String title;
+  final String? company;
+  final String? city;
+  final String? nickname;
+  final String? avatarUrl;
+  final String? avatarStyle;
+  final String? status;
+  final bool contactVisible;
+
+  /// 是否公开到人物广场（opt-in）。
+  final bool discoverable;
+
+  /// 仅 /profile/mine 返回（本人视图）。
+  final String? contactWechat;
+  final String? contactPhone;
+
+  final Persona? persona;
+
+  factory Profile.fromJson(Map<String, dynamic> json) =>
+      _$ProfileFromJson(json);
+  Map<String, dynamic> toJson() => _$ProfileToJson(this);
+}
+
+//==================================================================
+// 文件: lib/data/models/profile.g.dart
+//==================================================================
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'profile.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+Persona _$PersonaFromJson(Map<String, dynamic> json) => Persona(
+  oneLiner: json['oneLiner'] as String?,
+  fullIntro: json['fullIntro'] as String?,
+  tags:
+      (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
+  starters:
+      (json['starters'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
+  greeting: json['greeting'] as String?,
+  tone: json['tone'] as String?,
+  voiceStyle: json['voiceStyle'] as String?,
+  avatarUrl: json['avatarUrl'] as String?,
+);
+
+Map<String, dynamic> _$PersonaToJson(Persona instance) => <String, dynamic>{
+  'oneLiner': instance.oneLiner,
+  'fullIntro': instance.fullIntro,
+  'tags': instance.tags,
+  'starters': instance.starters,
+  'greeting': instance.greeting,
+  'tone': instance.tone,
+  'voiceStyle': instance.voiceStyle,
+  'avatarUrl': instance.avatarUrl,
+};
+
+Profile _$ProfileFromJson(Map<String, dynamic> json) => Profile(
+  id: json['id'] as String,
+  realName: json['realName'] as String,
+  title: json['title'] as String,
+  company: json['company'] as String?,
+  city: json['city'] as String?,
+  nickname: json['nickname'] as String?,
+  avatarUrl: json['avatarUrl'] as String?,
+  avatarStyle: json['avatarStyle'] as String?,
+  status: json['status'] as String?,
+  contactVisible: json['contactVisible'] as bool? ?? false,
+  discoverable: json['discoverable'] as bool? ?? false,
+  contactWechat: json['contactWechat'] as String?,
+  contactPhone: json['contactPhone'] as String?,
+  persona: json['persona'] == null
+      ? null
+      : Persona.fromJson(json['persona'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$ProfileToJson(Profile instance) => <String, dynamic>{
+  'id': instance.id,
+  'realName': instance.realName,
+  'title': instance.title,
+  'company': instance.company,
+  'city': instance.city,
+  'nickname': instance.nickname,
+  'avatarUrl': instance.avatarUrl,
+  'avatarStyle': instance.avatarStyle,
+  'status': instance.status,
+  'contactVisible': instance.contactVisible,
+  'discoverable': instance.discoverable,
+  'contactWechat': instance.contactWechat,
+  'contactPhone': instance.contactPhone,
+  'persona': instance.persona,
+};
+
+//==================================================================
+// 文件: lib/features/auth/auth_controller.dart
+//==================================================================
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers.dart';
+import '../../data/api/auth_api.dart';
+import '../../data/models/auth_user.dart';
+import 'wechat_auth_service.dart';
+
+/// 登录态。
+sealed class AuthState {
+  const AuthState();
+}
+
+/// 启动恢复中（未知）。
+class AuthUnknown extends AuthState {
+  const AuthUnknown();
+}
+
+/// 未登录（访客）。
+class AuthGuest extends AuthState {
+  const AuthGuest();
+}
+
+/// 已登录。
+class AuthAuthed extends AuthState {
+  const AuthAuthed(this.user);
+  final AuthUser user;
+}
+
+class AuthController extends Notifier<AuthState> {
+  @override
+  AuthState build() {
+    // 监听 401 信号：token 失效即退回访客态。
+    ref.listen(unauthorizedSignalProvider, (_, _) {
+      state = const AuthGuest();
+    });
+    // 启动时尝试用已存 token 恢复会话。
+    Future.microtask(_restore);
+    return const AuthUnknown();
+  }
+
+  Future<void> _restore() async {
+    try {
+      final token = await ref.read(secureStoreProvider).getToken();
+      if (token == null || token.isEmpty) {
+        state = const AuthGuest();
+        return;
+      }
+      final user = await ref.read(authApiProvider).me();
+      state = AuthAuthed(user);
+    } catch (_) {
+      // token 失效 / 网络异常 / 插件缺失（测试环境）→ 访客态。
+      state = const AuthGuest();
+    }
+  }
+
+  /// 微信授权登录。成功返回 true。
+  Future<void> loginWithWeChat() async {
+    final code = await WeChatAuthService.instance.getAuthCode();
+    final result = await ref.read(authApiProvider).login(code);
+    await ref.read(secureStoreProvider).setToken(result.token);
+    state = AuthAuthed(result.user);
+  }
+
+  /// 测试登录：手机号 + 固定验证码 654321（仅联调用，后端生产环境会拒绝）。
+  Future<void> loginWithTestCode(String phone, String code) async {
+    final result = await ref.read(authApiProvider).testLogin(phone, code);
+    await ref.read(secureStoreProvider).setToken(result.token);
+    state = AuthAuthed(result.user);
+  }
+
+  Future<void> logout() async {
+    await ref.read(secureStoreProvider).clearToken();
+    state = const AuthGuest();
+  }
+}
+
+final authControllerProvider =
+    NotifierProvider<AuthController, AuthState>(AuthController.new);
+
+//==================================================================
+// 文件: lib/features/auth/login_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/config/env.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/theme/app_theme.dart';
+import 'auth_controller.dart';
+
+/// 登录页。微信一键授权登录（fluwx）。
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  bool _loading = false;
+  final _phoneCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(authControllerProvider.notifier).loginWithWeChat();
+      // 登录成功后由路由 redirect 自动离开登录页。
+    } on ApiException catch (e) {
+      if (mounted) _toast(e.message);
+    } catch (e) {
+      if (mounted) _toast('登录失败：$e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _testLogin() async {
+    final phone = _phoneCtrl.text.trim();
+    final code = _codeCtrl.text.trim();
+    if (phone.isEmpty) {
+      _toast('请输入手机号');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await ref
+          .read(authControllerProvider.notifier)
+          .loginWithTestCode(phone, code);
+      // 登录成功后由路由 redirect 自动离开登录页。
+    } on ApiException catch (e) {
+      if (mounted) _toast(e.message);
+    } catch (e) {
+      if (mounted) _toast('登录失败：$e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _toast(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// 测试验证码登录区（手机号 + 654321），仅联调阶段显示。
+  List<Widget> _buildTestLogin() {
+    return [
+      const SizedBox(height: 32),
+      const Row(children: [
+        Expanded(child: Divider()),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text('测试登录', style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+        ),
+        Expanded(child: Divider()),
+      ]),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _phoneCtrl,
+        keyboardType: TextInputType.phone,
+        decoration: const InputDecoration(
+          labelText: '手机号',
+          hintText: '任意手机号',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _codeCtrl,
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(
+          labelText: '验证码',
+          hintText: '654321',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton(
+        onPressed: _loading ? null : _testLogin,
+        child: const Text('验证码登录'),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+              const Text(
+                '微否',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '加微信前，先和我的 AI 聊聊',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.sub, fontSize: 15),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _loading ? null : _login,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.wechat),
+                label: Text(_loading ? '登录中…' : '微信登录'),
+              ),
+              if (Env.enableTestLogin) ..._buildTestLogin(),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/auth/wechat_auth_service.dart
+//==================================================================
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:fluwx/fluwx.dart';
+
+import '../../core/config/env.dart';
+import '../../core/network/api_exception.dart';
+
+/// 封装 fluwx：注册移动应用 + 发起微信授权拿 code。
+///
+/// 注意：真正可用需先在微信开放平台注册「移动应用」并配置 [Env.wxAppId] /
+/// [Env.wxUniversalLink]（通过 --dart-define 注入）。AppID 未配置时
+/// [getAuthCode] 会抛出明确错误，不影响其余流程编译与运行。
+class WeChatAuthService {
+  WeChatAuthService._();
+  static final WeChatAuthService instance = WeChatAuthService._();
+
+  final Fluwx _fluwx = Fluwx();
+  bool _registered = false;
+
+  /// 幂等注册。未配置 AppID 时直接返回 false。
+  Future<bool> ensureRegistered() async {
+    if (_registered) return true;
+    if (Env.wxAppId.isEmpty) return false;
+    _registered = await _fluwx.registerApi(
+      appId: Env.wxAppId,
+      universalLink:
+          Env.wxUniversalLink.isEmpty ? null : Env.wxUniversalLink,
+    );
+    return _registered;
+  }
+
+  Future<bool> get isWeChatInstalled => _fluwx.isWeChatInstalled;
+
+  /// 分享图片到微信。[timeline] 为 true 发朋友圈，否则发好友会话。
+  /// 未配置 AppID 时抛错，调用方应回退系统分享。
+  Future<void> shareImage(Uint8List bytes, {bool timeline = false}) async {
+    final ok = await ensureRegistered();
+    if (!ok) {
+      throw ApiException('WX_NOT_CONFIGURED', '微信分享未配置（缺少移动应用 AppID）');
+    }
+    if (!await isWeChatInstalled) {
+      throw ApiException('WX_NOT_INSTALLED', '未安装微信');
+    }
+    await _fluwx.share(WeChatShareImageModel(
+      WeChatImageToShare(uint8List: bytes),
+      scene: timeline ? WeChatScene.timeline : WeChatScene.session,
+    ));
+  }
+
+  /// 发起微信授权，返回授权 code（交给后端换 token）。
+  Future<String> getAuthCode() async {
+    final ok = await ensureRegistered();
+    if (!ok) {
+      throw ApiException('WX_NOT_CONFIGURED', '微信登录未配置（缺少移动应用 AppID）');
+    }
+    if (!await isWeChatInstalled) {
+      throw ApiException('WX_NOT_INSTALLED', '未安装微信');
+    }
+
+    final completer = Completer<String>();
+    late final FluwxCancelable sub;
+    sub = _fluwx.addSubscriber((response) {
+      if (response is! WeChatAuthResponse) return;
+      sub.cancel();
+      if (completer.isCompleted) return;
+      if (response.errCode == 0 && (response.code?.isNotEmpty ?? false)) {
+        completer.complete(response.code!);
+      } else if (response.errCode == -2) {
+        completer.completeError(ApiException('WX_AUTH_CANCELED', '已取消登录'));
+      } else {
+        completer.completeError(
+          ApiException('WX_AUTH_FAILED', response.errStr ?? '微信授权失败'),
+        );
+      }
+    });
+
+    final launched =
+        await _fluwx.authBy(which: NormalAuth(scope: 'snsapi_userinfo'));
+    if (!launched) {
+      sub.cancel();
+      throw ApiException('WX_AUTH_FAILED', '无法唤起微信授权');
+    }
+
+    // 兜底超时，避免用户中途离开导致永久挂起。
+    return completer.future.timeout(
+      const Duration(seconds: 120),
+      onTimeout: () {
+        sub.cancel();
+        throw ApiException('WX_AUTH_TIMEOUT', '微信授权超时');
+      },
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/chat/chat_screen.dart
+//==================================================================
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/network/api_exception.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/api/chat_api.dart';
+import '../../data/models/profile.dart';
+
+class _Msg {
+  _Msg(this.fromMe, this.text, {this.animate = false});
+  final bool fromMe;
+  final String text;
+  // 是否需要打字机动画（仅新到达的 AI 消息）；动画完成后置 false 防重播。
+  bool animate;
+}
+
+/// 与某主页 AI 的沉浸式对话。需登录（路由守卫已拦截访客）。
+class ChatScreen extends ConsumerStatefulWidget {
+  const ChatScreen({super.key, required this.profileId, this.profile});
+
+  final String profileId;
+  final Profile? profile;
+
+  @override
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  final List<_Msg> _msgs = [];
+  bool _sending = false;
+
+  List<String> get _starters => widget.profile?.persona?.starters ?? const [];
+
+  @override
+  void initState() {
+    super.initState();
+    // 沉浸式：进入即由 AI 开场白打招呼（打字机呈现）。
+    final greeting = widget.profile?.persona?.greeting;
+    if (greeting != null && greeting.trim().isNotEmpty) {
+      _msgs.add(_Msg(false, greeting.trim(), animate: true));
+    }
+  }
+
+  @override
+  void dispose() {
+    _input.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send(String text) async {
+    final content = text.trim();
+    if (content.isEmpty || _sending) return;
+    if (content.runes.length > 200) {
+      _toast('问题太长（限 200 字）');
+      return;
+    }
+    setState(() {
+      _msgs.add(_Msg(true, content));
+      _sending = true;
+      _input.clear();
+    });
+    _scrollToEnd();
+    try {
+      final ans = await ref.read(chatApiProvider).ask(widget.profileId, content);
+      setState(() => _msgs.add(_Msg(false, ans.answer, animate: true)));
+    } on ApiException catch (e) {
+      setState(() => _msgs.add(_Msg(false, '（${e.message}）')));
+    } catch (e) {
+      setState(() => _msgs.add(_Msg(false, '（出错了：$e）')));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+      _scrollToEnd();
+    }
+  }
+
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(
+          _scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _toast(String m) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) {
+    final name = widget.profile?.realName ?? 'AI';
+    final showStarters = _starters.isNotEmpty &&
+        _msgs.where((m) => m.fromMe).isEmpty;
+    return Scaffold(
+      appBar: AppBar(title: Text('与 $name 的 AI')),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: _scroll,
+              padding: const EdgeInsets.all(16),
+              itemCount: _msgs.length,
+              itemBuilder: (_, i) => _Bubble(
+                msg: _msgs[i],
+                onAnimated: () => _msgs[i].animate = false,
+                onTick: _scrollToEnd,
+              ),
+            ),
+          ),
+          if (showStarters)
+            _StartersBar(starters: _starters, onTap: _send),
+          if (_sending) const LinearProgressIndicator(minHeight: 2),
+          _Composer(
+            controller: _input,
+            enabled: !_sending,
+            onSend: () => _send(_input.text),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StartersBar extends StatelessWidget {
+  const _StartersBar({required this.starters, required this.onTap});
+
+  final List<String> starters;
+  final void Function(String) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        children: [
+          for (final s in starters)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ActionChip(
+                label: Text(s),
+                onPressed: () => onTap(s),
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: AppTheme.border),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble({
+    required this.msg,
+    required this.onAnimated,
+    required this.onTick,
+  });
+
+  final _Msg msg;
+  final VoidCallback onAnimated;
+  final VoidCallback onTick;
+
+  @override
+  Widget build(BuildContext context) {
+    final me = msg.fromMe;
+    final Widget content = (!me && msg.animate)
+        ? _TypewriterText(
+            text: msg.text,
+            onDone: onAnimated,
+            onTick: onTick,
+            style: const TextStyle(color: AppTheme.ink, height: 1.5),
+          )
+        : Text(
+            msg.text,
+            style: TextStyle(
+              color: me ? Colors.white : AppTheme.ink,
+              height: 1.5,
+            ),
+          );
+    return Align(
+      alignment: me ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        decoration: BoxDecoration(
+          color: me ? AppTheme.ink : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: me ? null : Border.all(color: AppTheme.border),
+        ),
+        child: content,
+      ),
+    );
+  }
+}
+
+/// 打字机：逐字显示。完成后回调 onDone 让父级标记不再重播。
+class _TypewriterText extends StatefulWidget {
+  const _TypewriterText({
+    required this.text,
+    required this.onDone,
+    required this.onTick,
+    required this.style,
+  });
+
+  final String text;
+  final VoidCallback onDone;
+  final VoidCallback onTick;
+  final TextStyle style;
+
+  @override
+  State<_TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<_TypewriterText> {
+  int _count = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    final runes = widget.text.runes.toList();
+    _timer = Timer.periodic(const Duration(milliseconds: 28), (t) {
+      if (_count >= runes.length) {
+        t.cancel();
+        widget.onDone();
+        return;
+      }
+      setState(() => _count++);
+      if (_count % 6 == 0) widget.onTick();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shown =
+        String.fromCharCodes(widget.text.runes.take(_count));
+    return Text(shown, style: widget.style);
+  }
+}
+
+class _Composer extends StatelessWidget {
+  const _Composer({
+    required this.controller,
+    required this.enabled,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                enabled: enabled,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
+                decoration: InputDecoration(
+                  hintText: '输入问题（限 200 字）',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: enabled ? onSend : null,
+              icon: const Icon(Icons.send),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/chat/chats_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../data/api/chat_api.dart';
+
+final _sessionsProvider = FutureProvider<List<ChatSessionItem>>((ref) {
+  return ref.read(chatApiProvider).mySessions();
+});
+
+/// 对话 Tab：我聊过的 AI 分身（最近会话）。
+class ChatsScreen extends ConsumerWidget {
+  const ChatsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(_sessionsProvider);
+    return Scaffold(
+      appBar: AppBar(title: const Text('对话')),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(_sessionsProvider),
+        child: async.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => ListView(children: [
+            const SizedBox(height: 120),
+            Center(child: Text('加载失败：$e')),
+          ]),
+          data: (items) => items.isEmpty
+              ? ListView(children: const [
+                  SizedBox(height: 120),
+                  Center(
+                    child: Text('还没有对话，去广场找人聊聊吧',
+                        style: TextStyle(color: AppTheme.sub)),
+                  ),
+                ])
+              : ListView.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, indent: 76),
+                  itemBuilder: (_, i) {
+                    final s = items[i];
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppTheme.bg,
+                        backgroundImage: (s.avatarUrl?.isNotEmpty ?? false)
+                            ? NetworkImage(s.avatarUrl!)
+                            : null,
+                        child: (s.avatarUrl?.isEmpty ?? true)
+                            ? Text(s.realName.isNotEmpty ? s.realName[0] : '?')
+                            : null,
+                      ),
+                      title: Text(s.realName,
+                          style:
+                              const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(
+                        s.lastMessage ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppTheme.sub),
+                      ),
+                      onTap: () => context.pushNamed(
+                        'chat',
+                        pathParameters: {'profileId': s.profileId},
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/create/create_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/network/api_exception.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/api/profile_api.dart';
+
+/// 创建/编辑 AI 主页。提交后同步生成 AI 人格（耗时），显示生成中动画。
+class CreateScreen extends ConsumerStatefulWidget {
+  const CreateScreen({super.key});
+
+  @override
+  ConsumerState<CreateScreen> createState() => _CreateScreenState();
+}
+
+class _CreateScreenState extends ConsumerState<CreateScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _realName = TextEditingController();
+  final _title = TextEditingController();
+  final _company = TextEditingController();
+  final _city = TextEditingController();
+  final _strengths = TextEditingController();
+  final _recentWork = TextEditingController();
+  final _howToKnow = TextEditingController();
+
+  bool _generating = false;
+
+  @override
+  void dispose() {
+    for (final c in [
+      _realName,
+      _title,
+      _company,
+      _city,
+      _strengths,
+      _recentWork,
+      _howToKnow,
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _generating = true);
+    try {
+      final profile = await ref.read(profileApiProvider).createOrUpdate(
+            ProfileInput(
+              realName: _realName.text.trim(),
+              title: _title.text.trim(),
+              company: _emptyToNull(_company.text),
+              city: _emptyToNull(_city.text),
+              strengths: _strengths.text.trim(),
+              recentWork: _recentWork.text.trim(),
+              howToKnow: _howToKnow.text.trim(),
+            ),
+          );
+      ref.invalidate(myProfileProvider);
+      if (mounted) {
+        context.goNamed('profile', pathParameters: {'id': profile.id});
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _generating = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _generating = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('生成失败：$e')));
+      }
+    }
+  }
+
+  String? _emptyToNull(String s) => s.trim().isEmpty ? null : s.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    if (_generating) return const _GeneratingView();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('创建 AI 主页')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _field(_realName, '姓名', required: true),
+            _field(_title, '职位 / 身份', required: true),
+            _field(_company, '公司 / 机构'),
+            _field(_city, '城市'),
+            _field(_strengths, '专业 / 擅长', required: true, maxLines: 3),
+            _field(_recentWork, '近期作品 / 项目', required: true, maxLines: 3),
+            _field(_howToKnow, '希望别人怎么认识你', required: true, maxLines: 3),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _submit,
+              child: const Text('生成我的 AI 主页'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _field(
+    TextEditingController c,
+    String label, {
+    bool required = false,
+    int maxLines = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: c,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: required ? '$label *' : label,
+          border: const OutlineInputBorder(),
+          alignLabelWithHint: true,
+        ),
+        validator: required
+            ? (v) => (v == null || v.trim().isEmpty) ? '请填写$label' : null
+            : null,
+      ),
+    );
+  }
+}
+
+/// 生成中：简单的加载动画（lottie 资源到位后可替换）。
+class _GeneratingView extends StatelessWidget {
+  const _GeneratingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 24),
+            Text('AI 正在生成你的主页…',
+                style: TextStyle(fontSize: 16, color: AppTheme.ink)),
+            SizedBox(height: 8),
+            Text('约需十几秒，请稍候',
+                style: TextStyle(fontSize: 13, color: AppTheme.sub)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/create/persona_edit_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../data/api/profile_api.dart';
+import '../../data/models/profile.dart';
+
+/// 人设深度定制：手动微调 AI 的开场白 / 语气性格 / 音色 / 一句话介绍。
+class PersonaEditScreen extends ConsumerWidget {
+  const PersonaEditScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(myProfileProvider);
+    return Scaffold(
+      appBar: AppBar(title: const Text('编辑人设')),
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('加载失败：$e')),
+        data: (p) => (p == null || p.persona == null)
+            ? const Center(child: Text('请先创建 AI 主页'))
+            : _Form(profile: p),
+      ),
+    );
+  }
+}
+
+class _Form extends ConsumerStatefulWidget {
+  const _Form({required this.profile});
+  final Profile profile;
+
+  @override
+  ConsumerState<_Form> createState() => _FormState();
+}
+
+class _FormState extends ConsumerState<_Form> {
+  late final _oneLiner =
+      TextEditingController(text: widget.profile.persona?.oneLiner ?? '');
+  late final _greeting =
+      TextEditingController(text: widget.profile.persona?.greeting ?? '');
+  late final _tone =
+      TextEditingController(text: widget.profile.persona?.tone ?? '');
+  late String _voice = _initialVoice;
+  bool _saving = false;
+
+  String get _initialVoice {
+    final v = widget.profile.persona?.voiceStyle;
+    return (v != null && kVoiceStyles.contains(v)) ? v : kVoiceStyles.first;
+  }
+
+  @override
+  void dispose() {
+    _oneLiner.dispose();
+    _greeting.dispose();
+    _tone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(profileApiProvider).updatePersona(
+            oneLiner: _oneLiner.text.trim(),
+            greeting: _greeting.text.trim(),
+            tone: _tone.text.trim(),
+            voiceStyle: _voice,
+          );
+      ref.invalidate(myProfileProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('已保存')));
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('保存失败：$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _label('一句话介绍'),
+        TextField(
+          controller: _oneLiner,
+          maxLines: 2,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        const SizedBox(height: 20),
+        _label('开场白（进入对话的第一句）'),
+        TextField(
+          controller: _greeting,
+          maxLines: 3,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        const SizedBox(height: 20),
+        _label('语气与性格'),
+        TextField(
+          controller: _tone,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: '例如：亲切、爱用比喻、回答先共情再给建议',
+          ),
+        ),
+        const SizedBox(height: 20),
+        _label('音色'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final v in kVoiceStyles)
+              ChoiceChip(
+                label: Text(v),
+                selected: _voice == v,
+                onSelected: (_) => setState(() => _voice = v),
+              ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? '保存中…' : '保存'),
+        ),
+      ],
+    );
+  }
+
+  Widget _label(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(t,
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.ink)),
+      );
+}
+
+//==================================================================
+// 文件: lib/features/home/home_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../data/api/profile_api.dart';
+import '../../data/models/profile.dart';
+import '../auth/auth_controller.dart';
+
+/// 首页：未登录显示加载/跳登录；已登录按是否有主页展示创建或管理入口。
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
+    if (auth is AuthUnknown) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final user = auth is AuthAuthed ? auth.user : null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('微否'),
+        actions: [
+          if (user != null)
+            IconButton(
+              tooltip: '退出登录',
+              icon: const Icon(Icons.logout),
+              onPressed: () =>
+                  ref.read(authControllerProvider.notifier).logout(),
+            ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(myProfileProvider),
+        child: ref.watch(myProfileProvider).when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) => ListView(
+                children: [
+                  const SizedBox(height: 120),
+                  Center(child: Text('加载失败：$e')),
+                ],
+              ),
+              data: (p) => p == null
+                  ? const _NoProfile()
+                  : _HasProfile(profile: p),
+            ),
+      ),
+    );
+  }
+}
+
+class _NoProfile extends StatelessWidget {
+  const _NoProfile();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const SizedBox(height: 60),
+        const Text('加微信前，先和我的 AI 聊聊',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        const Text('创建你的 AI 主页，让别人先认识你',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTheme.sub)),
+        const SizedBox(height: 40),
+        ElevatedButton(
+          onPressed: () => context.pushNamed('create'),
+          child: const Text('创建我的 AI 主页'),
+        ),
+      ],
+    );
+  }
+}
+
+class _HasProfile extends StatelessWidget {
+  const _HasProfile({required this.profile});
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppTheme.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(profile.realName,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(profile.title,
+                    style: const TextStyle(color: AppTheme.sub)),
+                if (profile.persona?.oneLiner != null) ...[
+                  const SizedBox(height: 12),
+                  Text(profile.persona!.oneLiner!,
+                      style: const TextStyle(height: 1.5)),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.visibility_outlined),
+          label: const Text('查看主页'),
+          onPressed: () =>
+              context.pushNamed('profile', pathParameters: {'id': profile.id}),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.ios_share),
+          label: const Text('分享海报'),
+          onPressed: () => context
+              .pushNamed('poster', pathParameters: {'profileId': profile.id}),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.settings_outlined),
+          label: const Text('设置'),
+          onPressed: () => context.pushNamed('settings'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.auto_awesome_outlined),
+          label: const Text('编辑人设（开场白·语气·音色）'),
+          onPressed: () => context.pushNamed('persona-edit'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.edit_outlined),
+          label: const Text('重填资料·重新生成'),
+          onPressed: () => context.pushNamed('create'),
+        ),
+      ],
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/plaza/plaza_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../data/api/plaza_api.dart';
+
+typedef _Query = ({String sort, String q});
+
+final _plazaProvider =
+    FutureProvider.family<List<PlazaCard>, _Query>((ref, query) async {
+  return ref.read(plazaApiProvider).list(sort: query.sort, q: query.q);
+});
+
+/// 人物广场（发现 Tab）：浏览公开的真人 AI 分身。
+class PlazaScreen extends ConsumerStatefulWidget {
+  const PlazaScreen({super.key});
+
+  @override
+  ConsumerState<PlazaScreen> createState() => _PlazaScreenState();
+}
+
+class _PlazaScreenState extends ConsumerState<PlazaScreen> {
+  String _sort = 'new';
+  String _q = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = (sort: _sort, q: _q);
+    final async = ref.watch(_plazaProvider(query));
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('广场'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(96),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (v) => setState(() => _q = v.trim()),
+                  decoration: InputDecoration(
+                    hintText: '搜索名字 / 方向 / 简介',
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppTheme.border),
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  const SizedBox(width: 12),
+                  _SortChip(
+                    label: '最新',
+                    selected: _sort == 'new',
+                    onTap: () => setState(() => _sort = 'new'),
+                  ),
+                  const SizedBox(width: 8),
+                  _SortChip(
+                    label: '最热',
+                    selected: _sort == 'hot',
+                    onTap: () => setState(() => _sort = 'hot'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+            ],
+          ),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(_plazaProvider(query)),
+        child: async.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => ListView(
+            children: [const SizedBox(height: 120), Center(child: Text('加载失败：$e'))],
+          ),
+          data: (cards) => cards.isEmpty
+              ? ListView(
+                  children: const [
+                    SizedBox(height: 120),
+                    Center(
+                      child: Text('还没有公开的 AI 分身',
+                          style: TextStyle(color: AppTheme.sub)),
+                    ),
+                  ],
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: cards.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => _Card(card: cards[i]),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  const _SortChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.card});
+  final PlazaCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.pushNamed('profile',
+          pathParameters: {'id': card.profileId}),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: AppTheme.bg,
+              backgroundImage: (card.avatarUrl != null &&
+                      card.avatarUrl!.isNotEmpty)
+                  ? NetworkImage(card.avatarUrl!)
+                  : null,
+              child: (card.avatarUrl == null || card.avatarUrl!.isEmpty)
+                  ? Text(
+                      card.realName.isNotEmpty ? card.realName[0] : '?',
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.w600),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(card.realName,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
+                      if (card.title != null && card.title!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(card.title!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: AppTheme.sub, fontSize: 13)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (card.oneLiner != null && card.oneLiner!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(card.oneLiner!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(height: 1.4)),
+                  ],
+                  if (card.tags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final t in card.tags.take(3))
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.bg,
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Text(t,
+                                style: const TextStyle(
+                                    fontSize: 11, color: AppTheme.sub)),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/poster/poster_screen.dart
+//==================================================================
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../core/network/api_exception.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/api/share_api.dart';
+import '../auth/wechat_auth_service.dart';
+
+final _bundleProvider =
+    FutureProvider.family<ShareBundle, String>((ref, id) async {
+  return ref.read(shareApiProvider).bundle(id);
+});
+
+/// 分享海报：渲染主页推广卡片 + 落地页二维码，支持微信/系统分享。
+class PosterScreen extends ConsumerStatefulWidget {
+  const PosterScreen({super.key, required this.profileId});
+
+  final String profileId;
+
+  @override
+  ConsumerState<PosterScreen> createState() => _PosterScreenState();
+}
+
+class _PosterScreenState extends ConsumerState<PosterScreen> {
+  final _boundaryKey = GlobalKey();
+  bool _busy = false;
+
+  Future<Uint8List?> _capture() async {
+    final boundary = _boundaryKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+    final image = await boundary.toImage(pixelRatio: 3);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return data?.buffer.asUint8List();
+  }
+
+  Future<void> _shareWeChat({required bool timeline}) async {
+    setState(() => _busy = true);
+    try {
+      final bytes = await _capture();
+      if (bytes == null) return;
+      await WeChatAuthService.instance.shareImage(bytes, timeline: timeline);
+    } on ApiException catch (e) {
+      _fallbackOrToast(e.message);
+    } catch (e) {
+      _toast('分享失败：$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _shareSystem() async {
+    setState(() => _busy = true);
+    try {
+      final bytes = await _capture();
+      if (bytes == null) return;
+      await Share.shareXFiles([
+        XFile.fromData(bytes, name: 'weifou_poster.png', mimeType: 'image/png'),
+      ]);
+    } catch (e) {
+      _toast('分享失败：$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _fallbackOrToast(String msg) {
+    // 微信未配置/未安装 → 提示并引导系统分享。
+    _toast('$msg，可改用系统分享');
+  }
+
+  void _toast(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(_bundleProvider(widget.profileId));
+    return Scaffold(
+      appBar: AppBar(title: const Text('分享海报')),
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('加载失败：$e')),
+        data: (b) => Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: RepaintBoundary(
+                    key: _boundaryKey,
+                    child: _PosterCard(bundle: b),
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _busy
+                            ? null
+                            : () => _shareWeChat(timeline: false),
+                        child: const Text('微信好友'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed:
+                            _busy ? null : () => _shareWeChat(timeline: true),
+                        child: const Text('朋友圈'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _busy ? null : _shareSystem,
+                        child: const Text('更多'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PosterCard extends StatelessWidget {
+  const _PosterCard({required this.bundle});
+  final ShareBundle bundle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 300,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            bundle.realName ?? bundle.nickname ?? '',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          if (bundle.oneLiner != null)
+            Text(bundle.oneLiner!,
+                style: const TextStyle(fontSize: 15, height: 1.5)),
+          if (bundle.tags.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final t in bundle.tags)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.border),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(t, style: const TextStyle(fontSize: 12)),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 24),
+          Center(
+            child: QrImageView(
+              data: bundle.shareUrl,
+              version: QrVersions.auto,
+              size: 140,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Center(
+            child: Text('扫码：加微信前，先和我的 AI 聊聊',
+                style: TextStyle(fontSize: 12, color: AppTheme.sub)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/profile/profile_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../data/api/profile_api.dart';
+import '../../data/models/profile.dart';
+
+/// 按 id 拉取主页（访客视图）。
+final profileProvider =
+    FutureProvider.family<Profile, String>((ref, id) async {
+  return ref.read(profileApiProvider).findOne(id);
+});
+
+/// 主页展示页：访客在此浏览并进入与 AI 的对话。
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key, required this.profileId});
+
+  final String profileId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(profileProvider(profileId));
+    return Scaffold(
+      appBar: AppBar(title: const Text('主页')),
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('加载失败：$e', textAlign: TextAlign.center),
+          ),
+        ),
+        data: (p) => _ProfileBody(profile: p),
+      ),
+      bottomNavigationBar: async.maybeWhen(
+        data: (p) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: Text('和 ${p.realName} 的 AI 聊聊'),
+              onPressed: () => context.pushNamed(
+                'chat',
+                pathParameters: {'profileId': p.id},
+                extra: p,
+              ),
+            ),
+          ),
+        ),
+        orElse: () => null,
+      ),
+    );
+  }
+}
+
+class _ProfileBody extends StatelessWidget {
+  const _ProfileBody({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final persona = profile.persona;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          profile.realName,
+          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          [profile.title, profile.company, profile.city]
+              .where((e) => e != null && e.isNotEmpty)
+              .join(' · '),
+          style: const TextStyle(color: AppTheme.sub, fontSize: 14),
+        ),
+        if (persona?.oneLiner != null) ...[
+          const SizedBox(height: 20),
+          Text(persona!.oneLiner!,
+              style: const TextStyle(fontSize: 17, height: 1.5)),
+        ],
+        if (persona?.tags.isNotEmpty ?? false) ...[
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final t in persona!.tags)
+                Chip(
+                  label: Text(t),
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppTheme.border),
+                ),
+            ],
+          ),
+        ],
+        if (persona?.fullIntro != null) ...[
+          const SizedBox(height: 24),
+          const Text('关于',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(persona!.fullIntro!,
+              style: const TextStyle(height: 1.6, color: AppTheme.ink)),
+        ],
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+}
+
+//==================================================================
+// 文件: lib/features/settings/settings_screen.dart
+//==================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../data/api/profile_api.dart';
+import '../../data/models/profile.dart';
+
+/// 设置页（首版）：联系方式与可见性、形象标识。
+/// 付费咨询开关/定价随咨询功能一起推迟。
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(myProfileProvider);
+    return Scaffold(
+      appBar: AppBar(title: const Text('设置')),
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('加载失败：$e')),
+        data: (p) => p == null
+            ? const Center(child: Text('请先创建 AI 主页'))
+            : _SettingsForm(profile: p),
+      ),
+    );
+  }
+}
+
+class _SettingsForm extends ConsumerStatefulWidget {
+  const _SettingsForm({required this.profile});
+  final Profile profile;
+
+  @override
+  ConsumerState<_SettingsForm> createState() => _SettingsFormState();
+}
+
+class _SettingsFormState extends ConsumerState<_SettingsForm> {
+  late final TextEditingController _wechat =
+      TextEditingController(text: widget.profile.contactWechat ?? '');
+  late final TextEditingController _phone =
+      TextEditingController(text: widget.profile.contactPhone ?? '');
+  late bool _visible = widget.profile.contactVisible;
+  late bool _discoverable = widget.profile.discoverable;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _wechat.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(profileApiProvider).updateContact(
+            wechat: _wechat.text.trim(),
+            phone: _phone.text.trim(),
+            visible: _visible,
+          );
+      ref.invalidate(myProfileProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('已保存')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('保存失败：$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const Text('联系方式',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _wechat,
+          decoration: const InputDecoration(
+            labelText: '微信号',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _phone,
+          keyboardType: TextInputType.phone,
+          decoration: const InputDecoration(
+            labelText: '手机号',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('对访客公开联系方式'),
+          subtitle: const Text('关闭后访客看不到你的微信/手机',
+              style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+          value: _visible,
+          onChanged: (v) => setState(() => _visible = v),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? '保存中…' : '保存'),
+        ),
+        const Divider(height: 48),
+        const Text('人物广场',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('公开到人物广场'),
+          subtitle: const Text('开启后他人可在广场发现你的 AI 分身；关闭则仅靠分享链接访问',
+              style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+          value: _discoverable,
+          onChanged: (v) async {
+            final messenger = ScaffoldMessenger.of(context);
+            setState(() => _discoverable = v);
+            try {
+              await ref.read(profileApiProvider).updateDiscoverable(v);
+              ref.invalidate(myProfileProvider);
+            } catch (e) {
+              if (mounted) setState(() => _discoverable = !v);
+              messenger.showSnackBar(SnackBar(content: Text('设置失败：$e')));
+            }
+          },
+        ),
+      ],
+    );
+  }
+}

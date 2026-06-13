@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "AI 主页",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
+  "usingComponents": {
+    "avatar": "/components/avatar/index"
+  }
+}

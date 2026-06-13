@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="hero">
+    <view class="brand">微否 · weifou</view>
+    <view class="headline">别人加你微信前\n先和你的 AI 聊聊</view>
+    <view class="sub muted">
+      一个 24 小时在线、越来越懂你的{'\n'}AI 代理人主页
+    </view>
+  </view>
+
+  <view class="cta-area" wx:if="{{!loading}}">
+    <button class="btn-accent" bindtap="goOnboarding" wx:if="{{!profileId}}">和 AI 聊几句，生成我的主页</button>
+    <button class="btn-primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 主页</button>
+    <button class="btn-ghost" bindtap="goInbox" wx:if="{{profileId}}">收件箱 · 待回答 / 访客线索</button>
+    <button class="btn-ghost" bindtap="goCreate" wx:if="{{profileId}}">重新编辑</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading muted">加载中…</view>
+
+  <view class="hint muted">
+    像聊天一样回答几句，AI 就为你生成一个可以被提问、可以被分享的个人主页。
+  </view>
+</view>

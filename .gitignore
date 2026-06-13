@@ -1,0 +1,28 @@
+# ===== 顶层敏感文件（绝不提交）=====
+/server.pem
+*.pem
+*.key
+*.p12
+.env
+.env.local
+.deploy.env
+*.local
+
+# ===== 系统 / 编辑器 =====
+.DS_Store
+*.log
+.idea/
+*.iml
+.vscode/
+
+# ===== 防御性兜底：重型构建产物 =====
+# 各子工程已有自己的 .gitignore（git 会逐级 respect），此处再兜一层防误提交。
+weifou-app/build/
+weifou-app/.dart_tool/
+weifou-app/ios/Pods/
+weifou-app/ios/.symlinks/
+weifou-app/ios/Flutter/ephemeral/
+weifou-app/android/.gradle/
+weifou-server/bin/
+weifou-server/tmp/
+weifou-server/server

@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="card">
+    <view class="section-title">新增档期</view>
+    <view class="row">
+      <view class="label">日期</view>
+      <picker mode="date" value="{{date}}" start="{{today}}" bindchange="onDate">
+        <view class="picker-val">{{date}}</view>
+      </picker>
+    </view>
+    <view class="row">
+      <view class="label">时间</view>
+      <picker mode="time" value="{{time}}" bindchange="onTime">
+        <view class="picker-val">{{time}}</view>
+      </picker>
+    </view>
+    <view class="row">
+      <view class="label">时长</view>
+      <view class="dur-opts">
+        <view class="dur {{durationMin === 30 ? 'active' : ''}}" bindtap="setDur" data-min="30">30 分钟</view>
+        <view class="dur {{durationMin === 60 ? 'active' : ''}}" bindtap="setDur" data-min="60">60 分钟</view>
+      </view>
+    </view>
+    <button class="btn-primary save" bindtap="addSlot" disabled="{{saving}}">添加这个档期</button>
+  </view>
+
+  <view class="card">
+    <view class="section-title">已开放档期</view>
+    <view wx:if="{{slots.length === 0}}" class="muted empty">还没有可约档期</view>
+    <view class="slot" wx:for="{{slots}}" wx:key="id">
+      <view class="slot-info">
+        <view class="slot-time">{{item.timeText}}</view>
+        <view class="slot-meta muted">{{item.durationMin}} 分钟 · {{statusText[item.status]}}</view>
+      </view>
+      <view class="slot-del" wx:if="{{item.status === 'open'}}" bindtap="del" data-id="{{item.id}}">删除</view>
+    </view>
+  </view>
+</view>

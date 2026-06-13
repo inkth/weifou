@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/onboarding/index",
+    "pages/create/index",
+    "pages/generating/index",
+    "pages/profile/index",
+    "pages/chat/index",
+    "pages/poster/index",
+    "pages/settings/index",
+    "pages/call/index",
+    "pages/sessions/index",
+    "pages/slots/index",
+    "pages/inbox/index",
+    "pages/replay/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "微否",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6fa"
+  },
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.5",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}
