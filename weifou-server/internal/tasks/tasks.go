@@ -33,6 +33,8 @@ func (s *Scheduler) Start() {
 	s.cron.AddFunc("@every 5m", s.releaseExpiredSlots)
 	// 每 5 分钟爽约自动退款
 	s.cron.AddFunc("@every 5m", s.autoRefundNoShow)
+	// 每 5 分钟超时未答的付费提问自动退款
+	s.cron.AddFunc("@every 5m", s.autoRefundOverdueQuestions)
 	s.cron.Start()
 	log.Println("[tasks] cron started")
 }
@@ -78,6 +80,21 @@ func (s *Scheduler) autoRefundNoShow() {
 			log.Printf("[tasks] 自动退款失败 session=%s: %v", sess.ID, err)
 		} else {
 			log.Printf("[tasks] 爽约自动退款 session=%s", sess.ID)
+		}
+	}
+}
+
+// autoRefundOverdueQuestions 主人未在 SLA 时限内回答的付费提问，自动全额退款。
+func (s *Scheduler) autoRefundOverdueQuestions() {
+	now := time.Now()
+	var candidates []models.AsyncQuestion
+	s.db.Where("status = ? AND answer_deadline IS NOT NULL AND answer_deadline < ?", models.AsyncPaid, now).
+		Limit(100).Find(&candidates)
+	for _, q := range candidates {
+		if err := s.payment.RefundAsyncQuestion(q.OrderID, "主人未在时限内回答，系统已自动全额退款"); err != nil {
+			log.Printf("[tasks] 付费提问自动退款失败 q=%s: %v", q.ID, err)
+		} else {
+			log.Printf("[tasks] 付费提问超时自动退款 q=%s", q.ID)
 		}
 	}
 }

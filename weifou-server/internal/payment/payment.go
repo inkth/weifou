@@ -22,12 +22,14 @@ type Handler struct {
 	pay          *wxpay.Client
 	security     *wechat.SecurityService
 	profitShare  *ProfitShareService
+	subscribe    *wechat.SubscribeService
 	jwtSecret    string
 	tipMaxAmount int
+	asyncSLAHrs  int
 }
 
-func NewHandler(db *gorm.DB, pay *wxpay.Client, security *wechat.SecurityService, ps *ProfitShareService, jwtSecret string, tipMax int) *Handler {
-	return &Handler{db: db, pay: pay, security: security, profitShare: ps, jwtSecret: jwtSecret, tipMaxAmount: tipMax}
+func NewHandler(db *gorm.DB, pay *wxpay.Client, security *wechat.SecurityService, ps *ProfitShareService, subscribe *wechat.SubscribeService, jwtSecret string, tipMax, asyncSLAHrs int) *Handler {
+	return &Handler{db: db, pay: pay, security: security, profitShare: ps, subscribe: subscribe, jwtSecret: jwtSecret, tipMaxAmount: tipMax, asyncSLAHrs: asyncSLAHrs}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
@@ -178,6 +180,40 @@ func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string, profi
 	return nil
 }
 
+// PrepayOrder 通用预下单：业务方建好 order 后调用，复用下单 + 返回 payParams（如付费提问）。
+func (h *Handler) PrepayOrder(c *gin.Context, order *models.Order, desc string, profitSharing bool) error {
+	return h.prepay(c, order, desc, profitSharing)
+}
+
+// Settle 触发分账（供异步咨询等业务在「服务交付」时刻调用）。
+func (h *Handler) Settle(orderID string) {
+	h.profitShare.SettleForOrder(orderID)
+}
+
+// notifyHostNewQuestion 给主人下发「有新的付费提问」订阅消息（按小程序 openid，纯 App 主人会静默失败）。
+func (h *Handler) notifyHostNewQuestion(orderID string) {
+	if h.subscribe == nil {
+		return
+	}
+	var q models.AsyncQuestion
+	if h.db.First(&q, "order_id = ?", orderID).Error != nil {
+		return
+	}
+	var host models.User
+	if h.db.First(&host, "id = ?", q.HostUserID).Error != nil {
+		return
+	}
+	openid := host.Openid
+	if host.WxMpOpenid != nil && *host.WxMpOpenid != "" {
+		openid = *host.WxMpOpenid
+	}
+	deadline := time.Now()
+	if q.AnswerDeadline != nil {
+		deadline = *q.AnswerDeadline
+	}
+	h.subscribe.NotifyNewQuestion(openid, q.Question, q.Price, deadline, "pages/inbox/index")
+}
+
 func (h *Handler) getOrder(c *gin.Context) error {
 	var order models.Order
 	if err := h.db.First(&order, "id = ?", c.Param("id")).Error; err != nil {
@@ -188,10 +224,16 @@ func (h *Handler) getOrder(c *gin.Context) error {
 	if err := h.db.First(&session, "order_id = ?", order.ID).Error; err == nil {
 		consultSessionID = session.ID
 	}
+	var asyncQuestionID interface{}
+	var aq models.AsyncQuestion
+	if err := h.db.First(&aq, "order_id = ?", order.ID).Error; err == nil {
+		asyncQuestionID = aq.ID
+	}
 	httpx.OK(c, gin.H{
 		"id": order.ID, "type": order.Type, "status": order.Status,
 		"amount": order.Amount, "durationMin": order.DurationMin,
 		"consultSessionId": consultSessionID,
+		"asyncQuestionId":  asyncQuestionID,
 	})
 	return nil
 }
@@ -272,6 +314,18 @@ func (h *Handler) handlePaid(res wxpay.NotifyResource) error {
 			})
 		}
 	}
+
+	if order.Type == models.OrderAsyncQuestion {
+		deadline := now.Add(time.Duration(h.asyncSLAHrs) * time.Hour)
+		res := h.db.Model(&models.AsyncQuestion{}).
+			Where("order_id = ? AND status = ?", order.ID, models.AsyncPendingPayment).
+			Updates(map[string]interface{}{
+				"status": models.AsyncPaid, "paid_at": now, "answer_deadline": deadline,
+			})
+		if res.RowsAffected > 0 {
+			go h.notifyHostNewQuestion(order.ID)
+		}
+	}
 	return nil
 }
 
@@ -319,7 +373,12 @@ func (h *Handler) RefundConsult(orderID, userID, openid, reason string) error {
 			return httpx.BadRequest("CALL_STARTED", "通话已开始或结束，不支持退款")
 		}
 	}
+	return h.doRefund(&order, reason)
+}
 
+// doRefund 执行退款（建退款单→置订单退款中→调微信退款→成功则 finalize）。
+// 调用方负责业务前置校验与并发认领。
+func (h *Handler) doRefund(order *models.Order, reason string) error {
 	outRefundNo := idgen.WithPrefix("RFD")
 	refund := models.Refund{
 		ID: idgen.New(), OrderID: order.ID, OutRefundNo: outRefundNo,
@@ -329,7 +388,7 @@ func (h *Handler) RefundConsult(orderID, userID, openid, reason string) error {
 		refund.Reason = &reason
 	}
 	h.db.Create(&refund)
-	h.db.Model(&order).Update("status", models.OrderRefunding)
+	h.db.Model(order).Update("status", models.OrderRefunding)
 
 	resp, err := h.pay.Refund(wxpay.RefundReq{
 		OutTradeNo: order.OutTradeNo, OutRefundNo: outRefundNo,
@@ -337,12 +396,47 @@ func (h *Handler) RefundConsult(orderID, userID, openid, reason string) error {
 	})
 	if err != nil {
 		h.db.Model(&refund).Update("status", models.RefundFail)
-		h.db.Model(&order).Update("status", models.OrderPaid)
+		h.db.Model(order).Update("status", models.OrderPaid)
 		return httpx.Internal("WXPAY_REFUND_FAILED", "退款失败，请稍后重试")
 	}
 	h.db.Model(&refund).Update("refund_id", resp.RefundID)
 	if resp.Status == "SUCCESS" {
 		h.finalizeRefund(order.ID, refund.ID)
+	}
+	return nil
+}
+
+// RefundAsyncQuestion 付费提问退款（超时未答自动退 / 主人主动退）。供定时任务复用。
+func (h *Handler) RefundAsyncQuestion(orderID, reason string) error {
+	var order models.Order
+	if err := h.db.First(&order, "id = ?", orderID).Error; err != nil {
+		return httpx.NotFound("ORDER_NOT_FOUND", "订单不存在")
+	}
+	if order.Type != models.OrderAsyncQuestion {
+		return httpx.BadRequest("NOT_REFUNDABLE", "该订单不支持退款")
+	}
+	if order.Status != models.OrderPaid {
+		return httpx.BadRequest("ORDER_NOT_PAID", "订单不可退款")
+	}
+	// 原子认领 paid→refunded，胜出者执行退款，防止与「主人作答」竞态。
+	claim := h.db.Model(&models.AsyncQuestion{}).
+		Where("order_id = ? AND status = ?", order.ID, models.AsyncPaid).
+		Update("status", models.AsyncRefunded)
+	if claim.RowsAffected == 0 {
+		return httpx.BadRequest("NOT_REFUNDABLE", "提问当前不可退款")
+	}
+	if err := h.doRefund(&order, reason); err != nil {
+		// 退款发起失败：回滚认领，让下一轮可重试。
+		h.db.Model(&models.AsyncQuestion{}).
+			Where("order_id = ? AND status = ?", order.ID, models.AsyncRefunded).
+			Update("status", models.AsyncPaid)
+		return err
+	}
+	if h.subscribe != nil {
+		var q models.AsyncQuestion
+		if h.db.First(&q, "order_id = ?", order.ID).Error == nil && q.AskerOpenid != "" {
+			go h.subscribe.NotifyRefunded(q.AskerOpenid, q.Question, order.Amount, reason, "pages/my-questions/index")
+		}
 	}
 	return nil
 }
@@ -354,6 +448,7 @@ func (h *Handler) finalizeRefund(orderID, refundID string) {
 		tx.First(&order, "id = ?", orderID)
 		tx.Model(&order).Update("status", models.OrderRefunded)
 		tx.Model(&models.ConsultSession{}).Where("order_id = ?", orderID).Update("status", models.ConsultCanceled)
+		tx.Model(&models.AsyncQuestion{}).Where("order_id = ?", orderID).Update("status", models.AsyncRefunded)
 		if order.SlotID != nil {
 			tx.Model(&models.ConsultSlot{}).Where("id = ?", *order.SlotID).Update("status", models.SlotOpen)
 			tx.Model(&models.Order{}).Where("id = ?", orderID).Update("slot_id", nil)

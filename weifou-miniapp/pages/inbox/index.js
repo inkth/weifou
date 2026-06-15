@@ -1,12 +1,15 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fmtDateTime } = require('../../utils/datetime');
+const { fenToYuan } = require('../../utils/pay');
+const { hostQuestions } = require('../../utils/asyncq');
 
 Page({
   data: {
-    tab: 'gaps', // gaps | leads | knowledge | sessions
+    tab: 'gaps', // gaps | questions | leads | knowledge | sessions
     loading: true,
     gaps: [],
+    questions: [], // 付费提问（待我回答 / 已回答 / 已退款）
     leads: [],
     knowledge: [],
     sessions: [], // 会话回放：助理替我接待的访客对话
@@ -22,18 +25,25 @@ Page({
   async loadAll() {
     this.setData({ loading: true });
     try {
-      const [gaps, leads, knowledge, sessions] = await Promise.all([
+      const [gaps, leads, knowledge, sessions, questions] = await Promise.all([
         request({ url: '/profile/gaps' }),
         request({ url: '/profile/leads' }),
         request({ url: '/profile/knowledge' }),
         // 会话列表失败不拖垮整页（如尚未创建主页）
         request({ url: '/chat/sessions/host' }).catch(() => []),
+        hostQuestions().catch(() => []),
       ]);
       this.setData({
         gaps: gaps || [],
         leads: (leads || []).map((l) => ({ ...l, timeText: fmtDateTime(l.createdAt) })),
         knowledge: knowledge || [],
         sessions: (sessions || []).map((s) => ({ ...s, timeText: fmtDateTime(s.updatedAt) })),
+        questions: (questions || []).map((q) => ({
+          ...q,
+          priceYuan: fenToYuan(q.price),
+          timeText: fmtDateTime(q.createdAt),
+          statusText: q.status === 'paid' ? '待回答' : q.status === 'answered' ? '已回答' : '已退款',
+        })),
         loading: false,
       });
     } catch (e) {
@@ -50,6 +60,12 @@ Page({
   goReplay(e) {
     const { id, name } = e.currentTarget.dataset;
     wx.navigateTo({ url: `/pages/replay/index?sessionId=${id}&name=${encodeURIComponent(name || '访客')}` });
+  },
+
+  // 付费提问 → 详情/回答页
+  goQuestion(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/question-detail/index?id=${id}` });
   },
 
   // 回答一条缺口 → 入知识库，Agent 立刻变聪明

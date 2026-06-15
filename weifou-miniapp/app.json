@@ -12,7 +12,10 @@
     "pages/sessions/index",
     "pages/slots/index",
     "pages/inbox/index",
-    "pages/replay/index"
+    "pages/replay/index",
+    "pages/ask/index",
+    "pages/question-detail/index",
+    "pages/my-questions/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

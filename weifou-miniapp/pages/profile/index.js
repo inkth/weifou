@@ -71,6 +71,9 @@ Page({
           pricing.price30Yuan = fenToYuan(pricing.price30);
           pricing.price60Yuan = fenToYuan(pricing.price60);
         }
+        if (pricing.asyncEnabled) {
+          pricing.asyncPriceYuan = fenToYuan(pricing.asyncPrice);
+        }
         this.setData({ pricing });
       } catch (e) {}
     }
@@ -103,6 +106,18 @@ Page({
 
   goSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
+  },
+
+  // 付费向本人提问（异步咨询）
+  goAsk() {
+    const p = this.data.profile;
+    wx.navigateTo({
+      url: `/pages/ask/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(p.realName)}&source=profile`,
+    });
+  },
+
+  goMyQuestions() {
+    wx.navigateTo({ url: '/pages/my-questions/index' });
   },
 
   // 裂变：访客页脚 → 快速创建（带来源归因；已有主页的用户会自动进入完整编辑态）

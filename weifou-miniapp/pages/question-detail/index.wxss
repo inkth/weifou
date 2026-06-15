@@ -1,0 +1,11 @@
+.empty { text-align: center; padding: 80rpx 0; }
+.qd-status { font-weight: 700; font-size: 30rpx; margin-bottom: 12rpx; }
+.qd-status.paid { color: #fb923c; }
+.qd-status.answered { color: #16a34a; }
+.qd-status.refunded { color: #999; }
+.qd-label { font-size: 24rpx; margin-bottom: 8rpx; }
+.qd-question { font-size: 32rpx; line-height: 1.6; margin-bottom: 12rpx; }
+.qd-answer { font-size: 30rpx; line-height: 1.7; margin-bottom: 12rpx; white-space: pre-wrap; }
+.qd-deadline, .qd-refunded { font-size: 26rpx; line-height: 1.5; }
+.qd-input { width: 100%; min-height: 240rpx; font-size: 30rpx; line-height: 1.6; margin-top: 8rpx; }
+.qd-submit { margin-top: 24rpx; }

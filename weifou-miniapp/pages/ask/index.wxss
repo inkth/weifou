@@ -1,0 +1,13 @@
+.empty { text-align: center; padding: 80rpx 0; }
+.ask-title { font-size: 34rpx; font-weight: 600; margin-bottom: 8rpx; }
+.ask-sub { font-size: 26rpx; line-height: 1.5; margin-bottom: 20rpx; }
+.ask-input { width: 100%; min-height: 220rpx; font-size: 30rpx; line-height: 1.6; }
+.ask-count { text-align: right; font-size: 22rpx; margin-top: 8rpx; }
+.promise { margin-top: 20rpx; }
+.promise-row { display: flex; justify-content: space-between; align-items: center; }
+.promise-k { font-size: 26rpx; }
+.promise-v { font-size: 40rpx; font-weight: 700; color: #fb923c; }
+.promise-note { font-size: 24rpx; margin-top: 12rpx; line-height: 1.5; }
+.hl { color: #fb923c; }
+.ask-pay { margin-top: 30rpx; }
+.ask-foot { font-size: 22rpx; text-align: center; margin-top: 16rpx; }

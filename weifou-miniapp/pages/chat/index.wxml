@@ -65,6 +65,7 @@
 
     <block wx:if="{{answeredOnce && !isMine}}">
       <view class="chip act" wx:if="{{contactAvailable}}" bindtap="onContact">联系本人</view>
+      <view class="chip act" wx:if="{{asyncAvailable}}" bindtap="goAsk">✍️ 付费问本人{{asyncPriceYuan ? ' ¥' + asyncPriceYuan : ''}}</view>
       <view class="chip act" wx:if="{{consultAvailable}}" bindtap="goProfileAction">约 TA 聊聊</view>
       <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
     </block>

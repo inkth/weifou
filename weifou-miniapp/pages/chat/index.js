@@ -24,6 +24,8 @@ Page({
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
     contactAvailable: false,
     consultAvailable: false,
+    asyncAvailable: false, // 是否开放付费提问
+    asyncPriceYuan: '',
     isMine: false, // 主人预览自己的 AI（profile 页透传 mine=1）
     hasOwnProfile: true, // 默认 true：确认是"无主页访客"前不展示裂变钩子
     notFound: false,
@@ -98,7 +100,11 @@ Page({
     // 是否开放付费咨询（用于行动选项）
     try {
       const pricing = await request({ url: `/consult/pricing/${profileId}` });
-      this.setData({ consultAvailable: !!pricing.enabled });
+      this.setData({
+        consultAvailable: !!pricing.enabled,
+        asyncAvailable: !!pricing.asyncEnabled,
+        asyncPriceYuan: pricing.asyncEnabled ? fenToYuan(pricing.asyncPrice) : '',
+      });
     } catch (e) {}
   },
 
@@ -392,5 +398,12 @@ Page({
   // from=chat 必带：否则 profile 的访客分流会把页面弹回 chat 造成死循环。
   goProfileAction() {
     wx.navigateTo({ url: `/pages/profile/index?id=${this.data.profileId}&from=chat` });
+  },
+
+  // 行动选项：付费向本人提问（异步咨询）
+  goAsk() {
+    wx.navigateTo({
+      url: `/pages/ask/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(this.data.realName)}&source=chat_card`,
+    });
   },
 });

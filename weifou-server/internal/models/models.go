@@ -47,8 +47,8 @@ type Profile struct {
 	// 裂变归因：创建者是体验了谁的 Agent 后转化来的（仅创建时写入，不更新）。
 	ReferrerProfileID *string   `gorm:"size:32;index" json:"referrerProfileId,omitempty"`
 	Status            string    `gorm:"size:16;default:draft;index" json:"status"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
 }
 
 func (Profile) TableName() string { return "profiles" }
@@ -204,21 +204,25 @@ func (ChatMessage) TableName() string { return "chat_messages" }
 // ========== 付费 ==========
 
 type ConsultSetting struct {
-	ID        string    `gorm:"primaryKey;size:32" json:"id"`
-	UserID    string    `gorm:"uniqueIndex;size:32" json:"userId"`
-	Enabled   bool      `gorm:"default:false" json:"enabled"`
-	Price30   int       `gorm:"default:9900" json:"price30"`
-	Price60   int       `gorm:"default:19900" json:"price60"`
-	Intro     *string   `gorm:"type:text" json:"intro,omitempty"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID      string  `gorm:"primaryKey;size:32" json:"id"`
+	UserID  string  `gorm:"uniqueIndex;size:32" json:"userId"`
+	Enabled bool    `gorm:"default:false" json:"enabled"`
+	Price30 int     `gorm:"default:9900" json:"price30"`
+	Price60 int     `gorm:"default:19900" json:"price60"`
+	Intro   *string `gorm:"type:text" json:"intro,omitempty"`
+	// 付费异步咨询（独立于音视频咨询开关，可只开异步）。
+	AsyncEnabled bool      `gorm:"default:false" json:"asyncEnabled"`
+	AsyncPrice   int       `gorm:"default:4900" json:"asyncPrice"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 func (ConsultSetting) TableName() string { return "consult_settings" }
 
 const (
-	OrderTip     = "tip"
-	OrderConsult = "consult"
+	OrderTip           = "tip"
+	OrderConsult       = "consult"
+	OrderAsyncQuestion = "async_question"
 
 	OrderPending   = "pending"
 	OrderPaid      = "paid"
@@ -295,6 +299,37 @@ type ConsultSlot struct {
 
 func (ConsultSlot) TableName() string { return "consult_slots" }
 
+// ========== 付费异步咨询（付费向本人提问，本人异步作答） ==========
+
+const (
+	AsyncPendingPayment = "pending_payment" // 已创建，待支付
+	AsyncPaid           = "paid"            // 已支付，待主人作答
+	AsyncAnswered       = "answered"        // 主人已作答
+	AsyncRefunded       = "refunded"        // 超时未答自动退款 / 退款
+)
+
+// AsyncQuestion 访客付费向主人提问，主人在 SLA 时限内异步作答；
+// 超时未答由定时任务自动全额退款。付费购买的是「主人本人作答」（真人服务），非 AI 回答。
+type AsyncQuestion struct {
+	ID             string     `gorm:"primaryKey;size:32" json:"id"`
+	OrderID        string     `gorm:"uniqueIndex;size:32" json:"orderId"`
+	ProfileID      string     `gorm:"size:32;index" json:"profileId"`
+	HostUserID     string     `gorm:"size:32;index:idx_aq_host_status" json:"hostUserId"`
+	AskerOpenid    string     `gorm:"size:64;index:idx_aq_asker" json:"askerOpenid"`
+	AskerUserID    *string    `gorm:"size:32" json:"askerUserId,omitempty"`
+	Question       string     `gorm:"type:text" json:"question"`
+	Price          int        `json:"price"` // 下单时主人定价快照（分）
+	Status         string     `gorm:"size:16;default:pending_payment;index:idx_aq_host_status" json:"status"`
+	PaidAt         *time.Time `json:"paidAt,omitempty"`
+	AnswerDeadline *time.Time `json:"answerDeadline,omitempty"`
+	Answer         string     `gorm:"type:text" json:"answer"`
+	AnsweredAt     *time.Time `json:"answeredAt,omitempty"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
+}
+
+func (AsyncQuestion) TableName() string { return "async_questions" }
+
 const (
 	RefundProcessing = "processing"
 	RefundSuccess    = "success"
@@ -344,6 +379,7 @@ func AllModels() []interface{} {
 		&KnowledgeItem{}, &KnowledgeGap{}, &Lead{},
 		&Visit{}, &Event{}, &ChatSession{}, &ChatMessage{},
 		&ConsultSetting{}, &Order{}, &ConsultSession{}, &ConsultSlot{},
+		&AsyncQuestion{},
 		&Refund{}, &ProfitShare{},
 	}
 }

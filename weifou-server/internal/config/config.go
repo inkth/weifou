@@ -49,6 +49,13 @@ type Config struct {
 	TRTCSdkAppID int
 	TRTCSecret   string
 	TRTCSigExp   int
+
+	// 付费异步咨询
+	AsyncQSLAHours           int    // 主人作答时限（小时），超时自动退款
+	SubscribeNewQuestionTmpl string // 订阅消息模板：新付费提问→主人
+	SubscribeAnsweredTmpl    string // 订阅消息模板：已回答→访客
+	SubscribeRefundedTmpl    string // 订阅消息模板：已退款→访客
+	SubscribeMiniState       string // formal / trial / developer
 }
 
 func getEnv(key, def string) string {
@@ -125,5 +132,11 @@ func Load() *Config {
 		TRTCSdkAppID: getInt("TRTC_SDK_APPID", 0),
 		TRTCSecret:   os.Getenv("TRTC_SECRET_KEY"),
 		TRTCSigExp:   getInt("TRTC_SIG_EXPIRE", 86400),
+
+		AsyncQSLAHours:           getInt("ASYNCQ_SLA_HOURS", 48),
+		SubscribeNewQuestionTmpl: os.Getenv("WX_SUBSCRIBE_NEW_QUESTION_TMPL_ID"),
+		SubscribeAnsweredTmpl:    os.Getenv("WX_SUBSCRIBE_ANSWERED_TMPL_ID"),
+		SubscribeRefundedTmpl:    os.Getenv("WX_SUBSCRIBE_REFUNDED_TMPL_ID"),
+		SubscribeMiniState:       getEnv("WX_SUBSCRIBE_STATE", "formal"),
 	}
 }

@@ -49,6 +49,13 @@
     </view>
   </view>
 
+  <view class="card section consult" wx:if="{{!isMine && pricing.asyncEnabled}}">
+    <view class="section-title">付费向本人提问</view>
+    <view class="consult-price muted">¥{{pricing.asyncPriceYuan}} / 个问题 · 由 {{profile.realName}} 本人作答</view>
+    <button class="btn-primary book-btn" bindtap="goAsk">写下你的问题</button>
+    <view class="consult-note muted" bindtap="goMyQuestions">超时未答全额退款 · 我的提问 ›</view>
+  </view>
+
   <view class="card section consult" wx:if="{{!isMine && pricing.enabled}}">
     <view class="section-title">预约付费咨询</view>
     <view class="consult-intro muted" wx:if="{{pricing.intro}}">{{pricing.intro}}</view>

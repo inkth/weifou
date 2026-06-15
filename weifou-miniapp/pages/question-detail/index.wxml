@@ -1,0 +1,38 @@
+<view class="page" wx:if="{{q}}">
+  <view class="card">
+    <view class="qd-status {{q.status}}">{{q.statusText}} · ¥{{q.priceYuan}}</view>
+    <view class="qd-label muted">{{role === 'host' ? '访客的问题' : '我的提问'}}</view>
+    <view class="qd-question">{{q.question}}</view>
+    <view class="meta muted">{{q.createdText}}</view>
+  </view>
+
+  <!-- 待回答：截止时间提醒 -->
+  <view wx:if="{{q.status === 'paid' && q.deadlineText}}" class="card qd-deadline muted">
+    {{role === 'host' ? '请在 ' + q.deadlineText + ' 前回答，超时将自动全额退款给访客。' : '对方将在 ' + q.deadlineText + ' 前回答，超时自动全额退款给你。'}}
+  </view>
+
+  <!-- 已回答：展示答案 -->
+  <view wx:if="{{q.status === 'answered'}}" class="card">
+    <view class="qd-label muted">{{role === 'host' ? '你的回答' : (q.realName || 'TA') + ' 的回答'}}</view>
+    <view class="qd-answer">{{q.answer}}</view>
+    <view class="meta muted">{{q.answeredText}}</view>
+  </view>
+
+  <!-- 已退款 -->
+  <view wx:if="{{q.status === 'refunded'}}" class="card qd-refunded muted">
+    {{role === 'host' ? '该提问已超时，已自动退款给访客。' : '对方未在时限内回答，已为你全额退款。'}}
+  </view>
+
+  <!-- 主人作答输入（仅 host 且待回答） -->
+  <block wx:if="{{role === 'host' && q.status === 'paid'}}">
+    <view class="card">
+      <view class="qd-label">你的回答</view>
+      <textarea class="qd-input" placeholder="认真回答 —— 访客付费购买的就是你这段回答" maxlength="2000" value="{{answer}}" bindinput="onAnswerInput" auto-height/>
+    </view>
+    <button class="btn-primary qd-submit" bindtap="submit" disabled="{{submitting || !answer}}">
+      {{submitting ? '提交中…' : '提交回答'}}
+    </button>
+  </block>
+</view>
+
+<view wx:if="{{!q && !loading}}" class="empty muted">提问不存在或无权查看</view>

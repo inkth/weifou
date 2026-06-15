@@ -5,6 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"weifou-server/internal/asyncq"
 	"weifou-server/internal/auth"
 	"weifou-server/internal/chat"
 	"weifou-server/internal/config"
@@ -35,6 +36,7 @@ type App struct {
 	shareH   *share.Handler
 	consultH *consult.Handler
 	paymentH *payment.Handler
+	asyncqH  *asyncq.Handler
 	rtcH     *rtc.Handler
 	plazaH   *plaza.Handler
 
@@ -50,6 +52,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		appLoginClient = wechat.NewLoginClient(cfg.WxMobileAppID, cfg.WxMobileSecret)
 	}
 	security := wechat.NewSecurityService(loginClient)
+	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeMiniState)
 	ds := deepseek.New(cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel)
 	payClient := wxpay.New(wxpay.Config{
 		AppID:            cfg.WxAppID,
@@ -64,7 +67,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	// 业务服务
 	personaSvc := persona.NewService(db, ds, security)
 	profitShare := payment.NewProfitShareService(db, payClient, cfg.ProfitSharing, cfg.PlatformFeeRate)
-	paymentH := payment.NewHandler(db, payClient, security, profitShare, cfg.JWTSecret, cfg.TipMaxAmount)
+	paymentH := payment.NewHandler(db, payClient, security, profitShare, subscribe, cfg.JWTSecret, cfg.TipMaxAmount, cfg.AsyncQSLAHours)
 
 	a := &App{
 		cfg:      cfg,
@@ -76,6 +79,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		shareH:   share.NewHandler(db, loginClient),
 		consultH: consult.NewHandler(db, cfg.JWTSecret),
 		paymentH: paymentH,
+		asyncqH:  asyncq.NewHandler(db, paymentH, security, subscribe, cfg.JWTSecret),
 		rtcH: rtc.NewHandler(db, profitShare, rtc.Config{
 			JWTSecret:    cfg.JWTSecret,
 			SdkAppID:     cfg.TRTCSdkAppID,
@@ -101,6 +105,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.shareH.Register(api)
 	a.consultH.Register(api)
 	a.paymentH.Register(api)
+	a.asyncqH.Register(api)
 	a.rtcH.Register(api)
 	a.plazaH.Register(api)
 }

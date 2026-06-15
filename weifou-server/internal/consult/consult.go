@@ -37,7 +37,7 @@ func (h *Handler) mySetting(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var s models.ConsultSetting
 	if err := h.db.First(&s, "user_id = ?", auth.UserID).Error; err != nil {
-		httpx.OK(c, gin.H{"enabled": false, "price30": 9900, "price60": 19900, "intro": nil})
+		httpx.OK(c, gin.H{"enabled": false, "price30": 9900, "price60": 19900, "intro": nil, "asyncEnabled": false, "asyncPrice": 4900})
 		return nil
 	}
 	httpx.OK(c, s)
@@ -45,10 +45,12 @@ func (h *Handler) mySetting(c *gin.Context) error {
 }
 
 type settingReq struct {
-	Enabled *bool   `json:"enabled"`
-	Price30 *int    `json:"price30"`
-	Price60 *int    `json:"price60"`
-	Intro   *string `json:"intro"`
+	Enabled      *bool   `json:"enabled"`
+	Price30      *int    `json:"price30"`
+	Price60      *int    `json:"price60"`
+	Intro        *string `json:"intro"`
+	AsyncEnabled *bool   `json:"asyncEnabled"`
+	AsyncPrice   *int    `json:"asyncPrice"`
 }
 
 func (h *Handler) updateSetting(c *gin.Context) error {
@@ -62,7 +64,7 @@ func (h *Handler) updateSetting(c *gin.Context) error {
 	if err == gorm.ErrRecordNotFound {
 		s = models.ConsultSetting{
 			ID: idgen.New(), UserID: auth.UserID,
-			Price30: 9900, Price60: 19900,
+			Price30: 9900, Price60: 19900, AsyncPrice: 4900,
 		}
 		if req.Enabled != nil {
 			s.Enabled = *req.Enabled
@@ -72,6 +74,12 @@ func (h *Handler) updateSetting(c *gin.Context) error {
 		}
 		if req.Price60 != nil {
 			s.Price60 = *req.Price60
+		}
+		if req.AsyncEnabled != nil {
+			s.AsyncEnabled = *req.AsyncEnabled
+		}
+		if req.AsyncPrice != nil {
+			s.AsyncPrice = *req.AsyncPrice
 		}
 		s.Intro = req.Intro
 		h.db.Create(&s)
@@ -89,6 +97,12 @@ func (h *Handler) updateSetting(c *gin.Context) error {
 		if req.Intro != nil {
 			updates["intro"] = *req.Intro
 		}
+		if req.AsyncEnabled != nil {
+			updates["async_enabled"] = *req.AsyncEnabled
+		}
+		if req.AsyncPrice != nil {
+			updates["async_price"] = *req.AsyncPrice
+		}
 		if len(updates) > 0 {
 			h.db.Model(&s).Updates(updates)
 		}
@@ -102,12 +116,21 @@ func (h *Handler) pricing(c *gin.Context) error {
 	if err := h.db.First(&profile, "id = ?", c.Param("profileId")).Error; err != nil {
 		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
 	}
+	resp := gin.H{"enabled": false, "asyncEnabled": false}
 	var s models.ConsultSetting
-	if err := h.db.First(&s, "user_id = ?", profile.UserID).Error; err != nil || !s.Enabled {
-		httpx.OK(c, gin.H{"enabled": false})
-		return nil
+	if err := h.db.First(&s, "user_id = ?", profile.UserID).Error; err == nil {
+		if s.Enabled {
+			resp["enabled"] = true
+			resp["price30"] = s.Price30
+			resp["price60"] = s.Price60
+			resp["intro"] = s.Intro
+		}
+		if s.AsyncEnabled {
+			resp["asyncEnabled"] = true
+			resp["asyncPrice"] = s.AsyncPrice
+		}
 	}
-	httpx.OK(c, gin.H{"enabled": true, "price30": s.Price30, "price60": s.Price60, "intro": s.Intro})
+	httpx.OK(c, resp)
 	return nil
 }
 

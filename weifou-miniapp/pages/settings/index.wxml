@@ -34,7 +34,18 @@
   </view>
 
   <view class="card">
-    <view class="section-title">付费咨询</view>
+    <view class="section-title">付费服务</view>
+    <view class="row">
+      <view class="label flex-1">开放付费提问（异步，推荐）</view>
+      <switch checked="{{consult.asyncEnabled}}" bindchange="onAsyncSwitch"/>
+    </view>
+    <block wx:if="{{consult.asyncEnabled}}">
+      <view class="field">
+        <view class="label">每个问题价格（元）</view>
+        <input class="input" type="digit" value="{{consult.asyncPriceYuan}}" bindinput="onConsultInput" data-key="asyncPriceYuan"/>
+      </view>
+      <view class="muted" style="font-size:24rpx;line-height:1.5;margin:4rpx 0 12rpx;">访客付费提问，由你本人异步作答；超时未答自动全额退款。</view>
+    </block>
     <view class="row">
       <view class="label flex-1">开放付费语音/视频咨询</view>
       <switch checked="{{consult.enabled}}" bindchange="onConsultSwitch"/>
