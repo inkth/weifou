@@ -64,8 +64,9 @@ show_status() {
 
 sync_files() {
     info "同步源码 $LOCAL_DIR/ → $REMOTE_HOST:$REMOTE_DIR ..."
-    # 排除:服务器端真源(.env/备份)、密钥、TLS 证书、acme 续期状态、构建产物。
+    # 排除:服务器端真源(.env/备份)、密钥、TLS 证书、acme 续期状态、续期脚本、构建产物。
     # 这些被 --delete 误删会导致掉密钥/证书无法续期,务必排除。
+    # renew-cert.sh 是服务器端续期脚本(root crontab 调用),不在仓库内,曾被 --delete 误删。
     rsync -avz --delete \
         --exclude '.git' \
         --exclude '.env' \
@@ -74,6 +75,7 @@ sync_files() {
         --exclude '*.pem' \
         --exclude 'certs/' \
         --exclude 'acme/' \
+        --exclude 'renew-cert.sh' \
         --exclude 'bin/' \
         --exclude 'tmp/' \
         --exclude '*.test' \
