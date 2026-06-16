@@ -32,11 +32,11 @@
 .q { font-size: 40rpx; font-weight: 700; color: #fff; line-height: 1.4; text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.4); }
 .q-sub { font-size: 24rpx; color: rgba(255, 255, 255, 0.6); margin-top: 12rpx; }
 
+/* 原生 input/textarea 不加 backdrop-filter（会让占位文字重影），用接近不透明深底保证清晰 */
 .glass-input, .glass-area {
   width: 100%; box-sizing: border-box; margin-top: 28rpx;
-  background: rgba(18, 20, 28, 0.42);
-  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.32);
+  background: rgba(20, 22, 30, 0.72);
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
   border-radius: 24rpx; padding: 26rpx 28rpx; font-size: 30rpx; color: #fff;
 }
 .glass-area { min-height: 168rpx; line-height: 1.5; }
