@@ -1,4 +1,10 @@
-<view class="page">
+<view class="page {{liheSrc ? 'lihe' : ''}}">
+  <!-- 全屏立绘背景（星野式）：avatar 为 image 类型时铺满，气泡浮于其上；fixed 不随消息滚动 -->
+  <view wx:if="{{liheSrc}}" class="lihe-bg">
+    <image class="lihe-img" src="{{liheSrc}}" mode="aspectFill"/>
+    <view class="lihe-scrim"></view>
+  </view>
+
   <!-- 主页不存在 / 参数缺失空态 -->
   <view wx:if="{{notFound}}" class="empty">
     <view class="empty-title">主页不存在或已下线</view>
@@ -6,13 +12,34 @@
   </view>
 
   <block wx:else>
-  <!-- 头部即名片入口：点击进完整主页（预约/打赏/联系都在那） -->
-  <view class="chat-header" bindtap="goProfile">
-    <avatar preset="{{avatarStyle}}" name="{{realName}}" seed="{{profileId}}" size="96" state="{{introState || (pending ? 'speaking' : 'idle')}}"/>
-    <view class="header-meta">
-      <view class="header-name">{{realName ? realName + ' 的 AI 助理' : '正在连线…'}} <text class="header-more">›</text></view>
+  <!-- 角色舞台：点击任意处进完整主页（预约/打赏/联系都在那）。
+       tier-* 切氛围档、ambStyle 注入头像同色系光晕、stageEntered 触发开幕、
+       (pending||introState) 让整台戏随思考/说话升温 -->
+  <view class="stage tier-{{stageTier}} {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}}"
+        style="{{ambStyle}}" bindtap="openAbout">
+    <view class="amb-layer">
+      <view class="amb-wash"></view>
+      <view class="amb-glow"></view>
+      <view class="amb-blob amb-blob-1"></view>
+      <view class="amb-blob amb-blob-2"></view>
+    </view>
+
+    <view class="stage-avatar">
+      <view class="stage-av-inner {{delight ? 'delight' : ''}}">
+        <avatar preset="{{avatarStyle}}" name="{{realName}}" seed="{{profileId}}" size="180"
+                active="{{pending || !!introState}}"
+                state="{{introState || (pending ? 'thinking' : 'idle')}}"/>
+      </view>
+    </view>
+
+    <view class="stage-meta">
+      <view class="stage-name">{{realName ? realName + ' 的 AI 助理' : '正在连线…'}} <text class="stage-more">›</text></view>
       <!-- 副标题优先 oneLiner：访客 3 秒内完成"这是谁、值不值得聊"的判断 -->
-      <view class="header-status muted">{{oneLiner || (pending ? '思考中…' : '助理在线 · 点这里看 TA 的主页')}}</view>
+      <view class="stage-status muted">{{oneLiner || (pending ? '思考中…' : '助理在线 · 点这里看 TA 的主页')}}</view>
+    </view>
+
+    <view class="stage-indicator {{(pending || introState === 'thinking') ? 'on' : ''}}">
+      <view class="dot"></view><view class="dot"></view><view class="dot"></view>
     </view>
   </view>
 
@@ -52,10 +79,6 @@
         <button class="own-cta-btn" bindtap="goCreateOwn">请一位我的 AI 助理</button>
       </view>
     </block>
-
-    <view wx:if="{{pending}}" class="msg msg-assistant">
-      <view class="bubble dim">思考中…</view>
-    </view>
   </scroll-view>
 
   <!-- 选项区：开场动画结束后引导问题淡入；行动入口在首轮回答后才出现，开场聚焦"开始聊" -->
@@ -64,9 +87,11 @@
     <view class="chip q" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
 
     <block wx:if="{{answeredOnce && !isMine}}">
+      <view class="chip act" bindtap="openAbout">关于 TA</view>
       <view class="chip act" wx:if="{{contactAvailable}}" bindtap="onContact">联系本人</view>
       <view class="chip act" wx:if="{{asyncAvailable}}" bindtap="goAsk">✍️ 付费问本人{{asyncPriceYuan ? ' ¥' + asyncPriceYuan : ''}}</view>
-      <view class="chip act" wx:if="{{consultAvailable}}" bindtap="goProfileAction">约 TA 聊聊</view>
+      <view class="chip act" wx:if="{{consultAvailable}}" bindtap="openSlots">约 TA 聊聊</view>
+      <view class="chip act" bindtap="openTip">打赏 TA</view>
       <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
     </block>
     <view class="chip ghost" bindtap="toggleInput">{{showInput ? '收起输入' : '✏️ 自己问'}}</view>
@@ -75,6 +100,49 @@
   <view class="composer" wx:if="{{showInput}}">
     <input class="input" placeholder="请输入你的问题" value="{{draft}}" maxlength="200" bindinput="onInput" confirm-type="send" bindconfirm="send" focus="{{showInput}}"/>
     <button class="send" bindtap="send" disabled="{{pending || !draft}}">发送</button>
+  </view>
+
+  <!-- 页内浮层：关于 TA / 打赏 / 约档期（毛玻璃底部抽屉，访客不离立绘）-->
+  <view class="mask" wx:if="{{aboutVisible}}" bindtap="closeAbout">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">{{realName}}{{title ? ' · ' + title : ''}}</view>
+      <view class="sheet-sub" wx:if="{{company || city}}">{{company}}{{company && city ? ' · ' : ''}}{{city}}</view>
+      <view class="sheet-oneliner" wx:if="{{oneLiner}}">{{oneLiner}}</view>
+      <view class="sheet-tags" wx:if="{{tags.length}}">
+        <text class="sheet-tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
+      </view>
+      <view class="sheet-intro" wx:if="{{fullIntro}}">{{fullIntro}}</view>
+    </view>
+  </view>
+
+  <view class="mask" wx:if="{{tipVisible}}" bindtap="closeTip">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">打赏 {{realName}}</view>
+      <view class="sheet-sub">自愿赠予，表达你的认可</view>
+      <view class="tip-amounts">
+        <view class="tip-amount {{tipAmount === item ? 'on' : ''}}" wx:for="{{tipPresets}}" wx:key="*this" data-amount="{{item}}" bindtap="selectTip">¥{{item}}</view>
+      </view>
+      <input class="sheet-input" placeholder="留句话（选填）" placeholder-style="color: rgba(255,255,255,0.45)" maxlength="60" value="{{tipMessage}}" bindinput="onTipMsg"/>
+      <button class="sheet-pay" bindtap="payTip" disabled="{{tipPaying}}">{{tipPaying ? '处理中…' : '确认打赏 ¥' + tipAmount}}</button>
+    </view>
+  </view>
+
+  <view class="mask" wx:if="{{slotsVisible}}" bindtap="closeSlots">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">选个时间，和 {{realName}} 面对面</view>
+      <view class="sheet-sub">支付成功后按所选时间进入通话</view>
+      <view class="slot-list">
+        <view wx:if="{{slotList.length === 0}}" class="sheet-empty">对方暂无可约档期</view>
+        <view class="slot-pick {{selectedSlotId === item.id ? 'on' : ''}}" wx:for="{{slotList}}" wx:key="id" data-id="{{item.id}}" bindtap="selectSlot">
+          <view class="sp-time">{{item.timeText}}</view>
+          <view class="sp-meta">{{item.durationMin}} 分钟 · ¥{{item.priceYuan}}</view>
+        </view>
+      </view>
+      <button class="sheet-pay" bindtap="paySlot" disabled="{{!selectedSlotId || booking}}">{{booking ? '下单中…' : '支付并预约'}}</button>
+    </view>
   </view>
   </block>
 </view>

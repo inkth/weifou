@@ -1,5 +1,20 @@
+@import "../../styles/stage.wxss";
+
 .page { padding: 24rpx; }
-.tip { font-size: 24rpx; margin-bottom: 24rpx; }
+.replay-head {
+  position: relative;
+  overflow: hidden;
+  margin: -24rpx -24rpx 20rpx;
+  padding: 28rpx 24rpx;
+  background: #fff;
+  border-bottom: 2rpx solid var(--border);
+}
+.replay-head .amb-glow { background: radial-gradient(170rpx 120rpx at 14% 50%, var(--amb-a, #fb923c) 0%, transparent 72%); opacity: 0.16; }
+.replay-head-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 12rpx; }
+.presence-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: var(--success); animation: presencePulse 2s ease-in-out infinite; }
+@keyframes presencePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); } 50% { box-shadow: 0 0 0 10rpx rgba(16, 185, 129, 0); } }
+.replay-head-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.replay-head-sub { position: relative; z-index: 1; font-size: 22rpx; margin-top: 6rpx; }
 .empty { text-align: center; padding: 120rpx 0; font-size: 26rpx; }
 .muted { color: #9aa0ad; }
 

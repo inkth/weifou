@@ -2,8 +2,9 @@ const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fenToYuan } = require('../../utils/pay');
 const { fmtDateTime } = require('../../utils/datetime');
-const { bookConsult } = require('../../utils/consult');
+const { bookConsult, sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
+const { tierForPreset, getPreset } = require('../../utils/avatars');
 
 // 从小程序码 scene（URL-encoded 的 "id=xxx"）解析 profileId
 function parseScene(scene) {
@@ -35,6 +36,18 @@ Page({
     introState: '', // 开场动画期间覆盖 avatar 状态（thinking/speaking）
     acting: false, // 对话内成交卡片支付中
     showInput: false, // “自己问”展开自由输入
+    // —— 沉浸式对话舞台 ——
+    stageTier: 'warm', // 氛围档 cool|warm|lively（驱动 .tier-* class），骨架首帧用默认暖底
+    ambStyle: '', // 注入头像同色系光晕的内联 CSS 变量（--amb-a/--amb-b）
+    stageEntered: false, // 开幕（curtain-up）触发；与拉取资料的等待重叠
+    delight: false, // 一次性"欣喜"beat（开场 & 成交/留资后）
+    liheSrc: '', // 全屏立绘图：avatar 为 image 类型时启用"星野式"全屏立绘模式
+    // —— 访客页内浮层（不跳 profile）：关于 / 打赏 / 约档期 ——
+    title: '', company: '', city: '', tags: [], fullIntro: '',
+    pricing: {},
+    aboutVisible: false,
+    tipVisible: false, tipPresets: [6, 18, 66, 88], tipAmount: 18, tipMessage: '', tipPaying: false,
+    slotsVisible: false, slotList: [], selectedSlotId: '', booking: false,
   },
 
   async onLoad(query) {
@@ -51,7 +64,9 @@ Page({
       avatarStyle: query.avatarStyle || '',
       isMine: query.mine === '1',
       introState: 'thinking',
+      stageEntered: true, // 立刻开幕：开幕动画与拉取资料的等待重叠
     });
+    this._applyStageTheme(); // query 已带形象时先推一版氛围；拿到 /profile 后再覆盖
 
     try {
       await ensureLogin();
@@ -80,7 +95,10 @@ Page({
         oneLiner: persona.oneLiner || '',
         starters: persona.starters || [],
         contactAvailable: !!p.contactVisible,
+        title: p.title || '', company: p.company || '', city: p.city || '',
+        tags: persona.tags || [], fullIntro: persona.fullIntro || '',
       });
+      this._applyStageTheme(); // 用最终 avatarStyle 推导氛围档 + 光晕色
       // 打字机开场只惊艳一次：回访（含主人反复自测）直接显示全文，把效率还给第二次
       const introKey = `weifou_intro_${profileId}`;
       const introOneLiner = persona.greeting ? persona.oneLiner : '';
@@ -100,7 +118,10 @@ Page({
     // 是否开放付费咨询（用于行动选项）
     try {
       const pricing = await request({ url: `/consult/pricing/${profileId}` });
+      if (pricing.enabled) { pricing.price30Yuan = fenToYuan(pricing.price30); pricing.price60Yuan = fenToYuan(pricing.price60); }
+      if (pricing.asyncEnabled) { pricing.asyncPriceYuan = fenToYuan(pricing.asyncPrice); }
       this.setData({
+        pricing,
         consultAvailable: !!pricing.enabled,
         asyncAvailable: !!pricing.asyncEnabled,
         asyncPriceYuan: pricing.asyncEnabled ? fenToYuan(pricing.asyncPrice) : '',
@@ -110,22 +131,56 @@ Page({
 
   onUnload() {
     this._abortIntro();
+    if (this._delightTimer) { clearTimeout(this._delightTimer); this._delightTimer = null; }
   },
 
-  // —— 开场三拍：thinking → greeting 打字机 → 一句话介绍 → starters 淡入 ——
+  // 由当前 avatarStyle 推导舞台氛围档（驱动 .tier-*）+ 注入头像同色系光晕（--amb-a/b）
+  _applyStageTheme() {
+    const id = this.data.avatarStyle || '';
+    const tier = tierForPreset(id, this.data.profileId);
+    const p = getPreset(id, this.data.profileId);
+    const c0 = (p.colors && p.colors[0]) || '#fb923c';
+    const c1 = (p.colors && p.colors[1]) || c0;
+    // image 类型形象（如古风美女立绘）→ 启用全屏立绘模式，取 idle 图铺底
+    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : '';
+    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};`, liheSrc });
+  },
+
+  // —— 开场：台上沉思一拍 → greeting 打字机 → 一句话介绍 → starters 淡入 ——
+  // 开幕(stageEntered)已在 onLoad 早置、与拉取资料的等待重叠；这里只管"说话"节奏。
   async _playIntro(greeting, oneLiner) {
     this._introAborted = false;
-    await this._wait(300);
+    await this._wait(500); // 台上沉思一拍（introState 此时已是 thinking）
+    if (this._introAborted) return this._settleIntro();
+    if (typeof wx.vibrateShort === 'function') {
+      try { wx.vibrateShort({ type: 'light' }); } catch (e) {} // 首访开口轻震，失败静默
+    }
+    this._fireDelight(); // 开口同时一次性"欣喜"
     this.setData({ introState: 'speaking', messages: [{ role: 'assistant', content: '' }] });
     await this._typeMessage(0, greeting);
-    if (oneLiner && !this._introAborted) {
+    if (oneLiner) {
+      if (this._introAborted) return this._settleIntro();
       await this._wait(400);
       this.setData({
         messages: this.data.messages.concat({ role: 'assistant', content: '' }),
       });
       await this._typeMessage(this.data.messages.length - 1, `“${oneLiner}”`);
     }
+    this._settleIntro();
+  },
+
+  _settleIntro() {
     this.setData({ introState: '', startersRevealed: true });
+  },
+
+  // 一次性"欣喜"beat：开场 / 预约成交 / 留资成功时让台上角色轻跳一下
+  _fireDelight() {
+    this.setData({ delight: true });
+    if (this._delightTimer) clearTimeout(this._delightTimer);
+    this._delightTimer = setTimeout(() => {
+      this._delightTimer = null;
+      this.setData({ delight: false });
+    }, 750); // 与 delightBounce keyframe 时长一致
   },
 
   // 打字机渲染单条消息；用路径 setData 只更新该条，避免整组重设
@@ -152,19 +207,26 @@ Page({
     });
   },
 
+  // 等待 ms；被 _abortIntro 抢断时立即 resolve（不留悬挂的 await）
   _wait(ms) {
     return new Promise((r) => {
-      this._waitTimer = setTimeout(r, ms);
+      this._waitResolve = r;
+      this._waitTimer = setTimeout(() => {
+        this._waitTimer = null;
+        this._waitResolve = null;
+        r();
+      }, ms);
     });
   },
 
   // 用户提前交互（点 chip / 输入）→ 立即放完动画，绝不让用户等
   _abortIntro() {
     this._introAborted = true;
-    if (this._typeTimer) clearInterval(this._typeTimer);
-    if (this._waitTimer) clearTimeout(this._waitTimer);
-    if (!this.data.startersRevealed) {
-      this.setData({ introState: '', startersRevealed: true });
+    if (this._typeTimer) { clearInterval(this._typeTimer); this._typeTimer = null; }
+    if (this._waitTimer) { clearTimeout(this._waitTimer); this._waitTimer = null; }
+    if (this._waitResolve) { const r = this._waitResolve; this._waitResolve = null; r(); } // 解除悬挂的 _wait
+    if (!this.data.startersRevealed || !this.data.stageEntered) {
+      this.setData({ startersRevealed: true, stageEntered: true });
     }
   },
 
@@ -289,6 +351,7 @@ Page({
         }),
       });
       wx.showToast({ title: '预约成功', icon: 'success' });
+      this._fireDelight();
       this._showOwnHook('strong');
     } catch (err) {
       this.setData({ acting: false });
@@ -385,6 +448,7 @@ Page({
             }),
           });
           wx.showToast({ title: '已送达', icon: 'success' });
+          this._fireDelight();
           this._showOwnHook('strong');
         } catch (err) {
           wx.showToast({ title: err.message || '发送失败', icon: 'none' });
@@ -405,5 +469,64 @@ Page({
     wx.navigateTo({
       url: `/pages/ask/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(this.data.realName)}&source=chat_card`,
     });
+  },
+
+  // —— 页内浮层：关于 TA ——
+  openAbout() { this.setData({ aboutVisible: true }); },
+  closeAbout() { this.setData({ aboutVisible: false }); },
+  noop() {},
+
+  // —— 页内浮层：打赏 ——
+  openTip() { this.setData({ tipVisible: true }); },
+  closeTip() { this.setData({ tipVisible: false }); },
+  selectTip(e) { this.setData({ tipAmount: e.currentTarget.dataset.amount }); },
+  onTipMsg(e) { this.setData({ tipMessage: e.detail.value }); },
+  async payTip() {
+    if (this.data.tipPaying) return;
+    this.setData({ tipPaying: true });
+    try {
+      await sendTip(this.data.profileId, Math.round(this.data.tipAmount * 100), this.data.tipMessage, 'chat');
+      this.setData({ tipVisible: false, tipMessage: '' });
+      wx.showToast({ title: '感谢你的支持', icon: 'success' });
+      this._fireDelight();
+      this._showOwnHook('strong');
+    } catch (e) {
+      if (e.code !== 'PAY_CANCEL') wx.showToast({ title: e.message || '打赏失败', icon: 'none' });
+    } finally {
+      this.setData({ tipPaying: false });
+    }
+  },
+
+  // —— 页内浮层：约档期 ——
+  async openSlots() {
+    this.setData({ slotsVisible: true, selectedSlotId: '' });
+    try {
+      const slots = await request({ url: `/consult/slots/public/${this.data.profileId}` });
+      slots.forEach((s) => {
+        s.timeText = fmtDateTime(s.startAt);
+        s.priceYuan = s.durationMin === 60 ? this.data.pricing.price60Yuan : this.data.pricing.price30Yuan;
+      });
+      this.setData({ slotList: slots });
+    } catch (e) { this.setData({ slotList: [] }); }
+  },
+  closeSlots() { this.setData({ slotsVisible: false }); },
+  selectSlot(e) { this.setData({ selectedSlotId: e.currentTarget.dataset.id }); },
+  async paySlot() {
+    if (!this.data.selectedSlotId || this.data.booking) return;
+    this.setData({ booking: true });
+    try {
+      await bookConsult(this.data.profileId, this.data.selectedSlotId, 'chat');
+      this.setData({
+        slotsVisible: false,
+        messages: this.data.messages.concat({ role: 'assistant', content: '预约成功 ✅ 可在「我的通话」按时进入。', action: 'go-sessions' }),
+      });
+      wx.showToast({ title: '预约成功', icon: 'success' });
+      this._fireDelight();
+      this._showOwnHook('strong');
+    } catch (e) {
+      if (e.code !== 'PAY_CANCEL') wx.showToast({ title: e.message || '预约失败', icon: 'none' });
+    } finally {
+      this.setData({ booking: false });
+    }
   },
 });

@@ -23,6 +23,11 @@ Page({
     wx.navigateTo({ url: '/pages/onboarding/index' });
   },
 
+  // 捏 Agent：点选式创建（Phase 1）
+  goBuild() {
+    wx.navigateTo({ url: '/pages/build/index' });
+  },
+
   goCreate() {
     wx.navigateTo({ url: '/pages/create/index' });
   },

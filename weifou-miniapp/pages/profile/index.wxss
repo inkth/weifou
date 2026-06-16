@@ -1,6 +1,17 @@
+@import "../../styles/stage.wxss";
+
 .page { padding: 32rpx 32rpx 120rpx; }
 
-.hero { margin-bottom: 24rpx; }
+.hero {
+  margin-bottom: 24rpx;
+  position: relative;
+  overflow: hidden;
+  animation: heroRise 0.5s ease both;
+}
+@keyframes heroRise { from { opacity: 0; transform: translateY(10rpx); } to { opacity: 1; transform: none; } }
+/* hero 内容压在氛围层之上；光晕落到左侧头像处 */
+.hero-row, .one-liner, .tags { position: relative; z-index: 1; }
+.hero .amb-glow { background: radial-gradient(160rpx 160rpx at 16% 46%, var(--amb-a, #fb923c) 0%, transparent 70%); opacity: 0.18; }
 .hero-row { display: flex; align-items: center; gap: 24rpx; }
 .avatar {
   width: 120rpx;
@@ -94,8 +105,16 @@
 }
 .tip-pay { margin-top: 8rpx; }
 
-/* —— 生成完成晒点 —— */
-.fresh-card { padding: 32rpx; text-align: center; }
+/* —— 生成完成晒点（庆祝时刻，暖底+弹入；非成交区，可升温）—— */
+.fresh-card {
+  padding: 32rpx;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--accent-soft), #fff 70%);
+  animation: freshPop 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes freshPop { from { opacity: 0; transform: translateY(12rpx) scale(0.98); } to { opacity: 1; transform: none; } }
 .fresh-title { font-size: 36rpx; font-weight: 700; color: #1f2330; }
 .fresh-sub { font-size: 26rpx; margin: 12rpx 0 8rpx; }
 .fresh-starters { margin-bottom: 20rpx; }

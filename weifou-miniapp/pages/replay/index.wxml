@@ -1,5 +1,15 @@
 <view class="page">
-  <view class="tip muted">「{{visitorName}}」与你的 AI 助理的对话</view>
+  <view class="replay-head tier-warm stage-in">
+    <view class="amb-layer">
+      <view class="amb-wash"></view>
+      <view class="amb-glow"></view>
+    </view>
+    <view class="replay-head-row">
+      <view class="presence-dot"></view>
+      <view class="replay-head-name">你的 AI 助理</view>
+    </view>
+    <view class="replay-head-sub muted">与「{{visitorName}}」的对话回放</view>
+  </view>
 
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
   <view wx:if="{{!loading && !messages.length}}" class="empty muted">这个会话还没有消息</view>

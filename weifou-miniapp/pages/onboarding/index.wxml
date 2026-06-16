@@ -1,7 +1,15 @@
 <view class="ob">
+  <!-- 与首页/build 统一：古风美女立绘全屏铺底 + 暗场 -->
+  <image class="bg-lihe" src="/assets/avatars/gf-meinv_idle.webp" mode="aspectFill"/>
+  <view class="bg-scrim"></view>
+
   <view class="ob-hero">
-    <avatar preset="{{avatarPreset}}" name="{{form.realName}}" seed="onboarding" size="120" state="{{avatarState}}"/>
-    <view class="ob-hero-title">先聊几句，我来替你写主页</view>
+    <view class="ob-helper">
+      <view class="stage-av-inner {{delight ? 'delight' : ''}}">
+        <avatar preset="{{avatarPreset}}" name="" seed="onboarding" size="56" state="{{avatarState}}"/>
+      </view>
+      <view class="ob-hero-title">先聊几句，我来替你写主页</view>
+    </view>
     <view class="ob-hero-sub muted">不用填表，说说就好</view>
   </view>
 
@@ -23,7 +31,7 @@
       <view class="ob-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
         <view class="ob-mic-i"></view>
       </view>
-      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" value="{{input}}"
+      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" placeholder-style="color: rgba(255,255,255,0.5)" value="{{input}}"
              confirm-type="send" bindinput="onInput" bindconfirm="onSend"
              disabled="{{submitting || recording}}"/>
       <view class="ob-send {{input ? '' : 'off'}}" bindtap="onSend">

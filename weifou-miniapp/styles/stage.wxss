@@ -1,0 +1,70 @@
+/* 共享：角色舞台 / 氛围词汇（对话页 + 主页 hero 等"参与类"界面复用）。
+   只含可复用原子：氛围层 / 温度档 tint / 开幕 / 状态耦合 / 思考指示器 / 欣喜。
+   各页自带容器尺寸（如 .stage / .hero 的高宽布局），不在此文件。
+   纪律：氛围只做低 alpha tint，绝不实心填充；成交/支付/资质区不引入本词汇。 */
+
+/* 氛围层：纯 CSS、低 alpha，仅 transform/opacity 动画；pointer-events:none 让点击落到容器 */
+.amb-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0; overflow: hidden; }
+.stage-in .amb-layer { animation: ambBloom 0.9s ease forwards; }
+@keyframes ambBloom { to { opacity: 1; } }
+
+.amb-wash { position: absolute; inset: 0; opacity: 0.55; }
+/* 光晕：取头像同色系（容器 style 注入 --amb-a），整体低不透明度，氛围才"是 TA 的" */
+.amb-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(130rpx 130rpx at 50% 40%, var(--amb-a, #fb923c) 0%, transparent 72%);
+  opacity: 0.16;
+  filter: blur(2rpx);
+}
+.amb-blob { position: absolute; width: 240rpx; height: 240rpx; border-radius: 50%; filter: blur(40rpx); opacity: 0.14; }
+.amb-blob-1 { left: -60rpx; top: -40rpx; background: var(--amb-a, #fb923c); animation: ambDrift1 11s ease-in-out infinite; }
+.amb-blob-2 { right: -70rpx; bottom: -50rpx; background: var(--amb-b, #f59e0b); animation: ambDrift2 13s ease-in-out infinite; }
+@keyframes ambDrift1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(24rpx, 18rpx); } }
+@keyframes ambDrift2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-20rpx, -16rpx); } }
+
+/* 温度档：只重着色 wash + 调 blob 透明度，绝不实心填充（守强调色红线） */
+.tier-cool .amb-wash { background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(245, 246, 250, 0)); }
+.tier-cool .amb-blob { opacity: 0.10; }
+.tier-warm .amb-wash { background: linear-gradient(180deg, rgba(251, 146, 60, 0.07), rgba(245, 246, 250, 0)); }
+.tier-lively .amb-wash { background: linear-gradient(180deg, rgba(168, 85, 247, 0.07), rgba(34, 211, 238, 0.04)); }
+.tier-lively .amb-blob { opacity: 0.16; animation-duration: 9s; }
+
+/* 角色本体 + 名牌：开幕前隐藏，容器加 .stage-in 时升入 */
+.stage-avatar { position: relative; z-index: 1; opacity: 0; transform: translateY(8rpx) scale(0.86); }
+.stage-av-inner { display: inline-flex; }
+.stage-meta {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  opacity: 0; transform: translateY(8rpx);
+}
+.stage-name { font-size: 32rpx; font-weight: 600; color: var(--ink); }
+.stage-more { color: #9aa0ad; font-weight: 400; }
+.stage-status {
+  font-size: 24rpx; margin-top: 2rpx; max-width: 80vw; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.stage-in .stage-avatar { animation: stageRise 0.62s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+.stage-in .stage-meta { animation: metaRise 0.5s ease 0.18s forwards; }
+@keyframes stageRise { to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes metaRise { to { transform: translateY(0); opacity: 1; } }
+
+/* 状态耦合：思考/说话时光晕脉冲升温（头像更快呼吸由组件 active 处理） */
+.stage-active .amb-glow { animation: glowPulse 1.6s ease-in-out infinite; }
+@keyframes glowPulse { 0%, 100% { opacity: 0.16; } 50% { opacity: 0.30; } }
+
+/* 思考指示器（3 点） */
+.stage-indicator { position: relative; z-index: 1; height: 0; opacity: 0; display: flex; gap: 8rpx; transition: opacity 0.25s ease; }
+.stage-indicator.on { height: auto; opacity: 1; }
+.stage-indicator .dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: var(--sub); animation: dotBob 1s ease-in-out infinite; }
+.stage-indicator .dot:nth-child(2) { animation-delay: 0.15s; }
+.stage-indicator .dot:nth-child(3) { animation-delay: 0.30s; }
+@keyframes dotBob { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-6rpx); opacity: 1; } }
+
+/* 一次性"欣喜"：与 curtain 分属不同元素（inner vs avatar），互不打架 */
+.stage-av-inner.delight { animation: delightBounce 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes delightBounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.10) translateY(-6rpx); }
+  55% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}

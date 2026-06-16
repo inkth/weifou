@@ -1,22 +1,32 @@
 <view class="page">
+  <!-- 全屏角色立绘背景（新用户铺 demo；固定不滚，所有操作浮其上）-->
+  <image wx:if="{{!profileId && !loading}}" class="bg-lihe" src="/assets/avatars/gf-meinv_idle.webp" mode="aspectFill"/>
+  <view class="bg-scrim"></view>
+
   <view class="hero">
     <view class="brand">微否 · weifou</view>
-    <view class="headline">别人加你微信前\n先和你的 AI 聊聊</view>
-    <view class="sub muted">
-      一个 24 小时在线、越来越懂你的{'\n'}AI 代理人主页
+    <view class="headline">{{profileId ? '我的 AI 助理' : '创建你的 AI 助理'}}</view>
+  </view>
+
+  <view class="grow"></view>
+
+  <!-- 新用户：示例助理名牌 + 招呼气泡（毛玻璃浮层）-->
+  <view class="float" wx:if="{{!profileId && !loading}}">
+    <view class="float-id">
+      <text class="float-name">苏窈 的 AI 助理</text>
+      <view class="dot"></view><text class="float-on">在线</text>
     </view>
+    <view class="float-bubble">我是苏窈的 AI 助理，茶席、香道、古琴的事都能问我——想先了解她，还是直接约一席？<text class="caret"></text></view>
+    <view class="float-note">示例 · 你的 AI 上岗后就这样接待访客</view>
   </view>
 
-  <view class="cta-area" wx:if="{{!loading}}">
-    <button class="btn-accent" bindtap="goOnboarding" wx:if="{{!profileId}}">和 AI 聊几句，生成我的主页</button>
-    <button class="btn-primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 主页</button>
-    <button class="btn-ghost" bindtap="goInbox" wx:if="{{profileId}}">收件箱 · 待回答 / 访客线索</button>
-    <button class="btn-ghost" bindtap="goCreate" wx:if="{{profileId}}">重新编辑</button>
+  <!-- 操作区：全部毛玻璃半透明 -->
+  <view class="actions" wx:if="{{!loading}}">
+    <button class="glass-btn primary" bindtap="goBuild" wx:if="{{!profileId}}">开始创建我的 AI 助理</button>
+    <button class="glass-btn primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 主页</button>
+    <button class="glass-btn" bindtap="goInbox" wx:if="{{profileId}}">收件箱 · 待回答 / 访客线索</button>
+    <button class="glass-btn" bindtap="goCreate" wx:if="{{profileId}}">重新编辑</button>
   </view>
 
-  <view wx:if="{{loading}}" class="loading muted">加载中…</view>
-
-  <view class="hint muted">
-    像聊天一样回答几句，AI 就为你生成一个可以被提问、可以被分享的个人主页。
-  </view>
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
 </view>

@@ -4,6 +4,7 @@ const { fenToYuan } = require('../../utils/pay');
 const { fmtDateTime } = require('../../utils/datetime');
 const { bookConsult, sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
+const { tierForPreset, getPreset } = require('../../utils/avatars');
 
 Page({
   data: {
@@ -13,6 +14,10 @@ Page({
     isMine: false,
     loading: true,
     pricing: { enabled: false },
+    // 沉浸式 hero 氛围（与对话舞台同一套温度档/光晕词汇）
+    stageTier: 'warm',
+    ambStyle: '',
+    freshDelight: false, // 刚创建（fresh+本人）时 hero 头像庆祝一跳
     // 打赏
     tipVisible: false,
     tipPresets: [6, 18, 66, 88],
@@ -44,7 +49,7 @@ Page({
       return;
     }
 
-    this.setData({ profileId: id, isMine, fresh: query.fresh === '1' });
+    this.setData({ profileId: id, isMine, fresh: query.fresh === '1', freshDelight: query.fresh === '1' && isMine });
 
     try {
       await ensureLogin();
@@ -90,10 +95,22 @@ Page({
     try {
       const data = await request({ url: `/profile/${this.data.profileId}` });
       this.setData({ profile: data, loading: false });
+      this._applyStageTheme();
     } catch (e) {
       this.setData({ loading: false });
       wx.showToast({ title: e.message || '加载失败', icon: 'none' });
     }
+  },
+
+  // hero 氛围：由 avatarStyle 推导温度档 + 注入头像同色系光晕（与对话舞台同一套词汇）
+  _applyStageTheme() {
+    const id = (this.data.profile && this.data.profile.avatarStyle) || '';
+    const seed = this.data.profileId;
+    const tier = tierForPreset(id, seed);
+    const p = getPreset(id, seed);
+    const c0 = (p.colors && p.colors[0]) || '#fb923c';
+    const c1 = (p.colors && p.colors[1]) || c0;
+    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};` });
   },
 
   goChat() {

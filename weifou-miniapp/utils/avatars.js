@@ -33,6 +33,10 @@ const PRESETS = [
   { id: 'toon-sharp', name: '犀利', type: 'toon', look: 'sharp', colors: ['#7c3aed', '#4f46e5'] },
   { id: 'toon-humorous', name: '活泼', type: 'toon', look: 'humorous', colors: ['#10b981', '#22d3ee'] },
 
+  // ↓ 全屏立绘形象（type:'image'，fal 生成，见 scripts/gen-avatars.mjs）；对话页据此走"星野式全屏立绘"模式。
+  //   ⚠️ 单图 ~2.8MB，上线务必改 COS（images 里写 https 链接）；本地测试用包内路径即可。
+  { id: 'gf-meinv', name: '古风美女', type: 'image', images: { idle: '/assets/avatars/gf-meinv_idle.webp' }, colors: ['#9aa7c4', '#d8c7e0'] },
+
   // ↓ Lottie 动态形象示例槽位：把设计师导出的 .json 放到 assets/lottie/ 或 COS，
   //   填好 lottie 字段后即生效；未提供时自动按 colors 回退为 css 渐变形象。
   { id: 'lottie-spark', name: '闪耀', type: 'lottie', lottie: '/assets/lottie/spark.json', colors: ['#f59e0b', '#ec4899'], anim: 'shine' },
@@ -40,10 +44,15 @@ const PRESETS = [
 ];
 
 // 本地打包 Lottie 数据登记表：把 json 放 assets/lottie/ 后，在此静态 require 登记。
-// （小程序不支持动态 require，故本地 json 需在此显式登记；远程 COS 则走 wx.request。）
+// ⚠️ 微信 require 只解析 .js 模块，require('*.json') 会抛 "module ...json.js is not defined"。
+// 用 try 包裹：取不到则该项为 null，loadLottieData 自动回退 css/远程，绝不让模块加载崩溃
+// （lottie 预设只是示例槽位，真实形象走 toon/css；要真用本地 json 可改 readFileSync 或放 COS 远程）。
+function _tryRequireJson(path) {
+  try { return require(path); } catch (e) { return null; }
+}
 const LOTTIE_DATA = {
-  'lottie-spark': require('../assets/lottie/spark.json'),
-  'lottie-wave': require('../assets/lottie/wave.json'),
+  'lottie-spark': _tryRequireJson('../assets/lottie/spark.json'),
+  'lottie-wave': _tryRequireJson('../assets/lottie/wave.json'),
 };
 
 // 取 Lottie 动画数据：优先本地登记表 → 其次远程 http(s)（建议 COS）。
@@ -104,6 +113,16 @@ function toneForStyle(style) {
   return TONES[hit || DEFAULT_TONE];
 }
 
+// 由形象预设 id 反推温度档（对话舞台氛围用）：
+// toon-* 预设带 look（即沟通风格）→ 复用 toneForStyle；
+// 渐变预设无 look，按 TONES.avatars 命中表反查；都落空回退默认档 warm。
+function tierForPreset(presetId, seed) {
+  const p = getPreset(presetId, seed);
+  if (p.look) return toneForStyle(p.look);
+  const hit = Object.keys(TONES).find((k) => TONES[k].avatars.indexOf(p.id) >= 0);
+  return TONES[hit || DEFAULT_TONE];
+}
+
 function hashStr(s) {
   let h = 0;
   const str = String(s || '');
@@ -132,4 +151,4 @@ function initial(name) {
   return n[0].toUpperCase();
 }
 
-module.exports = { PRESETS, TONES, DEFAULT_TONE, toneForStyle, getPreset, pickDefault, initial, hashStr, loadLottieData };
+module.exports = { PRESETS, TONES, DEFAULT_TONE, toneForStyle, tierForPreset, getPreset, pickDefault, initial, hashStr, loadLottieData };

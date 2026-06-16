@@ -1,30 +1,41 @@
+@import "../../styles/stage.wxss";
+
+/* 创建页 = 全屏暗场沉浸：助理在场 + 对话/输入全毛玻璃半透明，与首页同款 */
 .ob {
   display: flex;
   flex-direction: column;
   height: 100vh;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, #36303a 0%, #20232e 58%, #15171f 100%);
 }
+/* 与首页/build 统一：立绘铺底 + 暗场，内容浮其上 */
+.bg-lihe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.bg-scrim {
+  position: fixed; inset: 0; z-index: 1;
+  background: linear-gradient(to bottom, rgba(16,18,26,0.5) 0%, rgba(16,18,26,0.06) 26%, rgba(16,18,26,0.34) 62%, rgba(16,18,26,0.88) 100%);
+}
+.ob-hero, .ob-msgs, .ob-foot { position: relative; z-index: 2; }
 
 .ob-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 36rpx 0 20rpx;
-  background: #fff;
+  padding: calc(env(safe-area-inset-top) + 24rpx) 0 18rpx;
+  background: transparent;
 }
-.ob-hero-title {
-  margin-top: 18rpx;
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--ink);
-}
-.ob-hero-sub { font-size: 24rpx; margin-top: 6rpx; }
+.ob-helper { display: flex; align-items: center; gap: 14rpx; }
+.ob-hero-title { font-size: 30rpx; font-weight: 600; color: #fff; text-shadow: 0 1rpx 10rpx rgba(0,0,0,0.5); }
+.ob-hero-sub { font-size: 24rpx; margin-top: 8rpx; color: rgba(255,255,255,0.7); }
 
 .ob-msgs {
   flex: 1;
   min-height: 0;
   padding: 24rpx 28rpx 0;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 .ob-pad { height: 12rpx; }
 
@@ -40,137 +51,80 @@
   border-radius: 24rpx;
 }
 .ob-bubble.ai {
-  background: #fff;
-  color: var(--ink);
-  border: 2rpx solid #f0e6dc;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
+  border: 1rpx solid rgba(255,255,255,0.2);
+  color: #fff;
   border-bottom-left-radius: 8rpx;
 }
 .ob-bubble.me {
-  background: var(--ink);
+  background: rgba(251,146,60,0.9);
   color: #fff;
   border-bottom-right-radius: 8rpx;
 }
 
 .ob-foot {
-  background: var(--bg);
+  background: transparent;
   padding: 12rpx 24rpx calc(env(safe-area-inset-bottom) + 16rpx);
+  position: relative;
+  z-index: 1;
 }
 
-.ob-quick {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 14rpx;
-}
+.ob-quick { display: flex; gap: 16rpx; margin-bottom: 14rpx; }
 .ob-chip {
   padding: 12rpx 28rpx;
   font-size: 26rpx;
-  color: var(--sub);
-  background: #fff;
-  border: 2rpx solid var(--border);
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255,255,255,0.26);
   border-radius: 100rpx;
 }
 .ob-chip.strong {
-  color: var(--accent-ink);
-  background: var(--accent-soft);
-  border-color: transparent;
+  color: #fff;
+  background: rgba(251,146,60,0.34);
+  border-color: rgba(251,146,60,0.6);
   font-weight: 500;
 }
 
-.ob-typing {
-  display: inline-flex;
-  align-items: center;
-  gap: 10rpx;
-  padding: 24rpx 26rpx;
-}
-.ob-typing .dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: #c3b4a6;
-  animation: obBlink 1.2s infinite ease-in-out;
-}
+.ob-typing { display: inline-flex; align-items: center; gap: 10rpx; padding: 24rpx 26rpx; }
+.ob-typing .dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: rgba(255,255,255,0.6); animation: obBlink 1.2s infinite ease-in-out; }
 .ob-typing .dot:nth-child(2) { animation-delay: 0.2s; }
 .ob-typing .dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes obBlink {
-  0%, 80%, 100% { opacity: 0.3; }
-  40% { opacity: 1; }
-}
+@keyframes obBlink { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
 
-.ob-composer {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-}
+.ob-composer { display: flex; align-items: center; gap: 14rpx; }
 
 .ob-mic {
-  width: 80rpx;
-  height: 80rpx;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #fff;
-  border: 2rpx solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 80rpx; height: 80rpx; flex-shrink: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255,255,255,0.28);
+  display: flex; align-items: center; justify-content: center;
 }
-.ob-mic.on {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-/* 麦克风图形：圆角竖条 + 底座 */
-.ob-mic-i {
-  position: relative;
-  width: 22rpx;
-  height: 34rpx;
-  border-radius: 100rpx;
-  background: var(--sub);
-}
-.ob-mic.on .ob-mic-i { background: var(--accent); }
+.ob-mic.on { background: rgba(251,146,60,0.34); border-color: rgba(251,146,60,0.6); }
+.ob-mic-i { position: relative; width: 22rpx; height: 34rpx; border-radius: 100rpx; background: rgba(255,255,255,0.85); }
+.ob-mic.on .ob-mic-i { background: #fff; }
 .ob-mic-i::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -16rpx;
-  transform: translateX(-50%);
-  width: 30rpx;
-  height: 16rpx;
-  border: 3rpx solid currentColor;
-  border-top: none;
-  border-radius: 0 0 30rpx 30rpx;
-  color: var(--sub);
+  content: ''; position: absolute; left: 50%; bottom: -16rpx; transform: translateX(-50%);
+  width: 30rpx; height: 16rpx; border: 3rpx solid currentColor; border-top: none;
+  border-radius: 0 0 30rpx 30rpx; color: rgba(255,255,255,0.85);
 }
-.ob-mic.on .ob-mic-i::after { color: var(--accent); }
+.ob-mic.on .ob-mic-i::after { color: #fff; }
 .ob-input {
-  flex: 1;
-  height: 80rpx;
-  padding: 0 28rpx;
-  background: #fff;
-  border: 2rpx solid var(--border);
-  border-radius: 100rpx;
-  font-size: 28rpx;
+  flex: 1; height: 80rpx; padding: 0 28rpx;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255,255,255,0.26);
+  border-radius: 100rpx; font-size: 28rpx; color: #fff;
 }
 .ob-send {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
+  width: 80rpx; height: 80rpx; border-radius: 50%;
   background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   box-shadow: 0 6rpx 16rpx rgba(251, 146, 60, 0.4);
 }
-.ob-send.off { background: #cfd3da; box-shadow: none; }
-.ob-send-i {
-  width: 0;
-  height: 0;
-  border-left: 14rpx solid transparent;
-  border-right: 14rpx solid transparent;
-  border-bottom: 20rpx solid #fff;
-  margin-top: -2rpx;
-}
+.ob-send.off { background: rgba(255,255,255,0.18); box-shadow: none; }
+.ob-send-i { width: 0; height: 0; border-left: 14rpx solid transparent; border-right: 14rpx solid transparent; border-bottom: 20rpx solid #fff; margin-top: -2rpx; }
 
-.ob-form-link {
-  text-align: center;
-  font-size: 24rpx;
-  margin-top: 18rpx;
-}
+.ob-form-link { text-align: center; font-size: 24rpx; margin-top: 18rpx; color: rgba(255,255,255,0.6); }

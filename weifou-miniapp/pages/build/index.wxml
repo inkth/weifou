@@ -1,0 +1,58 @@
+<view class="build">
+  <!-- 与首页统一：古风美女立绘全屏铺底 + 暗场，玻璃卡浮其上 -->
+  <image class="bg-lihe" src="/assets/avatars/gf-meinv_idle.webp" mode="aspectFill"/>
+  <view class="bg-scrim"></view>
+
+  <view class="topbar">
+    <view class="back {{step === 0 ? 'hide' : ''}}" bindtap="back">‹ 上一步</view>
+    <view class="prog">{{step + 1}} / {{total}}</view>
+  </view>
+
+  <view class="grow"></view>
+
+  <!-- 0 名字 -->
+  <view class="card" wx:if="{{step === 0}}">
+    <view class="q">怎么称呼你？</view>
+    <input class="glass-input" placeholder="你的名字 / 昵称" placeholder-style="color: rgba(255,255,255,0.45)" value="{{name}}" bindinput="onName" confirm-type="next" bindconfirm="nameNext" focus="{{step === 0}}"/>
+    <button class="glass-btn primary" bindtap="nameNext">下一步</button>
+  </view>
+
+  <!-- 1 做什么 -->
+  <view class="card" wx:if="{{step === 1}}">
+    <view class="q">你是做什么的？</view>
+    <view class="grid">
+      <view class="opt {{domain === item ? 'on' : ''}}" wx:for="{{DOMAINS}}" wx:key="*this" data-v="{{item}}" bindtap="pickDomain">{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 2 接待谁 -->
+  <view class="card" wx:if="{{step === 2}}">
+    <view class="q">主要想接待谁？</view>
+    <view class="list">
+      <view class="opt wide" wx:for="{{AUDIENCES}}" wx:key="key" data-l="{{item.label}}" bindtap="pickAudience">
+        <text class="opt-label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 3 气质/说话调 -->
+  <view class="card" wx:if="{{step === 3}}">
+    <view class="q">希望它什么气质、说话调？</view>
+    <view class="list">
+      <view class="opt wide {{style === item.key ? 'on' : ''}}" wx:for="{{STYLES}}" wx:key="key" data-k="{{item.key}}" bindtap="pickStyle">
+        <text class="opt-label">{{item.label}}</text>
+        <text class="opt-desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 4 一句话血肉 -->
+  <view class="card" wx:if="{{step === 4}}">
+    <view class="q">你最能帮别人解决的一件事？</view>
+    <view class="q-sub">越具体，你的 AI 越懂你（也可写一个代表作）</view>
+    <textarea class="glass-area" placeholder="例：帮中小品牌做从 0 到 1 的视觉与包装" placeholder-style="color: rgba(255,255,255,0.45)" value="{{substance}}" bindinput="onSubstance" auto-height maxlength="120"/>
+    <button class="glass-btn primary" bindtap="finish" disabled="{{submitting}}">{{submitting ? '生成中…' : '生成我的 AI 助理'}}</button>
+  </view>
+
+  <view class="alt" bindtap="goOnboarding">更想自由说？聊着创建 ›</view>
+</view>

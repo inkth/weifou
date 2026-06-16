@@ -1,6 +1,7 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { track } = require('../../utils/track');
+const { tierForPreset, getPreset } = require('../../utils/avatars');
 
 // 对话式创建（自由回答版）：用户一段话讲完，服务端 /profile/extract 抽字段 + 按语气定风格；
 // 缺必填（realName/title/strengths）则按 followup 追问一句，齐了即可上岗。最终走现有 POST /profile，最小后端改动。
@@ -30,6 +31,9 @@ Page({
     confirmed: false,    // 已发过"了解你了"的确认语，避免重复
     avatarPreset: 'toon-warm',
     avatarState: 'speaking',
+    stageTier: 'warm',   // hero 氛围档（随 avatarPreset 实时变档）
+    ambStyle: '',        // 头像同色系光晕
+    delight: false,      // "我大概了解你了"时庆祝一跳
     toLast: '',
     turns: 0,            // 用户发话轮数，用于超过若干轮仍未齐时提示手动填写
     form: { realName: '', title: '', strengths: '', recentWork: '', howToKnow: '', style: '' },
@@ -40,6 +44,27 @@ Page({
     track('onboarding_enter', this._ref);
     try { await ensureLogin(); } catch (e) { /* 提交时再兜底 */ }
     this._pushAi(OPENER);
+    this._applyStageTheme();
+  },
+
+  // hero 氛围：跟随 avatarPreset 推导温度档 + 头像同色系光晕（与对话舞台/主页同一套词汇）
+  _applyStageTheme() {
+    const id = this.data.avatarPreset || 'toon-warm';
+    const tier = tierForPreset(id, 'onboarding');
+    const p = getPreset(id, 'onboarding');
+    const c0 = (p.colors && p.colors[0]) || '#fb923c';
+    const c1 = (p.colors && p.colors[1]) || c0;
+    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};` });
+  },
+
+  _fireDelight() {
+    this.setData({ delight: true });
+    if (this._delightTimer) clearTimeout(this._delightTimer);
+    this._delightTimer = setTimeout(() => { this._delightTimer = null; this.setData({ delight: false }); }, 750);
+  },
+
+  onUnload() {
+    if (this._delightTimer) { clearTimeout(this._delightTimer); this._delightTimer = null; }
   },
 
   _push(role, text) {
@@ -149,10 +174,12 @@ Page({
       avatarPreset: preset,
       avatarState: 'speaking',
     });
+    this._applyStageTheme(); // 氛围随检测到的语气实时变档（与头像变脸同步）
 
     if (complete) {
       if (!this.data.confirmed) {
         this.setData({ confirmed: true });
+        this._fireDelight();
         this._pushAi(`好，我大概了解你了～ 随时可以点「先上岗」，也能再补两句让我更懂你。`);
       } else {
         this._pushAi('记下了～ 还想补充就继续说，或者点「先上岗」。');
