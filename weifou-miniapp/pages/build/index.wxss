@@ -16,6 +16,8 @@
   background: linear-gradient(to bottom, rgba(16,18,26,0.5) 0%, rgba(16,18,26,0.06) 26%, rgba(16,18,26,0.34) 62%, rgba(16,18,26,0.88) 100%);
 }
 .topbar, .grow, .card, .alt { position: relative; z-index: 2; }
+/* 盖掉 app.wxss 全局 .card 的白底/阴影/内距（本页卡是透明容器，浮在立绘暗场上）*/
+.card { background: transparent; padding: 0; box-shadow: none; border-radius: 0; }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; height: 56rpx; }
 .back { font-size: 28rpx; color: rgba(255, 255, 255, 0.82); }
