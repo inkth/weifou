@@ -51,9 +51,9 @@
   border-radius: 24rpx;
 }
 .ob-bubble.ai {
-  background: rgba(255,255,255,0.15);
+  background: rgba(18,20,28,0.5);
   backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
-  border: 1rpx solid rgba(255,255,255,0.2);
+  border: 1rpx solid rgba(255,255,255,0.18);
   color: #fff;
   border-bottom-left-radius: 8rpx;
 }
@@ -75,9 +75,9 @@
   padding: 12rpx 28rpx;
   font-size: 26rpx;
   color: #fff;
-  background: rgba(255,255,255,0.14);
+  background: rgba(18,20,28,0.42);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.26);
+  border: 1rpx solid rgba(255,255,255,0.3);
   border-radius: 100rpx;
 }
 .ob-chip.strong {
@@ -97,9 +97,9 @@
 
 .ob-mic {
   width: 80rpx; height: 80rpx; flex-shrink: 0; border-radius: 50%;
-  background: rgba(255,255,255,0.14);
+  background: rgba(18,20,28,0.42);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.28);
+  border: 1rpx solid rgba(255,255,255,0.3);
   display: flex; align-items: center; justify-content: center;
 }
 .ob-mic.on { background: rgba(251,146,60,0.34); border-color: rgba(251,146,60,0.6); }
@@ -113,9 +113,9 @@
 .ob-mic.on .ob-mic-i::after { color: #fff; }
 .ob-input {
   flex: 1; height: 80rpx; padding: 0 28rpx;
-  background: rgba(255,255,255,0.14);
+  background: rgba(18,20,28,0.42);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.26);
+  border: 1rpx solid rgba(255,255,255,0.3);
   border-radius: 100rpx; font-size: 28rpx; color: #fff;
 }
 .ob-send {

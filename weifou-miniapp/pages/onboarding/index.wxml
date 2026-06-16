@@ -31,7 +31,7 @@
       <view class="ob-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
         <view class="ob-mic-i"></view>
       </view>
-      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" placeholder-style="color: rgba(255,255,255,0.5)" value="{{input}}"
+      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" placeholder-style="color: rgba(255,255,255,0.7)" value="{{input}}"
              confirm-type="send" bindinput="onInput" bindconfirm="onSend"
              disabled="{{submitting || recording}}"/>
       <view class="ob-send {{input ? '' : 'off'}}" bindtap="onSend">

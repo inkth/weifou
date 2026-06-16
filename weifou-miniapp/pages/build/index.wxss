@@ -34,9 +34,9 @@
 
 .glass-input, .glass-area {
   width: 100%; box-sizing: border-box; margin-top: 28rpx;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(18, 20, 28, 0.42);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.26);
+  border: 1rpx solid rgba(255, 255, 255, 0.32);
   border-radius: 24rpx; padding: 26rpx 28rpx; font-size: 30rpx; color: #fff;
 }
 .glass-area { min-height: 168rpx; line-height: 1.5; }
@@ -46,24 +46,24 @@
 .list { margin-top: 28rpx; display: flex; flex-direction: column; gap: 18rpx; }
 
 .opt {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(18, 20, 28, 0.4);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.24);
+  border: 1rpx solid rgba(255, 255, 255, 0.26);
   border-radius: 20rpx; padding: 28rpx 24rpx; font-size: 28rpx; color: #fff;
 }
 .opt.wide { display: flex; flex-direction: column; gap: 6rpx; }
-.opt.on { background: rgba(251, 146, 60, 0.34); border-color: rgba(251, 146, 60, 0.62); }
+.opt.on { background: rgba(251, 146, 60, 0.5); border-color: rgba(251, 146, 60, 0.78); }
 .opt-label { font-size: 30rpx; font-weight: 600; color: #fff; }
 .opt-desc { font-size: 22rpx; color: rgba(255, 255, 255, 0.65); }
 
 .glass-btn {
   margin-top: 32rpx;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(18, 20, 28, 0.42);
   backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.28);
+  border: 1rpx solid rgba(255, 255, 255, 0.32);
   color: #fff; border-radius: 100rpx; padding: 26rpx 0; text-align: center; font-size: 30rpx; font-weight: 500;
 }
-.glass-btn.primary { background: rgba(251, 146, 60, 0.34); border-color: rgba(251, 146, 60, 0.62); }
+.glass-btn.primary { background: rgba(251, 146, 60, 0.55); border-color: rgba(251, 146, 60, 0.78); }
 .glass-btn[disabled] { opacity: 0.5; }
 
 .alt { text-align: center; font-size: 24rpx; color: rgba(255, 255, 255, 0.55); margin-top: 28rpx; }

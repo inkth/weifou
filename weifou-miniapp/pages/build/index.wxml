@@ -13,7 +13,7 @@
   <!-- 0 名字 -->
   <view class="card" wx:if="{{step === 0}}">
     <view class="q">怎么称呼你？</view>
-    <input class="glass-input" placeholder="你的名字 / 昵称" placeholder-style="color: rgba(255,255,255,0.45)" value="{{name}}" bindinput="onName" confirm-type="next" bindconfirm="nameNext" focus="{{step === 0}}"/>
+    <input class="glass-input" placeholder="你的名字 / 昵称" placeholder-style="color: rgba(255,255,255,0.7)" value="{{name}}" bindinput="onName" confirm-type="next" bindconfirm="nameNext" focus="{{step === 0}}"/>
     <button class="glass-btn primary" bindtap="nameNext">下一步</button>
   </view>
 
@@ -50,7 +50,7 @@
   <view class="card" wx:if="{{step === 4}}">
     <view class="q">你最能帮别人解决的一件事？</view>
     <view class="q-sub">越具体，你的 AI 越懂你（也可写一个代表作）</view>
-    <textarea class="glass-area" placeholder="例：帮中小品牌做从 0 到 1 的视觉与包装" placeholder-style="color: rgba(255,255,255,0.45)" value="{{substance}}" bindinput="onSubstance" auto-height maxlength="120"/>
+    <textarea class="glass-area" placeholder="例：帮中小品牌做从 0 到 1 的视觉与包装" placeholder-style="color: rgba(255,255,255,0.7)" value="{{substance}}" bindinput="onSubstance" auto-height maxlength="120"/>
     <button class="glass-btn primary" bindtap="finish" disabled="{{submitting}}">{{submitting ? '生成中…' : '生成我的 AI 助理'}}</button>
   </view>
 
