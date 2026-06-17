@@ -1,0 +1,41 @@
+<view class="page">
+  <!-- 付费资产入口：约过的通话 / 付过费的提问 -->
+  <view class="quick">
+    <view class="quick-item" bindtap="goQuestions">
+      <text class="quick-emoji">✍️</text>
+      <text class="quick-label">付费提问</text>
+    </view>
+    <view class="quick-item" bindtap="goCalls">
+      <text class="quick-emoji">📞</text>
+      <text class="quick-label">语音通话</text>
+    </view>
+  </view>
+
+  <view class="sec-title">最近聊过</view>
+
+  <view wx:if="{{loading}}" class="empty muted">加载中…</view>
+  <block wx:else>
+    <view wx:if="{{!list.length}}" class="empty muted">
+      <view>还没有聊过谁</view>
+      <view class="empty-sub">和别人的 AI 分身聊过后，记录会留在这里</view>
+    </view>
+
+    <view
+      class="card chat-item"
+      wx:for="{{list}}"
+      wx:key="sessionId"
+      bindtap="enterChat"
+      data-profile="{{item.profileId}}"
+    >
+      <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" class="avatar avatar-img" />
+      <view wx:else class="avatar avatar-fallback">{{item.initial}}</view>
+      <view class="chat-body">
+        <view class="chat-top">
+          <text class="chat-name">{{item.realName}}</text>
+          <text class="chat-time muted">{{item.timeText}}</text>
+        </view>
+        <view class="chat-last muted">{{item.lastText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

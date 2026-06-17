@@ -16,7 +16,8 @@
     "pages/replay/index",
     "pages/ask/index",
     "pages/question-detail/index",
-    "pages/my-questions/index"
+    "pages/my-questions/index",
+    "pages/my-chats/index"
   ],
   "window": {
     "backgroundTextStyle": "light",
