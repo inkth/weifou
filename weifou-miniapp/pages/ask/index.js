@@ -1,7 +1,7 @@
 const { fenToYuan } = require('../../utils/pay');
 const { ensureLogin } = require('../../utils/auth');
 const { askQuestion, fetchPricing } = require('../../utils/asyncq');
-const { requestAnsweredNotify } = require('../../utils/subscribe');
+const { requestQuestionNotify } = require('../../utils/subscribe');
 
 Page({
   data: {
@@ -49,8 +49,8 @@ Page({
     this.setData({ paying: true });
     try {
       const order = await askQuestion(this.data.profileId, q, this.data.source);
-      // 付费成功后请求「已回答」订阅授权（未配置模板则静默跳过）
-      try { await requestAnsweredNotify(); } catch (e) {}
+      // 付费成功后请求「已回答 / 已退款」订阅授权（未配置模板则静默跳过）
+      try { await requestQuestionNotify(); } catch (e) {}
       wx.showToast({ title: '已提交，等待回答', icon: 'success' });
       const qid = order && order.asyncQuestionId;
       setTimeout(() => {
