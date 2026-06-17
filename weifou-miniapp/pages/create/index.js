@@ -10,14 +10,6 @@ const STYLE_OPTIONS = [
   { id: 'humorous', label: '幽默轻松', sub: '会开玩笑、不油腻' },
 ];
 
-// 风格 → 卡通助理形象联动（预设见 utils/avatars.js 的 toon-*）
-const STYLE_AVATAR = {
-  steady: 'toon-steady',
-  warm: 'toon-warm',
-  sharp: 'toon-sharp',
-  humorous: 'toon-humorous',
-};
-
 Page({
   data: {
     styleOptions: STYLE_OPTIONS,
@@ -32,7 +24,6 @@ Page({
       howToKnow: '',
       quickIntro: '', // 快速模式的"一句话"，提交时映射到 strengths
       style: '', // 选填，空=AI 自行判断
-      avatarStyle: '', // 选风格时自动联动 toon 形象，settings 可再改
     },
     submitting: false,
     canSubmit: false,
@@ -63,7 +54,6 @@ Page({
             howToKnow: input.howToKnow || '',
             quickIntro: '',
             style: input.style || '',
-            avatarStyle: mine.avatarStyle || '',
           },
         });
         this.refreshCanSubmit();
@@ -89,16 +79,10 @@ Page({
   },
 
   // 风格单选：再点一次取消（回到 AI 自行判断），不计入必填。
-  // 形象联动：用户没自定义过形象（空或仍是 toon-*）时，形象跟随风格变。
   selectStyle(e) {
     const id = e.currentTarget.dataset.id;
     const next = this.data.form.style === id ? '' : id;
-    const patch = { 'form.style': next };
-    const cur = this.data.form.avatarStyle || '';
-    if (!cur || cur.indexOf('toon-') === 0) {
-      patch['form.avatarStyle'] = next ? STYLE_AVATAR[next] : '';
-    }
-    this.setData(patch);
+    this.setData({ 'form.style': next });
   },
 
   refreshCanSubmit() {
@@ -124,7 +108,6 @@ Page({
             recentWork: '',
             howToKnow: '',
             style: f.style,
-            avatarStyle: f.avatarStyle,
           }
         : { ...f };
       delete body.quickIntro;

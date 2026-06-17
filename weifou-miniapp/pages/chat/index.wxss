@@ -35,9 +35,9 @@
   background: linear-gradient(to bottom, rgba(245, 246, 250, 0) 30%, rgba(18, 20, 28, 0.12) 56%, rgba(18, 20, 28, 0.58) 100%);
 }
 .lihe.page { background: transparent; }
-/* 立绘即角色：隐藏圆形头像/氛围层，舞台只留名牌浮在立绘上 */
+/* 立绘即角色：隐藏氛围层/思考点，舞台只留名牌浮在立绘上 */
 .lihe .stage { background: transparent; border-bottom: none; height: auto; max-height: none; padding: 20rpx 28rpx 8rpx; z-index: 1; }
-.lihe .amb-layer, .lihe .stage-avatar, .lihe .stage-indicator { display: none; }
+.lihe .amb-layer, .lihe .stage-indicator { display: none; }
 .lihe .stage-name { color: #fff; text-shadow: 0 1rpx 8rpx rgba(0, 0, 0, 0.55); }
 .lihe .stage-more { color: rgba(255, 255, 255, 0.7); }
 .lihe .stage-status { color: rgba(255, 255, 255, 0.85); text-shadow: 0 1rpx 8rpx rgba(0, 0, 0, 0.55); }

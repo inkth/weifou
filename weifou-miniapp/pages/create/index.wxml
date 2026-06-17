@@ -42,12 +42,6 @@
   <view class="section">
     <view class="section-title">TA 替你说话时，用什么风格？<text class="optional">（选填）</text></view>
 
-    <!-- 选中风格 → 助理形象实时联动（招聘定妆时刻） -->
-    <view wx:if="{{form.avatarStyle}}" class="assistant-preview">
-      <avatar preset="{{form.avatarStyle}}" name="{{form.realName}}" seed="preview" size="140" state="speaking"/>
-      <view class="preview-caption muted">你的助理 · 形象可在设置里再换</view>
-    </view>
-
     <view class="style-chips">
       <view wx:for="{{styleOptions}}" wx:key="id"
             class="style-chip {{form.style === item.id ? 'sel' : ''}}"

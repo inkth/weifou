@@ -2,7 +2,7 @@ const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { track } = require('../../utils/track');
 
-// 气质/说话调（4 选 1）：同一档同时定 沟通风格(style→语气) + 头像气质(toon-*)
+// 气质/说话调（4 选 1）：定对外沟通风格（style → 语气）
 const STYLES = [
   { key: 'steady', label: '专业冷静', desc: '严谨克制 · 先结论' },
   { key: 'warm', label: '温暖亲和', desc: '口语 · 先共情' },
@@ -24,7 +24,6 @@ Page({
     total: 5,
     STYLES, DOMAINS, AUDIENCES,
     name: '', domain: '', audienceLabel: '', style: '', substance: '',
-    avatarPreset: 'toon-warm', // 预览：随气质实时变脸
     submitting: false,
   },
 
@@ -50,7 +49,7 @@ Page({
   pickAudience(e) { this.setData({ audienceLabel: e.currentTarget.dataset.l, step: 3 }); },
   pickStyle(e) {
     const k = e.currentTarget.dataset.k;
-    this.setData({ style: k, avatarPreset: 'toon-' + k, step: 4 }); // 气质 → 头像实时变
+    this.setData({ style: k, step: 4 });
   },
 
   onSubstance(e) { this.setData({ substance: e.detail.value }); },
@@ -70,7 +69,7 @@ Page({
         recentWork: '',
         howToKnow: this.data.audienceLabel ? `主要想接待：${this.data.audienceLabel}` : '',
         style: this.data.style,
-        avatarStyle: 'toon-' + this.data.style,
+        avatarStyle: '',
       };
       if (this._ref) body.ref = this._ref;
       const data = await request({ url: '/profile', method: 'POST', data: body });

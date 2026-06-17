@@ -70,12 +70,3 @@
 .quick-title { font-size: 38rpx; font-weight: 700; color: #1f2330; }
 .quick-sub { font-size: 26rpx; margin-top: 8rpx; }
 .switch-full { text-align: center; font-size: 26rpx; margin-top: 20rpx; padding: 12rpx; }
-
-/* —— 助理形象预览 —— */
-.assistant-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20rpx 0 12rpx;
-}
-.preview-caption { font-size: 22rpx; margin-top: 12rpx; }

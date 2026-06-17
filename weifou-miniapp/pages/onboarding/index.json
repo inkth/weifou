@@ -3,7 +3,5 @@
   "navigationBarTextStyle": "white",
   "navigationBarTitleText": "创建我的 AI 助理",
   "backgroundColor": "#15171f",
-  "usingComponents": {
-    "avatar": "/components/avatar/index"
-  }
+  "usingComponents": {}
 }

@@ -24,14 +24,6 @@
       <view class="amb-blob amb-blob-2"></view>
     </view>
 
-    <view class="stage-avatar">
-      <view class="stage-av-inner {{delight ? 'delight' : ''}}">
-        <avatar preset="{{avatarStyle}}" name="{{realName}}" seed="{{profileId}}" size="180"
-                active="{{pending || !!introState}}"
-                state="{{introState || (pending ? 'thinking' : 'idle')}}"/>
-      </view>
-    </view>
-
     <view class="stage-meta">
       <view class="stage-name">{{realName ? realName + ' 的 AI 助理' : '正在连线…'}} <text class="stage-more">›</text></view>
       <!-- 副标题优先 oneLiner：访客 3 秒内完成"这是谁、值不值得聊"的判断 -->

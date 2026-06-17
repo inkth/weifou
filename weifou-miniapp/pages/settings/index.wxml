@@ -1,22 +1,5 @@
 <view class="page">
   <view class="card">
-    <view class="section-title">我的形象</view>
-    <view class="avatar-grid">
-      <view
-        class="avatar-cell {{selectedAvatar === item.id ? 'active' : ''}}"
-        wx:for="{{avatarStyles}}"
-        wx:key="id"
-        bindtap="selectAvatar"
-        data-id="{{item.id}}"
-      >
-        <avatar preset="{{item.id}}" name="{{realName}}" seed="{{item.id}}" size="96" static="{{selectedAvatar !== item.id}}"/>
-        <view class="avatar-name">{{item.name}}</view>
-      </view>
-    </view>
-    <button class="btn-primary save" bindtap="saveAvatar" disabled="{{savingAvatar}}">保存形象</button>
-  </view>
-
-  <view class="card">
     <view class="section-title">联系方式</view>
     <view class="field">
       <view class="label">微信号</view>

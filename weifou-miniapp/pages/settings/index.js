@@ -1,7 +1,6 @@
 const { request, clearToken } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fenToYuan } = require('../../utils/pay');
-const { PRESETS, pickDefault } = require('../../utils/avatars');
 
 Page({
   data: {
@@ -18,10 +17,6 @@ Page({
       asyncEnabled: false,
       asyncPriceYuan: '49',
     },
-    avatarStyles: PRESETS,
-    selectedAvatar: '',
-    realName: '',
-    savingAvatar: false,
     saving: false,
     savingConsult: false,
     regenerating: false,
@@ -38,8 +33,6 @@ Page({
             contactPhone: mine.contactPhone || '',
             contactVisible: !!mine.contactVisible,
           },
-          realName: mine.realName || '',
-          selectedAvatar: mine.avatarStyle || pickDefault(mine.id),
         });
       }
       const c = await request({ url: '/consult/setting/mine' });
@@ -54,27 +47,6 @@ Page({
         },
       });
     } catch (e) {}
-  },
-
-  selectAvatar(e) {
-    this.setData({ selectedAvatar: e.currentTarget.dataset.id });
-  },
-
-  async saveAvatar() {
-    if (this.data.savingAvatar || !this.data.selectedAvatar) return;
-    this.setData({ savingAvatar: true });
-    try {
-      await request({
-        url: '/profile/avatar',
-        method: 'PATCH',
-        data: { avatarStyle: this.data.selectedAvatar },
-      });
-      wx.showToast({ title: '形象已更新', icon: 'success' });
-    } catch (e) {
-      wx.showToast({ title: e.message || '保存失败', icon: 'none' });
-    } finally {
-      this.setData({ savingAvatar: false });
-    }
   },
 
   onConsultSwitch(e) {

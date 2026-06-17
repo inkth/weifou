@@ -18,29 +18,3 @@
 .save { margin-top: 16rpx; }
 .regen { margin-top: 16rpx; }
 .danger { color: #b34040; }
-
-/* 形象选择 */
-.avatar-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24rpx;
-  margin-bottom: 8rpx;
-}
-.avatar-cell {
-  width: 124rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12rpx 0;
-  border-radius: 16rpx;
-  border: 3rpx solid transparent;
-}
-.avatar-cell.active {
-  border-color: #1f2330;
-  background: #f5f6fa;
-}
-.avatar-name {
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  color: #4a5070;
-}

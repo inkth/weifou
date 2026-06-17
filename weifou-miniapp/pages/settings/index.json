@@ -1,6 +1,4 @@
 {
   "navigationBarTitleText": "设置",
-  "usingComponents": {
-    "avatar": "/components/avatar/index"
-  }
+  "usingComponents": {}
 }

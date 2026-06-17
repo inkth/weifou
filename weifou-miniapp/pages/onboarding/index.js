@@ -1,16 +1,10 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { track } = require('../../utils/track');
-const { tierForPreset, getPreset } = require('../../utils/avatars');
 
 // 对话式创建（自由回答版）：用户一段话讲完，服务端 /profile/extract 抽字段 + 按语气定风格；
 // 缺必填（realName/title/strengths）则按 followup 追问一句，齐了即可上岗。最终走现有 POST /profile，最小后端改动。
 const OPENER = '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己就好：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以点麦克风说。';
-
-// 风格 → 卡通形象（与 create 页 STYLE_AVATAR 一致）
-const STYLE_AVATAR = {
-  steady: 'toon-steady', warm: 'toon-warm', sharp: 'toon-sharp', humorous: 'toon-humorous',
-};
 
 // 必填缺失时的兜底追问（服务端没给 followup 时用）
 function fallbackFollowup(form) {
@@ -29,11 +23,6 @@ Page({
     recording: false,    // 语音录制中
     canFinish: false,    // realName+title+strengths 已齐
     confirmed: false,    // 已发过"了解你了"的确认语，避免重复
-    avatarPreset: 'toon-warm',
-    avatarState: 'speaking',
-    stageTier: 'warm',   // hero 氛围档（随 avatarPreset 实时变档）
-    ambStyle: '',        // 头像同色系光晕
-    delight: false,      // "我大概了解你了"时庆祝一跳
     toLast: '',
     turns: 0,            // 用户发话轮数，用于超过若干轮仍未齐时提示手动填写
     form: { realName: '', title: '', strengths: '', recentWork: '', howToKnow: '', style: '' },
@@ -44,27 +33,6 @@ Page({
     track('onboarding_enter', this._ref);
     try { await ensureLogin(); } catch (e) { /* 提交时再兜底 */ }
     this._pushAi(OPENER);
-    this._applyStageTheme();
-  },
-
-  // hero 氛围：跟随 avatarPreset 推导温度档 + 头像同色系光晕（与对话舞台/主页同一套词汇）
-  _applyStageTheme() {
-    const id = this.data.avatarPreset || 'toon-warm';
-    const tier = tierForPreset(id, 'onboarding');
-    const p = getPreset(id, 'onboarding');
-    const c0 = (p.colors && p.colors[0]) || '#fb923c';
-    const c1 = (p.colors && p.colors[1]) || c0;
-    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};` });
-  },
-
-  _fireDelight() {
-    this.setData({ delight: true });
-    if (this._delightTimer) clearTimeout(this._delightTimer);
-    this._delightTimer = setTimeout(() => { this._delightTimer = null; this.setData({ delight: false }); }, 750);
-  },
-
-  onUnload() {
-    if (this._delightTimer) { clearTimeout(this._delightTimer); this._delightTimer = null; }
   },
 
   _push(role, text) {
@@ -73,7 +41,6 @@ Page({
   },
   _pushAi(text) {
     this._push('ai', text);
-    this.setData({ avatarState: 'speaking' });
   },
 
   onInput(e) {
@@ -89,7 +56,7 @@ Page({
       return;
     }
     this._push('me', val);
-    this.setData({ input: '', thinking: true, avatarState: 'thinking', turns: this.data.turns + 1 });
+    this.setData({ input: '', thinking: true, turns: this.data.turns + 1 });
     await this._extract();
   },
 
@@ -148,7 +115,7 @@ Page({
       const res = await request({ url: '/profile/extract', method: 'POST', data: { messages: payload } });
       this._applyExtract(res);
     } catch (e) {
-      this.setData({ thinking: false, avatarState: 'speaking' });
+      this.setData({ thinking: false });
       this._pushAi('（网络好像有点慢，刚那句再说一遍试试？）');
     }
   },
@@ -165,21 +132,16 @@ Page({
       style: res.style || cur.style,
     };
     const complete = !!(form.realName && form.title && form.strengths);
-    const preset = STYLE_AVATAR[form.style] || 'toon-warm'; // 按语气实时变脸
 
     this.setData({
       form,
       thinking: false,
       canFinish: complete,
-      avatarPreset: preset,
-      avatarState: 'speaking',
     });
-    this._applyStageTheme(); // 氛围随检测到的语气实时变档（与头像变脸同步）
 
     if (complete) {
       if (!this.data.confirmed) {
         this.setData({ confirmed: true });
-        this._fireDelight();
         this._pushAi(`好，我大概了解你了～ 随时可以点「先上岗」，也能再补两句让我更懂你。`);
       } else {
         this._pushAi('记下了～ 还想补充就继续说，或者点「先上岗」。');
@@ -207,7 +169,7 @@ Page({
       return;
     }
     if (this.data.submitting) return;
-    this.setData({ submitting: true, avatarState: 'thinking' });
+    this.setData({ submitting: true });
     this._pushAi('好，我这就替你把主页生成出来，稍等 5–15 秒 ✨');
     wx.showLoading({ title: 'AI 生成中…', mask: true });
     try {
@@ -219,7 +181,7 @@ Page({
         recentWork: f.recentWork || '',
         howToKnow: f.howToKnow || '',
         style: f.style || '',                 // 语气自动判定，空则由 AI 自行判断
-        avatarStyle: STYLE_AVATAR[f.style] || 'toon-warm',
+        avatarStyle: '',
       };
       if (this._ref) body.ref = this._ref;
       const data = await request({ url: '/profile', method: 'POST', data: body });
@@ -227,7 +189,7 @@ Page({
       wx.redirectTo({ url: `/pages/profile/index?id=${data.id}&mine=1&fresh=1` });
     } catch (e) {
       wx.hideLoading();
-      this.setData({ submitting: false, avatarState: 'speaking' });
+      this.setData({ submitting: false });
       wx.showModal({ title: '生成失败', content: e.message || '请稍后再试', showCancel: false });
     }
   },

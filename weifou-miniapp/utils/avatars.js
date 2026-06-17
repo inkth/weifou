@@ -25,14 +25,6 @@ const PRESETS = [
   { id: 'coral', name: '珊瑚', colors: ['#fb7185', '#f43f5e'], anim: 'flow' },
   { id: 'forest', name: '森林', colors: ['#16a34a', '#065f46'], anim: 'shine' },
 
-  // ↓ 卡通助理形象（type:'toon'）：纯 CSS 绘制的会动的脸（眨眼/沉思/说话三态），
-  //   零图片资源；look 决定五官气质，与 create 页沟通风格联动（create 页 STYLE_AVATAR 映射）。
-  //   设计资产到位后整体替换为 image/lottie 形象、id 保持不变即可无缝迁移。
-  { id: 'toon-steady', name: '沉稳', type: 'toon', look: 'steady', colors: ['#475569', '#1f2330'] },
-  { id: 'toon-warm', name: '亲和', type: 'toon', look: 'warm', colors: ['#fb923c', '#f43f5e'] },
-  { id: 'toon-sharp', name: '犀利', type: 'toon', look: 'sharp', colors: ['#7c3aed', '#4f46e5'] },
-  { id: 'toon-humorous', name: '活泼', type: 'toon', look: 'humorous', colors: ['#10b981', '#22d3ee'] },
-
   // ↓ 全屏立绘形象（type:'image'，fal 生成，见 scripts/gen-avatars.mjs）；对话页据此走"星野式全屏立绘"模式。
   //   ⚠️ 单图 ~2.8MB，上线务必改 COS（images 里写 https 链接）；本地测试用包内路径即可。
   { id: 'gf-meinv', name: '古风美女', type: 'image', images: { idle: '/assets/avatars/gf-meinv_idle.webp' }, colors: ['#9aa7c4', '#d8c7e0'] },
@@ -51,7 +43,7 @@ const DEFAULT_LIHE = (_meinv && _meinv.images && _meinv.images.idle) || '/assets
 // 本地打包 Lottie 数据登记表：把 json 放 assets/lottie/ 后，在此静态 require 登记。
 // ⚠️ 微信 require 只解析 .js 模块，require('*.json') 会抛 "module ...json.js is not defined"。
 // 用 try 包裹：取不到则该项为 null，loadLottieData 自动回退 css/远程，绝不让模块加载崩溃
-// （lottie 预设只是示例槽位，真实形象走 toon/css；要真用本地 json 可改 readFileSync 或放 COS 远程）。
+// （lottie 预设只是示例槽位；要真用本地 json 可改 readFileSync 或放 COS 远程）。
 function _tryRequireJson(path) {
   try { return require(path); } catch (e) { return null; }
 }
@@ -94,19 +86,19 @@ const TONES = {
   cool: {
     id: 'cool', name: '专业冷静',
     styles: ['steady', 'sharp'],     // 顾问 / 律师 / 财务 / 医美
-    look: 'steady', avatars: ['toon-steady', 'graphite', 'ocean'],
+    look: 'steady', avatars: ['graphite', 'ocean'],
     tone: '严谨克制，先结论后依据，不寒暄',
   },
   warm: {
     id: 'warm', name: '中性亲和',
     styles: ['warm'],                 // 大多数 / 生活服务（默认档）
-    look: 'warm', avatars: ['toon-warm', 'coral', 'sunset'],
+    look: 'warm', avatars: ['coral', 'sunset'],
     tone: '友好专业，口语化，先共情再答',
   },
   lively: {
     id: 'lively', name: '活泼年轻',
     styles: ['humorous'],             // 创作者 / 网红 / IP
-    look: 'humorous', avatars: ['toon-humorous', 'aurora', 'mint'],
+    look: 'humorous', avatars: ['aurora', 'mint'],
     tone: '轻松有趣，可适度玩笑，不油腻',
   },
 };
@@ -119,8 +111,7 @@ function toneForStyle(style) {
 }
 
 // 由形象预设 id 反推温度档（对话舞台氛围用）：
-// toon-* 预设带 look（即沟通风格）→ 复用 toneForStyle；
-// 渐变预设无 look，按 TONES.avatars 命中表反查；都落空回退默认档 warm。
+// 预设带 look → 复用 toneForStyle；渐变预设按 TONES.avatars 命中表反查；都落空回退默认档 warm。
 function tierForPreset(presetId, seed) {
   const p = getPreset(presetId, seed);
   if (p.look) return toneForStyle(p.look);

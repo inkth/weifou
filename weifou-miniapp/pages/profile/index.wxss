@@ -35,8 +35,8 @@
 }
 @keyframes heroRise { from { opacity: 0; transform: translateY(10rpx); } to { opacity: 1; transform: none; } }
 .hero-row, .one-liner, .tags { position: relative; z-index: 1; }
-/* 立绘即人物：隐藏 hero 小头像与色块光晕（避免 toon 脸/光斑叠在立绘上） */
-.hero .amb-layer, .hero .stage-av-inner { display: none; }
+/* 立绘即人物：隐藏 hero 的氛围色块光晕（避免光斑叠在立绘上） */
+.hero .amb-layer { display: none; }
 .hero-row { display: flex; align-items: center; }
 .hero-meta { flex: 1; min-width: 0; }
 .name { font-size: 36rpx; font-weight: 600; color: #fff; text-shadow: 0 1rpx 10rpx rgba(0, 0, 0, 0.4); }

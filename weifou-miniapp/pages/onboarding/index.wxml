@@ -5,9 +5,6 @@
 
   <view class="ob-hero">
     <view class="ob-helper">
-      <view class="stage-av-inner {{delight ? 'delight' : ''}}">
-        <avatar preset="{{avatarPreset}}" name="" seed="onboarding" size="56" state="{{avatarState}}"/>
-      </view>
       <view class="ob-hero-title">先聊几句，我来替你写主页</view>
     </view>
     <view class="ob-hero-sub muted">不用填表，说说就好</view>
