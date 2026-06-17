@@ -55,6 +55,7 @@ type Config struct {
 	SubscribeNewQuestionTmpl string // 订阅消息模板：新付费提问→主人
 	SubscribeAnsweredTmpl    string // 订阅消息模板：已回答→访客
 	SubscribeRefundedTmpl    string // 订阅消息模板：已退款→访客
+	SubscribeLeadTmpl        string // 订阅消息模板：新访客线索→主人
 	SubscribeMiniState       string // formal / trial / developer
 }
 
@@ -137,6 +138,7 @@ func Load() *Config {
 		SubscribeNewQuestionTmpl: os.Getenv("WX_SUBSCRIBE_NEW_QUESTION_TMPL_ID"),
 		SubscribeAnsweredTmpl:    os.Getenv("WX_SUBSCRIBE_ANSWERED_TMPL_ID"),
 		SubscribeRefundedTmpl:    os.Getenv("WX_SUBSCRIBE_REFUNDED_TMPL_ID"),
+		SubscribeLeadTmpl:        os.Getenv("WX_SUBSCRIBE_LEAD_TMPL_ID"),
 		SubscribeMiniState:       getEnv("WX_SUBSCRIBE_STATE", "formal"),
 	}
 }

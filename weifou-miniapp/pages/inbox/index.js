@@ -3,7 +3,7 @@ const { ensureLogin } = require('../../utils/auth');
 const { fmtDateTime } = require('../../utils/datetime');
 const { fenToYuan } = require('../../utils/pay');
 const { hostQuestions } = require('../../utils/asyncq');
-const { requestNewQuestionNotify, NEW_QUESTION_TMPL_ID } = require('../../utils/subscribe');
+const { requestNewQuestionNotify, NEW_QUESTION_TMPL_ID, requestLeadNotify, LEAD_TMPL_ID } = require('../../utils/subscribe');
 
 Page({
   data: {
@@ -14,7 +14,8 @@ Page({
     leads: [],
     knowledge: [],
     sessions: [], // 会话回放：助理替我接待的访客对话
-    canNotify: !!NEW_QUESTION_TMPL_ID, // 订阅模板已配才显示「开启提醒」入口（未配静默降级）
+    canNotify: !!NEW_QUESTION_TMPL_ID, // 付费提问订阅模板已配才显示入口（未配静默降级）
+    canNotifyLead: !!LEAD_TMPL_ID, // 访客线索订阅模板已配才显示入口
   },
 
   async onShow() {
@@ -65,6 +66,17 @@ Page({
     if (res.skipped) return; // 模板未配（此时入口本就不显示）
     if (res[NEW_QUESTION_TMPL_ID] === 'accept') {
       wx.showToast({ title: '已开启，新提问会微信通知你', icon: 'success' });
+    } else {
+      wx.showToast({ title: '未开启提醒', icon: 'none' });
+    }
+  },
+
+  // 主人召回（推）：授权「新访客线索」一次性订阅。免费留言比付费提问更高频，入口同样常驻。
+  async enableLeadNotify() {
+    const res = await requestLeadNotify();
+    if (res.skipped) return;
+    if (res[LEAD_TMPL_ID] === 'accept') {
+      wx.showToast({ title: '已开启，有人留言会微信通知你', icon: 'success' });
     } else {
       wx.showToast({ title: '未开启提醒', icon: 'none' });
     }

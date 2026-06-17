@@ -26,12 +26,13 @@ type Handler struct {
 	rdb       *redis.Client
 	ds        *deepseek.Client
 	security  *wechat.SecurityService
+	subscribe *wechat.SubscribeService
 	jwtSecret string
 	freeQuota int
 }
 
-func NewHandler(db *gorm.DB, rdb *redis.Client, ds *deepseek.Client, security *wechat.SecurityService, jwtSecret string, freeQuota int) *Handler {
-	return &Handler{db: db, rdb: rdb, ds: ds, security: security, jwtSecret: jwtSecret, freeQuota: freeQuota}
+func NewHandler(db *gorm.DB, rdb *redis.Client, ds *deepseek.Client, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string, freeQuota int) *Handler {
+	return &Handler{db: db, rdb: rdb, ds: ds, security: security, subscribe: subscribe, jwtSecret: jwtSecret, freeQuota: freeQuota}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
@@ -501,6 +502,32 @@ func (h *Handler) lead(c *gin.Context) error {
 		ID: idgen.New(), ProfileID: profileID, VisitorOpenid: auth.Openid,
 		SessionID: sessionID, Note: note, Contact: contact, Status: models.LeadNew,
 	})
+	// 主人召回（推）：免费线索是比付费提问更高频的"有人找你"信号，异步下发订阅消息。
+	go h.notifyHostNewLead(profile.UserID, note, auth.Openid)
 	httpx.OK(c, gin.H{"ok": true})
 	return nil
+}
+
+// notifyHostNewLead 给主人下发「有新访客线索」订阅消息（按小程序 openid，纯 App 主人静默失败）。
+func (h *Handler) notifyHostNewLead(hostUserID, note, visitorOpenid string) {
+	if h.subscribe == nil {
+		return
+	}
+	var host models.User
+	if h.db.First(&host, "id = ?", hostUserID).Error != nil {
+		return
+	}
+	openid := host.Openid
+	if host.WxMpOpenid != nil && *host.WxMpOpenid != "" {
+		openid = *host.WxMpOpenid
+	}
+	name := "访客"
+	var v models.User
+	if h.db.Where("openid = ? OR wx_mp_openid = ? OR wx_app_openid = ?",
+		visitorOpenid, visitorOpenid, visitorOpenid).First(&v).Error == nil {
+		if v.Nickname != nil && *v.Nickname != "" {
+			name = *v.Nickname
+		}
+	}
+	h.subscribe.NotifyNewLead(openid, note, name, time.Now(), "pages/inbox/index")
 }

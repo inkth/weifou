@@ -24,10 +24,11 @@ type SubscribeService struct {
 	newQuestionTmpl string
 	answeredTmpl    string
 	refundedTmpl    string
+	leadTmpl        string
 	miniState       string
 }
 
-func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refundedTmpl, miniState string) *SubscribeService {
+func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refundedTmpl, leadTmpl, miniState string) *SubscribeService {
 	if miniState == "" {
 		miniState = "formal"
 	}
@@ -37,6 +38,7 @@ func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refu
 		newQuestionTmpl: newQuestionTmpl,
 		answeredTmpl:    answeredTmpl,
 		refundedTmpl:    refundedTmpl,
+		leadTmpl:        leadTmpl,
 		miniState:       miniState,
 	}
 }
@@ -128,5 +130,15 @@ func (s *SubscribeService) NotifyRefunded(openid, question string, amountFen int
 		"thing1":  clip(question, 20),
 		"amount2": yuan(amountFen),
 		"thing3":  clip(reason, 20),
+	})
+}
+
+// NotifyNewLead 通知主人「有新访客线索」。免费线索是比付费提问更高频的"有人找你"信号。
+// 模板字段顺序：thing1=留言内容  thing2=访客  time3=留言时间
+func (s *SubscribeService) NotifyNewLead(openid, note, visitorName string, at time.Time, page string) {
+	s.send(openid, s.leadTmpl, page, map[string]string{
+		"thing1": clip(note, 20),
+		"thing2": clip(visitorName, 20),
+		"time3":  at.Format("2006-01-02 15:04"),
 	})
 }

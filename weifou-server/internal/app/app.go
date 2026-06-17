@@ -52,7 +52,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		appLoginClient = wechat.NewLoginClient(cfg.WxMobileAppID, cfg.WxMobileSecret)
 	}
 	security := wechat.NewSecurityService(loginClient)
-	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeMiniState)
+	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeLeadTmpl, cfg.SubscribeMiniState)
 	ds := deepseek.New(cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel)
 	payClient := wxpay.New(wxpay.Config{
 		AppID:            cfg.WxAppID,
@@ -74,7 +74,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		authH:    auth.NewHandler(db, loginClient, appLoginClient, cfg.JWTSecret, cfg.JWTExpiresHours, cfg.Env),
 		userH:    user.NewHandler(db, cfg.JWTSecret),
 		profileH: profile.NewHandler(db, personaSvc, cfg.JWTSecret),
-		chatH:    chat.NewHandler(db, rdb, ds, security, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
+		chatH:    chat.NewHandler(db, rdb, ds, security, subscribe, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
 		visitH:   visit.NewHandler(db, cfg.JWTSecret),
 		shareH:   share.NewHandler(db, loginClient),
 		consultH: consult.NewHandler(db, cfg.JWTSecret),

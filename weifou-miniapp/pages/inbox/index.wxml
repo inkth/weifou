@@ -69,6 +69,10 @@
   <!-- 访客线索 -->
   <block wx:if="{{!loading && tab === 'leads'}}">
     <view class="tip muted">访客在对话里留给你的话。</view>
+    <view wx:if="{{canNotifyLead}}" class="notify-row" bindtap="enableLeadNotify">
+      <text class="notify-ico">🔔</text>
+      <text>开启提醒：有访客留言时微信通知我 ›</text>
+    </view>
     <view wx:if="{{!leads.length}}" class="empty muted">还没有访客留言</view>
     <view class="card" wx:for="{{leads}}" wx:key="id">
       <view class="lead-head">
