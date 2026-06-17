@@ -62,18 +62,14 @@ class _NoProfile extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 60),
-        const Text('加微信前，先和我的 AI 聊聊',
+        const Text('创建你的 AI 助理',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 12),
-        const Text('创建你的 AI 主页，让别人先认识你',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppTheme.sub)),
         const SizedBox(height: 40),
         ElevatedButton(
           style: AppTheme.accentButton,
           onPressed: () => context.pushNamed('onboarding'),
-          child: const Text('和 AI 聊几句，生成我的主页'),
+          child: const Text('和 AI 聊几句，开始创建'),
         ),
       ],
     );
