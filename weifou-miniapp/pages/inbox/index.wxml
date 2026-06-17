@@ -51,6 +51,10 @@
   <!-- 付费提问 -->
   <block wx:if="{{!loading && tab === 'questions'}}">
     <view class="tip muted">访客付费向你提的问题。在时限内回答，否则系统自动全额退款。</view>
+    <view wx:if="{{canNotify}}" class="notify-row" bindtap="enableNotify">
+      <text class="notify-ico">🔔</text>
+      <text>开启提醒：有新付费提问时微信通知我 ›</text>
+    </view>
     <view wx:if="{{!questions.length}}" class="empty muted">还没有付费提问</view>
     <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="goQuestion" data-id="{{item.id}}">
       <view class="lead-head">

@@ -3,6 +3,7 @@ const { ensureLogin } = require('../../utils/auth');
 const { fmtDateTime } = require('../../utils/datetime');
 const { fenToYuan } = require('../../utils/pay');
 const { hostQuestions } = require('../../utils/asyncq');
+const { requestNewQuestionNotify, NEW_QUESTION_TMPL_ID } = require('../../utils/subscribe');
 
 Page({
   data: {
@@ -13,6 +14,7 @@ Page({
     leads: [],
     knowledge: [],
     sessions: [], // 会话回放：助理替我接待的访客对话
+    canNotify: !!NEW_QUESTION_TMPL_ID, // 订阅模板已配才显示「开启提醒」入口（未配静默降级）
   },
 
   async onShow() {
@@ -54,6 +56,18 @@ Page({
 
   switchTab(e) {
     this.setData({ tab: e.currentTarget.dataset.tab });
+  },
+
+  // 主人召回（推）：点击授权「新提问」一次性订阅。微信要求必须由点击触发，故挂按钮而非 onShow。
+  // 一次授权只换一条推送，所以入口常驻——主人每次来收件箱都能续上下一条。
+  async enableNotify() {
+    const res = await requestNewQuestionNotify();
+    if (res.skipped) return; // 模板未配（此时入口本就不显示）
+    if (res[NEW_QUESTION_TMPL_ID] === 'accept') {
+      wx.showToast({ title: '已开启，新提问会微信通知你', icon: 'success' });
+    } else {
+      wx.showToast({ title: '未开启提醒', icon: 'none' });
+    }
   },
 
   // 会话回放：看助理替我说了什么

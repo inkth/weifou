@@ -59,3 +59,17 @@
 
 .lead-head { display: flex; justify-content: space-between; align-items: baseline; }
 .lead-name { font-size: 28rpx; font-weight: 600; color: #1f2330; }
+
+/* 主人召回：开启「新提问」微信订阅提醒（仅订阅模板已配时显示） */
+.notify-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 20rpx;
+  font-size: 26rpx;
+}
+.notify-ico { font-size: 30rpx; }
