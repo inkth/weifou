@@ -4,7 +4,7 @@ const { fenToYuan } = require('../../utils/pay');
 const { fmtDateTime } = require('../../utils/datetime');
 const { bookConsult, sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
-const { tierForPreset, getPreset } = require('../../utils/avatars');
+const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
 
 // 从小程序码 scene（URL-encoded 的 "id=xxx"）解析 profileId
 function parseScene(scene) {
@@ -141,8 +141,8 @@ Page({
     const p = getPreset(id, this.data.profileId);
     const c0 = (p.colors && p.colors[0]) || '#fb923c';
     const c1 = (p.colors && p.colors[1]) || c0;
-    // image 类型形象（如古风美女立绘）→ 启用全屏立绘模式，取 idle 图铺底
-    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : '';
+    // 所有场景统一全屏立绘：有专属 image 形象用专属，否则全员回退默认立绘 DEFAULT_LIHE
+    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : DEFAULT_LIHE;
     this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};`, liheSrc });
   },
 

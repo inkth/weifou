@@ -43,6 +43,11 @@ const PRESETS = [
   { id: 'lottie-wave', name: '波动', type: 'lottie', lottie: '/assets/lottie/wave.json', colors: ['#0ea5e9', '#22d3ee'], anim: 'flow' },
 ];
 
+// 默认全屏立绘（所有场景统一的立绘背景）。暂时全员共用 gf-meinv 这一张；
+// 将来做成可选立绘库时，每人 profile 自带 image 形象即覆盖此默认——只改这一处。
+const _meinv = PRESETS.find((p) => p.id === 'gf-meinv');
+const DEFAULT_LIHE = (_meinv && _meinv.images && _meinv.images.idle) || '/assets/avatars/gf-meinv_idle.webp';
+
 // 本地打包 Lottie 数据登记表：把 json 放 assets/lottie/ 后，在此静态 require 登记。
 // ⚠️ 微信 require 只解析 .js 模块，require('*.json') 会抛 "module ...json.js is not defined"。
 // 用 try 包裹：取不到则该项为 null，loadLottieData 自动回退 css/远程，绝不让模块加载崩溃
@@ -151,4 +156,4 @@ function initial(name) {
   return n[0].toUpperCase();
 }
 
-module.exports = { PRESETS, TONES, DEFAULT_TONE, toneForStyle, tierForPreset, getPreset, pickDefault, initial, hashStr, loadLottieData };
+module.exports = { PRESETS, TONES, DEFAULT_TONE, DEFAULT_LIHE, toneForStyle, tierForPreset, getPreset, pickDefault, initial, hashStr, loadLottieData };
