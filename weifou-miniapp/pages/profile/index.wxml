@@ -1,4 +1,8 @@
 <view class="page" wx:if="{{profile}}">
+  <!-- 全屏立绘铺底 + 暗场（与首页/对话统一）-->
+  <image class="bg-lihe" src="{{liheSrc}}" mode="aspectFill" wx:if="{{liheSrc}}"/>
+  <view class="bg-scrim" wx:if="{{liheSrc}}"></view>
+
   <!-- 晒点：刚生成完的庆祝时刻，分享意愿峰值 -->
   <view class="card fresh-card" wx:if="{{fresh && isMine && profile.persona}}">
     <view class="fresh-title">🎉 你的 AI 助理上岗了</view>

@@ -1,6 +1,31 @@
 @import "../../styles/stage.wxss";
 
-.page { padding: 32rpx 32rpx 120rpx; }
+/* 全屏立绘沉浸（与首页/对话统一）：立绘铺底 + 暗场，内容玻璃卡浮其上。
+   付费弹层 .tip-sheet 保持白底——成交时刻干净可信（成交克制硬门）。 */
+.page { padding: 32rpx 32rpx 120rpx; position: relative; min-height: 100vh; box-sizing: border-box; }
+.bg-lihe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.bg-scrim {
+  position: fixed; inset: 0; z-index: 0;
+  background: linear-gradient(to bottom, rgba(16,18,26,0.55) 0%, rgba(16,18,26,0.34) 30%, rgba(16,18,26,0.62) 70%, rgba(16,18,26,0.9) 100%);
+}
+/* 内容浮于立绘之上 */
+.card, .actions, .brand-foot { position: relative; z-index: 1; }
+
+/* 卡片：白底 → 暗场玻璃 */
+.card {
+  background: rgba(20, 22, 30, 0.5);
+  backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+/* 全局按钮在暗场下的可见性：accent 橙不变；primary 改干净白（成交/分享入口），ghost 改玻璃 */
+.btn-primary { background: rgba(255, 255, 255, 0.92); color: #1f2330; }
+.btn-ghost { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1rpx solid rgba(255, 255, 255, 0.24); }
+
+/* 标签 / 次要文字 暗场配色（白底弹层内单独恢复，见底部） */
+.tag { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.82); }
+.muted { color: rgba(255, 255, 255, 0.6); }
 
 .hero {
   margin-bottom: 24rpx;
@@ -9,69 +34,43 @@
   animation: heroRise 0.5s ease both;
 }
 @keyframes heroRise { from { opacity: 0; transform: translateY(10rpx); } to { opacity: 1; transform: none; } }
-/* hero 内容压在氛围层之上；光晕落到左侧头像处 */
 .hero-row, .one-liner, .tags { position: relative; z-index: 1; }
-.hero .amb-glow { background: radial-gradient(160rpx 160rpx at 16% 46%, var(--amb-a, #fb923c) 0%, transparent 70%); opacity: 0.18; }
-.hero-row { display: flex; align-items: center; gap: 24rpx; }
-.avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  background: #f0f1f5;
-}
+/* 立绘即人物：隐藏 hero 小头像与色块光晕（避免 toon 脸/光斑叠在立绘上） */
+.hero .amb-layer, .hero .stage-av-inner { display: none; }
+.hero-row { display: flex; align-items: center; }
 .hero-meta { flex: 1; min-width: 0; }
-.name { font-size: 36rpx; font-weight: 600; color: #1f2330; }
-.title-text { font-size: 26rpx; margin-top: 8rpx; }
-.city { font-size: 24rpx; margin-top: 4rpx; }
+.name { font-size: 36rpx; font-weight: 600; color: #fff; text-shadow: 0 1rpx 10rpx rgba(0, 0, 0, 0.4); }
+.title-text { font-size: 26rpx; margin-top: 8rpx; color: rgba(255, 255, 255, 0.78); }
+.city { font-size: 24rpx; margin-top: 4rpx; color: rgba(255, 255, 255, 0.6); }
 
-.one-liner {
-  margin-top: 24rpx;
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #1f2330;
-  line-height: 1.5;
-}
-
+.one-liner { margin-top: 24rpx; font-size: 32rpx; font-weight: 500; color: #fff; line-height: 1.5; }
 .tags { margin-top: 20rpx; display: flex; flex-wrap: wrap; }
 
 .section { margin-bottom: 24rpx; }
-.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; }
-.full-intro { font-size: 28rpx; line-height: 1.7; color: #2a2f40; white-space: pre-wrap; }
+.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; color: #fff; }
+.full-intro { font-size: 28rpx; line-height: 1.7; color: rgba(255, 255, 255, 0.85); white-space: pre-wrap; }
 
 .stats { display: flex; padding: 24rpx 0; }
 .stat { flex: 1; text-align: center; }
-.stat-num { font-size: 40rpx; font-weight: 700; color: #1f2330; }
-.stat-label { font-size: 22rpx; margin-top: 6rpx; }
+.stat-num { font-size: 40rpx; font-weight: 700; color: #fff; }
+.stat-label { font-size: 22rpx; margin-top: 6rpx; color: rgba(255, 255, 255, 0.6); }
 
 .actions { display: flex; flex-direction: column; gap: 20rpx; margin-top: 32rpx; }
 
-.empty { text-align: center; padding-top: 240rpx; }
+.empty { text-align: center; padding-top: 240rpx; color: rgba(255, 255, 255, 0.7); }
 
-/* 咨询 */
-.consult-intro { font-size: 26rpx; margin-bottom: 20rpx; }
-.consult-price { font-size: 26rpx; margin-bottom: 20rpx; }
+/* 咨询入口卡：更沉稳的深底（立绘不渗进价格区）、中性不升温；点击后在白色弹层完成付款 */
+.consult { background: rgba(20, 22, 30, 0.82); border-color: rgba(255, 255, 255, 0.12); }
+.consult-intro { font-size: 26rpx; margin-bottom: 20rpx; color: rgba(255, 255, 255, 0.72); }
+.consult-price { font-size: 26rpx; margin-bottom: 20rpx; color: rgba(255, 255, 255, 0.72); }
 .book-btn { margin-top: 8rpx; }
-.consult-note { font-size: 22rpx; margin-top: 20rpx; text-align: center; }
+.consult-note { font-size: 22rpx; margin-top: 20rpx; text-align: center; color: rgba(255, 255, 255, 0.6); }
 
-/* 档期选择 */
-.slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
-.slot-empty { text-align: center; padding: 48rpx 0; }
-.slot-pick {
-  padding: 24rpx;
-  background: #f5f6fa;
-  border-radius: 16rpx;
-  margin-bottom: 16rpx;
-  border: 2rpx solid transparent;
-}
-.slot-pick.active { border-color: #1f2330; background: #fff; }
-.sp-time { font-size: 30rpx; font-weight: 500; }
-.sp-meta { font-size: 24rpx; margin-top: 6rpx; }
-
-/* 打赏弹层 */
+/* —— 付费弹层：保持白底（成交时刻干净可信，不沾沉浸暗场）—— */
 .mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   z-index: 100;
   display: flex;
   align-items: flex-end;
@@ -82,7 +81,9 @@
   border-radius: 32rpx 32rpx 0 0;
   padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
-.tip-title { font-size: 34rpx; font-weight: 600; }
+.tip-sheet .muted { color: #8a8f9c; }              /* 白底弹层内恢复灰字 */
+.tip-sheet .btn-primary { background: #1f2330; color: #fff; }  /* 白底上恢复墨黑实心 */
+.tip-title { font-size: 34rpx; font-weight: 600; color: #1f2330; }
 .tip-sub { font-size: 24rpx; margin-top: 8rpx; }
 .tip-amounts { display: flex; gap: 20rpx; margin: 32rpx 0; }
 .tip-amount {
@@ -93,6 +94,7 @@
   border-radius: 16rpx;
   font-size: 32rpx;
   font-weight: 600;
+  color: #1f2330;
   border: 2rpx solid transparent;
 }
 .tip-amount.active { border-color: #1f2330; background: #fff; }
@@ -102,23 +104,39 @@
   padding: 24rpx;
   font-size: 28rpx;
   margin-bottom: 32rpx;
+  color: #1f2330;
 }
 .tip-pay { margin-top: 8rpx; }
 
-/* —— 生成完成晒点（庆祝时刻，暖底+弹入；非成交区，可升温）—— */
+/* 档期选择（白底弹层内） */
+.slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
+.slot-empty { text-align: center; padding: 48rpx 0; }
+.slot-pick {
+  padding: 24rpx;
+  background: #f5f6fa;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  border: 2rpx solid transparent;
+}
+.slot-pick.active { border-color: #1f2330; background: #fff; }
+.sp-time { font-size: 30rpx; font-weight: 500; color: #1f2330; }
+.sp-meta { font-size: 24rpx; margin-top: 6rpx; }
+
+/* —— 生成完成晒点（庆祝时刻，暖色玻璃；非成交区，可升温）—— */
 .fresh-card {
   padding: 32rpx;
   text-align: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, var(--accent-soft), #fff 70%);
+  background: linear-gradient(160deg, rgba(251, 146, 60, 0.34), rgba(20, 22, 30, 0.55) 72%);
+  border: 1rpx solid rgba(251, 146, 60, 0.42);
   animation: freshPop 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @keyframes freshPop { from { opacity: 0; transform: translateY(12rpx) scale(0.98); } to { opacity: 1; transform: none; } }
-.fresh-title { font-size: 36rpx; font-weight: 700; color: #1f2330; }
+.fresh-title { font-size: 36rpx; font-weight: 700; color: #fff; }
 .fresh-sub { font-size: 26rpx; margin: 12rpx 0 8rpx; }
 .fresh-starters { margin-bottom: 20rpx; }
-.fresh-starter { font-size: 26rpx; color: #1f2330; line-height: 1.9; }
+.fresh-starter { font-size: 26rpx; color: #fff; line-height: 1.9; }
 .fresh-actions { display: flex; gap: 16rpx; }
 .fresh-btn { flex: 1; }
 

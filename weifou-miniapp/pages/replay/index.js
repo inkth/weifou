@@ -3,12 +3,14 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fmtDateTime } = require('../../utils/datetime');
+const { DEFAULT_LIHE } = require('../../utils/avatars');
 
 Page({
   data: {
     visitorName: '访客',
     messages: [],
     loading: true,
+    liheSrc: DEFAULT_LIHE, // 全屏立绘背景（与首页/对话统一）
   },
 
   async onLoad(query) {

@@ -4,7 +4,7 @@ const { fenToYuan } = require('../../utils/pay');
 const { fmtDateTime } = require('../../utils/datetime');
 const { bookConsult, sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
-const { tierForPreset, getPreset } = require('../../utils/avatars');
+const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
 
 Page({
   data: {
@@ -17,6 +17,7 @@ Page({
     // 沉浸式 hero 氛围（与对话舞台同一套温度档/光晕词汇）
     stageTier: 'warm',
     ambStyle: '',
+    liheSrc: '', // 全屏立绘背景（与首页/对话统一，所有场景一致）
     freshDelight: false, // 刚创建（fresh+本人）时 hero 头像庆祝一跳
     // 打赏
     tipVisible: false,
@@ -110,7 +111,9 @@ Page({
     const p = getPreset(id, seed);
     const c0 = (p.colors && p.colors[0]) || '#fb923c';
     const c1 = (p.colors && p.colors[1]) || c0;
-    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};` });
+    // 所有场景统一全屏立绘：有专属 image 形象用专属，否则回退默认立绘
+    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : DEFAULT_LIHE;
+    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};`, liheSrc });
   },
 
   goChat() {
