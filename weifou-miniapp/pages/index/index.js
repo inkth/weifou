@@ -1,11 +1,14 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
+const { hostQuestions } = require('../../utils/asyncq');
 
 Page({
   data: {
     loading: true,
     profileId: null,
     chatCount: 0,
+    todoCount: 0,
+    inboxLabel: '收件箱 · 待回答 / 访客线索',
   },
 
   async onShow() {
@@ -22,9 +25,30 @@ Page({
         chatCount: (chats || []).length,
         loading: false,
       });
+      // 主人态：拉收件箱待办计数，让主人一打开就被"有人在等你"勾住（付费提问最优先）。
+      if (me.profileId) this.loadTodo();
     } catch (e) {
       this.setData({ loading: false });
     }
+  },
+
+  // 收件箱待办计数：知识缺口(open) + 未跟进线索(new) + 付费提问(paid，有钱有时限，最该召回)。
+  // 三个接口各自兜底，任一失败不影响其余计数；非主人态不调用。
+  async loadTodo() {
+    try {
+      const [gaps, leads, paid] = await Promise.all([
+        request({ url: '/profile/gaps' }).catch(() => []),
+        request({ url: '/profile/leads' }).catch(() => []),
+        hostQuestions('paid').catch(() => []),
+      ]);
+      const paidCount = (paid || []).length;
+      const newLeads = (leads || []).filter((l) => l.status === 'new').length;
+      const todoCount = (gaps || []).length + newLeads + paidCount;
+      let inboxLabel = '收件箱 · 待回答 / 访客线索';
+      if (paidCount > 0) inboxLabel = `收件箱 · ${paidCount} 条付费提问待答`;
+      else if (todoCount > 0) inboxLabel = `收件箱 · ${todoCount} 条待处理`;
+      this.setData({ todoCount, inboxLabel });
+    } catch (e) {}
   },
 
   // 访客回流：我作为访客聊过的真人 AI 分身（文字对话 / 通话 / 付费提问）

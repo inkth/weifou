@@ -25,7 +25,10 @@
     <button class="glass-btn primary" bindtap="goBuild" wx:if="{{!profileId}}">开始创建我的 AI 助理</button>
     <button class="glass-btn primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 主页</button>
     <button class="glass-btn" bindtap="goMyChats" wx:if="{{chatCount}}">我聊过的 · {{chatCount}}</button>
-    <button class="glass-btn" bindtap="goInbox" wx:if="{{profileId}}">收件箱 · 待回答 / 访客线索</button>
+    <button class="glass-btn inbox-btn" bindtap="goInbox" wx:if="{{profileId}}">
+      <text>{{inboxLabel}}</text>
+      <text class="todo-badge" wx:if="{{todoCount}}">{{todoCount}}</text>
+    </button>
     <button class="glass-btn" bindtap="goCreate" wx:if="{{profileId}}">重新编辑</button>
   </view>
 

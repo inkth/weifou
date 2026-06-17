@@ -71,3 +71,23 @@
 }
 
 .loading { color: rgba(255,255,255,0.85); text-align: center; margin-top: 60rpx; }
+
+/* 收件箱待办角标：暖橙小徽章浮在按钮右上角（主人召回钩子） */
+.inbox-btn { position: relative; }
+.todo-badge {
+  position: absolute;
+  top: -12rpx;
+  right: 28rpx;
+  min-width: 38rpx;
+  height: 38rpx;
+  padding: 0 12rpx;
+  box-sizing: border-box;
+  border-radius: 100rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 38rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 12rpx rgba(251, 146, 60, 0.45);
+}
