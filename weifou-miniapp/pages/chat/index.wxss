@@ -29,7 +29,9 @@
 
 /* —— 全屏立绘模式（星野式：立绘铺底 + 气泡浮层）—— */
 .lihe-bg { position: fixed; inset: 0; z-index: 0; }
-.lihe-img { width: 100%; height: 100%; }
+.lihe-img { width: 100%; height: 100%; transform-origin: 50% 45%; animation: liheBreath 7s ease-in-out infinite; }
+/* 立绘微动：极轻的"呼吸"，让静止立绘有生命感。纯 transform/GPU，scale≥1 不露底 */
+@keyframes liheBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 .lihe-scrim {
   position: absolute; inset: 0;
   background: linear-gradient(to bottom, rgba(245, 246, 250, 0) 30%, rgba(18, 20, 28, 0.12) 56%, rgba(18, 20, 28, 0.58) 100%);
@@ -212,6 +214,7 @@
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 .choices-hint { width: 100%; font-size: 24rpx; margin-bottom: 4rpx; }
+.trust-cap { width: 100%; font-size: 22rpx; color: #8a8f9c; margin-top: 2rpx; line-height: 1.5; }
 .empty { padding: 200rpx 48rpx; text-align: center; }
 .empty-title { font-size: 34rpx; font-weight: 600; color: #1f2330; margin-bottom: 16rpx; }
 

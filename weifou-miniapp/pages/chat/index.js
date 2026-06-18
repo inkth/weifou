@@ -5,6 +5,7 @@ const { fmtDateTime } = require('../../utils/datetime');
 const { bookConsult, sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
+const { buildTrustLine } = require('../../utils/trust');
 
 // 从小程序码 scene（URL-encoded 的 "id=xxx"）解析 profileId
 function parseScene(scene) {
@@ -27,6 +28,7 @@ Page({
     consultAvailable: false,
     asyncAvailable: false, // 是否开放付费提问
     asyncPriceYuan: '',
+    trustLine: '', // 信任徽章文案（社会证明，来自既有交易数据；冷启动数字过小时为空）
     isMine: false, // 主人预览自己的 AI（profile 页透传 mine=1）
     hasOwnProfile: true, // 默认 true：确认是"无主页访客"前不展示裂变钩子
     notFound: false,
@@ -97,6 +99,7 @@ Page({
         contactAvailable: !!p.contactVisible,
         title: p.title || '', company: p.company || '', city: p.city || '',
         tags: persona.tags || [], fullIntro: persona.fullIntro || '',
+        trustLine: buildTrustLine(p.trust, 'asked'),
       });
       this._applyStageTheme(); // 用最终 avatarStyle 推导氛围档 + 光晕色
       // 打字机开场只惊艳一次：回访（含主人反复自测）直接显示全文，把效率还给第二次
@@ -131,7 +134,33 @@ Page({
 
   onUnload() {
     this._abortIntro();
+    if (this._answerTimer) { clearInterval(this._answerTimer); this._answerTimer = null; this._answerDone = null; }
     if (this._delightTimer) { clearTimeout(this._delightTimer); this._delightTimer = null; }
+  },
+
+  // 答复打字机：逐字写入第 index 条消息；_flushAnswer 可被新提问/卸载抢断为整条落定。
+  // 与开场 _typeMessage 分开：后者受 _introAborted 闸门，ask() 一开始就 abort，会让答复秒显。
+  _typeAnswer(index, fullText) {
+    return new Promise((resolve) => {
+      this._flushAnswer(); // 落定上一条（若有），再开新的
+      this._answerDone = () => {
+        if (this._answerTimer) { clearInterval(this._answerTimer); this._answerTimer = null; }
+        this._answerDone = null;
+        this.setData({ [`messages[${index}].content`]: fullText });
+        resolve();
+      };
+      if (!fullText) { this._answerDone(); return; }
+      let i = 0;
+      this._answerTimer = setInterval(() => {
+        i += 3;
+        if (i >= fullText.length) this._answerDone();
+        else this.setData({ [`messages[${index}].content`]: fullText.slice(0, i) });
+      }, 40);
+    });
+  },
+
+  _flushAnswer() {
+    if (this._answerDone) this._answerDone();
   },
 
   // 由当前 avatarStyle 推导舞台氛围档（驱动 .tier-*）+ 注入头像同色系光晕（--amb-a/b）
@@ -277,6 +306,7 @@ Page({
   async ask(content) {
     if (!content || this.data.pending) return;
     this._abortIntro();
+    this._flushAnswer(); // 上一条还在逐字时立即落定，避免两条打字机叠加
     try {
       await ensureLogin();
     } catch (e) {
@@ -293,15 +323,16 @@ Page({
         method: 'POST',
         data: { content },
       });
-      const msg = { role: 'assistant', content: data.answer };
+      // 答复也走打字机：先落一条空气泡，introState=speaking 让舞台维持"在说话"，再逐字显现，
+      // 每一轮都有"真人在说"的临场感（开场打字机只是第一拍，问答同样有节奏）。
+      const msgs = this.data.messages.concat({ role: 'assistant', content: '' });
+      const idx = msgs.length - 1;
+      this.setData({ messages: msgs, pending: false, answeredOnce: true, introState: 'speaking' });
+      await this._typeAnswer(idx, data.answer || '');
       if (data.card && data.card.type === 'consult_offer') {
-        msg.card = this.decorateCard(data.card);
+        this.setData({ [`messages[${idx}].card`]: this.decorateCard(data.card) });
       }
-      this.setData({
-        messages: this.data.messages.concat(msg),
-        pending: false,
-        answeredOnce: true,
-      });
+      this.setData({ introState: '' });
       // 轻线索：访客被第 2 个回答"种草"后，给一条不抢戏的"我也要一个"入口（仅一次）
       this._answerCount = (this._answerCount || 0) + 1;
       if (this._answerCount === 2) this._showOwnHook('light');

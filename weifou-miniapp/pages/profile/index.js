@@ -5,6 +5,8 @@ const { fmtDateTime } = require('../../utils/datetime');
 const { bookConsult, sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
+const { requestNewQuestionNotify, requestLeadNotify } = require('../../utils/subscribe');
+const { buildTrustLine } = require('../../utils/trust');
 
 Page({
   data: {
@@ -13,6 +15,8 @@ Page({
     stats: null,
     isMine: false,
     loading: true,
+    trustLine: '', // 信任徽章文案（社会证明，冷启动数字过小时为空）
+    notifyAsked: false, // 首胜里点过"开启通知"后给即时反馈
     pricing: { enabled: false },
     // 沉浸式 hero 氛围（与对话舞台同一套温度档/光晕词汇）
     stageTier: 'warm',
@@ -67,6 +71,9 @@ Page({
     if (isMine) {
       try {
         const stats = await request({ url: '/visit/stats/mine' });
+        // 收入「可见」：累计成交 + 本月（分账由微信直接打到主人零钱，无需提现）
+        stats.incomeGrossYuan = fenToYuan(stats.incomeGross || 0);
+        stats.incomeMonthYuan = fenToYuan(stats.incomeMonth || 0);
         this.setData({ stats });
       } catch (e) {}
     } else {
@@ -95,7 +102,7 @@ Page({
   async fetchProfile() {
     try {
       const data = await request({ url: `/profile/${this.data.profileId}` });
-      this.setData({ profile: data, loading: false });
+      this.setData({ profile: data, loading: false, trustLine: buildTrustLine(data.trust, 'consulted') });
       this._applyStageTheme();
     } catch (e) {
       this.setData({ loading: false });
@@ -126,6 +133,15 @@ Page({
 
   goSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
+  },
+
+  // 首胜第三步：把订阅授权前置到创建时，保证第一个访客动作（提问/留言）就能推达主人。
+  // 需先在公众平台配好模板 ID；未配置时静默降级（不报错），仍给"已开启"的正反馈。
+  async enableNotify() {
+    try { await requestNewQuestionNotify(); } catch (e) {}
+    try { await requestLeadNotify(); } catch (e) {}
+    this.setData({ notifyAsked: true });
+    wx.showToast({ title: '已开启来访通知', icon: 'success' });
   },
 
   // 付费向本人提问（异步咨询）

@@ -9,6 +9,7 @@ Page({
   data: {
     tab: 'gaps', // gaps | questions | leads | knowledge | sessions
     loading: true,
+    profileId: '', // 用于空态"分享你的 AI"的分享落点
     gaps: [],
     questions: [], // 付费提问（待我回答 / 已回答 / 已退款）
     leads: [],
@@ -28,15 +29,17 @@ Page({
   async loadAll() {
     this.setData({ loading: true });
     try {
-      const [gaps, leads, knowledge, sessions, questions] = await Promise.all([
+      const [gaps, leads, knowledge, sessions, questions, me] = await Promise.all([
         request({ url: '/profile/gaps' }),
         request({ url: '/profile/leads' }),
         request({ url: '/profile/knowledge' }),
         // 会话列表失败不拖垮整页（如尚未创建主页）
         request({ url: '/chat/sessions/host' }).catch(() => []),
         hostQuestions().catch(() => []),
+        request({ url: '/user/me' }).catch(() => null),
       ]);
       this.setData({
+        profileId: (me && me.profileId) || '',
         gaps: gaps || [],
         leads: (leads || []).map((l) => ({ ...l, timeText: fmtDateTime(l.createdAt) })),
         knowledge: knowledge || [],
@@ -221,5 +224,14 @@ Page({
     const contact = e.currentTarget.dataset.contact;
     if (!contact) return;
     wx.setClipboardData({ data: contact });
+  },
+
+  // 空收件箱的破局：分享自己的 AI 直达对话（让"还没人来"变成可行动的下一步）
+  onShareAppMessage() {
+    const id = this.data.profileId;
+    return {
+      title: '加我微信前，先和我的 AI 助理聊聊',
+      path: id ? `/pages/chat/index?profileId=${id}` : '/pages/index/index',
+    };
   },
 });

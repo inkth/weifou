@@ -21,6 +21,10 @@
         <text class="promise-k muted">价格</text>
         <text class="promise-v">¥{{priceYuan}}</text>
       </view>
+      <view class="promise-row" wx:if="{{trustLine}}">
+        <text class="promise-k muted">口碑</text>
+        <text class="promise-v trust">★ {{trustLine}}</text>
+      </view>
       <view class="promise-note muted">{{realName}} 会尽快回答；若超时未答，系统将<text class="hl">全额退款</text>给你。</view>
     </view>
 

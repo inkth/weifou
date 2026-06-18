@@ -87,6 +87,11 @@
       <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
     </block>
     <view class="chip ghost" bindtap="toggleInput">{{showInput ? '收起输入' : '✏️ 自己问'}}</view>
+
+    <!-- 信任/保障 caption：付费前消解陌生人风险。保障常驻；社会证明数字过小时由 trustLine 兜底为空 -->
+    <view class="trust-cap" wx:if="{{answeredOnce && !isMine && (asyncAvailable || trustLine)}}">
+      <text wx:if="{{asyncAvailable}}">✓ 付费提问答不上全额退款</text><text wx:if="{{asyncAvailable && trustLine}}"> · </text><text wx:if="{{trustLine}}">{{trustLine}}</text>
+    </view>
   </view>
 
   <view class="composer" wx:if="{{showInput}}">

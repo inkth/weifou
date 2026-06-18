@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -118,6 +119,26 @@ func (h *Handler) stats(c *gin.Context) error {
 		Where("chat_sessions.profile_id = ? AND chat_messages.role = ?", profile.ID, models.RoleUser).
 		Count(&askCount)
 
-	httpx.OK(c, gin.H{"profileId": profile.ID, "pv": pv, "uv": uv, "askCount": askCount})
+	// 主人收入可见：累计成交（已支付的咨询/提问订单）+ 本月成交 + 已分账到账（净）。
+	// 分账由微信直接打到主人 openid，所以这里是"可见"而非"提现"。
+	payTypes := []string{models.OrderConsult, models.OrderAsyncQuestion}
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	var incomeGross, incomeMonth, incomeNet int64
+	h.db.Model(&models.Order{}).
+		Where("payee_user_id = ? AND status = ? AND type IN ?", auth.UserID, models.OrderPaid, payTypes).
+		Select("COALESCE(SUM(amount),0)").Scan(&incomeGross)
+	h.db.Model(&models.Order{}).
+		Where("payee_user_id = ? AND status = ? AND type IN ? AND created_at >= ?", auth.UserID, models.OrderPaid, payTypes, monthStart).
+		Select("COALESCE(SUM(amount),0)").Scan(&incomeMonth)
+	h.db.Table("profit_shares").
+		Joins("JOIN orders ON orders.id = profit_shares.order_id").
+		Where("orders.payee_user_id = ? AND profit_shares.finished = ?", auth.UserID, true).
+		Select("COALESCE(SUM(profit_shares.payee_amount),0)").Scan(&incomeNet)
+
+	httpx.OK(c, gin.H{
+		"profileId": profile.ID, "pv": pv, "uv": uv, "askCount": askCount,
+		"incomeGross": incomeGross, "incomeMonth": incomeMonth, "incomeNet": incomeNet,
+	})
 	return nil
 }

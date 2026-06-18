@@ -1,7 +1,9 @@
 const { fenToYuan } = require('../../utils/pay');
 const { ensureLogin } = require('../../utils/auth');
+const { request } = require('../../utils/request');
 const { askQuestion, fetchPricing } = require('../../utils/asyncq');
 const { requestQuestionNotify } = require('../../utils/subscribe');
+const { buildTrustLine } = require('../../utils/trust');
 
 Page({
   data: {
@@ -10,6 +12,7 @@ Page({
     source: 'profile',
     asyncEnabled: false,
     priceYuan: '',
+    trustLine: '', // 付费前的社会证明（数字过小时为空）
     question: '',
     loading: true,
     paying: false,
@@ -24,10 +27,15 @@ Page({
     });
     try { await ensureLogin(); } catch (e) {}
     try {
-      const p = await fetchPricing(profileId);
+      // 价格 + 信任并行：付费前最后一程展示社会证明，消解陌生人风险感
+      const [p, prof] = await Promise.all([
+        fetchPricing(profileId),
+        request({ url: `/profile/${profileId}` }).catch(() => null),
+      ]);
       this.setData({
         asyncEnabled: !!p.asyncEnabled,
         priceYuan: p.asyncEnabled ? fenToYuan(p.asyncPrice) : '',
+        trustLine: buildTrustLine(prof && prof.trust, 'consulted'),
         loading: false,
       });
     } catch (e) {

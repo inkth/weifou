@@ -2,6 +2,7 @@ package profile
 
 import (
 	"encoding/json"
+	"math"
 	"strings"
 	"time"
 
@@ -239,7 +240,49 @@ func (h *Handler) publicByID(profileID string) (gin.H, error) {
 		"contactVisible": profile.ContactVisible,
 		"discoverable":   profile.Discoverable,
 		"persona":        personaData,
+		"trust":          h.trustFor(profileID),
 	}, nil
+}
+
+// trustFor 聚合社会证明信号（全部派生自既有交易数据，无新表/无埋点）：
+// 付费咨询过 TA 的人数、已答提问数、平均回答时长、答复率。
+// 冷启动数字过小时由前端隐藏，仅保留"答不上全额退"保障文案。
+func (h *Handler) trustFor(profileID string) gin.H {
+	// 已答付费提问的提问人数（去重）
+	var answeredAskers int64
+	h.db.Model(&models.AsyncQuestion{}).
+		Where("profile_id = ? AND status = ?", profileID, models.AsyncAnswered).
+		Distinct("asker_openid").Count(&answeredAskers)
+	// 完成过语音/视频咨询的访客数（去重）
+	var endedGuests int64
+	h.db.Model(&models.ConsultSession{}).
+		Where("profile_id = ? AND status = ?", profileID, models.ConsultEnded).
+		Distinct("guest_openid").Count(&endedGuests)
+
+	var answeredCount, refundedCount int64
+	h.db.Model(&models.AsyncQuestion{}).
+		Where("profile_id = ? AND status = ?", profileID, models.AsyncAnswered).Count(&answeredCount)
+	h.db.Model(&models.AsyncQuestion{}).
+		Where("profile_id = ? AND status = ?", profileID, models.AsyncRefunded).Count(&refundedCount)
+
+	// 平均回答时长（小时）：仅已答且有支付时间的提问
+	var avgHours float64
+	h.db.Model(&models.AsyncQuestion{}).
+		Where("profile_id = ? AND status = ? AND paid_at IS NOT NULL AND answered_at IS NOT NULL", profileID, models.AsyncAnswered).
+		Select("COALESCE(AVG(EXTRACT(EPOCH FROM (answered_at - paid_at)) / 3600.0), 0)").
+		Scan(&avgHours)
+
+	repliedRate := 0
+	if total := answeredCount + refundedCount; total > 0 {
+		repliedRate = int(answeredCount * 100 / total)
+	}
+
+	return gin.H{
+		"consultedPeople": answeredAskers + endedGuests,
+		"answeredCount":   answeredCount,
+		"avgAnswerHours":  math.Round(avgHours*10) / 10,
+		"repliedRate":     repliedRate,
+	}
 }
 
 func (h *Handler) findOne(c *gin.Context) error {

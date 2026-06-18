@@ -14,6 +14,10 @@
       <button class="btn-primary fresh-btn" open-type="share">发给朋友试试</button>
       <button class="btn-ghost fresh-btn" bindtap="goChat">我先试聊一下</button>
     </view>
+    <!-- 首胜第三步：开启通知，让第一个访客动作就能找到主人 -->
+    <view class="fresh-notify {{notifyAsked ? 'done' : ''}}" bindtap="enableNotify">
+      {{notifyAsked ? '✓ 已开启 · 有人提问/留言会马上通知你' : '🔔 开启通知，有人来访第一时间找到你'}}
+    </view>
   </view>
 
   <view class="hero card tier-{{stageTier}} stage-in" style="{{ambStyle}}">
@@ -57,9 +61,19 @@
     </view>
   </view>
 
+  <!-- 收入可见：给主人留下来的理由。分账由微信直接到零钱，所以是"可见"而非"提现" -->
+  <view class="card income-card" wx:if="{{isMine && stats && stats.incomeGross > 0}}">
+    <view class="income-row">
+      <view class="income-num">¥{{stats.incomeGrossYuan}}</view>
+      <view class="income-label muted">累计成交</view>
+    </view>
+    <view class="income-sub muted">本月 ¥{{stats.incomeMonthYuan}} · 分账后直接进你的微信零钱</view>
+  </view>
+
   <view class="card section consult" wx:if="{{!isMine && pricing.asyncEnabled}}">
     <view class="section-title">付费向本人提问</view>
     <view class="consult-price muted">¥{{pricing.asyncPriceYuan}} / 个问题 · 由 {{profile.realName}} 本人作答</view>
+    <view class="trust-badge" wx:if="{{trustLine}}">★ {{trustLine}}</view>
     <button class="btn-primary book-btn" bindtap="goAsk">写下你的问题</button>
     <view class="consult-note muted" bindtap="goMyQuestions">超时未答全额退款 · 我的提问 ›</view>
   </view>
@@ -68,6 +82,7 @@
     <view class="section-title">预约付费咨询</view>
     <view class="consult-intro muted" wx:if="{{pricing.intro}}">{{pricing.intro}}</view>
     <view class="consult-price muted">30 分钟 ¥{{pricing.price30Yuan}} · 60 分钟 ¥{{pricing.price60Yuan}}</view>
+    <view class="trust-badge" wx:if="{{trustLine}}">★ {{trustLine}}</view>
     <button class="btn-primary book-btn" bindtap="openSlots">选择时间预约</button>
     <view class="consult-note muted">真人语音/视频通话，按预约时间进入</view>
   </view>

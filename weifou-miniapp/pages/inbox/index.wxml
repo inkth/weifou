@@ -22,7 +22,10 @@
   <!-- 会话回放 -->
   <block wx:if="{{!loading && tab === 'sessions'}}">
     <view class="tip muted">你的 AI 助理替你接待的对话，点开可回看它说了什么。</view>
-    <view wx:if="{{!sessions.length}}" class="empty muted">还没有访客对话，把主页分享出去试试</view>
+    <view wx:if="{{!sessions.length}}" class="empty-share">
+      <view class="es-text muted">还没有访客和你的 AI 聊过</view>
+      <button wx:if="{{profileId}}" class="es-btn" open-type="share">把你的 AI 分享出去 →</button>
+    </view>
     <view class="card session-card" wx:for="{{sessions}}" wx:key="sessionId"
           bindtap="goReplay" data-id="{{item.sessionId}}" data-name="{{item.visitorName}}">
       <view class="lead-head">
@@ -55,7 +58,10 @@
       <text class="notify-ico">🔔</text>
       <text>开启提醒：有新付费提问时微信通知我 ›</text>
     </view>
-    <view wx:if="{{!questions.length}}" class="empty muted">还没有付费提问</view>
+    <view wx:if="{{!questions.length}}" class="empty-share">
+      <view class="es-text muted">还没有付费提问</view>
+      <button wx:if="{{profileId}}" class="es-btn" open-type="share">分享你的 AI，让更多人来问 →</button>
+    </view>
     <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="goQuestion" data-id="{{item.id}}">
       <view class="lead-head">
         <text class="lead-name">¥{{item.priceYuan}} · {{item.statusText}}</text>
@@ -73,7 +79,10 @@
       <text class="notify-ico">🔔</text>
       <text>开启提醒：有访客留言时微信通知我 ›</text>
     </view>
-    <view wx:if="{{!leads.length}}" class="empty muted">还没有访客留言</view>
+    <view wx:if="{{!leads.length}}" class="empty-share">
+      <view class="es-text muted">还没有访客留言</view>
+      <button wx:if="{{profileId}}" class="es-btn" open-type="share">分享你的 AI，让更多人来访 →</button>
+    </view>
     <view class="card" wx:for="{{leads}}" wx:key="id">
       <view class="lead-head">
         <text class="lead-name">{{item.visitorName || '匿名访客'}}</text>
