@@ -246,6 +246,49 @@ func (c *Client) BuildPayParams(prepayID string) (*PayParams, error) {
 	}, nil
 }
 
+// ---------- H5 支付（外部浏览器，MWEB） ----------
+
+type H5Order struct {
+	OutTradeNo  string
+	Description string
+	Amount      int
+	Attach      string
+	ClientIP    string
+}
+
+// CreateH5Order 创建 H5(MWEB) 支付，返回中间页 h5_url（外部浏览器跳转，唤起微信完成支付）。
+// 注意：只能在微信外的浏览器使用——微信内置浏览器调用会失败（须改用 JSAPI）。
+func (c *Client) CreateH5Order(o H5Order) (string, error) {
+	ip := o.ClientIP
+	if ip == "" {
+		ip = "127.0.0.1"
+	}
+	payload := map[string]interface{}{
+		"appid":        c.appID,
+		"mchid":        c.mchID,
+		"description":  o.Description,
+		"out_trade_no": o.OutTradeNo,
+		"notify_url":   c.notifyURL,
+		"amount":       map[string]interface{}{"total": o.Amount, "currency": "CNY"},
+		"scene_info": map[string]interface{}{
+			"payer_client_ip": ip,
+			"h5_info":         map[string]string{"type": "Wap"},
+		},
+	}
+	if o.Attach != "" {
+		payload["attach"] = o.Attach
+	}
+	body, err := c.doV3("POST", "/v3/pay/transactions/h5", payload)
+	if err != nil {
+		return "", err
+	}
+	var data struct {
+		H5URL string `json:"h5_url"`
+	}
+	_ = json.Unmarshal(body, &data)
+	return data.H5URL, nil
+}
+
 // ---------- 关单 ----------
 
 func (c *Client) CloseOrder(outTradeNo string) error {

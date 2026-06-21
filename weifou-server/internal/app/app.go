@@ -8,9 +8,12 @@ import (
 	"weifou-server/internal/asyncq"
 	"weifou-server/internal/auth"
 	"weifou-server/internal/chat"
+	"weifou-server/internal/clientcfg"
 	"weifou-server/internal/config"
 	"weifou-server/internal/consult"
 	"weifou-server/internal/deepseek"
+	"weifou-server/internal/membership"
+	"weifou-server/internal/mp"
 	"weifou-server/internal/payment"
 	"weifou-server/internal/persona"
 	"weifou-server/internal/plaza"
@@ -18,6 +21,7 @@ import (
 	"weifou-server/internal/rtc"
 	"weifou-server/internal/share"
 	"weifou-server/internal/tasks"
+	"weifou-server/internal/toolagent"
 	"weifou-server/internal/user"
 	"weifou-server/internal/visit"
 	"weifou-server/internal/wechat"
@@ -28,17 +32,21 @@ import (
 type App struct {
 	cfg *config.Config
 
-	authH    *auth.Handler
-	userH    *user.Handler
-	profileH *profile.Handler
-	chatH    *chat.Handler
-	visitH   *visit.Handler
-	shareH   *share.Handler
-	consultH *consult.Handler
-	paymentH *payment.Handler
-	asyncqH  *asyncq.Handler
-	rtcH     *rtc.Handler
-	plazaH   *plaza.Handler
+	authH       *auth.Handler
+	userH       *user.Handler
+	profileH    *profile.Handler
+	chatH       *chat.Handler
+	visitH      *visit.Handler
+	shareH      *share.Handler
+	consultH    *consult.Handler
+	paymentH    *payment.Handler
+	asyncqH     *asyncq.Handler
+	rtcH        *rtc.Handler
+	plazaH      *plaza.Handler
+	toolagentH  *toolagent.Handler
+	membershipH *membership.Handler
+	mpH         *mp.Handler
+	clientcfgH  *clientcfg.Handler
 
 	scheduler *tasks.Scheduler
 }
@@ -68,6 +76,8 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	personaSvc := persona.NewService(db, ds, security)
 	profitShare := payment.NewProfitShareService(db, payClient, cfg.ProfitSharing, cfg.PlatformFeeRate)
 	paymentH := payment.NewHandler(db, payClient, security, profitShare, subscribe, cfg.JWTSecret, cfg.TipMaxAmount, cfg.AsyncQSLAHours)
+	mbrH := membership.NewHandler(db, paymentH, cfg.JWTSecret)
+	mpLogin := wechat.NewLoginClient(cfg.MpAppID, cfg.MpSecret)
 
 	a := &App{
 		cfg:      cfg,
@@ -88,8 +98,12 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 			EarlyJoinMin: cfg.CallEarlyJoinMin,
 			GraceMin:     cfg.CallGraceMin,
 		}),
-		plazaH:    plaza.NewHandler(db),
-		scheduler: tasks.NewScheduler(db, paymentH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
+		plazaH:      plaza.NewHandler(db),
+		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
+		membershipH: mbrH,
+		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
+		clientcfgH:  clientcfg.NewHandler(),
+		scheduler:   tasks.NewScheduler(db, paymentH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
 	}
 	return a
 }
@@ -108,6 +122,10 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.asyncqH.Register(api)
 	a.rtcH.Register(api)
 	a.plazaH.Register(api)
+	a.toolagentH.Register(api)
+	a.membershipH.Register(api)
+	a.mpH.Register(api)
+	a.clientcfgH.Register(api)
 }
 
 func (a *App) StartCron() {

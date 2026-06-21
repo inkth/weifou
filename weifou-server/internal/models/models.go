@@ -223,6 +223,8 @@ const (
 	OrderTip           = "tip"
 	OrderConsult       = "consult"
 	OrderAsyncQuestion = "async_question"
+	OrderAgent         = "agent"      // 旧：单 Agent 次卡（已被会员制取代，保留兼容）
+	OrderMembership    = "membership" // 会员：一价解锁全部工具 Agent（虚拟商品，平台自营、不分账）
 
 	OrderPending   = "pending"
 	OrderPaid      = "paid"
@@ -246,6 +248,9 @@ type Order struct {
 	ScheduledAt   *time.Time `json:"scheduledAt,omitempty"`
 	Message       *string    `gorm:"type:text" json:"message,omitempty"`
 	Source        string     `gorm:"size:16;default:profile;index" json:"source"` // 成交来源：profile / chat_card
+	AgentID       *string    `gorm:"size:32" json:"agentId,omitempty"`            // OrderAgent：购买的工具 Agent
+	PlanID        *string    `gorm:"size:32" json:"planId,omitempty"`             // OrderMembership：购买的会员套餐
+	Platform      string     `gorm:"size:16" json:"platform"`                     // 下单端 ios/android/devtools（iOS 虚拟支付红线分流/兜底）
 	PrepayID      *string    `gorm:"size:128" json:"prepayId,omitempty"`
 	TransactionID *string    `gorm:"size:64" json:"transactionId,omitempty"`
 	PaidAt        *time.Time `json:"paidAt,omitempty"`
@@ -372,6 +377,116 @@ type ProfitShare struct {
 
 func (ProfitShare) TableName() string { return "profit_shares" }
 
+// ========== AI 工具 Agent（平台预设、付费使用的虚拟商品；与"代表真人的对外助理"并存） ==========
+//
+// 与对外助理的本质差异：ToolAgent 不绑定任何真人 Profile，平台是卖家（无真人 payee、不分账）。
+// 卖的是 AI 生成内容=虚拟商品，受 iOS 虚拟支付红线约束（仅 Android 端可购买，见 clientcfg）。
+
+const (
+	AgentCatEducation = "education"
+	AgentCatCareer    = "career"
+	AgentCatLife      = "life"
+)
+
+// ToolAgent 平台自编的工具型 AI 角色（如英语陪练）。SystemPrompt 不下发前端。
+type ToolAgent struct {
+	ID           string    `gorm:"primaryKey;size:32" json:"id"`
+	Slug         string    `gorm:"uniqueIndex;size:48" json:"slug"`
+	Name         string    `gorm:"size:64" json:"name"`
+	Tagline      string    `gorm:"size:128" json:"tagline"`
+	Description  string    `gorm:"type:text" json:"description"`
+	Category     string    `gorm:"size:24;index" json:"category"`
+	Icon         string    `gorm:"size:16" json:"icon"`   // emoji
+	Accent       string    `gorm:"size:16" json:"accent"` // 主题色（前端氛围）
+	Greeting     string    `gorm:"type:text" json:"greeting"`
+	SystemPrompt string    `gorm:"type:text" json:"-"`
+	Price        int       `json:"price"`        // 一次购买价格（分）
+	QuotaPerPack int       `json:"quotaPerPack"` // 每次购买发放的对话条数
+	FreeTrial    int       `json:"freeTrial"`    // 首次免费体验条数
+	Enabled      bool      `gorm:"default:true;index" json:"enabled"`
+	Sort         int       `gorm:"default:0" json:"sort"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+func (ToolAgent) TableName() string { return "tool_agents" }
+
+// AgentEntitlement 用户对某工具 Agent 的可用额度（次卡）。免费体验 + 已购累加，对话扣减。
+type AgentEntitlement struct {
+	ID          string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID      string    `gorm:"size:32;uniqueIndex:idx_ent_user_agent" json:"userId"`
+	AgentID     string    `gorm:"size:32;uniqueIndex:idx_ent_user_agent" json:"agentId"`
+	Remaining   int       `json:"remaining"`   // 剩余可用条数
+	TotalBought int       `json:"totalBought"` // 累计购买条数（>0 即已付费）
+	TrialGiven  bool      `gorm:"default:false" json:"trialGiven"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func (AgentEntitlement) TableName() string { return "agent_entitlements" }
+
+// AgentSession 用户与某工具 Agent 的对话会话（一人一 Agent 一会话，持续累积）。
+type AgentSession struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	AgentID   string    `gorm:"size:32;index:idx_asess_agent_user" json:"agentId"`
+	UserID    string    `gorm:"size:32;index:idx_asess_agent_user" json:"userId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (AgentSession) TableName() string { return "agent_sessions" }
+
+type AgentMessage struct {
+	ID              string    `gorm:"primaryKey;size:32" json:"id"`
+	SessionID       string    `gorm:"size:32;index:idx_amsg_session_time" json:"sessionId"`
+	Role            string    `gorm:"size:16" json:"role"`
+	Content         string    `gorm:"type:text" json:"content"`
+	SafeCheckStatus string    `gorm:"size:16;default:pending" json:"safeCheckStatus"`
+	CreatedAt       time.Time `gorm:"index:idx_amsg_session_time" json:"createdAt"`
+}
+
+func (AgentMessage) TableName() string { return "agent_messages" }
+
+// ========== 会员（一价解锁全部工具 Agent；虚拟商品，平台自营、不分账） ==========
+
+// Membership 账号级会员状态（一人一条）。ExpiresAt 之前为有效会员，工具 Agent 畅用。
+// 渠道无关：微信支付 / 将来的 H5 / 支付宝 都往这条状态叠加（续费顺延）。
+type Membership struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"uniqueIndex;size:32" json:"userId"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (Membership) TableName() string { return "memberships" }
+
+// MembershipPlan 会员套餐（周期通行证，非自动续费）。平台定价，首启种子。
+type MembershipPlan struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	Slug      string    `gorm:"uniqueIndex;size:32" json:"slug"`
+	Name      string    `gorm:"size:32" json:"name"`
+	Days      int       `json:"days"`  // 时长（天）
+	Price     int       `json:"price"` // 价格（分）
+	Enabled   bool      `gorm:"default:true" json:"enabled"`
+	Sort      int       `gorm:"default:0" json:"sort"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (MembershipPlan) TableName() string { return "membership_plans" }
+
+// MembershipLead 留资意向（多为 iOS 用户：当下不能在小程序内开通，记录意向便于服务号/站外触达）。
+type MembershipLead struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"size:32;index" json:"userId"`
+	Openid    string    `gorm:"size:64" json:"openid"`
+	Platform  string    `gorm:"size:16" json:"platform"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (MembershipLead) TableName() string { return "membership_leads" }
+
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -381,5 +496,7 @@ func AllModels() []interface{} {
 		&ConsultSetting{}, &Order{}, &ConsultSession{}, &ConsultSlot{},
 		&AsyncQuestion{},
 		&Refund{}, &ProfitShare{},
+		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{},
+		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 	}
 }

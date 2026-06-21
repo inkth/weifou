@@ -57,6 +57,12 @@ type Config struct {
 	SubscribeRefundedTmpl    string // 订阅消息模板：已退款→访客
 	SubscribeLeadTmpl        string // 订阅消息模板：新访客线索→主人
 	SubscribeMiniState       string // formal / trial / developer
+
+	// 服务号（公众号）：承接 iOS 会员开通引导 + 召回。未配则相关功能 no-op。
+	MpAppID   string
+	MpSecret  string
+	MpToken   string // 服务号消息回调校验 token（公众平台配明文/兼容模式）
+	H5BaseURL string // 服务端构造 H5 链接的公网基址（服务号推送无 request 上下文）
 }
 
 func getEnv(key, def string) string {
@@ -140,5 +146,10 @@ func Load() *Config {
 		SubscribeRefundedTmpl:    os.Getenv("WX_SUBSCRIBE_REFUNDED_TMPL_ID"),
 		SubscribeLeadTmpl:        os.Getenv("WX_SUBSCRIBE_LEAD_TMPL_ID"),
 		SubscribeMiniState:       getEnv("WX_SUBSCRIBE_STATE", "formal"),
+
+		MpAppID:   os.Getenv("WX_MP_APPID"),
+		MpSecret:  os.Getenv("WX_MP_SECRET"),
+		MpToken:   os.Getenv("WX_MP_TOKEN"),
+		H5BaseURL: getEnv("H5_BASE_URL", ""),
 	}
 }

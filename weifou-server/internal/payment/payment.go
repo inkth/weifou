@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -160,6 +162,13 @@ func (h *Handler) consult(c *gin.Context) error {
 }
 
 func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string, profitSharing bool) error {
+	// 记录下单端（合规分流/兜底）。业务方已设置则不覆盖。
+	if order.Platform == "" {
+		if p := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Platform"))); p != "" {
+			order.Platform = p
+			h.db.Model(order).Update("platform", p)
+		}
+	}
 	prepayID, err := h.pay.CreateJsapiOrder(wxpay.JsapiOrder{
 		OutTradeNo:    order.OutTradeNo,
 		Description:   desc,
@@ -183,6 +192,26 @@ func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string, profi
 // PrepayOrder 通用预下单：业务方建好 order 后调用，复用下单 + 返回 payParams（如付费提问）。
 func (h *Handler) PrepayOrder(c *gin.Context, order *models.Order, desc string, profitSharing bool) error {
 	return h.prepay(c, order, desc, profitSharing)
+}
+
+// PrepayH5 H5(MWEB) 下单：业务方建好 order 后调用，返回外部浏览器跳转的 h5_url（已附 redirect_url）。
+// 用于 iOS 等外部 Safari 收款（微信外浏览器），不被 Apple 抽成。
+func (h *Handler) PrepayH5(order *models.Order, desc, clientIP, returnURL string) (string, error) {
+	h5url, err := h.pay.CreateH5Order(wxpay.H5Order{
+		OutTradeNo: order.OutTradeNo, Description: desc, Amount: order.Amount,
+		Attach: order.ID, ClientIP: clientIP,
+	})
+	if err != nil {
+		return "", err
+	}
+	if returnURL != "" && h5url != "" {
+		sep := "?"
+		if strings.Contains(h5url, "?") {
+			sep = "&"
+		}
+		h5url += sep + "redirect_url=" + url.QueryEscape(returnURL)
+	}
+	return h5url, nil
 }
 
 // Settle 触发分账（供异步咨询等业务在「服务交付」时刻调用）。
@@ -326,7 +355,34 @@ func (h *Handler) handlePaid(res wxpay.NotifyResource) error {
 			go h.notifyHostNewQuestion(order.ID)
 		}
 	}
+
+	if order.Type == models.OrderMembership && order.PlanID != nil {
+		var plan models.MembershipPlan
+		if h.db.First(&plan, "id = ?", *order.PlanID).Error == nil {
+			h.grantMembership(order.PayerUserID, plan.Days)
+		}
+	}
 	return nil
+}
+
+// grantMembership 会员购买成功后开通/续费（未过期则在原到期日上顺延；平台自营、不分账）。
+// 幂等由 handlePaid 顶部的 paid 守卫保证：同一订单只会进来一次。
+func (h *Handler) grantMembership(userID *string, days int) {
+	if userID == nil || *userID == "" || days <= 0 {
+		return
+	}
+	now := time.Now()
+	var m models.Membership
+	if err := h.db.First(&m, "user_id = ?", *userID).Error; err == gorm.ErrRecordNotFound {
+		h.db.Create(&models.Membership{ID: idgen.New(), UserID: *userID, ExpiresAt: now.AddDate(0, 0, days)})
+		return
+	}
+	base := now
+	if m.ExpiresAt.After(now) {
+		base = m.ExpiresAt // 未过期 → 在原到期日上叠加
+	}
+	h.db.Model(&models.Membership{}).Where("user_id = ?", *userID).
+		Update("expires_at", base.AddDate(0, 0, days))
 }
 
 // ---------- 退款 ----------

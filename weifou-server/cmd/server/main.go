@@ -8,7 +8,9 @@ import (
 	"weifou-server/internal/app"
 	"weifou-server/internal/config"
 	"weifou-server/internal/database"
+	"weifou-server/internal/membership"
 	"weifou-server/internal/redisx"
+	"weifou-server/internal/toolagent"
 )
 
 func main() {
@@ -26,6 +28,8 @@ func main() {
 	}
 
 	application := app.New(cfg, db, rdb)
+	toolagent.Seed(db)  // 首启写入平台自编的工具 Agent（按 slug 幂等）
+	membership.Seed(db) // 首启写入会员套餐
 	application.StartCron()
 
 	r := gin.Default()
