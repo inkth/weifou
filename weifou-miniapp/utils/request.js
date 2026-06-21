@@ -1,5 +1,19 @@
 const { API_BASE } = require('./config');
 
+let _platform = '';
+// 端平台：ios / android / devtools / windows / mac …
+// 用于 iOS 虚拟支付红线分流（后端据 X-Platform 兜底拒单 + 下发入口可见性）。
+function platform() {
+  if (_platform) return _platform;
+  try {
+    const info = (typeof wx.getDeviceInfo === 'function' ? wx.getDeviceInfo() : wx.getSystemInfoSync()) || {};
+    _platform = String(info.platform || '').toLowerCase();
+  } catch (e) {
+    _platform = '';
+  }
+  return _platform;
+}
+
 function getToken() {
   return wx.getStorageSync('weifou_token') || '';
 }
@@ -22,6 +36,8 @@ function request({ url, method = 'GET', data, header = {}, showLoading = false }
       data,
       header: {
         'Content-Type': 'application/json',
+        'X-Client-Type': 'miniapp',
+        'X-Platform': platform(),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...header,
       },
@@ -54,4 +70,5 @@ module.exports = {
   getToken,
   setToken,
   clearToken,
+  platform,
 };

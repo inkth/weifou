@@ -1,0 +1,39 @@
+page { background: #faf7f2; }
+.wrap { padding: 0 0 60rpx; }
+
+.hero { padding: 56rpx 40rpx 36rpx; text-align: center; background: linear-gradient(160deg, #fff3e3, #faf7f2); }
+.crown { font-size: 72rpx; }
+.h-title { margin-top: 10rpx; font-size: 46rpx; font-weight: 800; color: #6b4a1f; }
+.h-sub { margin-top: 8rpx; font-size: 27rpx; color: #b08a5a; }
+
+.state { padding: 100rpx 0; text-align: center; color: #9aa0ad; font-size: 28rpx; }
+
+.member-card { margin: 24rpx 28rpx 0; background: linear-gradient(135deg, #fbbf24, #fb923c); border-radius: 24rpx; padding: 32rpx; color: #fff; }
+.mc-on { font-size: 32rpx; font-weight: 700; }
+.mc-exp { margin-top: 8rpx; font-size: 25rpx; opacity: 0.92; }
+
+.benefits { margin: 24rpx 28rpx; background: #fff; border-radius: 24rpx; padding: 24rpx 32rpx; box-shadow: 0 4rpx 24rpx rgba(180, 140, 80, 0.06); }
+.bf { display: flex; align-items: center; font-size: 29rpx; color: #4a4133; padding: 14rpx 0; }
+.bf-ic { width: 48rpx; font-size: 34rpx; margin-right: 12rpx; text-align: center; }
+
+.plans { display: flex; gap: 20rpx; padding: 12rpx 28rpx; }
+.plan { flex: 1; background: #fff; border: 2rpx solid #f0e6d6; border-radius: 22rpx; padding: 28rpx 12rpx; text-align: center; }
+.plan:active { border-color: #fb923c; transform: scale(0.98); }
+.pl-name { font-size: 27rpx; color: #6b4a1f; font-weight: 600; }
+.pl-price { margin-top: 12rpx; }
+.pl-num { font-size: 42rpx; font-weight: 800; color: #fb923c; }
+.pl-day { margin-top: 8rpx; font-size: 22rpx; color: #b08a5a; }
+.pay-tip { text-align: center; font-size: 24rpx; color: #b08a5a; margin-top: 22rpx; }
+
+.ios-box { margin: 24rpx 28rpx; background: #fff; border-radius: 24rpx; padding: 40rpx 32rpx; text-align: center; }
+.ios-title { font-size: 30rpx; font-weight: 700; color: #4a4133; }
+.ios-desc { margin-top: 16rpx; font-size: 26rpx; color: #8a7a60; line-height: 1.6; }
+.ios-btn { margin-top: 32rpx; background: #fb923c; color: #fff; font-size: 30rpx; font-weight: 600; border-radius: 16rpx; line-height: 88rpx; }
+.ios-btn::after { border: none; }
+.ios-done { margin-top: 28rpx; font-size: 28rpx; color: #16a34a; font-weight: 600; }
+
+.ios-alt { margin: 8rpx 28rpx; padding: 28rpx 32rpx; text-align: center; }
+.ios-or { font-size: 26rpx; color: #8a7a60; }
+.ios-btn2 { margin-top: 18rpx; background: #fff; color: #b86b1f; font-size: 28rpx; font-weight: 600; border: 2rpx solid #fb923c; border-radius: 16rpx; line-height: 84rpx; }
+.ios-btn2::after { border: none; }
+.ios-alt-tip { margin-top: 16rpx; font-size: 23rpx; color: #b08a5a; line-height: 1.5; }

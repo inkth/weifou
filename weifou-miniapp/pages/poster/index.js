@@ -22,13 +22,16 @@ Page({
   },
 
   draw() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const query = wx.createSelectorQuery();
       query
         .select('#poster')
         .fields({ node: true, size: true })
         .exec(async (res) => {
-          const canvas = res[0].node;
+          // canvas 未就绪（慢首屏布局）时 res[0] 可能为空：显式 reject 交给 onLoad 兜底，
+          // 否则 await this.draw() 永挂、页面永远停在"海报合成中…"。
+          const canvas = res[0] && res[0].node;
+          if (!canvas) { reject(new Error('海报画布未就绪，请重试')); return; }
           const ctx = canvas.getContext('2d');
           const dpr = wx.getWindowInfo().pixelRatio;
           const cssW = 300;
@@ -155,7 +158,8 @@ Page({
       .select('#poster')
       .fields({ node: true, size: true })
       .exec((res) => {
-        const canvas = res[0].node;
+        const canvas = res[0] && res[0].node;
+        if (!canvas) { wx.showToast({ title: '海报未就绪，请稍候', icon: 'none' }); return; }
         wx.canvasToTempFilePath({
           canvas,
           success: (r) => {
@@ -163,8 +167,14 @@ Page({
               filePath: r.tempFilePath,
               success: () => wx.showToast({ title: '已保存', icon: 'success' }),
               fail: (e) => {
-                if (e.errMsg.includes('auth deny')) {
-                  wx.showToast({ title: '需要相册权限', icon: 'none' });
+                // 用户拒过一次后系统不再弹授权框：必须引导去设置手动开，否则点"保存"永远没反应。
+                if (e.errMsg && e.errMsg.includes('auth deny')) {
+                  wx.showModal({
+                    title: '需要相册权限',
+                    content: '请在设置中允许"保存到相册"，再回来重试',
+                    confirmText: '去设置',
+                    success: (m) => { if (m.confirm) wx.openSetting(); },
+                  });
                 } else {
                   wx.showToast({ title: '保存失败', icon: 'none' });
                 }

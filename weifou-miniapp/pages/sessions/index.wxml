@@ -1,5 +1,9 @@
 <view class="page">
-  <view wx:if="{{list.length === 0 && !loading}}" class="empty muted">还没有通话记录</view>
+  <view wx:if="{{loadError && !loading}}" class="empty muted">
+    <view>加载失败</view>
+    <view bindtap="retry" style="color:#fb923c;margin-top:12rpx">点此重试</view>
+  </view>
+  <view wx:elif="{{list.length === 0 && !loading}}" class="empty muted">还没有通话记录</view>
 
   <view class="card session" wx:for="{{list}}" wx:key="id">
     <view class="row1">

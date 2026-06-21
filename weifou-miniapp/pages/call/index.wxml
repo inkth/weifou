@@ -15,7 +15,10 @@
         data-userid="{{item.userID}}"
         data-streamtype="{{item.streamType}}"
       />
-      <view wx:if="{{playerList.length === 0}}" class="waiting">等待对方加入…</view>
+      <view wx:if="{{playerList.length === 0}}" class="waiting">
+        等待对方加入…
+        <view wx:if="{{waitHint}}" style="font-size:24rpx;opacity:0.7;margin-top:20rpx;padding:0 48rpx;line-height:1.6">{{waitHint}}</view>
+      </view>
     </view>
 
     <!-- 本地推流（pusher 由 TRTC SDK 维护） -->

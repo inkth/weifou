@@ -17,6 +17,8 @@
 .quick-label { font-size: 26rpx; color: var(--ink); }
 
 .sec-title { font-size: 26rpx; color: var(--sub); margin: 0 8rpx 20rpx; }
+/* 付费往来：降权为列表下方的次级记录，与"最近聊过"拉开间距 */
+.pay-title { margin-top: 48rpx; }
 
 /* 文字对话项 */
 .chat-item { display: flex; align-items: center; gap: 24rpx; margin-bottom: 20rpx; }

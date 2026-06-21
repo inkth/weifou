@@ -1,6 +1,7 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { hostQuestions } = require('../../utils/asyncq');
+const { loadEntries, agentVisible } = require('../../utils/entries');
 
 Page({
   data: {
@@ -9,6 +10,7 @@ Page({
     chatCount: 0,
     todoCount: 0,
     inboxLabel: '收件箱 · 待回答 / 访客线索',
+    agentEntry: false, // AI 工具箱入口（iOS 隐藏，见 utils/entries）
   },
 
   async onShow() {
@@ -16,13 +18,16 @@ Page({
     try {
       await ensureLogin();
       // 并行取「我的助理」与「我聊过的对话数」——后者决定访客回流入口是否出现。
+      // 顺带拉入口可见性（决定 AI 工具箱入口是否出现，iOS 隐藏）。
       const [me, chats] = await Promise.all([
         request({ url: '/user/me' }),
         request({ url: '/chat/sessions/mine' }).catch(() => []),
+        loadEntries(),
       ]);
       this.setData({
         profileId: me.profileId,
         chatCount: (chats || []).length,
+        agentEntry: true, // 工具箱免费体验对所有端开放（iOS 也能用，只是开通会员在 iOS 走留意向）
         loading: false,
       });
       // 主人态：拉收件箱待办计数，让主人一打开就被"有人在等你"勾住（付费提问最优先）。
@@ -54,6 +59,11 @@ Page({
   // 访客回流：我作为访客聊过的真人 AI 分身（文字对话 / 通话 / 付费提问）
   goMyChats() {
     wx.navigateTo({ url: '/pages/my-chats/index' });
+  },
+
+  // AI 工具箱（平台预设的付费工具 Agent，如学英语 / 面试）
+  goAgents() {
+    wx.navigateTo({ url: '/pages/agents/index' });
   },
 
   // 首次创建走对话式 onboarding；重新编辑走表单。

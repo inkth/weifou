@@ -1,0 +1,39 @@
+// AI 工具 Agent（平台预设）接口封装。
+// 解锁靠会员(见 utils/membership)，非会员每个 Agent 有几次免费体验。
+// 一人一 Agent 支持多会话（ChatGPT 式）：历史会话列表 + 按会话取消息 + 续聊/新开。
+const { request } = require('./request');
+
+// 目录（含 freeTrialRemaining）
+function listAgents() {
+  return request({ url: '/agents' });
+}
+
+function myAgents() {
+  return request({ url: '/agents/mine' });
+}
+
+function agentDetail(id) {
+  return request({ url: `/agents/detail/${id}` });
+}
+
+// 我与该 Agent 的历史会话列表（最近活动倒序，含 title/lastMessage/updatedAt）
+function agentSessions(agentId) {
+  return request({ url: `/agents/sessions/${agentId}` });
+}
+
+// 取指定会话的消息流（按 sessionId）
+function sessionMessages(sessionId) {
+  return request({ url: `/agents/messages/${sessionId}` });
+}
+
+// 对话。sessionId 续聊指定会话，空 = 新开一段；返回里带 sessionId（新建时回传新 id）。
+// 会员畅用;非会员扣免费体验,耗尽抛 { code: 'MEMBERSHIP_REQUIRED' }。
+function chatAgent(agentId, content, sessionId) {
+  return request({
+    url: `/agents/${agentId}/chat`,
+    method: 'POST',
+    data: { content, sessionId: sessionId || undefined },
+  });
+}
+
+module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, chatAgent };

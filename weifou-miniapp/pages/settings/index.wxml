@@ -49,7 +49,7 @@
     </block>
     <button class="btn-primary save" bindtap="saveConsult" disabled="{{savingConsult}}">保存咨询设置</button>
     <button class="btn-ghost regen" bindtap="goSlots" wx:if="{{consult.enabled}}">管理可约档期</button>
-    <button class="btn-ghost regen" bindtap="goSessions">我的通话记录</button>
+    <button class="btn-ghost regen" bindtap="goSessions" wx:if="{{consult.enabled}}">我的通话记录</button>
   </view>
 
   <view class="card">

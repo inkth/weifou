@@ -538,7 +538,11 @@ Page({
         s.priceYuan = s.durationMin === 60 ? this.data.pricing.price60Yuan : this.data.pricing.price30Yuan;
       });
       this.setData({ slotList: slots });
-    } catch (e) { this.setData({ slotList: [] }); }
+    } catch (e) {
+      // 失败时提示，避免弹层把网络错误显示成"对方暂无可约档期"
+      this.setData({ slotList: [] });
+      wx.showToast({ title: e.message || '档期加载失败', icon: 'none' });
+    }
   },
   closeSlots() { this.setData({ slotsVisible: false }); },
   selectSlot(e) { this.setData({ selectedSlotId: e.currentTarget.dataset.id }); },

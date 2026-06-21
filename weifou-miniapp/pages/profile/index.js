@@ -240,7 +240,9 @@ Page({
       });
       this.setData({ slotList: slots });
     } catch (e) {
+      // 失败时提示，避免弹层把网络错误显示成"对方暂无可约档期"
       this.setData({ slotList: [] });
+      wx.showToast({ title: e.message || '档期加载失败', icon: 'none' });
     }
   },
   closeSlots() {

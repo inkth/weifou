@@ -1,0 +1,41 @@
+<view class="wrap">
+  <view class="head">
+    <view class="h-title">AI 工具箱</view>
+    <view class="h-sub">挑一个 AI 助手，先免费体验，会员畅用全部</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+
+  <view wx:elif="{{blocked}}" class="state">当前环境暂不支持该功能，请在 Android 微信中体验。</view>
+
+  <block wx:else>
+    <view class="mbr-banner {{isMember ? 'on' : ''}}" bindtap="goMembership">
+      <text class="mb-crown">👑</text>
+      <text class="mb-text">{{isMember ? '会员有效中 · 全部畅用' : '开通会员 · 一价畅用全部'}}</text>
+      <text class="mb-arrow" wx:if="{{!isMember}}">去开通 ›</text>
+    </view>
+
+    <view class="list">
+      <view
+        wx:for="{{agents}}"
+        wx:key="id"
+        class="card"
+        bindtap="open"
+        data-id="{{item.id}}"
+        data-name="{{item.name}}"
+      >
+        <view class="ic" style="background: {{item.accent}}1a; color: {{item.accent}};">{{item.icon}}</view>
+        <view class="body">
+          <view class="name">{{item.name}}</view>
+          <view class="tagline">{{item.tagline}}</view>
+          <view class="meta">
+            <text class="status status-{{item.statusKind}}">{{item.status}}</text>
+          </view>
+        </view>
+        <view class="arrow">›</view>
+      </view>
+
+      <view wx:if="{{agents.length === 0}}" class="state">暂无可用工具</view>
+    </view>
+  </block>
+</view>

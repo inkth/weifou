@@ -28,11 +28,15 @@ Page({
 
   async loadAll() {
     this.setData({ loading: true });
+    // 每个请求各自降级：任一失败不再让 Promise.all 整体 reject 把全部 tab 塌成空态
+    //（否则一次网络抖动会把"有待办"伪装成"没待办"）。末尾统一给一次软提示。
+    let anyFail = false;
+    const guard = (p, fb) => p.catch(() => { anyFail = true; return fb; });
     try {
       const [gaps, leads, knowledge, sessions, questions, me] = await Promise.all([
-        request({ url: '/profile/gaps' }),
-        request({ url: '/profile/leads' }),
-        request({ url: '/profile/knowledge' }),
+        guard(request({ url: '/profile/gaps' }), []),
+        guard(request({ url: '/profile/leads' }), []),
+        guard(request({ url: '/profile/knowledge' }), []),
         // 会话列表失败不拖垮整页（如尚未创建主页）
         request({ url: '/chat/sessions/host' }).catch(() => []),
         hostQuestions().catch(() => []),
@@ -52,6 +56,7 @@ Page({
         })),
         loading: false,
       });
+      if (anyFail) wx.showToast({ title: '部分内容加载失败，可稍后重进', icon: 'none' });
     } catch (e) {
       this.setData({ loading: false });
       wx.showToast({ title: e.message || '加载失败', icon: 'none' });

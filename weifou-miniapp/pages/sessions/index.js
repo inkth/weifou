@@ -12,6 +12,7 @@ Page({
   data: {
     list: [],
     loading: true,
+    loadError: false,
     statusText: {
       pending: '待开始',
       ongoing: '进行中',
@@ -21,7 +22,7 @@ Page({
   },
 
   async onShow() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, loadError: false });
     try {
       await ensureLogin();
       const list = await request({ url: '/consult/sessions/mine' });
@@ -33,8 +34,14 @@ Page({
       });
       this.setData({ list, loading: false });
     } catch (e) {
-      this.setData({ loading: false });
+      // 标记错误态：避免把网络失败显示成"还没有通话记录"误导用户
+      this.setData({ loading: false, loadError: true });
+      wx.showToast({ title: e.message || '加载失败', icon: 'none' });
     }
+  },
+
+  retry() {
+    this.onShow();
   },
 
   enter(e) {

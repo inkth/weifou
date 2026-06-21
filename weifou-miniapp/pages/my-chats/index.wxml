@@ -1,19 +1,11 @@
 <view class="page">
-  <!-- 付费资产入口：约过的通话 / 付过费的提问 -->
-  <view class="quick">
-    <view class="quick-item" bindtap="goQuestions">
-      <text class="quick-emoji">✍️</text>
-      <text class="quick-label">付费提问</text>
-    </view>
-    <view class="quick-item" bindtap="goCalls">
-      <text class="quick-emoji">📞</text>
-      <text class="quick-label">语音通话</text>
-    </view>
-  </view>
-
   <view class="sec-title">最近聊过</view>
 
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
+  <view wx:elif="{{loadError}}" class="empty muted">
+    <view>加载失败</view>
+    <view class="empty-sub" bindtap="retry" style="color:#fb923c">点此重试</view>
+  </view>
   <block wx:else>
     <view wx:if="{{!list.length}}" class="empty muted">
       <view>还没有聊过谁</view>
@@ -38,4 +30,17 @@
       </view>
     </view>
   </block>
+
+  <!-- 付费往来：约过的通话 / 付过费的提问（次级记录，不再作为顶层支柱）-->
+  <view class="sec-title pay-title">我的付费往来</view>
+  <view class="quick">
+    <view class="quick-item" bindtap="goQuestions">
+      <text class="quick-emoji">✍️</text>
+      <text class="quick-label">付费提问</text>
+    </view>
+    <view class="quick-item" bindtap="goCalls">
+      <text class="quick-emoji">📞</text>
+      <text class="quick-label">语音通话</text>
+    </view>
+  </view>
 </view>

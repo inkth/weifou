@@ -1,0 +1,59 @@
+<view class="page">
+  <!-- 顶部：身份 + 额度/会员 -->
+  <view class="topbar">
+    <view class="tb-ic" style="background: {{accent}}1a; color: {{accent}};">{{icon}}</view>
+    <view class="tb-mid">
+      <view class="tb-name">{{name}}</view>
+      <view class="tb-quota">{{quotaText}}</view>
+    </view>
+    <view class="tb-act" bindtap="openHistory">历史</view>
+    <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">开通会员</view>
+  </view>
+
+  <scroll-view class="msgs" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
+    <view wx:for="{{messages}}" wx:key="index" id="m{{index}}" class="row row-{{item.role}}">
+      <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
+    </view>
+    <view wx:if="{{pending}}" class="row row-assistant">
+      <view class="bubble bubble-assistant typing">思考中…</view>
+    </view>
+    <view class="msgs-pad"></view>
+  </scroll-view>
+
+  <!-- 输入栏 -->
+  <view class="composer">
+    <input
+      class="cp-input"
+      value="{{draft}}"
+      bindinput="onInput"
+      placeholder="说点什么…"
+      confirm-type="send"
+      bindconfirm="send"
+      disabled="{{pending}}"
+    />
+    <button class="cp-send" bindtap="send" disabled="{{pending || !draft}}">发送</button>
+  </view>
+
+  <!-- 历史会话抽屉（多会话：每段对话各自成流） -->
+  <view class="drawer-mask" wx:if="{{historyVisible}}" bindtap="closeHistory">
+    <view class="drawer" catchtap="noop">
+      <view class="drawer-grip"></view>
+      <view class="drawer-title">历史对话</view>
+      <view class="drawer-new" bindtap="newSession">＋ 开启新对话</view>
+      <scroll-view scroll-y class="drawer-list">
+        <view wx:if="{{!sessions.length}}" class="drawer-empty">还没有历史对话</view>
+        <view
+          wx:for="{{sessions}}"
+          wx:key="sessionId"
+          class="drawer-item {{item.sessionId === currentSessionId ? 'active' : ''}}"
+          bindtap="switchSession"
+          data-id="{{item.sessionId}}"
+        >
+          <view class="di-title">{{item.title}}</view>
+          <view class="di-sub">{{item.lastMessage}}</view>
+          <view class="di-time">{{item.timeText}}</view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

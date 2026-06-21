@@ -25,7 +25,8 @@
 
   <view class="card">
     <view class="section-title">已开放档期</view>
-    <view wx:if="{{slots.length === 0}}" class="muted empty">还没有可约档期</view>
+    <view wx:if="{{loadError}}" class="muted empty">加载失败，<text bindtap="load" style="color:#fb923c">点此重试</text></view>
+    <view wx:elif="{{slots.length === 0}}" class="muted empty">还没有可约档期</view>
     <view class="slot" wx:for="{{slots}}" wx:key="id">
       <view class="slot-info">
         <view class="slot-time">{{item.timeText}}</view>
