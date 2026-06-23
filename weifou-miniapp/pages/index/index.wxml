@@ -22,7 +22,7 @@
 
   <!-- 操作区：全部毛玻璃半透明 -->
   <view class="actions" wx:if="{{!loading}}">
-    <button class="glass-btn primary" bindtap="goBuild" wx:if="{{!profileId}}">开始创建我的 AI 助理</button>
+    <button class="glass-btn primary" bindtap="goOnboarding" wx:if="{{!profileId}}">开始创建我的 AI 助理</button>
     <button class="glass-btn primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 主页</button>
     <button class="glass-btn" bindtap="goAgents" wx:if="{{agentEntry}}">🧰 AI 工具箱 · 学英语 / 面试</button>
     <button class="glass-btn" bindtap="goMyChats" wx:if="{{chatCount}}">我聊过的 · {{chatCount}}</button>

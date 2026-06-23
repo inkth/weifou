@@ -39,7 +39,7 @@ Page({
     if (!this.data.profileId) return;
     wx.navigateTo({ url: `/pages/profile/index?id=${this.data.profileId}&mine=1` });
   },
-  goBuild() { wx.navigateTo({ url: '/pages/build/index' }); },
+  goOnboarding() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
   goCreate() { wx.navigateTo({ url: '/pages/create/index' }); },
   goInbox() { wx.navigateTo({ url: '/pages/inbox/index' }); },
   goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },

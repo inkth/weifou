@@ -2,16 +2,38 @@ const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { track } = require('../../utils/track');
 
-// 对话式创建（自由回答版）：用户一段话讲完，服务端 /profile/extract 抽字段 + 按语气定风格；
-// 缺必填（realName/title/strengths）则按 followup 追问一句，齐了即可上岗。最终走现有 POST /profile，最小后端改动。
-const OPENER = '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己就好：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以点麦克风说。';
+// 对话式创建（唯一创建方式）：把原「5 步点选」融进对话——AI 逐步引导，结构化项（做什么/接待谁/气质）
+// 直接给可点「快捷选项」气泡，点了即答；名字与一句话走输入/语音；也可自由说一段，由 /profile/extract
+// 一次抽多字段并跳过已答步骤。必填 realName/title/strengths 齐即可上岗。最终走现有 POST /profile，零后端改动。
+const OPENER = '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
 
-// 必填缺失时的兜底追问（服务端没给 followup 时用）
-function fallbackFollowup(form) {
-  if (!form.realName) return '我该怎么称呼你呢？';
-  if (!form.title) return '你平时主要是做什么的？';
-  if (!form.strengths) return '你最能帮别人解决什么问题？';
-  return '还想补充点什么吗？';
+// —— 结构化选项（承自原 5 步点选）——
+const DOMAINS = ['顾问·教练', '设计·创意', '开发·技术', '教育·培训', '医美·健康', '法律·财税', '电商·带货', '内容·创作', '生活服务'];
+const AUDIENCES = [
+  { label: '找合作', hk: '主要想接待：找合作' },
+  { label: '想买你服务', hk: '主要想接待：想买我服务的人' },
+  { label: '同行 · 招募', hk: '主要想接待：同行或想招募我的人' },
+  { label: '粉丝 · 读者', hk: '主要想接待：我的粉丝或读者' },
+  { label: '都行', hk: '主要想接待：各种来访者' },
+];
+const STYLES = [
+  { label: '专业冷静', value: 'steady', desc: '严谨克制 · 先结论' },
+  { label: '温暖亲和', value: 'warm', desc: '口语 · 先共情' },
+  { label: '犀利直接', value: 'sharp', desc: '一针见血 · 不绕弯' },
+  { label: '轻松幽默', value: 'humorous', desc: '有梗 · 不油腻' },
+];
+
+// 引导阶段（承自 5 步顺序）：字段 / 是否必填 / 提问 / 快捷选项类型
+const STAGES = [
+  { key: 'name', field: 'realName', required: true, ask: '先问一句——我该怎么称呼你？', chips: null },
+  { key: 'domain', field: 'title', required: true, ask: '你主要是做什么的？挑一个最接近的，或直接说～', chips: 'domain' },
+  { key: 'audience', field: 'howToKnow', required: false, ask: '主要想接待谁？', chips: 'audience' },
+  { key: 'style', field: 'style', required: false, ask: '希望你的 AI 什么气质、说话调？', chips: 'style' },
+  { key: 'substance', field: 'strengths', required: true, ask: '最后——你最能帮别人解决的一件事是什么？越具体它越懂你（也可写个代表作）。', chips: null },
+];
+
+function filled(form, field) {
+  return !!(form[field] && String(form[field]).trim());
 }
 
 Page({
@@ -24,12 +46,15 @@ Page({
     canFinish: false,    // realName+title+strengths 已齐
     confirmed: false,    // 已发过"了解你了"的确认语，避免重复
     toLast: '',
-    turns: 0,            // 用户发话轮数，用于超过若干轮仍未齐时提示手动填写
+    chipKind: null,      // 当前展示的快捷选项：domain | audience | style | null
+    DOMAINS, AUDIENCES, STYLES,
     form: { realName: '', title: '', strengths: '', recentWork: '', howToKnow: '', style: '' },
   },
 
   async onLoad(query) {
     this._ref = (query && query.ref) || '';
+    this._asked = {}; // 已问过的阶段（可选项只问一次，避免纠缠）
+    this._locked = {}; // 经点选确定的字段：后续抽取不再覆盖，保住干净取值
     track('onboarding_enter', this._ref);
     try { await ensureLogin(); } catch (e) { /* 提交时再兜底 */ }
     this._pushAi(OPENER);
@@ -39,24 +64,17 @@ Page({
     const id = 'm' + this.data.msgs.length;
     this.setData({ msgs: this.data.msgs.concat([{ id, role, text }]), toLast: id });
   },
-  _pushAi(text) {
-    this._push('ai', text);
-  },
+  _pushAi(text) { this._push('ai', text); },
 
-  onInput(e) {
-    this.setData({ input: e.detail.value });
-  },
+  onInput(e) { this.setData({ input: e.detail.value }); },
 
   async onSend() {
     if (this.data.thinking || this.data.submitting) return;
     const val = (this.data.input || '').trim();
     if (!val) return;
-    if (val.length > 600) {
-      wx.showToast({ title: '太长了，分两次说吧', icon: 'none' });
-      return;
-    }
+    if (val.length > 600) { wx.showToast({ title: '太长了，分两次说吧', icon: 'none' }); return; }
     this._push('me', val);
-    this.setData({ input: '', thinking: true, turns: this.data.turns + 1 });
+    this.setData({ input: '', thinking: true, chipKind: null });
     await this._extract();
   },
 
@@ -66,6 +84,17 @@ Page({
     if (!val || this.data.thinking || this.data.submitting) return;
     this.setData({ input: val });
     this.onSend();
+  },
+
+  // 点选快捷选项 = 直接填字段 + 记一条用户气泡，不走服务端抽取（快、稳、零误判）
+  pickChip(e) {
+    if (this.data.thinking || this.data.submitting) return;
+    const { field, value, label } = e.currentTarget.dataset;
+    this._locked[field] = true; // 点选即锁定，避免后续 LLM 抽取覆盖
+    this._push('me', label);
+    const form = Object.assign({}, this.data.form, { [field]: value });
+    this.setData({ form, chipKind: null });
+    this._afterAnswer();
   },
 
   // —— 语音输入（微信同声传译插件 WechatSI）——
@@ -96,10 +125,7 @@ Page({
   onMicStart() {
     if (this.data.thinking || this.data.submitting) return;
     const mgr = this._asrManager();
-    if (!mgr) {
-      wx.showToast({ title: '语音暂不可用，请打字', icon: 'none' });
-      return;
-    }
+    if (!mgr) { wx.showToast({ title: '语音暂不可用，请打字', icon: 'none' }); return; }
     this.setData({ recording: true });
     mgr.start({ lang: 'zh_CN' });
   },
@@ -113,48 +139,46 @@ Page({
     const payload = this.data.msgs.map((m) => ({ role: m.role, text: m.text }));
     try {
       const res = await request({ url: '/profile/extract', method: 'POST', data: { messages: payload } });
-      this._applyExtract(res);
+      const cur = this.data.form;
+      const lk = this._locked || {};
+      // 合并：已点选锁定的字段保留不动；其余服务端非空则覆盖、空则保留（防 LLM 偶发漏带）
+      const pick = (field, val) => (lk[field] ? cur[field] : (val || cur[field]));
+      const form = {
+        realName: pick('realName', res.realName),
+        title: pick('title', res.title),
+        strengths: pick('strengths', res.strengths),
+        recentWork: pick('recentWork', res.recentWork),
+        howToKnow: pick('howToKnow', res.howToKnow),
+        style: pick('style', res.style),
+      };
+      this.setData({ form, thinking: false });
+      this._afterAnswer();
     } catch (e) {
       this.setData({ thinking: false });
       this._pushAi('（网络好像有点慢，刚那句再说一遍试试？）');
     }
   },
 
-  _applyExtract(res) {
-    const cur = this.data.form;
-    // 合并：服务端非空字段覆盖，空则保留已有（防 LLM 偶发漏带）
-    const form = {
-      realName: res.realName || cur.realName,
-      title: res.title || cur.title,
-      strengths: res.strengths || cur.strengths,
-      recentWork: res.recentWork || cur.recentWork,
-      howToKnow: res.howToKnow || cur.howToKnow,
-      style: res.style || cur.style,
-    };
-    const complete = !!(form.realName && form.title && form.strengths);
+  // 统一推进：算必填是否齐 → 找下一个该问的阶段 + 快捷选项 → 抛出问题。
+  // 自由说一段可一次填多字段，已填的阶段自动跳过。
+  _afterAnswer() {
+    const form = this.data.form;
+    const complete = filled(form, 'realName') && filled(form, 'title') && filled(form, 'strengths');
+    this.setData({ canFinish: complete });
 
-    this.setData({
-      form,
-      thinking: false,
-      canFinish: complete,
-    });
+    // 必填刚齐：发一次确认语
+    if (complete && !this.data.confirmed) {
+      this.setData({ confirmed: true });
+      this._pushAi('好，我大概了解你了～ 随时点「先上岗」，也可以再补两句让我更懂你。');
+    }
 
-    if (complete) {
-      if (!this.data.confirmed) {
-        this.setData({ confirmed: true });
-        this._pushAi(`好，我大概了解你了～ 随时可以点「先上岗」，也能再补两句让我更懂你。`);
-      } else {
-        this._pushAi('记下了～ 还想补充就继续说，或者点「先上岗」。');
-      }
-      return;
-    }
-    // 未齐：追问一句
-    const ask = (res.followup && res.followup.trim()) || fallbackFollowup(form);
-    this._pushAi(ask);
-    // 多轮仍未齐，温和提示可手动填写
-    if (this.data.turns >= 5) {
-      this._pushAi('要是觉得聊着费劲，也可以「切换手动填写」直接填表～');
-    }
+    // 下一个该问的阶段：字段为空，且（必填 或 还没问过）
+    const next = STAGES.find((s) => !filled(form, s.field) && (s.required || !this._asked[s.key]));
+    if (!next) { this.setData({ chipKind: null }); return; }
+
+    this._asked[next.key] = true;
+    this._pushAi(next.ask);
+    this.setData({ chipKind: next.chips || null });
   },
 
   onFinishNow() {
@@ -169,7 +193,7 @@ Page({
       return;
     }
     if (this.data.submitting) return;
-    this.setData({ submitting: true });
+    this.setData({ submitting: true, chipKind: null });
     this._pushAi('好，我这就替你把主页生成出来，稍等 5–15 秒 ✨');
     wx.showLoading({ title: 'AI 生成中…', mask: true });
     try {
@@ -180,7 +204,7 @@ Page({
         strengths: f.strengths,
         recentWork: f.recentWork || '',
         howToKnow: f.howToKnow || '',
-        style: f.style || '',                 // 语气自动判定，空则由 AI 自行判断
+        style: f.style || '',                 // 语气：点选了用点选值，否则由 AI 自行判断
         avatarStyle: '',
       };
       if (this._ref) body.ref = this._ref;

@@ -7,7 +7,7 @@
     <view class="ob-helper">
       <view class="ob-hero-title">先聊几句，我来替你写主页</view>
     </view>
-    <view class="ob-hero-sub muted">不用填表，说说就好</view>
+    <view class="ob-hero-sub muted">说一句，或点下方选项都行</view>
   </view>
 
   <scroll-view class="ob-msgs" scroll-y scroll-into-view="{{toLast}}" scroll-with-animation>
@@ -21,6 +21,25 @@
   </scroll-view>
 
   <view class="ob-foot">
+    <!-- 快捷选项：承自原 5 步点选，点了即答（也可在下方自由说/语音） -->
+    <view class="ob-opts" wx:if="{{chipKind}}">
+      <block wx:if="{{chipKind === 'domain'}}">
+        <view class="ob-opt" wx:for="{{DOMAINS}}" wx:key="*this"
+              data-field="title" data-value="{{item}}" data-label="{{item}}" bindtap="pickChip">{{item}}</view>
+      </block>
+      <block wx:elif="{{chipKind === 'audience'}}">
+        <view class="ob-opt" wx:for="{{AUDIENCES}}" wx:key="label"
+              data-field="howToKnow" data-value="{{item.hk}}" data-label="{{item.label}}" bindtap="pickChip">{{item.label}}</view>
+      </block>
+      <block wx:elif="{{chipKind === 'style'}}">
+        <view class="ob-opt col" wx:for="{{STYLES}}" wx:key="value"
+              data-field="style" data-value="{{item.value}}" data-label="{{item.label}}" bindtap="pickChip">
+          <text class="ob-opt-l">{{item.label}}</text>
+          <text class="ob-opt-d">{{item.desc}}</text>
+        </view>
+      </block>
+    </view>
+
     <view class="ob-quick" wx:if="{{canFinish}}">
       <view class="ob-chip strong" bindtap="onFinishNow">信息够了，先上岗 ›</view>
     </view>

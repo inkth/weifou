@@ -19,7 +19,7 @@
   </view>
 
   <!-- 未创建：引导创建 -->
-  <view wx:elif="{{!loading}}" class="create card" bindtap="goBuild">
+  <view wx:elif="{{!loading}}" class="create card" bindtap="goOnboarding">
     <view class="create-title">创建我的 AI 分身</view>
     <view class="create-sub">让你的 AI 替你接待、回答、变现</view>
     <view class="create-btn">开始创建 ›</view>
