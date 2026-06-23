@@ -1,0 +1,86 @@
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 16rpx 28rpx calc(env(safe-area-inset-bottom) + 140rpx);
+}
+.hd { padding: 16rpx 4rpx 8rpx; }
+.hd-title { font-size: 46rpx; font-weight: 700; color: #1f2330; }
+.hd-sub { margin-top: 6rpx; font-size: 26rpx; color: #8a90a0; }
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 20rpx 0 8rpx;
+  padding: 20rpx 26rpx;
+  background: #fff;
+  border-radius: 100rpx;
+  box-shadow: 0 4rpx 20rpx rgba(31, 35, 48, 0.05);
+}
+.search-ic { font-size: 30rpx; }
+.search-ph { font-size: 28rpx; color: #9aa0ad; }
+
+.cats { white-space: nowrap; margin: 16rpx 0 8rpx; }
+.cat {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  background: #fff;
+  border: 1rpx solid #eceef3;
+  border-radius: 100rpx;
+  font-size: 26rpx;
+  color: #4a5070;
+}
+.cat.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+.state { padding: 70rpx 0; text-align: center; color: #9aa0ad; font-size: 28rpx; }
+.state.sm { padding: 40rpx 0; }
+
+.sec { margin-top: 28rpx; }
+.sec-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+  padding: 0 4rpx;
+}
+.sec-title { font-size: 32rpx; font-weight: 700; color: #1f2330; }
+.sec-more { font-size: 25rpx; color: #8a90a0; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18rpx; }
+.acard {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 26rpx 24rpx;
+  box-shadow: 0 4rpx 22rpx rgba(31, 35, 48, 0.05);
+}
+.acard:active { transform: scale(0.99); }
+.acard-ic {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44rpx;
+}
+.acard-name { margin-top: 18rpx; font-size: 30rpx; font-weight: 600; color: #1f2330; }
+.acard-tag {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #8a90a0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ph-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 56rpx 32rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 22rpx rgba(31, 35, 48, 0.05);
+}
+.ph-emoji { font-size: 72rpx; }
+.ph-title { margin-top: 18rpx; font-size: 30rpx; font-weight: 600; color: #1f2330; }
+.ph-sub { margin-top: 10rpx; font-size: 25rpx; color: #9aa0ad; }

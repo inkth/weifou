@@ -1,0 +1,44 @@
+<view class="page">
+  <view class="hd"><view class="hd-title">消息</view></view>
+
+  <!-- 通知中心（主人收件）：只做通知 + 跳转承接，不在此实时对聊 -->
+  <view wx:if="{{isHost}}" class="notice" bindtap="goInbox">
+    <view class="notice-l">
+      <text class="notice-ic">📥</text>
+      <view>
+        <view class="notice-title">收件箱</view>
+        <view class="notice-sub">{{todo.total ? (todo.paid ? todo.paid + ' 条付费提问待答' : todo.total + ' 条待处理') : '待回答 / 访客线索 / 付费提问'}}</view>
+      </view>
+    </view>
+    <text class="notice-badge" wx:if="{{todo.total}}">{{todo.total}}</text>
+    <text class="notice-arrow" wx:else>›</text>
+  </view>
+
+  <view class="sec-title">会话</view>
+
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <view wx:elif="{{loadError}}" class="state">加载失败 · <text class="link" bindtap="retry">重试</text></view>
+  <block wx:else>
+    <view wx:if="{{!sessions.length}}" class="state">
+      <view>还没有会话</view>
+      <view class="state-sub">去「分身」找一个 AI 聊聊，记录会留在这里</view>
+    </view>
+    <view
+      class="row"
+      wx:for="{{sessions}}"
+      wx:key="sessionId"
+      data-profile="{{item.profileId}}"
+      bindtap="enterChat"
+    >
+      <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" class="ava" />
+      <view wx:else class="ava ava-fb">{{item.initial}}</view>
+      <view class="row-body">
+        <view class="row-top">
+          <text class="row-name">{{item.realName}}</text>
+          <text class="row-time">{{item.timeText}}</text>
+        </view>
+        <view class="row-last">{{item.lastText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

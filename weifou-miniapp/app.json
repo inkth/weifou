@@ -1,5 +1,8 @@
 {
   "pages": [
+    "pages/discover/index",
+    "pages/messages/index",
+    "pages/me/index",
     "pages/index/index",
     "pages/onboarding/index",
     "pages/build/index",
@@ -22,6 +25,17 @@
     "pages/agent-chat/index",
     "pages/membership/index"
   ],
+  "tabBar": {
+    "custom": true,
+    "color": "#8a90a0",
+    "selectedColor": "#fb923c",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/discover/index", "text": "分身" },
+      { "pagePath": "pages/messages/index", "text": "消息" },
+      { "pagePath": "pages/me/index", "text": "我的" }
+    ]
+  },
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#ffffff",

@@ -1,0 +1,60 @@
+<view class="page">
+  <view class="hd">
+    <view class="hd-title">分身</view>
+    <view class="hd-sub">挑一个 AI 助手，先聊起来</view>
+  </view>
+
+  <!-- 搜索（骨架占位） -->
+  <view class="search" bindtap="onSearchTap">
+    <text class="search-ic">🔍</text>
+    <text class="search-ph">搜索 AI 分身 / 工具</text>
+  </view>
+
+  <!-- 分类：按功能 / 话题分，不按人分 -->
+  <scroll-view class="cats" scroll-x>
+    <view
+      class="cat {{activeCat === item ? 'on' : ''}}"
+      wx:for="{{cats}}"
+      wx:key="*this"
+      data-cat="{{item}}"
+      bindtap="pickCat"
+    >{{item}}</view>
+  </scroll-view>
+
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+
+  <block wx:else>
+    <!-- 平台工具 Agent（真实数据，iOS 隐藏） -->
+    <view wx:if="{{agentEntry}}" class="sec">
+      <view class="sec-hd">
+        <text class="sec-title">AI 工具箱</text>
+        <text class="sec-more" bindtap="goAgents">全部 ›</text>
+      </view>
+      <view class="grid">
+        <view
+          class="acard"
+          wx:for="{{agents}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          data-name="{{item.name}}"
+          bindtap="openAgent"
+        >
+          <view class="acard-ic" style="background:{{item.accent}}1a;color:{{item.accent}};">{{item.icon}}</view>
+          <view class="acard-name">{{item.name}}</view>
+          <view class="acard-tag">{{item.tagline}}</view>
+        </view>
+      </view>
+      <view wx:if="{{!agents.length}}" class="state sm">工具箱即将上线</view>
+    </view>
+
+    <!-- 真人 AI 分身（待后端发现流接入） -->
+    <view class="sec">
+      <view class="sec-hd"><text class="sec-title">推荐分身</text></view>
+      <view class="ph-card">
+        <view class="ph-emoji">🤖</view>
+        <view class="ph-title">更多真人 AI 分身陆续上线</view>
+        <view class="ph-sub">这里会出现可以聊天、提问、咨询的 AI 分身</view>
+      </view>
+    </view>
+  </block>
+</view>

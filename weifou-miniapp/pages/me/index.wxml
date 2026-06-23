@@ -1,0 +1,49 @@
+<view class="page">
+  <view class="hd"><view class="hd-title">我的</view></view>
+
+  <!-- 我的分身：顶部最显眼的资产卡（主人的核心资产 / 收益入口） -->
+  <view wx:if="{{profileId}}" class="clone card" bindtap="goMyProfile">
+    <view class="clone-top">
+      <view class="clone-ava">🤖</view>
+      <view class="clone-id">
+        <view class="clone-name">{{realName ? realName + ' 的 AI 分身' : '我的 AI 分身'}}</view>
+        <view class="clone-sub">查看主页 · 人设 / 定价 / 收益</view>
+      </view>
+      <text class="clone-arrow">›</text>
+    </view>
+    <view class="clone-acts">
+      <view class="clone-act" catchtap="goInbox"><text class="ca-emoji">📥</text><text>收件箱</text></view>
+      <view class="clone-act" catchtap="goCreate"><text class="ca-emoji">✏️</text><text>编辑</text></view>
+      <view class="clone-act" catchtap="goMyProfile"><text class="ca-emoji">📊</text><text>数据</text></view>
+    </view>
+  </view>
+
+  <!-- 未创建：引导创建 -->
+  <view wx:elif="{{!loading}}" class="create card" bindtap="goBuild">
+    <view class="create-title">创建我的 AI 分身</view>
+    <view class="create-sub">让你的 AI 替你接待、回答、变现</view>
+    <view class="create-btn">开始创建 ›</view>
+  </view>
+
+  <!-- 功能入口 -->
+  <view class="group">
+    <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
+      <text class="cell-ic">👑</text><text class="cell-label">会员</text><text class="cell-arrow">›</text>
+    </view>
+    <view class="cell" bindtap="goQuestions">
+      <text class="cell-ic">✍️</text><text class="cell-label">我的提问</text><text class="cell-arrow">›</text>
+    </view>
+    <view class="cell" bindtap="goCalls">
+      <text class="cell-ic">📞</text><text class="cell-label">我的通话</text><text class="cell-arrow">›</text>
+    </view>
+    <view class="cell" bindtap="goSettings">
+      <text class="cell-ic">⚙️</text><text class="cell-label">设置</text><text class="cell-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 合规位（AIGC 必备：备案 / 协议） -->
+  <view class="legal">
+    <view>大模型服务已依法备案 · 内容由 AI 生成</view>
+    <view class="legal-links"><text>用户协议</text><text class="dot">·</text><text>隐私政策</text></view>
+  </view>
+</view>
