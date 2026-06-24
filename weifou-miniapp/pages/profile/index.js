@@ -156,10 +156,10 @@ Page({
     wx.navigateTo({ url: '/pages/my-questions/index' });
   },
 
-  // 裂变：访客页脚 → 快速创建（带来源归因；已有主页的用户会自动进入完整编辑态）
+  // 裂变：访客页脚 → 对话式创建自己的助理（带来源归因；已有主页会自动进入编辑态）
   goCreateOwn() {
     track('own_hook_click', this.data.profileId, 'profile');
-    wx.navigateTo({ url: `/pages/create/index?quick=1&ref=${this.data.profileId}` });
+    wx.navigateTo({ url: `/pages/onboarding/index?ref=${this.data.profileId}` });
   },
 
   goPoster() {

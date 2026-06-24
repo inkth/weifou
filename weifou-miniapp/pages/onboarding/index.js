@@ -47,17 +47,43 @@ Page({
     confirmed: false,    // 已发过"了解你了"的确认语，避免重复
     toLast: '',
     chipKind: null,      // 当前展示的快捷选项：domain | audience | style | null
+    editMode: false,     // 已有主页 = 编辑态：预填资料、不逐项追问、改完即更新
     DOMAINS, AUDIENCES, STYLES,
-    form: { realName: '', title: '', strengths: '', recentWork: '', howToKnow: '', style: '' },
+    form: { realName: '', title: '', strengths: '', recentWork: '', howToKnow: '', style: '', company: '', city: '' },
   },
 
   async onLoad(query) {
     this._ref = (query && query.ref) || '';
     this._asked = {}; // 已问过的阶段（可选项只问一次，避免纠缠）
     this._locked = {}; // 经点选确定的字段：后续抽取不再覆盖，保住干净取值
+    this._edit = false;
     track('onboarding_enter', this._ref);
-    try { await ensureLogin(); } catch (e) { /* 提交时再兜底 */ }
+    try {
+      await ensureLogin();
+      // 创建/编辑统一走对话（已无表单页）：已有主页则进入编辑态
+      const mine = await request({ url: '/profile/mine' });
+      if (mine) { this._enterEditMode(mine); return; }
+    } catch (e) { /* 未登录/无主页 → 创建态，提交时再兜底 */ }
     this._pushAi(OPENER);
+  },
+
+  // 编辑态：用 /profile/mine 预填全部字段（含 company/city，避免提交被空值清掉），
+  // 开场回显当前主页，必填已齐 → 直接可「更新主页」；不再逐项追问。
+  _enterEditMode(mine) {
+    const input = mine.personaInput || {};
+    const form = {
+      realName: mine.realName || '',
+      title: mine.title || '',
+      strengths: input.strengths || '',
+      recentWork: input.recentWork || '',
+      howToKnow: input.howToKnow || '',
+      style: input.style || '',
+      company: mine.company || '',
+      city: mine.city || '',
+    };
+    this._edit = true;
+    this.setData({ editMode: true, form, canFinish: true, confirmed: true });
+    this._pushAi(`这是你现在的 AI 主页——${form.realName}｜${form.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新主页」。`);
   },
 
   _push(role, text) {
@@ -166,6 +192,13 @@ Page({
     const complete = filled(form, 'realName') && filled(form, 'title') && filled(form, 'strengths');
     this.setData({ canFinish: complete });
 
+    // 编辑态：不逐项追问，改了回一句确认，随时可「更新主页」
+    if (this._edit) {
+      this.setData({ chipKind: null });
+      this._pushAi('好，记下了～ 还想改别的就继续说，或点「更新主页」。');
+      return;
+    }
+
     // 必填刚齐：发一次确认语
     if (complete && !this.data.confirmed) {
       this.setData({ confirmed: true });
@@ -193,9 +226,10 @@ Page({
       return;
     }
     if (this.data.submitting) return;
+    const edit = this.data.editMode;
     this.setData({ submitting: true, chipKind: null });
-    this._pushAi('好，我这就替你把主页生成出来，稍等 5–15 秒 ✨');
-    wx.showLoading({ title: 'AI 生成中…', mask: true });
+    this._pushAi(edit ? '好，这就替你更新主页，稍等几秒 ✨' : '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨');
+    wx.showLoading({ title: edit ? '更新中…' : 'AI 生成中…', mask: true });
     try {
       await ensureLogin();
       const body = {
@@ -205,20 +239,22 @@ Page({
         recentWork: f.recentWork || '',
         howToKnow: f.howToKnow || '',
         style: f.style || '',                 // 语气：点选了用点选值，否则由 AI 自行判断
+        company: f.company || '',             // 编辑态透传，避免被服务端空值清掉；创建态为空=不落库
+        city: f.city || '',
         avatarStyle: '',
       };
       if (this._ref) body.ref = this._ref;
       const data = await request({ url: '/profile', method: 'POST', data: body });
       wx.hideLoading();
-      wx.redirectTo({ url: `/pages/profile/index?id=${data.id}&mine=1&fresh=1` });
+      // fresh=1（"新鲜出炉"庆祝）仅创建时用，编辑不放
+      const url = edit
+        ? `/pages/profile/index?id=${data.id}&mine=1`
+        : `/pages/profile/index?id=${data.id}&mine=1&fresh=1`;
+      wx.redirectTo({ url });
     } catch (e) {
       wx.hideLoading();
       this.setData({ submitting: false });
-      wx.showModal({ title: '生成失败', content: e.message || '请稍后再试', showCancel: false });
+      wx.showModal({ title: edit ? '更新失败' : '生成失败', content: e.message || '请稍后再试', showCancel: false });
     }
-  },
-
-  goForm() {
-    wx.redirectTo({ url: '/pages/create/index' });
   },
 });

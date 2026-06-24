@@ -74,6 +74,30 @@ class ExtractedProfile {
       );
 }
 
+/// 对话式编辑的预填草稿：/profile/mine 的基础字段 + personaInput 原始输入。
+/// Profile 模型只含生成结果（persona），不含这些原始输入，故单独解析原始 map。
+class ProfileDraft {
+  ProfileDraft({
+    required this.realName,
+    required this.title,
+    required this.strengths,
+    required this.recentWork,
+    required this.howToKnow,
+    required this.style,
+    required this.company,
+    required this.city,
+  });
+
+  final String realName;
+  final String title;
+  final String strengths;
+  final String recentWork;
+  final String howToKnow;
+  final String style;
+  final String company;
+  final String city;
+}
+
 /// 主页相关接口。
 class ProfileApi {
   ProfileApi(this._ref);
@@ -91,6 +115,27 @@ class ProfileApi {
     final data = await _ref.read(dioClientProvider).get('/profile/mine');
     if (data == null) return null;
     return Profile.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  /// GET /profile/mine（原始）—— 取对话式编辑预填所需的原始输入；未创建返回 null。
+  Future<ProfileDraft?> mineDraft() async {
+    final data = await _ref.read(dioClientProvider).get('/profile/mine');
+    if (data == null) return null;
+    final m = Map<String, dynamic>.from(data as Map);
+    final input = m['personaInput'] is Map
+        ? Map<String, dynamic>.from(m['personaInput'] as Map)
+        : <String, dynamic>{};
+    String s(dynamic v) => (v ?? '').toString();
+    return ProfileDraft(
+      realName: s(m['realName']),
+      title: s(m['title']),
+      strengths: s(input['strengths']),
+      recentWork: s(input['recentWork']),
+      howToKnow: s(input['howToKnow']),
+      style: s(input['style']),
+      company: s(m['company']),
+      city: s(m['city']),
+    );
   }
 
   /// POST /profile —— 创建/更新主页并同步生成 AI 人格（耗时，调用方需显示加载）。

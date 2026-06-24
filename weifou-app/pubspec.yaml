@@ -74,6 +74,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # 沉浸式创建页背景立绘（与小程序 onboarding 同款，全端统一皮肤）
+  assets:
+    - assets/avatars/gf-meinv_idle.webp
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

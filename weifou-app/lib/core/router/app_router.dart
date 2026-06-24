@@ -8,7 +8,6 @@ import '../../features/auth/login_screen.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/chat/chats_screen.dart';
 import '../../features/create/conversational_create_screen.dart';
-import '../../features/create/create_screen.dart';
 import '../../features/create/persona_edit_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/plaza/plaza_screen.dart';
@@ -77,11 +76,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const ConversationalCreateScreen(),
-      ),
-      GoRoute(
-        path: '/create',
-        name: 'create',
-        builder: (context, state) => const CreateScreen(),
       ),
       GoRoute(
         path: '/settings',

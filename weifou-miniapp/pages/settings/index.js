@@ -118,7 +118,7 @@ Page({
   },
 
   goEdit() {
-    wx.navigateTo({ url: '/pages/create/index' });
+    wx.navigateTo({ url: '/pages/onboarding/index' });
   },
 
   async regenerate() {

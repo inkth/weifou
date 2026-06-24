@@ -5,9 +5,9 @@
 
   <view class="ob-hero">
     <view class="ob-helper">
-      <view class="ob-hero-title">先聊几句，我来替你写主页</view>
+      <view class="ob-hero-title">{{editMode ? '想更新什么？说一句就改' : '先聊几句，我来替你写主页'}}</view>
     </view>
-    <view class="ob-hero-sub muted">说一句，或点下方选项都行</view>
+    <view class="ob-hero-sub muted">{{editMode ? '没提到的都给你留着' : '说一句，或点下方选项都行'}}</view>
   </view>
 
   <scroll-view class="ob-msgs" scroll-y scroll-into-view="{{toLast}}" scroll-with-animation>
@@ -41,7 +41,7 @@
     </view>
 
     <view class="ob-quick" wx:if="{{canFinish}}">
-      <view class="ob-chip strong" bindtap="onFinishNow">信息够了，先上岗 ›</view>
+      <view class="ob-chip strong" bindtap="onFinishNow">{{editMode ? '更新主页 ›' : '信息够了，先上岗 ›'}}</view>
     </view>
     <view class="ob-composer">
       <view class="ob-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
@@ -54,6 +54,5 @@
         <view class="ob-send-i"></view>
       </view>
     </view>
-    <view class="ob-form-link muted" bindtap="goForm">更习惯填表？切换手动填写 ›</view>
   </view>
 </view>

@@ -157,8 +157,8 @@ class _HasProfile extends StatelessWidget {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           icon: const Icon(Icons.edit_outlined),
-          label: const Text('重填资料·重新生成'),
-          onPressed: () => context.pushNamed('create'),
+          label: const Text('重新编辑资料'),
+          onPressed: () => context.pushNamed('onboarding'),
         ),
       ],
     );

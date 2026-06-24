@@ -39,8 +39,8 @@ Page({
     if (!this.data.profileId) return;
     wx.navigateTo({ url: `/pages/profile/index?id=${this.data.profileId}&mine=1` });
   },
+  // 创建与编辑统一走对话式 onboarding（已无表单页）
   goOnboarding() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
-  goCreate() { wx.navigateTo({ url: '/pages/create/index' }); },
   goInbox() { wx.navigateTo({ url: '/pages/inbox/index' }); },
   goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },

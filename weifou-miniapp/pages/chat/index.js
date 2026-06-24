@@ -419,7 +419,7 @@ Page({
 
   goCreateOwn() {
     track('own_hook_click', this.data.profileId, 'chat');
-    wx.navigateTo({ url: `/pages/create/index?quick=1&ref=${this.data.profileId}` });
+    wx.navigateTo({ url: `/pages/onboarding/index?ref=${this.data.profileId}` });
   },
 
   // 行动选项：联系本人（内联弹层）

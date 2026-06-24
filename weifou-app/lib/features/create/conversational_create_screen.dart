@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-import '../../core/avatar/weifou_avatar.dart';
 import '../../core/network/api_exception.dart';
-import '../../core/theme/app_theme.dart';
 import '../../data/api/profile_api.dart';
 
-/// 对话式创建：用户自由回答，服务端 /profile/extract 抽字段 + 按语气定风格；
-/// 缺必填则追问一句，齐了即可上岗。最终走现有 createOrUpdate。与小程序 pages/onboarding 对齐。
+/// 对话式创建：把原「分步点选」融进对话——AI 逐步引导，结构化项（做什么/接待谁/气质）直接给
+/// 可点「快捷气泡」，点了即答；名字与一句话走输入/语音；也可自由说一段由 /profile/extract 一次
+/// 抽多字段并跳过已答步骤。必填 realName/title/strengths 齐即可上岗。与小程序 pages/onboarding 全面
+/// 对齐：全屏立绘暗场沉浸皮肤 + 毛玻璃气泡/气泡选项/输入条。
 const _opener =
-    '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己就好：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪。';
+    '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
 
 const Map<String, String> _styleAvatar = {
   'steady': 'toon-steady',
@@ -19,6 +20,68 @@ const Map<String, String> _styleAvatar = {
   'sharp': 'toon-sharp',
   'humorous': 'toon-humorous',
 };
+
+// —— 沉浸暗场皮肤色（与小程序 onboarding.wxss 同值）——
+const _accent = Color(0xFF18B690);
+const _accentSoft = Color(0x5718B690); // rgba(24,182,144,0.34)
+const _accentBorder = Color(0x9918B690); // rgba(24,182,144,0.6)
+const _glassFill = Color(0x6B12141C); // rgba(18,20,28,0.42)
+const _glassBorder = Color(0x4DFFFFFF); // rgba(255,255,255,0.30)
+const _aiBubble = Color(0x8012141C); // rgba(18,20,28,0.5)
+const _aiBorder = Color(0x2EFFFFFF); // rgba(255,255,255,0.18)
+const _userBubble = Color(0xE618B690); // rgba(24,182,144,0.9)
+
+// —— 结构化快捷选项（与小程序 pages/onboarding 同源）——
+const _domains = [
+  '顾问·教练', '设计·创意', '开发·技术', '教育·培训', '医美·健康',
+  '法律·财税', '电商·带货', '内容·创作', '生活服务',
+];
+
+class _Audience {
+  const _Audience(this.label, this.hk);
+  final String label; // 气泡显示
+  final String hk; // 写入 howToKnow 的干净取值
+}
+
+const _audiences = [
+  _Audience('找合作', '主要想接待：找合作'),
+  _Audience('想买你服务', '主要想接待：想买我服务的人'),
+  _Audience('同行 · 招募', '主要想接待：同行或想招募我的人'),
+  _Audience('粉丝 · 读者', '主要想接待：我的粉丝或读者'),
+  _Audience('都行', '主要想接待：各种来访者'),
+];
+
+class _StyleOpt {
+  const _StyleOpt(this.label, this.value, this.desc);
+  final String label;
+  final String value; // style 白名单 key
+  final String desc;
+}
+
+const _styles = [
+  _StyleOpt('专业冷静', 'steady', '严谨克制 · 先结论'),
+  _StyleOpt('温暖亲和', 'warm', '口语 · 先共情'),
+  _StyleOpt('犀利直接', 'sharp', '一针见血 · 不绕弯'),
+  _StyleOpt('轻松幽默', 'humorous', '有梗 · 不油腻'),
+];
+
+// 引导阶段（与小程序同序）：字段 / 是否必填 / 提问 / 快捷气泡类型
+class _Stage {
+  const _Stage(this.key, this.field, this.required, this.ask, this.chips);
+  final String key;
+  final String field;
+  final bool required;
+  final String ask;
+  final String? chips; // 'domain' | 'audience' | 'style' | null
+}
+
+const _stages = [
+  _Stage('name', 'realName', true, '先问一句——我该怎么称呼你？', null),
+  _Stage('domain', 'title', true, '你主要是做什么的？挑一个最接近的，或直接说～', 'domain'),
+  _Stage('audience', 'howToKnow', false, '主要想接待谁？', 'audience'),
+  _Stage('style', 'style', false, '希望你的 AI 什么气质、说话调？', 'style'),
+  _Stage('substance', 'strengths', true, '最后——你最能帮别人解决的一件事是什么？越具体它越懂你（也可写个代表作）。', null),
+];
 
 class _OMsg {
   _OMsg(this.fromAi, this.text);
@@ -45,8 +108,8 @@ class _ConversationalCreateScreenState
   bool _canFinish = false;
   bool _confirmed = false;
   bool _recording = false;
-  String _avatarStyle = 'toon-warm';
-  AvatarState _avatarState = AvatarState.speaking;
+  bool _edit = false; // 已有主页 = 编辑态：预填、开场回显、改完即更新
+  bool _initializing = true; // 进入时探测是否已有主页
 
   final _speech = stt.SpeechToText();
   bool _speechReady = false;
@@ -54,11 +117,90 @@ class _ConversationalCreateScreenState
   // 累积抽取出的字段
   String _realName = '', _title = '', _strengths = '';
   String _recentWork = '', _howToKnow = '', _style = '';
+  String _company = '', _city = ''; // 编辑态透传，避免提交被服务端空值清掉
+
+  final Map<String, bool> _asked = {}; // 已问过的阶段（可选项只问一次）
+  final Map<String, bool> _locked = {}; // 经点选确定的字段：后续抽取不再覆盖
+  String? _chipKind; // 当前展示的快捷气泡：domain | audience | style | null
+
+  // 字段名 ↔ 累积变量（供分步引导/抽取合并统一存取）
+  String _fieldValue(String field) {
+    switch (field) {
+      case 'realName':
+        return _realName;
+      case 'title':
+        return _title;
+      case 'strengths':
+        return _strengths;
+      case 'recentWork':
+        return _recentWork;
+      case 'howToKnow':
+        return _howToKnow;
+      case 'style':
+        return _style;
+    }
+    return '';
+  }
+
+  void _setField(String field, String v) {
+    switch (field) {
+      case 'realName':
+        _realName = v;
+        break;
+      case 'title':
+        _title = v;
+        break;
+      case 'strengths':
+        _strengths = v;
+        break;
+      case 'recentWork':
+        _recentWork = v;
+        break;
+      case 'howToKnow':
+        _howToKnow = v;
+        break;
+      case 'style':
+        _style = v;
+        break;
+    }
+  }
+
+  bool _filled(String field) => _fieldValue(field).trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _msgs.add(_OMsg(true, _opener));
+    _init();
+  }
+
+  // 创建/编辑统一走对话：已有主页则预填进入编辑态，否则用创建开场。
+  Future<void> _init() async {
+    try {
+      final d = await ref.read(profileApiProvider).mineDraft();
+      if (!mounted) return;
+      if (d != null) {
+        _edit = true;
+        _realName = d.realName;
+        _title = d.title;
+        _strengths = d.strengths;
+        _recentWork = d.recentWork;
+        _howToKnow = d.howToKnow;
+        _style = d.style;
+        _company = d.company;
+        _city = d.city;
+        _canFinish = true;
+        _confirmed = true;
+        _msgs.add(_OMsg(true,
+            '这是你现在的 AI 主页——${d.realName}｜${d.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新主页」。'));
+      } else {
+        _msgs.add(_OMsg(true, _opener));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _msgs.add(_OMsg(true, _opener)); // 兜底当创建
+    } finally {
+      if (mounted) setState(() => _initializing = false);
+    }
   }
 
   @override
@@ -123,11 +265,52 @@ class _ConversationalCreateScreenState
     });
   }
 
-  String _fallbackFollowup() {
-    if (_realName.isEmpty) return '我该怎么称呼你呢？';
-    if (_title.isEmpty) return '你平时主要是做什么的？';
-    if (_strengths.isEmpty) return '你最能帮别人解决什么问题？';
-    return '还想补充点什么吗？';
+  // 统一推进（与小程序 _afterAnswer 对齐）：算必填齐没 → 找下一个该问的阶段+气泡 → 抛问题。
+  // 须在 setState 内调用（直接改 _msgs/_canFinish/_chipKind）。
+  void _afterAnswer() {
+    final complete =
+        _realName.isNotEmpty && _title.isNotEmpty && _strengths.isNotEmpty;
+    _canFinish = complete;
+
+    // 编辑态：不逐项追问，改了回一句确认，随时可「更新主页」
+    if (_edit) {
+      _chipKind = null;
+      _msgs.add(_OMsg(true, '好，记下了～ 还想改别的就继续说，或点「更新主页」。'));
+      return;
+    }
+
+    if (complete && !_confirmed) {
+      _confirmed = true;
+      _msgs.add(_OMsg(true, '好，我大概了解你了～ 随时点「先上岗」，也能再补两句让我更懂你。'));
+    }
+
+    _Stage? next;
+    for (final s in _stages) {
+      if (!_filled(s.field) && (s.required || !(_asked[s.key] ?? false))) {
+        next = s;
+        break;
+      }
+    }
+    if (next == null) {
+      _chipKind = null;
+      return;
+    }
+    _asked[next.key] = true;
+    _msgs.add(_OMsg(true, next.ask));
+    _chipKind = next.chips;
+  }
+
+  // 点气泡 = 直接填字段 + 记一条用户气泡，不走服务端抽取（快、稳、零误判）
+  void _pickChip(String field, String value, String label) {
+    if (_thinking || _submitting) return;
+    setState(() {
+      _locked[field] = true; // 点选即锁定，避免后续抽取覆盖
+      _msgs.add(_OMsg(false, label));
+      _setField(field, value);
+      _chipKind = null;
+      _afterAnswer();
+    });
+    _scrollEnd();
   }
 
   Future<void> _send() async {
@@ -137,7 +320,6 @@ class _ConversationalCreateScreenState
       _msgs.add(_OMsg(false, v));
       _input.clear();
       _thinking = true;
-      _avatarState = AvatarState.thinking;
     });
     _scrollEnd();
     await _extract();
@@ -155,7 +337,6 @@ class _ConversationalCreateScreenState
       if (!mounted) return;
       setState(() {
         _thinking = false;
-        _avatarState = AvatarState.speaking;
         _msgs.add(_OMsg(true, '（网络好像有点慢，刚那句再说一遍试试？）'));
       });
       _scrollEnd();
@@ -163,32 +344,19 @@ class _ConversationalCreateScreenState
   }
 
   void _applyExtract(ExtractedProfile res) {
-    if (res.realName.isNotEmpty) _realName = res.realName;
-    if (res.title.isNotEmpty) _title = res.title;
-    if (res.strengths.isNotEmpty) _strengths = res.strengths;
-    if (res.recentWork.isNotEmpty) _recentWork = res.recentWork;
-    if (res.howToKnow.isNotEmpty) _howToKnow = res.howToKnow;
-    if (res.style.isNotEmpty) _style = res.style;
-
-    final complete =
-        _realName.isNotEmpty && _title.isNotEmpty && _strengths.isNotEmpty;
+    // 合并：已点选锁定的字段保留不动；其余服务端非空则覆盖、空则保留（防 LLM 偶发漏带）
+    String pick(String field, String val) => (_locked[field] ?? false)
+        ? _fieldValue(field)
+        : (val.isNotEmpty ? val : _fieldValue(field));
     setState(() {
+      _setField('realName', pick('realName', res.realName));
+      _setField('title', pick('title', res.title));
+      _setField('strengths', pick('strengths', res.strengths));
+      _setField('recentWork', pick('recentWork', res.recentWork));
+      _setField('howToKnow', pick('howToKnow', res.howToKnow));
+      _setField('style', pick('style', res.style));
       _thinking = false;
-      _canFinish = complete;
-      _avatarStyle = _styleAvatar[_style] ?? 'toon-warm'; // 按语气实时变脸
-      _avatarState = AvatarState.speaking;
-      if (complete) {
-        if (!_confirmed) {
-          _confirmed = true;
-          _msgs.add(_OMsg(true, '好，我大概了解你了～ 随时可以点「先上岗」，也能再补两句让我更懂你。'));
-        } else {
-          _msgs.add(_OMsg(true, '记下了～ 还想补充就继续说，或者点「先上岗」。'));
-        }
-      } else {
-        final ask =
-            res.followup.trim().isNotEmpty ? res.followup.trim() : _fallbackFollowup();
-        _msgs.add(_OMsg(true, ask));
-      }
+      _afterAnswer();
     });
     _scrollEnd();
   }
@@ -201,8 +369,9 @@ class _ConversationalCreateScreenState
     if (_submitting) return;
     setState(() {
       _submitting = true;
-      _avatarState = AvatarState.thinking;
-      _msgs.add(_OMsg(true, '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨'));
+      _msgs.add(_OMsg(true, _edit
+          ? '好，这就替你更新主页，稍等几秒 ✨'
+          : '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨'));
     });
     _scrollEnd();
     try {
@@ -214,6 +383,8 @@ class _ConversationalCreateScreenState
               recentWork: _recentWork,
               howToKnow: _howToKnow,
               style: _style.isEmpty ? null : _style,
+              company: _company.isEmpty ? null : _company,
+              city: _city.isEmpty ? null : _city,
               avatarStyle: _styleAvatar[_style] ?? 'toon-warm',
             ),
           );
@@ -223,18 +394,12 @@ class _ConversationalCreateScreenState
       }
     } on ApiException catch (e) {
       if (mounted) {
-        setState(() {
-          _submitting = false;
-          _avatarState = AvatarState.speaking;
-        });
+        setState(() => _submitting = false);
         _snack(e.message);
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _submitting = false;
-          _avatarState = AvatarState.speaking;
-        });
+        setState(() => _submitting = false);
         _snack('生成失败：$e');
       }
     }
@@ -246,81 +411,221 @@ class _ConversationalCreateScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('创建我的 AI 助理')),
-      body: Column(
+      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF20232E),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            child: Column(
-              children: [
-                WeifouAvatar(
-                  style: _avatarStyle,
-                  name: _realName,
-                  size: 64,
-                  active: _thinking || _submitting,
-                  state: _avatarState,
-                ),
-                const SizedBox(height: 8),
-                const Text('先聊几句，我来替你写主页',
-                    style:
-                        TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                const Text('不用填表，说说就好',
-                    style: TextStyle(fontSize: 12, color: AppTheme.sub)),
-              ],
+          // 底层暗场渐变（立绘加载前/不覆盖处兜底，与 wxss 的 .ob 同色）
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF36303A),
+                  Color(0xFF20232E),
+                  Color(0xFF15171F)
+                ],
+                stops: [0, 0.58, 1],
+              ),
+            ),
+            child: SizedBox.expand(),
+          ),
+          // 全屏立绘（缺图则降级为暗场渐变）
+          Positioned.fill(
+            child: Image.asset(
+              'assets/avatars/gf-meinv_idle.webp',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scroll,
-              padding: const EdgeInsets.all(16),
-              itemCount: _msgs.length + (_thinking ? 1 : 0),
-              itemBuilder: (_, i) {
-                if (i >= _msgs.length) return const _TypingBubble();
-                return _Bubble(msg: _msgs[i]);
-              },
-            ),
-          ),
-          if (_canFinish && !_submitting)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: ActionChip(
-                  label: const Text('信息够了，先上岗 ›'),
-                  backgroundColor: AppTheme.accentSoft,
-                  labelStyle: const TextStyle(
-                      color: AppTheme.accentInk, fontWeight: FontWeight.w500),
-                  side: BorderSide.none,
-                  onPressed: _finish,
+          // 暗场 scrim（与 wxss .bg-scrim 同色阶）
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x8010121A),
+                    Color(0x0F10121A),
+                    Color(0x5710121A),
+                    Color(0xE010121A),
+                  ],
+                  stops: [0, 0.26, 0.62, 1],
                 ),
               ),
             ),
-          if (_submitting) const LinearProgressIndicator(minHeight: 2),
-          _Composer(
-            controller: _input,
-            enabled: !_submitting,
-            recording: _recording,
-            onMicStart: _micStart,
-            onMicStop: _micStop,
-            onSend: _send,
           ),
           SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TextButton(
-                onPressed: () => context.pushNamed('create'),
-                child: const Text('更习惯填表？切换手动填写 ›',
-                    style: TextStyle(fontSize: 12, color: AppTheme.sub)),
-              ),
-            ),
+            child: _initializing
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white))
+                : Column(
+                    children: [
+                      const SizedBox(height: kToolbarHeight),
+                      Text(_edit ? '想更新什么？说一句就改' : '先聊几句，我来替你写主页',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            shadows: [
+                              Shadow(color: Colors.black54, blurRadius: 8)
+                            ],
+                          )),
+                      const SizedBox(height: 4),
+                      Text(_edit ? '没提到的都给你留着' : '说一句，或点下方选项都行',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scroll,
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          itemCount: _msgs.length + (_thinking ? 1 : 0),
+                          itemBuilder: (_, i) {
+                            if (i >= _msgs.length) return const _TypingBubble();
+                            return _Bubble(msg: _msgs[i]);
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_chipKind != null && !_submitting) _buildChips(),
+                            if (_canFinish && !_submitting)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _finishChip(),
+                              ),
+                            if (_submitting)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 10),
+                                child: LinearProgressIndicator(
+                                    minHeight: 2, color: _accent),
+                              ),
+                            _Composer(
+                              controller: _input,
+                              enabled: !_submitting,
+                              recording: _recording,
+                              onMicStart: _micStart,
+                              onMicStop: _micStop,
+                              onSend: _send,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
     );
   }
+
+  // 当前阶段的快捷气泡（点了即答，承接原分步点选）：行业/接待=毛玻璃 pill；气质=两行卡片
+  Widget _buildChips() {
+    final List<Widget> chips;
+    switch (_chipKind) {
+      case 'domain':
+        chips = _domains
+            .map((d) => _pill(d, () => _pickChip('title', d, d)))
+            .toList();
+        break;
+      case 'audience':
+        chips = _audiences
+            .map((a) =>
+                _pill(a.label, () => _pickChip('howToKnow', a.hk, a.label)))
+            .toList();
+        break;
+      case 'style':
+        chips = _styles.map(_styleCard).toList();
+        break;
+      default:
+        chips = const [];
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Wrap(spacing: 10, runSpacing: 10, children: chips),
+    );
+  }
+
+  Widget _pill(String label, VoidCallback onTap) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(100),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            decoration: BoxDecoration(
+              color: _glassFill,
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(color: _glassBorder),
+            ),
+            child: Text(label,
+                style: const TextStyle(color: Colors.white, fontSize: 13)),
+          ),
+        ),
+      );
+
+  Widget _styleCard(_StyleOpt s) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _pickChip('style', s.value, s.label),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _glassFill,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _glassBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(s.label,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(s.desc,
+                    style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Widget _finishChip() => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(100),
+          onTap: _finish,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+            decoration: BoxDecoration(
+              color: _accentSoft,
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(color: _accentBorder),
+            ),
+            child: Text(_edit ? '更新主页 ›' : '信息够了，先上岗 ›',
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w500)),
+          ),
+        ),
+      );
 }
 
 class _Bubble extends StatelessWidget {
@@ -334,17 +639,21 @@ class _Bubble extends StatelessWidget {
       alignment: ai ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.78),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         decoration: BoxDecoration(
-          color: ai ? Colors.white : AppTheme.ink,
-          borderRadius: BorderRadius.circular(14),
-          border: ai ? Border.all(color: const Color(0xFFF0E6DC)) : null,
+          color: ai ? _aiBubble : _userBubble,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(ai ? 6 : 18),
+            bottomRight: Radius.circular(ai ? 18 : 6),
+          ),
+          border: ai ? Border.all(color: _aiBorder) : null,
         ),
         child: Text(msg.text,
-            style: TextStyle(
-                color: ai ? AppTheme.ink : Colors.white, height: 1.5)),
+            style: const TextStyle(color: Colors.white, height: 1.5)),
       ),
     );
   }
@@ -361,12 +670,12 @@ class _TypingBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFF0E6DC)),
+          color: _aiBubble,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _aiBorder),
         ),
         child: const Text('正在理解…',
-            style: TextStyle(color: AppTheme.sub, fontSize: 13)),
+            style: TextStyle(color: Colors.white70, fontSize: 13)),
       ),
     );
   }
@@ -391,57 +700,69 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTapDown: enabled ? (_) => onMicStart() : null,
-            onTapUp: (_) => onMicStop(),
-            onTapCancel: onMicStop,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: recording ? AppTheme.accentSoft : Colors.white,
-                border: Border.all(
-                    color: recording ? AppTheme.accent : AppTheme.border),
+    return Row(
+      children: [
+        GestureDetector(
+          onTapDown: enabled ? (_) => onMicStart() : null,
+          onTapUp: (_) => onMicStop(),
+          onTapCancel: onMicStop,
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: recording ? _accentSoft : _glassFill,
+              border:
+                  Border.all(color: recording ? _accentBorder : _glassBorder),
+            ),
+            child: const Icon(Icons.mic, size: 22, color: Colors.white),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enabled: enabled && !recording,
+            minLines: 1,
+            maxLines: 4,
+            style: const TextStyle(color: Colors.white),
+            cursorColor: _accent,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => onSend(),
+            decoration: InputDecoration(
+              hintText: recording ? '正在听…松开结束' : '按住麦克风说，或打字',
+              hintStyle: const TextStyle(color: Colors.white60),
+              filled: true,
+              fillColor: _glassFill,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: _glassBorder),
               ),
-              child: Icon(Icons.mic,
-                  size: 22,
-                  color: recording ? AppTheme.accent : AppTheme.sub),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: _accent),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: _glassBorder),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              enabled: enabled && !recording,
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => onSend(),
-              decoration: InputDecoration(
-                hintText: recording ? '正在听…松开结束' : '按住麦克风说，或打字',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24)),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-            ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: _accent,
           ),
-          const SizedBox(width: 8),
-          IconButton.filled(
+          child: IconButton(
             onPressed: enabled ? onSend : null,
-            style: IconButton.styleFrom(
-              backgroundColor: AppTheme.accent,
-              foregroundColor: Colors.white,
-            ),
-            icon: const Icon(Icons.arrow_upward),
+            icon: const Icon(Icons.arrow_upward, color: Colors.white),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -31,7 +31,7 @@
       <text>{{inboxLabel}}</text>
       <text class="todo-badge" wx:if="{{todoCount}}">{{todoCount}}</text>
     </button>
-    <button class="glass-btn" bindtap="goCreate" wx:if="{{profileId}}">重新编辑</button>
+    <button class="glass-btn" bindtap="goOnboarding" wx:if="{{profileId}}">重新编辑</button>
   </view>
 
   <view wx:if="{{loading}}" class="loading">加载中…</view>

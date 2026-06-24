@@ -66,13 +66,9 @@ Page({
     wx.navigateTo({ url: '/pages/agents/index' });
   },
 
-  // 唯一创建方式：对话式创建（已融入原 5 步点选）；重新编辑走表单。
+  // 唯一途径：对话式（创建与重新编辑都走 onboarding，已无表单页）
   goOnboarding() {
     wx.navigateTo({ url: '/pages/onboarding/index' });
-  },
-
-  goCreate() {
-    wx.navigateTo({ url: '/pages/create/index' });
   },
 
   goMyProfile() {
