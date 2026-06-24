@@ -122,11 +122,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              const Text(
+                '每个人的 AI 助理',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
               const Text(
                 '加微信前，先和我的 AI 聊聊',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.sub, fontSize: 15),
+                style: TextStyle(color: AppTheme.sub, fontSize: 14),
               ),
               const Spacer(),
               ElevatedButton.icon(

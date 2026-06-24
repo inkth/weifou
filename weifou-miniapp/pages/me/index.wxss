@@ -85,5 +85,6 @@
 .cell-arrow { font-size: 28rpx; color: var(--faint); }
 
 .legal { margin-top: 40rpx; text-align: center; color: var(--faint); font-size: 22rpx; line-height: 1.8; }
+.brand-sign { color: var(--ink); opacity: 0.5; font-size: 26rpx; letter-spacing: 1rpx; margin-bottom: 14rpx; }
 .legal-links { margin-top: 4rpx; }
 .legal-links .dot { margin: 0 12rpx; }

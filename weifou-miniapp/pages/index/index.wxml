@@ -5,7 +5,8 @@
 
   <view class="hero">
     <view class="brand">微否 · weifou</view>
-    <view class="headline">{{profileId ? '我的 AI 助理' : '创建你的 AI 助理'}}</view>
+    <view class="tagline">每个人的 AI 助理</view>
+    <view class="headline">{{profileId ? '我的 AI 主页' : '替你聊、替你约、替你成交'}}</view>
   </view>
 
   <view class="grow"></view>
