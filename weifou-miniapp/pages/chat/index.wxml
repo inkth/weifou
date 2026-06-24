@@ -41,24 +41,6 @@
         <view class="bubble">{{item.content}}</view>
       </view>
 
-      <!-- 对话内成交卡片：选档期直接预约 -->
-      <view wx:if="{{item.card && item.card.type === 'consult_offer'}}" class="offer-card">
-        <view class="offer-title">选个时间，和 TA 面对面聊聊</view>
-        <view class="offer-slots">
-          <view wx:for="{{item.card.slots}}" wx:for-item="s" wx:key="id"
-                class="slot {{item.card.selectedSlotId === s.id ? 'sel' : ''}}"
-                bindtap="selectCardSlot" data-mi="{{index}}" data-id="{{s.id}}">
-            <view class="slot-time">{{s.timeText}}</view>
-            <view class="slot-meta">{{s.durationMin}}分钟 · ¥{{s.priceYuan}}</view>
-          </view>
-        </view>
-        <button class="offer-btn" bindtap="bookFromCard" data-mi="{{index}}"
-                disabled="{{!item.card.selectedSlotId || acting}}">立即预约</button>
-      </view>
-
-      <!-- 预约成功后的查看入口 -->
-      <view wx:if="{{item.action === 'go-sessions'}}" class="sys-link" bindtap="goSessions">查看我的通话 ›</view>
-
       <!-- 裂变：对话内轻线索（被回答种草后） -->
       <view wx:if="{{item.action === 'create-own'}}" id="msg-{{index}}" class="sys-link own-hook" bindtap="goCreateOwn">
         ✨ 这位 AI 助理是 {{realName}} 用 1 分钟请来的 · 我也要一个 ›
@@ -82,7 +64,6 @@
       <view class="chip act" bindtap="openAbout">关于 TA</view>
       <view class="chip act" wx:if="{{contactAvailable}}" bindtap="onContact">联系本人</view>
       <view class="chip act" wx:if="{{asyncAvailable}}" bindtap="goAsk">✍️ 付费问本人{{asyncPriceYuan ? ' ¥' + asyncPriceYuan : ''}}</view>
-      <view class="chip act" wx:if="{{consultAvailable}}" bindtap="openSlots">约 TA 聊聊</view>
       <view class="chip act" bindtap="openTip">打赏 TA</view>
       <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
     </block>
@@ -126,20 +107,5 @@
     </view>
   </view>
 
-  <view class="mask" wx:if="{{slotsVisible}}" bindtap="closeSlots">
-    <view class="sheet" catchtap="noop">
-      <view class="sheet-grab"></view>
-      <view class="sheet-title">选个时间，和 {{realName}} 面对面</view>
-      <view class="sheet-sub">支付成功后按所选时间进入通话</view>
-      <view class="slot-list">
-        <view wx:if="{{slotList.length === 0}}" class="sheet-empty">对方暂无可约档期</view>
-        <view class="slot-pick {{selectedSlotId === item.id ? 'on' : ''}}" wx:for="{{slotList}}" wx:key="id" data-id="{{item.id}}" bindtap="selectSlot">
-          <view class="sp-time">{{item.timeText}}</view>
-          <view class="sp-meta">{{item.durationMin}} 分钟 · ¥{{item.priceYuan}}</view>
-        </view>
-      </view>
-      <button class="sheet-pay" bindtap="paySlot" disabled="{{!selectedSlotId || booking}}">{{booking ? '下单中…' : '支付并预约'}}</button>
-    </view>
-  </view>
   </block>
 </view>

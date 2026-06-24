@@ -31,16 +31,12 @@
     </view>
   </block>
 
-  <!-- 付费往来：约过的通话 / 付过费的提问（次级记录，不再作为顶层支柱）-->
+  <!-- 付费往来：付过费的提问（次级记录，不作为顶层支柱）-->
   <view class="sec-title pay-title">我的付费往来</view>
   <view class="quick">
     <view class="quick-item" bindtap="goQuestions">
       <view class="ic ic-compose quick-emoji"></view>
       <text class="quick-label">付费提问</text>
-    </view>
-    <view class="quick-item" bindtap="goCalls">
-      <view class="ic ic-phone quick-emoji"></view>
-      <text class="quick-label">语音通话</text>
     </view>
   </view>
 </view>

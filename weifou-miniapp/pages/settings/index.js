@@ -49,10 +49,6 @@ Page({
     } catch (e) {}
   },
 
-  onConsultSwitch(e) {
-    this.setData({ 'consult.enabled': e.detail.value });
-  },
-
   onAsyncSwitch(e) {
     this.setData({ 'consult.asyncEnabled': e.detail.value });
   },
@@ -71,7 +67,7 @@ Page({
         url: '/consult/setting',
         method: 'PATCH',
         data: {
-          enabled: c.enabled,
+          enabled: false, // 实时语音/视频咨询已下线，保存时一并关闭（payload 形状保持不变，price 字段沿用已加载值）
           price30: Math.round(parseFloat(c.price30Yuan || '0') * 100),
           price60: Math.round(parseFloat(c.price60Yuan || '0') * 100),
           intro: c.intro || undefined,
@@ -85,14 +81,6 @@ Page({
     } finally {
       this.setData({ savingConsult: false });
     }
-  },
-
-  goSessions() {
-    wx.navigateTo({ url: '/pages/sessions/index' });
-  },
-
-  goSlots() {
-    wx.navigateTo({ url: '/pages/slots/index' });
   },
 
   onInput(e) {

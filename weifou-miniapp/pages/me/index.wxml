@@ -33,9 +33,6 @@
     <view class="cell" bindtap="goQuestions">
       <view class="ic ic-compose cell-ic"></view><text class="cell-label">我的提问</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
-    <view class="cell" bindtap="goCalls">
-      <view class="ic ic-phone cell-ic"></view><text class="cell-label">我的通话</text><view class="ic ic-chevron cell-arrow"></view>
-    </view>
     <view class="cell" bindtap="goSettings">
       <view class="ic ic-settings cell-ic"></view><text class="cell-label">设置</text><view class="ic ic-chevron cell-arrow"></view>
     </view>

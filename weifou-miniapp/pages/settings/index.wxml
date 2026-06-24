@@ -29,27 +29,7 @@
       </view>
       <view class="muted" style="font-size:24rpx;line-height:1.5;margin:4rpx 0 12rpx;">访客付费提问，由你本人异步作答；超时未答自动全额退款。</view>
     </block>
-    <view class="row">
-      <view class="label flex-1">开放付费语音/视频咨询</view>
-      <switch checked="{{consult.enabled}}" bindchange="onConsultSwitch"/>
-    </view>
-    <block wx:if="{{consult.enabled}}">
-      <view class="field">
-        <view class="label">30 分钟价格（元）</view>
-        <input class="input" type="digit" value="{{consult.price30Yuan}}" bindinput="onConsultInput" data-key="price30Yuan"/>
-      </view>
-      <view class="field">
-        <view class="label">60 分钟价格（元）</view>
-        <input class="input" type="digit" value="{{consult.price60Yuan}}" bindinput="onConsultInput" data-key="price60Yuan"/>
-      </view>
-      <view class="field">
-        <view class="label">咨询说明（选填）</view>
-        <input class="input" placeholder="如：擅长 AI 产品 0-1 落地" value="{{consult.intro}}" maxlength="200" bindinput="onConsultInput" data-key="intro"/>
-      </view>
-    </block>
-    <button class="btn-primary save" bindtap="saveConsult" disabled="{{savingConsult}}">保存咨询设置</button>
-    <button class="btn-ghost regen" bindtap="goSlots" wx:if="{{consult.enabled}}">管理可约档期</button>
-    <button class="btn-ghost regen" bindtap="goSessions" wx:if="{{consult.enabled}}">我的通话记录</button>
+    <button class="btn-primary save" bindtap="saveConsult" disabled="{{savingConsult}}">保存</button>
   </view>
 
   <view class="card">

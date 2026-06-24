@@ -1,8 +1,7 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fenToYuan } = require('../../utils/pay');
-const { fmtDateTime } = require('../../utils/datetime');
-const { bookConsult, sendTip } = require('../../utils/consult');
+const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
 const { requestNewQuestionNotify, requestLeadNotify } = require('../../utils/subscribe');
@@ -29,11 +28,6 @@ Page({
     tipAmount: 18,
     tipMessage: '',
     tipPaying: false,
-    // 预约档期
-    slotsVisible: false,
-    slotList: [],
-    selectedSlotId: '',
-    booking: false,
   },
 
   async onLoad(query) {
@@ -80,10 +74,6 @@ Page({
       // 访客：拉取咨询定价
       try {
         const pricing = await request({ url: `/consult/pricing/${id}` });
-        if (pricing.enabled) {
-          pricing.price30Yuan = fenToYuan(pricing.price30);
-          pricing.price60Yuan = fenToYuan(pricing.price60);
-        }
         if (pricing.asyncEnabled) {
           pricing.asyncPriceYuan = fenToYuan(pricing.asyncPrice);
         }
@@ -228,49 +218,6 @@ Page({
     }
   },
 
-  // ---------- 付费咨询（选档预约） ----------
-  async openSlots() {
-    this.setData({ slotsVisible: true, selectedSlotId: '' });
-    try {
-      const slots = await request({ url: `/consult/slots/public/${this.data.profileId}` });
-      slots.forEach((s) => {
-        s.timeText = fmtDateTime(s.startAt);
-        s.priceYuan =
-          s.durationMin === 60 ? this.data.pricing.price60Yuan : this.data.pricing.price30Yuan;
-      });
-      this.setData({ slotList: slots });
-    } catch (e) {
-      // 失败时提示，避免弹层把网络错误显示成"对方暂无可约档期"
-      this.setData({ slotList: [] });
-      wx.showToast({ title: e.message || '档期加载失败', icon: 'none' });
-    }
-  },
-  closeSlots() {
-    this.setData({ slotsVisible: false });
-  },
-  selectSlot(e) {
-    this.setData({ selectedSlotId: e.currentTarget.dataset.id });
-  },
-  async paySlot() {
-    if (!this.data.selectedSlotId || this.data.booking) return;
-    this.setData({ booking: true });
-    try {
-      await bookConsult(this.data.profileId, this.data.selectedSlotId, 'profile');
-      this.setData({ slotsVisible: false });
-      wx.showModal({
-        title: '预约成功',
-        content: '已为你预约，可在「我的通话」按时进入。',
-        showCancel: false,
-        success: () => wx.navigateTo({ url: '/pages/sessions/index' }),
-      });
-    } catch (e) {
-      if (e.code !== 'PAY_CANCEL') {
-        wx.showToast({ title: e.message || '预约失败', icon: 'none' });
-      }
-    } finally {
-      this.setData({ booking: false });
-    }
-  },
 
   onShareAppMessage() {
     track('share_tap', this.data.profileId, 'profile');
