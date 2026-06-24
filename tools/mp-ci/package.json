@@ -1,0 +1,15 @@
+{
+  "name": "weifou-mp-ci",
+  "private": true,
+  "version": "1.0.0",
+  "description": "微否小程序命令行上传 / 预览（基于官方 miniprogram-ci）",
+  "type": "module",
+  "scripts": {
+    "check": "node mp.mjs check",
+    "upload": "node mp.mjs upload",
+    "preview": "node mp.mjs preview"
+  },
+  "dependencies": {
+    "miniprogram-ci": "^2.1.31"
+  }
+}
