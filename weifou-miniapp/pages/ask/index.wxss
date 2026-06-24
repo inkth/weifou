@@ -6,9 +6,9 @@
 .promise { margin-top: 20rpx; }
 .promise-row { display: flex; justify-content: space-between; align-items: center; }
 .promise-k { font-size: 26rpx; }
-.promise-v { font-size: 40rpx; font-weight: 700; color: #fb923c; }
-.promise-v.trust { font-size: 24rpx; font-weight: 500; color: #d97706; max-width: 72%; text-align: right; line-height: 1.4; }
+.promise-v { font-size: 40rpx; font-weight: 700; color: #18b690; }
+.promise-v.trust { font-size: 24rpx; font-weight: 500; color: #0e9c7a; max-width: 72%; text-align: right; line-height: 1.4; }
 .promise-note { font-size: 24rpx; margin-top: 12rpx; line-height: 1.5; }
-.hl { color: #fb923c; }
+.hl { color: #18b690; }
 .ask-pay { margin-top: 30rpx; }
 .ask-foot { font-size: 22rpx; text-align: center; margin-top: 16rpx; }

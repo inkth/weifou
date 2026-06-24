@@ -48,16 +48,16 @@
   transition: color 0.18s ease;
 }
 .tab.active {
-  color: #fb923c;
+  color: #18b690;
 }
 .tab.active .tab-pill {
-  background: #fff3e9;
+  background: #e2f5ef;
 }
 .tab.active .tab-ic {
   transform: scale(1.04);
 }
 .tab.active .tab-label {
-  color: #fb923c;
+  color: #18b690;
   font-weight: 600;
 }
 .tab:active .tab-pill {

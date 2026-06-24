@@ -80,7 +80,7 @@ function loadLottieData(preset) {
 
 // 温度档（弹性体系核心，定义见 docs/design-tokens.md）。
 // 把 4 种沟通风格归到 3 档；一档同时建议 头像气质(look/渐变) + 文案语气(tone)。
-// 注意：全局强调色固定为品牌暖橙 #fb923c（见 app.wxss --accent），不随档变，保证品牌一致；
+// 注意：全局强调色固定为品牌碧绿 #18b690（见 app.wxss --accent），不随档变，保证品牌一致；
 //       档位差异体现在「头像 + 开场白语气」上，这是低风险、可感知的升温点。
 const TONES = {
   cool: {

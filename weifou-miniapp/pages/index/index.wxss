@@ -66,8 +66,8 @@
 }
 /* 主操作：暖橙半透明，略跳但仍守"半透明/点睛" */
 .glass-btn.primary {
-  background: rgba(251,146,60,0.34);
-  border-color: rgba(251,146,60,0.6);
+  background: rgba(24, 182, 144,0.34);
+  border-color: rgba(24, 182, 144,0.6);
 }
 
 .loading { color: rgba(255,255,255,0.85); text-align: center; margin-top: 60rpx; }
@@ -89,5 +89,5 @@
   font-weight: 600;
   line-height: 38rpx;
   text-align: center;
-  box-shadow: 0 4rpx 12rpx rgba(251, 146, 60, 0.45);
+  box-shadow: 0 4rpx 12rpx rgba(24, 182, 144, 0.45);
 }

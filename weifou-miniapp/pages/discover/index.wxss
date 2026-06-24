@@ -37,7 +37,7 @@
   border-color: var(--accent);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 4rpx 14rpx rgba(249, 140, 60, 0.26);
+  box-shadow: 0 4rpx 14rpx rgba(24, 182, 144, 0.26);
 }
 
 .state { padding: 80rpx 0; text-align: center; color: var(--sub); font-size: 28rpx; }

@@ -20,12 +20,12 @@ class AppTheme {
   static const Color surface = Color(0xFFFFFFFF); // 卡片 / 浮层表面
   static const Color surfaceSunken = Color(0xFFEEF0F5); // 内嵌凹陷区
 
-  // —— 强调色（点睛，绝不替换主色）——
-  static const Color accent = Color(0xFFFB923C); // CTA 高亮 / 活跃态 / 强调
-  static const Color accentStrong = Color(0xFFEF7D1F); // accent 按下态
-  static const Color accentSoft = Color(0xFFFFF3E9); // 浅暖底：高亮区背景 / 标签
-  static const Color accentInk = Color(0xFF9A4D12); // accentSoft 上的文字
-  static const Color success = Color(0xFF10B981);
+  // —— 强调色（碧绿点睛，绝不替换主色）——
+  static const Color accent = Color(0xFF18B690); // CTA 高亮 / 活跃态 / 强调
+  static const Color accentStrong = Color(0xFF0E9C7A); // accent 按下态
+  static const Color accentSoft = Color(0xFFE2F5EF); // 浅绿底：高亮区背景 / 标签
+  static const Color accentInk = Color(0xFF0C5A48); // accentSoft 上的文字
+  static const Color success = Color(0xFF16A34A); // 草绿，与碧绿 accent 拉开避免撞色
   static const Color warn = Color(0xFFF59E0B);
   static const Color danger = Color(0xFFE0404B);
 
@@ -38,13 +38,13 @@ class AppTheme {
     BoxShadow(color: Color(0x0D1F2330), blurRadius: 9, offset: Offset(0, 2)),
     BoxShadow(color: Color(0x0A1F2330), blurRadius: 2, offset: Offset(0, 1)),
   ];
-  // 暖阴影：推荐位 / hero 卡，对应小程序 --shadow-soft
+  // 绿柔阴影：推荐位 / hero 卡，对应小程序 --shadow-soft
   static const List<BoxShadow> softShadow = [
-    BoxShadow(color: Color(0x1AF98C3C), blurRadius: 13, offset: Offset(0, 3)),
+    BoxShadow(color: Color(0x1F18B690), blurRadius: 13, offset: Offset(0, 3)),
   ];
   // accent CTA 光晕，对应小程序 --shadow-accent
   static const List<BoxShadow> accentShadow = [
-    BoxShadow(color: Color(0x4DFB923C), blurRadius: 12, offset: Offset(0, 5)),
+    BoxShadow(color: Color(0x5218B690), blurRadius: 12, offset: Offset(0, 5)),
   ];
 
   static ThemeData get light {

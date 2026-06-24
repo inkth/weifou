@@ -12,9 +12,9 @@
   justify-content: space-between;
   margin: 24rpx 0 8rpx;
   padding: 26rpx 28rpx;
-  background: linear-gradient(135deg, #fff3e9, #ffe6d2);
+  background: linear-gradient(135deg, #e2f5ef, #cfeee1);
   border-radius: var(--r-lg);
-  box-shadow: 0 6rpx 22rpx rgba(249, 140, 60, 0.16);
+  box-shadow: 0 6rpx 22rpx rgba(24, 182, 144, 0.16);
   transition: transform 0.16s var(--ease);
 }
 .notice:active { transform: scale(0.99); }
@@ -30,7 +30,7 @@
 }
 .notice-ic { font-size: 42rpx; color: var(--accent-strong); }
 .notice-title { font-size: 30rpx; font-weight: 700; color: var(--accent-ink); }
-.notice-sub { margin-top: 4rpx; font-size: 24rpx; color: #b8763a; }
+.notice-sub { margin-top: 4rpx; font-size: 24rpx; color: #4a9b86; }
 .notice-badge {
   min-width: 40rpx;
   height: 40rpx;

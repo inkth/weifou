@@ -27,7 +27,7 @@
   "tabBar": {
     "custom": true,
     "color": "#8a90a0",
-    "selectedColor": "#fb923c",
+    "selectedColor": "#18b690",
     "backgroundColor": "#ffffff",
     "list": [
       { "pagePath": "pages/discover/index", "text": "分身" },

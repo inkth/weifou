@@ -5,7 +5,7 @@
 - 小程序：`weifou-miniapp/app.wxss` 顶部 `page { --* }`
 - App：`weifou-app/lib/core/theme/app_theme.dart` 的 `AppTheme` 常量
 
-设计原则：**冷热分区**。墨黑 `#1F2330` 仍是主色与底盘色调；暖橙 `#FB923C` 只做强调，绝不替换主色。成交关键区（支付 / 预约确认 / 主页资质）保持克制，不上卡通、不滥用暖色。
+设计原则：**冷热分区**。墨黑 `#1F2330` 仍是主色与底盘色调；碧绿 `#18B690` 只做强调，绝不替换主色。成交关键区（支付 / 预约确认 / 主页资质）保持克制，不上卡通、不滥用强调色。
 
 ---
 
@@ -33,11 +33,11 @@
 | 页面底色 | `--bg` / `bg` | `#F5F6FA` | scaffold 背景 |
 | 卡片表面 | `--surface` / `surface` | `#FFFFFF` | 卡片/浮层 |
 | 凹陷面 | `--surface-sunken` / `surfaceSunken` | `#EEF0F5` | 内嵌区 |
-| **强调色** | `--accent` / `accent` | `#FB923C` | **仅** CTA 高亮、活跃态、强调图标 |
-| 强调按下态 | `--accent-strong` / `accentStrong` | `#EF7D1F` | accent 元素 pressed |
-| 浅暖底 | `--accent-soft` / `accentSoft` | `#FFF3E9` | 推荐位/强调标签背景、活跃指示胶囊 |
-| 暖底上文字 | `--accent-ink` / `accentInk` | `#9A4D12` | accent-soft 上的文字 |
-| 成功 / 警示 / 危险 | `--success` `--warn` `--danger` | `#10B981` `#F59E0B` `#E0404B` | 状态 |
+| **强调色（碧绿）** | `--accent` / `accent` | `#18B690` | **仅** CTA 高亮、活跃态、强调图标 |
+| 强调按下态 | `--accent-strong` / `accentStrong` | `#0E9C7A` | accent 元素 pressed |
+| 浅绿底 | `--accent-soft` / `accentSoft` | `#E2F5EF` | 推荐位/强调标签背景、活跃指示胶囊 |
+| 绿底上文字 | `--accent-ink` / `accentInk` | `#0C5A48` | accent-soft 上的文字 |
+| 成功 / 警示 / 危险 | `--success` `--warn` `--danger` | `#16A34A` `#F59E0B` `#E0404B` | 状态（success 用草绿，与碧绿 accent 拉开） |
 
 ### 高度 / 阴影（分层、极淡、按需微暖）
 
@@ -45,11 +45,13 @@
 |---|---|
 | `--shadow-hair` | 列表项的极轻接触阴影 |
 | `--shadow-card` / `cardShadow` | **默认卡片**：双层近中性，干净不脏 |
-| `--shadow-soft` / `softShadow` | 暖阴影：推荐位 / hero 卡 |
+| `--shadow-soft` / `softShadow` | 绿柔阴影：推荐位 / hero 卡 |
 | `--shadow-pop` | 浮层 / 弹层 |
-| `--shadow-accent` / `accentShadow` | accent CTA 光晕（橙） |
+| `--shadow-accent` / `accentShadow` | accent CTA 光晕（绿） |
 
-**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键 / 活跃 tab / 选中分类）。底盘按钮、导航、普通卡片一律保持墨黑+灰。橙色阴影只跟随 accent 实体，普通卡片用近中性 `--shadow-card`。
+**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键 / 活跃 tab / 选中分类）。底盘按钮、导航、普通卡片一律保持墨黑+灰。碧绿阴影只跟随 accent 实体，普通卡片用近中性 `--shadow-card`。
+
+> **会员页例外**：付费/会员相关界面（`membership` / `agents` 的会员 banner）用「翡翠玉绿」高级渐变（`#2BC79E→#0E9C7A`）+ 深绿文字 `#0C5A48`，是 accent 同族的加深变体，做付费层的高级感差异；不要回退成暖金。
 
 ---
 

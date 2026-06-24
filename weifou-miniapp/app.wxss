@@ -2,7 +2,7 @@
 
 /* ============================================================================
    微否设计系统 · 双端真源见 docs/design-tokens.md
-   原则：冷热分区。墨黑 #1F2330 为主色与底盘；暖橙 #FB923C 只做点睛强调。
+   原则：冷热分区。墨黑 #1F2330 为主色与底盘；碧绿 #18B690 只做点睛强调。
    本文件是小程序端令牌真源；改色先改 docs，再同步 app_theme.dart。
    ========================================================================== */
 page {
@@ -21,14 +21,14 @@ page {
   --surface: #ffffff;    /* 卡片 / 浮层表面 */
   --surface-sunken: #eef0f5; /* 内嵌凹陷区 */
 
-  /* —— 强调色（点睛，绝不替换主色）—— */
-  --accent: #fb923c;     /* CTA 高亮 / 活跃态 / 强调图标 */
-  --accent-strong: #ef7d1f; /* accent 按下态 */
-  --accent-soft: #fff3e9;   /* 浅暖底：推荐位 / 标签背景 */
-  --accent-ink: #9a4d12;    /* accent-soft 上文字 */
+  /* —— 强调色（碧绿点睛，绝不替换主色）—— */
+  --accent: #18b690;     /* CTA 高亮 / 活跃态 / 强调图标 */
+  --accent-strong: #0e9c7a; /* accent 按下态 */
+  --accent-soft: #e2f5ef;   /* 浅绿底：推荐位 / 标签背景 */
+  --accent-ink: #0c5a48;    /* accent-soft 上文字 */
 
-  /* —— 功能色 —— */
-  --success: #10b981;
+  /* —— 功能色（success 用草绿，与碧绿 accent 拉开避免撞色）—— */
+  --success: #16a34a;
   --warn: #f59e0b;
   --danger: #e0404b;
 
@@ -43,9 +43,9 @@ page {
   /* —— 高度 / 阴影（极淡、分层、微暖；成交克制区不滥用）—— */
   --shadow-hair: 0 1rpx 2rpx rgba(31, 35, 48, 0.04);
   --shadow-card: 0 4rpx 18rpx rgba(31, 35, 48, 0.05), 0 1rpx 3rpx rgba(31, 35, 48, 0.04);
-  --shadow-soft: 0 6rpx 26rpx rgba(249, 140, 60, 0.10); /* 暖：推荐位 / hero 卡 */
+  --shadow-soft: 0 6rpx 26rpx rgba(24, 182, 144, 0.12); /* 绿柔：推荐位 / hero 卡 */
   --shadow-pop: 0 12rpx 40rpx rgba(31, 35, 48, 0.12);   /* 浮层 / 弹层 */
-  --shadow-accent: 0 10rpx 24rpx rgba(249, 140, 60, 0.30); /* accent CTA 光晕 */
+  --shadow-accent: 0 10rpx 24rpx rgba(24, 182, 144, 0.32); /* accent CTA 光晕 */
 
   /* —— 动效 —— */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -122,7 +122,7 @@ button::after { border: none; }
   box-shadow: var(--shadow-accent);
   transition: transform 0.16s var(--ease), box-shadow 0.16s var(--ease);
 }
-.btn-accent:active { transform: scale(0.975); box-shadow: 0 4rpx 12rpx rgba(249, 140, 60, 0.24); }
+.btn-accent:active { transform: scale(0.975); box-shadow: 0 4rpx 12rpx rgba(24, 182, 144, 0.26); }
 .btn-accent[disabled] { opacity: 0.4; box-shadow: none; }
 
 /* 浅暖底高亮块（推荐位 / 强调标签） */

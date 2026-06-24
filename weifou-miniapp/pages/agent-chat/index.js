@@ -8,7 +8,7 @@ Page({
     id: '',
     name: '',
     icon: '',
-    accent: '#fb923c',
+    accent: '#18b690',
     greeting: '',
     member: false,
     remaining: 0,
@@ -52,7 +52,7 @@ Page({
       this.setData({
         name: d.name,
         icon: d.icon,
-        accent: d.accent || '#fb923c',
+        accent: d.accent || '#18b690',
         greeting: d.greeting || '',
         member,
         remaining: d.freeTrialRemaining,
