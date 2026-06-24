@@ -26,7 +26,7 @@ const ok = (msg) => console.log(`\x1b[32m✓\x1b[0m ${msg}`);
 function keyHelp() {
   return `还差上传密钥：${KEY_PATH}
   1) 打开 mp.weixin.qq.com → 开发管理 → 开发设置 →「小程序代码上传」
-  2) 生成并下载「上传密钥」，重命名为 private.${APPID}.key 放进 tools/mp-ci/（已被 .gitignore 忽略，不会进仓库）
+  2) 生成并下载「上传密钥」，重命名为 private.${APPID}.key，放进 tools/mp-ci/ 或仓库根（与 server.pem 同处，均已 gitignore，脚本自动识别）
   3) 同页把你的公网出口 IP 加进「IP 白名单」，否则上传会被微信拒绝
      查公网 IP： curl ifconfig.me`;
 }
@@ -38,7 +38,10 @@ const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
 const APPID = conf.appid;
 if (!APPID) die('project.config.json 缺少 appid');
 
-const KEY_PATH = process.env.WX_PRIVATE_KEY_PATH || path.join(__dirname, `private.${APPID}.key`);
+// 密钥位置：环境变量 WX_PRIVATE_KEY_PATH > tools/mp-ci/ > 仓库根（与 server.pem 同处）。取第一个存在的。
+const DEFAULT_KEY = path.join(__dirname, `private.${APPID}.key`);
+const KEY_CANDIDATES = [process.env.WX_PRIVATE_KEY_PATH, DEFAULT_KEY, path.resolve(__dirname, '../..', `private.${APPID}.key`)].filter(Boolean);
+const KEY_PATH = KEY_CANDIDATES.find((p) => fs.existsSync(p)) || DEFAULT_KEY;
 
 const s = conf.setting || {};
 const setting = {

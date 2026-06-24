@@ -7,8 +7,8 @@
 ## 一次性准备（只做一次）
 
 1. **下载上传密钥**：[mp.weixin.qq.com](https://mp.weixin.qq.com) → 开发管理 → 开发设置 →「小程序代码上传」→ 生成并下载**上传密钥**。
-2. 把密钥重命名为 `private.wx62c5c38678568751.key`，放到本目录 `tools/mp-ci/` 下。
-   （已被 `.gitignore` 忽略，**绝不会进仓库**；根 `.gitignore` 也已忽略 `*.key`。）
+2. 把密钥重命名为 `private.wx62c5c38678568751.key`，放到 `tools/mp-ci/` 下**或仓库根**（与 `server.pem` 同处）——脚本两处都会自动识别。
+   （两处的 `*.key` 都已 gitignore，**绝不会进仓库**；也可用 `WX_PRIVATE_KEY_PATH` 指任意路径。）
 3. **IP 白名单**：同一页面，把你的公网出口 IP 加进「IP 白名单」，否则上传会被微信拒绝。
    - 查公网 IP：`curl ifconfig.me`
    - 换网络（如从公司到家里）要记得补白名单。
