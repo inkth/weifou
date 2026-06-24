@@ -116,7 +116,7 @@ Page({
     const seed = this.data.profileId;
     const tier = tierForPreset(id, seed);
     const p = getPreset(id, seed);
-    const c0 = (p.colors && p.colors[0]) || '#fb923c';
+    const c0 = (p.colors && p.colors[0]) || '#18b690';
     const c1 = (p.colors && p.colors[1]) || c0;
     // 所有场景统一全屏立绘：有专属 image 形象用专属，否则回退默认立绘
     const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : DEFAULT_LIHE;

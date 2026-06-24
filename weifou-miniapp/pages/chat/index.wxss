@@ -46,7 +46,7 @@
 .lihe .msg-list { position: relative; z-index: 1; }
 /* 气泡浮层：AI 深色磨砂、用户暖橙，浮在立绘上更跳 */
 .lihe .msg-assistant .bubble { background: rgba(18, 20, 28, 0.5); color: #fff; border: none; box-shadow: none; backdrop-filter: blur(8rpx); }
-.lihe .msg-user .bubble { background: rgba(251, 146, 60, 0.92); color: #fff; }
+.lihe .msg-user .bubble { background: rgba(24, 182, 144, 0.92); color: #fff; }
 .lihe .choices, .lihe .composer { position: relative; z-index: 1; background: rgba(245, 246, 250, 0.72); border-top: none; backdrop-filter: blur(14rpx); }
 
 .msg-list {
@@ -263,10 +263,10 @@
 .sheet-pay[disabled] { opacity: 0.45; }
 .tip-amounts { display: flex; gap: 18rpx; margin: 28rpx 0 4rpx; }
 .tip-amount { flex: 1; text-align: center; padding: 26rpx 0; background: rgba(255,255,255,0.1); border: 1rpx solid rgba(255,255,255,0.18); border-radius: 16rpx; font-size: 30rpx; font-weight: 600; color: #fff; }
-.tip-amount.on { background: rgba(251,146,60,0.34); border-color: rgba(251,146,60,0.6); }
+.tip-amount.on { background: rgba(24, 182, 144,0.34); border-color: rgba(24, 182, 144,0.6); }
 .slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
 .sheet-empty { text-align: center; padding: 48rpx 0; color: rgba(255,255,255,0.55); font-size: 26rpx; }
 .slot-pick { padding: 24rpx; background: rgba(255,255,255,0.08); border: 1rpx solid rgba(255,255,255,0.16); border-radius: 16rpx; margin-bottom: 16rpx; }
-.slot-pick.on { background: rgba(251,146,60,0.22); border-color: rgba(251,146,60,0.55); }
+.slot-pick.on { background: rgba(24, 182, 144,0.22); border-color: rgba(24, 182, 144,0.55); }
 .sp-time { font-size: 30rpx; font-weight: 500; color: #fff; }
 .sp-meta { font-size: 24rpx; color: rgba(255,255,255,0.7); margin-top: 6rpx; }

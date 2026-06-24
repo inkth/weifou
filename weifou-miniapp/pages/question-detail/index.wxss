@@ -1,6 +1,6 @@
 .empty { text-align: center; padding: 80rpx 0; }
 .qd-status { font-weight: 700; font-size: 30rpx; margin-bottom: 12rpx; }
-.qd-status.paid { color: #fb923c; }
+.qd-status.paid { color: #18b690; }
 .qd-status.answered { color: #16a34a; }
 .qd-status.refunded { color: #999; }
 .qd-label { font-size: 24rpx; margin-bottom: 8rpx; }

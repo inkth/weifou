@@ -168,7 +168,7 @@ Page({
     const id = this.data.avatarStyle || '';
     const tier = tierForPreset(id, this.data.profileId);
     const p = getPreset(id, this.data.profileId);
-    const c0 = (p.colors && p.colors[0]) || '#fb923c';
+    const c0 = (p.colors && p.colors[0]) || '#18b690';
     const c1 = (p.colors && p.colors[1]) || c0;
     // 所有场景统一全屏立绘：有专属 image 形象用专属，否则全员回退默认立绘 DEFAULT_LIHE
     const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : DEFAULT_LIHE;

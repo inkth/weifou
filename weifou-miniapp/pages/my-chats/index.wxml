@@ -4,7 +4,7 @@
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
   <view wx:elif="{{loadError}}" class="empty muted">
     <view>加载失败</view>
-    <view class="empty-sub" bindtap="retry" style="color:#fb923c">点此重试</view>
+    <view class="empty-sub" bindtap="retry" style="color:#18b690">点此重试</view>
   </view>
   <block wx:else>
     <view wx:if="{{!list.length}}" class="empty muted">
