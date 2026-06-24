@@ -6,7 +6,9 @@
     data-index="{{index}}"
     bindtap="onTap"
   >
-    <view class="tab-ic">{{item.icon}}</view>
+    <view class="tab-pill">
+      <view class="ic ic-{{item.icon}} tab-ic"></view>
+    </view>
     <view class="tab-label">{{item.text}}</view>
   </view>
 </view>

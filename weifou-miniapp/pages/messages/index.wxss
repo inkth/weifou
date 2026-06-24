@@ -3,29 +3,40 @@
   box-sizing: border-box;
   padding: 16rpx 28rpx calc(env(safe-area-inset-bottom) + 140rpx);
 }
-.hd { padding: 16rpx 4rpx 8rpx; }
-.hd-title { font-size: 46rpx; font-weight: 700; color: #1f2330; }
+.hd { padding: 20rpx 4rpx 4rpx; }
+.hd-title { font-size: 48rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
 
 .notice {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 16rpx 0 8rpx;
+  margin: 24rpx 0 8rpx;
   padding: 26rpx 28rpx;
-  background: linear-gradient(135deg, #fff3e9, #ffe9d6);
-  border-radius: 22rpx;
+  background: linear-gradient(135deg, #fff3e9, #ffe6d2);
+  border-radius: var(--r-lg);
+  box-shadow: 0 6rpx 22rpx rgba(249, 140, 60, 0.16);
+  transition: transform 0.16s var(--ease);
 }
-.notice:active { opacity: 0.94; }
-.notice-l { display: flex; align-items: center; gap: 18rpx; }
-.notice-ic { font-size: 44rpx; }
-.notice-title { font-size: 30rpx; font-weight: 700; color: #9a4d12; }
+.notice:active { transform: scale(0.99); }
+.notice-l { display: flex; align-items: center; gap: 20rpx; }
+.notice-ic-wrap {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+}
+.notice-ic { font-size: 42rpx; color: var(--accent-strong); }
+.notice-title { font-size: 30rpx; font-weight: 700; color: var(--accent-ink); }
 .notice-sub { margin-top: 4rpx; font-size: 24rpx; color: #b8763a; }
 .notice-badge {
   min-width: 40rpx;
   height: 40rpx;
   padding: 0 12rpx;
   box-sizing: border-box;
-  border-radius: 100rpx;
+  border-radius: var(--r-full);
   background: var(--accent);
   color: #fff;
   font-size: 24rpx;
@@ -33,13 +44,27 @@
   line-height: 40rpx;
   text-align: center;
 }
-.notice-arrow { font-size: 40rpx; color: #c9923f; }
+.notice-arrow { font-size: 32rpx; color: var(--accent-strong); }
 
-.sec-title { margin: 28rpx 4rpx 14rpx; font-size: 28rpx; font-weight: 600; color: #6b7180; }
+.sec-title { margin: 32rpx 4rpx 16rpx; font-size: 26rpx; font-weight: 600; color: var(--sub); letter-spacing: 0.5rpx; }
 
-.state { padding: 70rpx 0; text-align: center; color: #9aa0ad; font-size: 28rpx; line-height: 1.6; }
-.state-sub { margin-top: 8rpx; font-size: 24rpx; color: #b3b8c2; }
-.link { color: #fb923c; }
+.state { padding: 70rpx 0; text-align: center; color: var(--sub); font-size: 28rpx; line-height: 1.6; }
+.state-sub { margin-top: 8rpx; font-size: 24rpx; color: var(--faint); }
+.link { color: var(--accent); }
+
+.empty { padding: 96rpx 0; }
+.empty-ic-wrap {
+  width: 128rpx;
+  height: 128rpx;
+  margin: 0 auto 24rpx;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fill);
+}
+.empty-ic { font-size: 60rpx; color: var(--faint); }
+.empty-title { font-size: 30rpx; font-weight: 600; color: var(--ink-2); }
 
 .row {
   display: flex;
@@ -47,29 +72,30 @@
   gap: 22rpx;
   margin-bottom: 16rpx;
   padding: 24rpx;
-  background: #fff;
-  border-radius: 22rpx;
-  box-shadow: 0 4rpx 20rpx rgba(31, 35, 48, 0.04);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.16s var(--ease);
 }
-.row:active { transform: scale(0.995); }
+.row:active { transform: scale(0.99); }
 .ava { width: 88rpx; height: 88rpx; border-radius: 50%; flex: 0 0 auto; }
 .ava-fb {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f1f5;
-  color: #6b7180;
+  background: var(--fill);
+  color: var(--ink-2);
   font-size: 34rpx;
   font-weight: 600;
 }
 .row-body { flex: 1 1 auto; min-width: 0; }
 .row-top { display: flex; align-items: baseline; justify-content: space-between; }
-.row-name { font-size: 30rpx; font-weight: 600; color: #1f2330; }
-.row-time { font-size: 22rpx; color: #b3b8c2; }
+.row-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.row-time { font-size: 22rpx; color: var(--faint); }
 .row-last {
   margin-top: 6rpx;
   font-size: 26rpx;
-  color: #8a90a0;
+  color: var(--sub);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

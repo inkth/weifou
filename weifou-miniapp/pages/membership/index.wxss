@@ -2,7 +2,7 @@ page { background: #faf7f2; }
 .wrap { padding: 0 0 60rpx; }
 
 .hero { padding: 56rpx 40rpx 36rpx; text-align: center; background: linear-gradient(160deg, #fff3e3, #faf7f2); }
-.crown { font-size: 72rpx; }
+.crown { font-size: 72rpx; color: #e0992f; }
 .h-title { margin-top: 10rpx; font-size: 46rpx; font-weight: 800; color: #6b4a1f; }
 .h-sub { margin-top: 8rpx; font-size: 27rpx; color: #b08a5a; }
 
@@ -14,7 +14,7 @@ page { background: #faf7f2; }
 
 .benefits { margin: 24rpx 28rpx; background: #fff; border-radius: 24rpx; padding: 24rpx 32rpx; box-shadow: 0 4rpx 24rpx rgba(180, 140, 80, 0.06); }
 .bf { display: flex; align-items: center; font-size: 29rpx; color: #4a4133; padding: 14rpx 0; }
-.bf-ic { width: 48rpx; font-size: 34rpx; margin-right: 12rpx; text-align: center; }
+.bf-ic { width: 48rpx; font-size: 34rpx; margin-right: 12rpx; text-align: center; color: #c8851f; }
 
 .plans { display: flex; gap: 20rpx; padding: 12rpx 28rpx; }
 .plan { flex: 1; background: #fff; border: 2rpx solid #f0e6d6; border-radius: 22rpx; padding: 28rpx 12rpx; text-align: center; }

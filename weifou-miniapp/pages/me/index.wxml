@@ -4,17 +4,17 @@
   <!-- 我的分身：顶部最显眼的资产卡（主人的核心资产 / 收益入口） -->
   <view wx:if="{{profileId}}" class="clone card" bindtap="goMyProfile">
     <view class="clone-top">
-      <view class="clone-ava">🤖</view>
+      <view class="clone-ava"><view class="ic ic-bot"></view></view>
       <view class="clone-id">
         <view class="clone-name">{{realName ? realName + ' 的 AI 分身' : '我的 AI 分身'}}</view>
         <view class="clone-sub">查看主页 · 人设 / 定价 / 收益</view>
       </view>
-      <text class="clone-arrow">›</text>
+      <view class="ic ic-chevron clone-arrow"></view>
     </view>
     <view class="clone-acts">
-      <view class="clone-act" catchtap="goInbox"><text class="ca-emoji">📥</text><text>收件箱</text></view>
-      <view class="clone-act" catchtap="goCreate"><text class="ca-emoji">✏️</text><text>编辑</text></view>
-      <view class="clone-act" catchtap="goMyProfile"><text class="ca-emoji">📊</text><text>数据</text></view>
+      <view class="clone-act" catchtap="goInbox"><view class="ic ic-inbox ca-ic"></view><text>收件箱</text></view>
+      <view class="clone-act" catchtap="goCreate"><view class="ic ic-edit ca-ic"></view><text>编辑</text></view>
+      <view class="clone-act" catchtap="goMyProfile"><view class="ic ic-stats ca-ic"></view><text>数据</text></view>
     </view>
   </view>
 
@@ -22,22 +22,22 @@
   <view wx:elif="{{!loading}}" class="create card" bindtap="goOnboarding">
     <view class="create-title">创建我的 AI 分身</view>
     <view class="create-sub">让你的 AI 替你接待、回答、变现</view>
-    <view class="create-btn">开始创建 ›</view>
+    <view class="create-btn"><text>开始创建</text><view class="ic ic-arrow create-btn-ic"></view></view>
   </view>
 
   <!-- 功能入口 -->
   <view class="group">
     <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
-      <text class="cell-ic">👑</text><text class="cell-label">会员</text><text class="cell-arrow">›</text>
+      <view class="ic ic-crown cell-ic cell-ic-accent"></view><text class="cell-label">会员</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
     <view class="cell" bindtap="goQuestions">
-      <text class="cell-ic">✍️</text><text class="cell-label">我的提问</text><text class="cell-arrow">›</text>
+      <view class="ic ic-compose cell-ic"></view><text class="cell-label">我的提问</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
     <view class="cell" bindtap="goCalls">
-      <text class="cell-ic">📞</text><text class="cell-label">我的通话</text><text class="cell-arrow">›</text>
+      <view class="ic ic-phone cell-ic"></view><text class="cell-label">我的通话</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
     <view class="cell" bindtap="goSettings">
-      <text class="cell-ic">⚙️</text><text class="cell-label">设置</text><text class="cell-arrow">›</text>
+      <view class="ic ic-settings cell-ic"></view><text class="cell-label">设置</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
   </view>
 

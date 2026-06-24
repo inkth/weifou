@@ -5,8 +5,8 @@
   </view>
 
   <!-- 搜索（骨架占位） -->
-  <view class="search" bindtap="onSearchTap">
-    <text class="search-ic">🔍</text>
+  <view class="search tap" bindtap="onSearchTap">
+    <view class="ic ic-search search-ic"></view>
     <text class="search-ph">搜索 AI 分身 / 工具</text>
   </view>
 
@@ -28,7 +28,7 @@
     <view wx:if="{{agentEntry}}" class="sec">
       <view class="sec-hd">
         <text class="sec-title">AI 工具箱</text>
-        <text class="sec-more" bindtap="goAgents">全部 ›</text>
+        <view class="sec-more" bindtap="goAgents"><text>全部</text><view class="ic ic-chevron sec-more-ic"></view></view>
       </view>
       <view class="grid">
         <view
@@ -51,7 +51,7 @@
     <view class="sec">
       <view class="sec-hd"><text class="sec-title">推荐分身</text></view>
       <view class="ph-card">
-        <view class="ph-emoji">🤖</view>
+        <view class="ph-ic-wrap"><view class="ic ic-bot ph-ic"></view></view>
         <view class="ph-title">更多真人 AI 分身陆续上线</view>
         <view class="ph-sub">这里会出现可以聊天、提问、咨询的 AI 分身</view>
       </view>

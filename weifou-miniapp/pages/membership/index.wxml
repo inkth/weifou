@@ -1,6 +1,6 @@
 <view class="wrap">
   <view class="hero">
-    <view class="crown">👑</view>
+    <view class="ic ic-crown crown"></view>
     <view class="h-title">微否会员</view>
     <view class="h-sub">一价畅用全部 AI 助手</view>
   </view>
@@ -14,9 +14,9 @@
     </view>
 
     <view class="benefits">
-      <view class="bf"><text class="bf-ic">🗣️</text>全部精选 Agent 畅用</view>
+      <view class="bf"><view class="ic ic-apps bf-ic"></view>全部精选 Agent 畅用</view>
       <view class="bf"><text class="bf-ic">∞</text>不限次数，随时开练</view>
-      <view class="bf"><text class="bf-ic">🆕</text>新上线 Agent 自动包含</view>
+      <view class="bf"><view class="ic ic-sparkle bf-ic"></view>新上线 Agent 自动包含</view>
     </view>
 
     <!-- 安卓：套餐 + 微信支付 -->

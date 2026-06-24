@@ -13,7 +13,7 @@
   align-items: center;
   gap: 12rpx;
 }
-.quick-emoji { font-size: 42rpx; line-height: 1; }
+.quick-emoji { font-size: 42rpx; line-height: 1; color: var(--accent); }
 .quick-label { font-size: 26rpx; color: var(--ink); }
 
 .sec-title { font-size: 26rpx; color: var(--sub); margin: 0 8rpx 20rpx; }

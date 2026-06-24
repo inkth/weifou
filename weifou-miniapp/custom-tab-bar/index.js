@@ -5,10 +5,11 @@
 Component({
   data: {
     selected: 0,
+    // icon = styles/icons.wxss 里的字形后缀（.ic-bot / .ic-chat / .ic-user）
     list: [
-      { pagePath: '/pages/discover/index', icon: '🤖', text: '分身' },
-      { pagePath: '/pages/messages/index', icon: '💬', text: '消息' },
-      { pagePath: '/pages/me/index', icon: '👤', text: '我的' },
+      { pagePath: '/pages/discover/index', icon: 'bot', text: '分身' },
+      { pagePath: '/pages/messages/index', icon: 'chat', text: '消息' },
+      { pagePath: '/pages/me/index', icon: 'user', text: '我的' },
     ],
   },
   methods: {

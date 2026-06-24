@@ -1,17 +1,55 @@
-/* 设计令牌（双端真源见 docs/design-tokens.md）。墨黑仍为主色，暖橙只做强调。 */
+@import "./styles/icons.wxss";
+
+/* ============================================================================
+   微否设计系统 · 双端真源见 docs/design-tokens.md
+   原则：冷热分区。墨黑 #1F2330 为主色与底盘；暖橙 #FB923C 只做点睛强调。
+   本文件是小程序端令牌真源；改色先改 docs，再同步 app_theme.dart。
+   ========================================================================== */
 page {
-  --ink: #1f2330;        /* 主色 / 文字 */
+  /* —— 中性色阶（统一旧版散落的 8 种灰，按同一冷蓝色相递进）—— */
+  --ink: #1f2330;        /* 主文字 / 墨黑主按钮 / 用户气泡 */
+  --ink-2: #4f5564;      /* 次级文字：副标题、正文辅助 */
+  --sub: #8a8f9c;        /* 三级文字：说明、占位、非活跃 */
+  --faint: #b4b9c4;      /* 四级文字：时间戳、极弱信息 */
+  --line: #eef0f4;       /* 发丝分隔线 / 内部描边 */
+  --border: #e5e7ec;     /* 卡片 / 输入框边框 */
+  --fill: #f0f1f5;       /* 中性填充：标签底、头像回退底 */
+  --fill-pressed: #f6f7f9; /* 单元格按下底 */
+
+  /* —— 表面与底色 —— */
   --bg: #f5f6fa;         /* 页面底色 */
-  --border: #e5e7ec;     /* 描边 */
-  --sub: #8a8f9c;        /* 次要文字 */
-  --accent: #fb923c;     /* 暖强调色：仅 CTA 高亮 / 活跃态 / 强调 */
-  --accent-strong: #ef7d1f; /* 强调色按下态 */
-  --accent-soft: #fff3e9;   /* 浅暖底：高亮区背景 / 标签 */
-  --accent-ink: #9a4d12;    /* accent-soft 上的文字 */
+  --surface: #ffffff;    /* 卡片 / 浮层表面 */
+  --surface-sunken: #eef0f5; /* 内嵌凹陷区 */
+
+  /* —— 强调色（点睛，绝不替换主色）—— */
+  --accent: #fb923c;     /* CTA 高亮 / 活跃态 / 强调图标 */
+  --accent-strong: #ef7d1f; /* accent 按下态 */
+  --accent-soft: #fff3e9;   /* 浅暖底：推荐位 / 标签背景 */
+  --accent-ink: #9a4d12;    /* accent-soft 上文字 */
+
+  /* —— 功能色 —— */
   --success: #10b981;
   --warn: #f59e0b;
   --danger: #e0404b;
-  --shadow-soft: 0 6rpx 26rpx rgba(249, 140, 60, 0.10); /* 柔和暖阴影 */
+
+  /* —— 间距阶（4 基数）—— */
+  --sp-1: 8rpx; --sp-2: 16rpx; --sp-3: 24rpx; --sp-4: 32rpx;
+  --sp-5: 40rpx; --sp-6: 56rpx; --sp-7: 72rpx;
+
+  /* —— 圆角阶 —— */
+  --r-sm: 12rpx; --r-md: 16rpx; --r-lg: 20rpx; --r-xl: 24rpx;
+  --r-2xl: 32rpx; --r-full: 999rpx;
+
+  /* —— 高度 / 阴影（极淡、分层、微暖；成交克制区不滥用）—— */
+  --shadow-hair: 0 1rpx 2rpx rgba(31, 35, 48, 0.04);
+  --shadow-card: 0 4rpx 18rpx rgba(31, 35, 48, 0.05), 0 1rpx 3rpx rgba(31, 35, 48, 0.04);
+  --shadow-soft: 0 6rpx 26rpx rgba(249, 140, 60, 0.10); /* 暖：推荐位 / hero 卡 */
+  --shadow-pop: 0 12rpx 40rpx rgba(31, 35, 48, 0.12);   /* 浮层 / 弹层 */
+  --shadow-accent: 0 10rpx 24rpx rgba(249, 140, 60, 0.30); /* accent CTA 光晕 */
+
+  /* —— 动效 —— */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 page {
@@ -20,11 +58,10 @@ page {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
   font-size: 28rpx;
   line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
-view, text, button {
-  box-sizing: border-box;
-}
+view, text, button { box-sizing: border-box; }
 
 button {
   background: transparent;
@@ -33,62 +70,83 @@ button {
 }
 button::after { border: none; }
 
+/* —— 文字阶（语义化辅助类，在重写页面统一用）—— */
+.t-display { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; line-height: 1.2; }
+.t-section { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.t-body { font-size: 28rpx; color: var(--ink); }
+.t-sub { font-size: 26rpx; color: var(--ink-2); }
+.t-caption { font-size: 24rpx; color: var(--sub); }
+.t-micro { font-size: 22rpx; color: var(--faint); }
+
+.title { font-size: 36rpx; font-weight: 600; color: var(--ink); letter-spacing: -0.3rpx; }
+.subtitle { font-size: 28rpx; color: var(--ink-2); }
+.muted { color: var(--sub); }
+
+/* —— 按钮三类 —— */
 .btn-primary {
-  background: #1f2330;
+  background: var(--ink);
   color: #fff;
-  border-radius: 100rpx;
+  border-radius: var(--r-full);
   padding: 24rpx 0;
   text-align: center;
   font-size: 30rpx;
   font-weight: 500;
+  letter-spacing: 0.5rpx;
+  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
 }
+.btn-primary:active { transform: scale(0.975); opacity: 0.92; }
 .btn-primary[disabled] { opacity: 0.4; }
 
 .btn-ghost {
-  background: #fff;
-  color: #1f2330;
-  border: 2rpx solid #e5e7ec;
-  border-radius: 100rpx;
+  background: var(--surface);
+  color: var(--ink);
+  border: 2rpx solid var(--border);
+  border-radius: var(--r-full);
   padding: 24rpx 0;
   text-align: center;
   font-size: 30rpx;
+  transition: transform 0.16s var(--ease), background 0.16s var(--ease);
 }
+.btn-ghost:active { transform: scale(0.975); background: var(--fill); }
 
-/* 暖色强调主按钮：仅用在关键转化点（预约 / 立即开聊 等），不替代墨黑 .btn-primary */
+/* 暖色强调主按钮：仅关键转化点（预约 / 立即开聊），不替代墨黑 .btn-primary */
 .btn-accent {
   background: var(--accent);
   color: #fff;
-  border-radius: 100rpx;
+  border-radius: var(--r-full);
   padding: 24rpx 0;
   text-align: center;
   font-size: 30rpx;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.5rpx;
+  box-shadow: var(--shadow-accent);
+  transition: transform 0.16s var(--ease), box-shadow 0.16s var(--ease);
 }
-.btn-accent[disabled] { opacity: 0.4; }
+.btn-accent:active { transform: scale(0.975); box-shadow: 0 4rpx 12rpx rgba(249, 140, 60, 0.24); }
+.btn-accent[disabled] { opacity: 0.4; box-shadow: none; }
 
 /* 浅暖底高亮块（推荐位 / 强调标签） */
-.accent-soft {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-}
+.accent-soft { background: var(--accent-soft); color: var(--accent-ink); }
 
+/* —— 卡片 / 标签 —— */
 .card {
-  background: #fff;
-  border-radius: 24rpx;
+  background: var(--surface);
+  border-radius: var(--r-xl);
   padding: 32rpx;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
 }
 
 .tag {
   display: inline-block;
   padding: 8rpx 20rpx;
   margin: 0 12rpx 12rpx 0;
-  background: #f0f1f5;
-  border-radius: 100rpx;
+  background: var(--fill);
+  border-radius: var(--r-full);
   font-size: 24rpx;
-  color: #4a5070;
+  color: var(--ink-2);
 }
 
-.muted { color: #8a8f9c; }
-.title { font-size: 36rpx; font-weight: 600; color: #1f2330; }
-.subtitle { font-size: 28rpx; color: #4a5070; }
+/* —— 通用按压反馈 —— */
+.tap { transition: transform 0.16s var(--ease), opacity 0.16s var(--ease); }
+.tap:active { transform: scale(0.98); opacity: 0.9; }
+.hairline { border-bottom: 1rpx solid var(--line); }

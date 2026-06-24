@@ -10,7 +10,7 @@
 
   <block wx:else>
     <view class="mbr-banner {{isMember ? 'on' : ''}}" bindtap="goMembership">
-      <text class="mb-crown">👑</text>
+      <view class="ic ic-crown mb-crown"></view>
       <text class="mb-text">{{isMember ? '会员有效中 · 全部畅用' : '开通会员 · 一价畅用全部'}}</text>
       <text class="mb-arrow" wx:if="{{!isMember}}">去开通 ›</text>
     </view>
@@ -24,7 +24,7 @@
         data-id="{{item.id}}"
         data-name="{{item.name}}"
       >
-        <view class="ic" style="background: {{item.accent}}1a; color: {{item.accent}};">{{item.icon}}</view>
+        <view class="aic" style="background: {{item.accent}}1a; color: {{item.accent}};">{{item.icon}}</view>
         <view class="body">
           <view class="name">{{item.name}}</view>
           <view class="tagline">{{item.tagline}}</view>
@@ -32,7 +32,7 @@
             <text class="status status-{{item.statusKind}}">{{item.status}}</text>
           </view>
         </view>
-        <view class="arrow">›</view>
+        <view class="ic ic-chevron arrow"></view>
       </view>
 
       <view wx:if="{{agents.length === 0}}" class="state">暂无可用工具</view>

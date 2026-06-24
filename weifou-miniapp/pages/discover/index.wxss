@@ -3,84 +3,103 @@
   box-sizing: border-box;
   padding: 16rpx 28rpx calc(env(safe-area-inset-bottom) + 140rpx);
 }
-.hd { padding: 16rpx 4rpx 8rpx; }
-.hd-title { font-size: 46rpx; font-weight: 700; color: #1f2330; }
-.hd-sub { margin-top: 6rpx; font-size: 26rpx; color: #8a90a0; }
+.hd { padding: 20rpx 4rpx 4rpx; }
+.hd-title { font-size: 48rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.hd-sub { margin-top: 8rpx; font-size: 26rpx; color: var(--ink-2); }
 
 .search {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin: 20rpx 0 8rpx;
-  padding: 20rpx 26rpx;
-  background: #fff;
-  border-radius: 100rpx;
-  box-shadow: 0 4rpx 20rpx rgba(31, 35, 48, 0.05);
+  gap: 14rpx;
+  margin: 24rpx 0 8rpx;
+  padding: 22rpx 28rpx;
+  background: var(--surface);
+  border-radius: var(--r-full);
+  box-shadow: var(--shadow-card);
 }
-.search-ic { font-size: 30rpx; }
-.search-ph { font-size: 28rpx; color: #9aa0ad; }
+.search-ic { font-size: 34rpx; color: var(--sub); }
+.search-ph { font-size: 28rpx; color: var(--sub); }
 
-.cats { white-space: nowrap; margin: 16rpx 0 8rpx; }
+.cats { white-space: nowrap; margin: 22rpx 0 8rpx; }
 .cat {
   display: inline-block;
-  padding: 12rpx 28rpx;
-  margin-right: 16rpx;
-  background: #fff;
-  border: 1rpx solid #eceef3;
-  border-radius: 100rpx;
+  padding: 14rpx 30rpx;
+  margin-right: 14rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--border);
+  border-radius: var(--r-full);
   font-size: 26rpx;
-  color: #4a5070;
+  color: var(--ink-2);
+  transition: background 0.18s var(--ease), color 0.18s var(--ease), border-color 0.18s var(--ease);
 }
-.cat.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.cat.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4rpx 14rpx rgba(249, 140, 60, 0.26);
+}
 
-.state { padding: 70rpx 0; text-align: center; color: #9aa0ad; font-size: 28rpx; }
+.state { padding: 80rpx 0; text-align: center; color: var(--sub); font-size: 28rpx; }
 .state.sm { padding: 40rpx 0; }
 
-.sec { margin-top: 28rpx; }
+.sec { margin-top: 36rpx; }
 .sec-hd {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 18rpx;
+  margin-bottom: 20rpx;
   padding: 0 4rpx;
 }
-.sec-title { font-size: 32rpx; font-weight: 700; color: #1f2330; }
-.sec-more { font-size: 25rpx; color: #8a90a0; }
+.sec-title { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.sec-more { display: flex; align-items: center; gap: 2rpx; font-size: 25rpx; color: var(--sub); }
+.sec-more-ic { font-size: 26rpx; }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18rpx; }
 .acard {
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 26rpx 24rpx;
-  box-shadow: 0 4rpx 22rpx rgba(31, 35, 48, 0.05);
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: 28rpx 26rpx;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.16s var(--ease);
 }
-.acard:active { transform: scale(0.99); }
+.acard:active { transform: scale(0.98); }
 .acard-ic {
   width: 84rpx;
   height: 84rpx;
-  border-radius: 20rpx;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 44rpx;
 }
-.acard-name { margin-top: 18rpx; font-size: 30rpx; font-weight: 600; color: #1f2330; }
+.acard-name { margin-top: 20rpx; font-size: 30rpx; font-weight: 600; color: var(--ink); }
 .acard-tag {
   margin-top: 6rpx;
   font-size: 24rpx;
-  color: #8a90a0;
+  color: var(--sub);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ph-card {
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 56rpx 32rpx;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: 64rpx 40rpx;
   text-align: center;
-  box-shadow: 0 4rpx 22rpx rgba(31, 35, 48, 0.05);
+  box-shadow: var(--shadow-card);
 }
-.ph-emoji { font-size: 72rpx; }
-.ph-title { margin-top: 18rpx; font-size: 30rpx; font-weight: 600; color: #1f2330; }
-.ph-sub { margin-top: 10rpx; font-size: 25rpx; color: #9aa0ad; }
+.ph-ic-wrap {
+  width: 120rpx;
+  height: 120rpx;
+  margin: 0 auto;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+}
+.ph-ic { font-size: 60rpx; color: var(--accent); }
+.ph-title { margin-top: 24rpx; font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.ph-sub { margin-top: 10rpx; font-size: 25rpx; color: var(--sub); line-height: 1.6; }

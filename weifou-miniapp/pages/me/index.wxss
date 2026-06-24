@@ -3,82 +3,87 @@
   box-sizing: border-box;
   padding: 16rpx 28rpx calc(env(safe-area-inset-bottom) + 140rpx);
 }
-.hd { padding: 16rpx 4rpx 12rpx; }
-.hd-title { font-size: 46rpx; font-weight: 700; color: #1f2330; }
+.hd { padding: 20rpx 4rpx 8rpx; }
+.hd-title { font-size: 48rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
 
-.card { background: #fff; border-radius: 24rpx; box-shadow: 0 4rpx 22rpx rgba(31, 35, 48, 0.05); }
+.card { background: var(--surface); border-radius: var(--r-xl); box-shadow: var(--shadow-card); }
 
-.clone { padding: 30rpx 28rpx; margin-bottom: 24rpx; }
-.clone:active { transform: scale(0.995); }
+.clone { padding: 32rpx 28rpx; margin-bottom: 24rpx; }
+.clone:active { transform: scale(0.99); }
 .clone-top { display: flex; align-items: center; gap: 22rpx; }
 .clone-ava {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 24rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: var(--r-lg);
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 52rpx;
   background: var(--accent-soft);
 }
+.clone-ava .ic { font-size: 56rpx; color: var(--accent); }
 .clone-id { flex: 1 1 auto; min-width: 0; }
-.clone-name { font-size: 32rpx; font-weight: 700; color: #1f2330; }
-.clone-sub { margin-top: 6rpx; font-size: 25rpx; color: #8a90a0; }
-.clone-arrow { font-size: 44rpx; color: #c4c9d4; }
+.clone-name { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.clone-sub { margin-top: 6rpx; font-size: 25rpx; color: var(--sub); }
+.clone-arrow { font-size: 30rpx; color: var(--faint); }
 .clone-acts {
   display: flex;
-  margin-top: 26rpx;
+  margin-top: 28rpx;
   padding-top: 8rpx;
-  border-top: 1rpx solid #f0f1f5;
+  border-top: 1rpx solid var(--line);
 }
 .clone-act {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  padding: 18rpx 0 6rpx;
+  gap: 10rpx;
+  padding: 22rpx 0 6rpx;
   font-size: 24rpx;
-  color: #4a5070;
+  color: var(--ink-2);
 }
-.clone-act:active { opacity: 0.6; }
-.ca-emoji { font-size: 38rpx; }
+.clone-act:active { opacity: 0.55; }
+.ca-ic { font-size: 42rpx; color: var(--ink-2); }
 
-.create { padding: 40rpx 32rpx; margin-bottom: 24rpx; text-align: center; }
-.create:active { transform: scale(0.995); }
-.create-title { font-size: 34rpx; font-weight: 700; color: #1f2330; }
-.create-sub { margin-top: 10rpx; font-size: 26rpx; color: #8a90a0; }
+.create { padding: 44rpx 32rpx; margin-bottom: 24rpx; text-align: center; }
+.create:active { transform: scale(0.99); }
+.create-title { font-size: 34rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.create-sub { margin-top: 10rpx; font-size: 26rpx; color: var(--sub); }
 .create-btn {
-  display: inline-block;
-  margin-top: 24rpx;
-  padding: 18rpx 44rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 26rpx;
+  padding: 20rpx 44rpx;
   background: var(--accent);
   color: #fff;
-  border-radius: 100rpx;
+  border-radius: var(--r-full);
   font-size: 28rpx;
   font-weight: 600;
+  box-shadow: var(--shadow-accent);
 }
+.create-btn-ic { font-size: 30rpx; }
 
 .group {
   margin-top: 4rpx;
-  background: #fff;
-  border-radius: 24rpx;
+  background: var(--surface);
+  border-radius: var(--r-xl);
   overflow: hidden;
-  box-shadow: 0 4rpx 22rpx rgba(31, 35, 48, 0.05);
+  box-shadow: var(--shadow-card);
 }
 .cell {
   display: flex;
   align-items: center;
   padding: 30rpx 28rpx;
-  border-bottom: 1rpx solid #f4f5f8;
+  border-bottom: 1rpx solid var(--line);
 }
 .cell:last-child { border-bottom: none; }
-.cell:active { background: #fafafb; }
-.cell-ic { width: 56rpx; font-size: 38rpx; }
-.cell-label { flex: 1; font-size: 30rpx; color: #1f2330; }
-.cell-arrow { font-size: 40rpx; color: #c4c9d4; }
+.cell:active { background: var(--fill-pressed); }
+.cell-ic { font-size: 42rpx; margin-right: 22rpx; color: var(--ink-2); }
+.cell-ic-accent { color: var(--accent); }
+.cell-label { flex: 1; font-size: 30rpx; color: var(--ink); }
+.cell-arrow { font-size: 28rpx; color: var(--faint); }
 
-.legal { margin-top: 40rpx; text-align: center; color: #b3b8c2; font-size: 22rpx; line-height: 1.8; }
+.legal { margin-top: 40rpx; text-align: center; color: var(--faint); font-size: 22rpx; line-height: 1.8; }
 .legal-links { margin-top: 4rpx; }
 .legal-links .dot { margin: 0 12rpx; }

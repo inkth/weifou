@@ -11,38 +11,83 @@
 
 ## 颜色令牌
 
+### 中性色阶（同一冷蓝色相递进，文字四级 + 线/填充）
+
 | 语义 | 令牌（小程序 / App） | 值 | 用途 |
 |---|---|---|---|
-| 主色 / 文字 | `--ink` / `ink` | `#1F2330` | 文字、墨黑主按钮、用户气泡 |
+| 主文字 | `--ink` / `ink` | `#1F2330` | 标题、墨黑主按钮、用户气泡 |
+| 次级文字 | `--ink-2` / `ink2` | `#4F5564` | 副标题、正文辅助 |
+| 三级文字 | `--sub` / `sub` | `#8A8F9C` | 说明、占位、非活跃 |
+| 四级文字 | `--faint` / `faint` | `#B4B9C4` | 时间戳、极弱信息 |
+| 发丝线 | `--line` / `line` | `#EEF0F4` | 分隔线、内部描边 |
+| 边框 | `--border` / `border` | `#E5E7EC` | 卡片/输入框边框 |
+| 中性填充 | `--fill` / `fill` | `#F0F1F5` | 标签底、头像回退底 |
+| 按下填充 | `--fill-pressed` / `fillPressed` | `#F6F7F9` | 单元格按下底 |
+
+> 旧版散落的 `#8a90a0 / #9aa0ad / #6b7180 / #b3b8c2 / #c4c9d4 …` 一律收敛到上表四级文字；新代码禁止再引入近似灰。
+
+### 表面与强调
+
+| 语义 | 令牌（小程序 / App） | 值 | 用途 |
+|---|---|---|---|
 | 页面底色 | `--bg` / `bg` | `#F5F6FA` | scaffold 背景 |
-| 描边 | `--border` / `border` | `#E5E7EC` | 卡片/输入框边框、分隔线 |
-| 次要文字 | `--sub` / `sub` | `#8A8F9C` | 辅助说明 |
+| 卡片表面 | `--surface` / `surface` | `#FFFFFF` | 卡片/浮层 |
+| 凹陷面 | `--surface-sunken` / `surfaceSunken` | `#EEF0F5` | 内嵌区 |
 | **强调色** | `--accent` / `accent` | `#FB923C` | **仅** CTA 高亮、活跃态、强调图标 |
-| 强调按下态 | `--accent-strong` / `accentStrong` | `#EF7D1F` | accent 元素的 hover/pressed |
-| 浅暖底 | `--accent-soft` / `accentSoft` | `#FFF3E9` | 推荐位/强调标签背景 |
+| 强调按下态 | `--accent-strong` / `accentStrong` | `#EF7D1F` | accent 元素 pressed |
+| 浅暖底 | `--accent-soft` / `accentSoft` | `#FFF3E9` | 推荐位/强调标签背景、活跃指示胶囊 |
 | 暖底上文字 | `--accent-ink` / `accentInk` | `#9A4D12` | accent-soft 上的文字 |
-| 成功 | `--success` / `success` | `#10B981` | 完成态、正向反馈 |
-| 警示 | `--warn` / `warn` | `#F59E0B` | 提醒 |
-| 危险 | `--danger` / `danger` | `#E0404B` | 删除、错误、挂断 |
+| 成功 / 警示 / 危险 | `--success` `--warn` `--danger` | `#10B981` `#F59E0B` `#E0404B` | 状态 |
 
-**阴影**：`--shadow-soft` / `AppTheme.softShadow` = 柔和暖阴影（`rgba(249,140,60,0.10)`），替代旧的冷灰阴影，用于卡片/浮层。
+### 高度 / 阴影（分层、极淡、按需微暖）
 
-**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键）。底盘按钮、导航、普通卡片一律保持墨黑+灰。
+| 令牌（小程序 / App） | 用途 |
+|---|---|
+| `--shadow-hair` | 列表项的极轻接触阴影 |
+| `--shadow-card` / `cardShadow` | **默认卡片**：双层近中性，干净不脏 |
+| `--shadow-soft` / `softShadow` | 暖阴影：推荐位 / hero 卡 |
+| `--shadow-pop` | 浮层 / 弹层 |
+| `--shadow-accent` / `accentShadow` | accent CTA 光晕（橙） |
+
+**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键 / 活跃 tab / 选中分类）。底盘按钮、导航、普通卡片一律保持墨黑+灰。橙色阴影只跟随 accent 实体，普通卡片用近中性 `--shadow-card`。
 
 ---
 
-## 圆角 / 按钮
+## 间距 / 圆角 / 字阶（弹性体系）
 
-| 元素 | 圆角 | 说明 |
+**间距**（4 基数，小程序 `--sp-1..7`）：`8 / 16 / 24 / 32 / 40 / 56 / 72 rpx`。新代码用阶值，不再随手写 18/22/26。
+
+**圆角阶**（小程序 `--r-*` / App `AppTheme.r*`）：
+
+| 令牌 | 值（rpx / dp） | 用途 |
 |---|---|---|
-| 主按钮 / 标签 / 头像 | `100rpx` / `100` 胶囊 | 沿用现状 |
-| 卡片 | `24rpx` / `16` | 沿用现状 |
-| 聊天气泡 | `24rpx`，发送角 `8rpx` | 沿用现状 |
+| `--r-sm` | 12 / 12 | 小标签、嵌套气泡角 |
+| `--r-md` | 16 / 16 | 图标贴片、输入框 |
+| `--r-lg` | 20 / 20 | 列表卡、通知卡 |
+| `--r-xl` | 24 / 24 | 标准卡片 |
+| `--r-2xl` | 32 / 32 | 大容器 |
+| `--r-full` | 999 | 胶囊按钮 / 头像 / chip |
+
+**字阶**（小程序辅助类）：`.t-display`(46/700, 负字距) · `.t-section`(32/700) · `.t-body`(28) · `.t-sub`(26, ink-2) · `.t-caption`(24, sub) · `.t-micro`(22, faint)。大号粗标题统一 `letter-spacing:-0.5rpx`，更紧凑高级。
 
 按钮三类：
-- `.btn-primary` / 默认 `ElevatedButton` —— 墨黑，底盘通用主按钮
-- `.btn-accent` / `AppTheme.accentButton` —— 暖橙，**仅关键转化点**（预约、立即开聊）
+- `.btn-primary` / 默认 `ElevatedButton` —— 墨黑，底盘通用主按钮；按下 `scale(0.975)`
+- `.btn-accent` / `AppTheme.accentButton` —— 暖橙 + `--shadow-accent` 光晕，**仅关键转化点**（预约、立即开聊）
 - `.btn-ghost` / `OutlinedButton` —— 白底描边，次级操作
+
+---
+
+## 图标系统
+
+线性图标（24 网格 / 2px 描边 / 圆头圆角 = Lucide 气质），**彻底取代 emoji 当功能图标**。
+
+- 真源：`weifou-miniapp/styles/icons.wxss`，已在 `app.wxss` 顶部 `@import`。
+- 实现：CSS `mask` + `background-color: currentColor` —— 单字形随 `color` 重着色，任意尺寸清晰。
+- 用法：`<view class="ic ic-bot" />`；尺寸用 `font-size`（图标取 `1em`），颜色用 `color`。
+- 自定义组件（如 `custom-tab-bar`）默认 `styleIsolation:isolated`，需在组件 wxss 内单独 `@import "../styles/icons.wxss"`。
+- 已有字形：`bot/chat/user/search/bell/crown/inbox/phone/edit/compose/stats/settings/sparkle/apps/mic/chevron/back/arrow/plus/close/check`。新增图标在此文件按同样 24 网格补一个 mask 即可。
+
+> 例外：空状态里纯插画性质的大 emoji 可保留；凡是「可点/表意/导航」的图标一律用本系统。
 
 ---
 
@@ -65,5 +110,6 @@
 ## 维护约定
 
 1. 改色值：先改本文件表格 → 再改 `app.wxss` 与 `app_theme.dart`，两端值必须一致。
-2. 新增语义色：三处同步（本文件 + 两端）。
-3. 头像资产升级（toon → image/lottie）：保持 preset `id` 不变即可无缝迁移，见 `utils/avatars.js` 注释与 `assets/avatars/README.md`。
+2. 新增语义色 / 间距 / 圆角 / 阴影令牌：三处同步（本文件 + 两端）。
+3. 新增图标：只动 `styles/icons.wxss`（小程序），App 端用 Flutter `Icon`/SVG 对应同名字形。
+4. 头像资产升级（toon → image/lottie）：保持 preset `id` 不变即可无缝迁移，见 `utils/avatars.js` 注释与 `assets/avatars/README.md`。
