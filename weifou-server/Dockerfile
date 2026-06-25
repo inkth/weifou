@@ -19,6 +19,9 @@ WORKDIR /home/app
 COPY --from=builder /out/server ./server
 COPY .env.example ./.env.example
 
+# 上传目录(挂 docker 命名卷):先建好并归属 app,命名卷首次挂载会 copy-up 此归属 → 容器内可写。
+RUN mkdir -p /home/app/uploads && chown -R app:app /home/app/uploads
+
 USER app
 EXPOSE 8080
 # 用 GET(不带 --spider,后者发 HEAD,而 /healthz 仅注册 GET → 会 404)

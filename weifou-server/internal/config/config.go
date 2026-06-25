@@ -63,6 +63,10 @@ type Config struct {
 	MpSecret  string
 	MpToken   string // 服务号消息回调校验 token（公众平台配明文/兼容模式）
 	H5BaseURL string // 服务端构造 H5 链接的公网基址（服务号推送无 request 上下文）
+
+	// 文件上传 / 静态服务（当前：付费提问语音回答，存本地盘命名卷；未来可换 COS）
+	UploadDir  string // 容器内可写目录（挂 docker 命名卷持久化）
+	PublicHost string // 生成公开 URL 的公网基址；空则回落 AppBaseURL
 }
 
 func getEnv(key, def string) string {
@@ -151,5 +155,8 @@ func Load() *Config {
 		MpSecret:  os.Getenv("WX_MP_SECRET"),
 		MpToken:   os.Getenv("WX_MP_TOKEN"),
 		H5BaseURL: getEnv("H5_BASE_URL", ""),
+
+		UploadDir:  getEnv("UPLOAD_DIR", "./uploads"),
+		PublicHost: getEnv("PUBLIC_HOST", ""),
 	}
 }

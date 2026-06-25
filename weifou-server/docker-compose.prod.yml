@@ -19,6 +19,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
       # Go 在临近上限前主动 GC,避免被 OOM killer 干掉(整机仅 3.6G)。
       GOMEMLIMIT: 320MiB
+      # 上传文件(付费提问语音答)落本地命名卷,公网 URL 用 PUBLIC_HOST。
+      UPLOAD_DIR: /home/app/uploads
+      PUBLIC_HOST: https://api.weifou.com
+    volumes:
+      - weifou-uploads:/home/app/uploads
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -70,6 +75,7 @@ services:
 volumes:
   weifou-pg-data:
   weifou-redis-data:
+  weifou-uploads:
 
 networks:
   weifou-net:

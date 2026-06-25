@@ -107,7 +107,9 @@ func (h *Handler) create(c *gin.Context) error {
 // ---------- 主人：作答 ----------
 
 type answerReq struct {
-	Answer string `json:"answer" binding:"required"`
+	Answer        string `json:"answer"`
+	VoiceURL      string `json:"voiceUrl"`
+	VoiceDuration int    `json:"voiceDuration"`
 }
 
 func (h *Handler) answer(c *gin.Context) error {
@@ -117,7 +119,8 @@ func (h *Handler) answer(c *gin.Context) error {
 		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
 	}
 	ans := strings.TrimSpace(req.Answer)
-	if ans == "" {
+	voiceURL := strings.TrimSpace(req.VoiceURL)
+	if ans == "" && voiceURL == "" {
 		return httpx.BadRequest("ANSWER_EMPTY", "回答不能为空")
 	}
 	var qst models.AsyncQuestion
@@ -130,14 +133,22 @@ func (h *Handler) answer(c *gin.Context) error {
 	if qst.Status != models.AsyncPaid {
 		return httpx.BadRequest("NOT_ANSWERABLE", "该提问当前不可回答")
 	}
-	if !h.security.CheckText(ans, auth.Openid) {
+	// 文字部分过安全审核；语音内容审核暂缺（MVP：仅本人可发，风险可控），后续可接音频审核。
+	if ans != "" && !h.security.CheckText(ans, auth.Openid) {
 		return httpx.BadRequest("CONTENT_UNSAFE", "回答包含不当内容")
+	}
+	dur := req.VoiceDuration
+	if dur < 0 {
+		dur = 0
 	}
 	now := time.Now()
 	// 原子作答：仅当仍为 paid 时置 answered，防止与超时自动退款竞态。
 	res := h.db.Model(&models.AsyncQuestion{}).
 		Where("id = ? AND status = ?", qst.ID, models.AsyncPaid).
-		Updates(map[string]interface{}{"answer": ans, "answered_at": now, "status": models.AsyncAnswered})
+		Updates(map[string]interface{}{
+			"answer": ans, "voice_url": voiceURL, "voice_duration": dur,
+			"answered_at": now, "status": models.AsyncAnswered,
+		})
 	if res.RowsAffected == 0 {
 		return httpx.BadRequest("NOT_ANSWERABLE", "该提问当前不可回答（可能已超时退款）")
 	}
@@ -152,7 +163,11 @@ func (h *Handler) answer(c *gin.Context) error {
 		if h.db.Select("real_name").First(&hp, "user_id = ?", qst.HostUserID).Error == nil && hp.RealName != "" {
 			hostName = hp.RealName
 		}
-		go h.subscribe.NotifyAnswered(qst.AskerOpenid, hostName, ans, now, "pages/my-questions/index")
+		notifyText := ans
+		if notifyText == "" {
+			notifyText = "[语音回答]"
+		}
+		go h.subscribe.NotifyAnswered(qst.AskerOpenid, hostName, notifyText, now, "pages/my-questions/index")
 	}
 
 	httpx.OK(c, gin.H{"id": qst.ID, "status": models.AsyncAnswered, "answeredAt": now})
@@ -218,7 +233,8 @@ func (h *Handler) row(q *models.AsyncQuestion, role string) gin.H {
 	return gin.H{
 		"id": q.ID, "profileId": q.ProfileID, "realName": profile.RealName,
 		"question": q.Question, "price": q.Price, "status": q.Status,
-		"answer": q.Answer, "answeredAt": q.AnsweredAt, "answerDeadline": q.AnswerDeadline,
+		"answer": q.Answer, "voiceUrl": q.VoiceURL, "voiceDuration": q.VoiceDuration,
+		"answeredAt": q.AnsweredAt, "answerDeadline": q.AnswerDeadline,
 		"paidAt": q.PaidAt, "createdAt": q.CreatedAt, "role": role,
 	}
 }

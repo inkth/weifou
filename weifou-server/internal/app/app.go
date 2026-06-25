@@ -20,8 +20,10 @@ import (
 	"weifou-server/internal/profile"
 	"weifou-server/internal/rtc"
 	"weifou-server/internal/share"
+	"weifou-server/internal/storage"
 	"weifou-server/internal/tasks"
 	"weifou-server/internal/toolagent"
+	"weifou-server/internal/upload"
 	"weifou-server/internal/user"
 	"weifou-server/internal/visit"
 	"weifou-server/internal/wechat"
@@ -47,6 +49,7 @@ type App struct {
 	membershipH *membership.Handler
 	mpH         *mp.Handler
 	clientcfgH  *clientcfg.Handler
+	uploadH     *upload.Handler
 
 	scheduler *tasks.Scheduler
 }
@@ -79,6 +82,12 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	mbrH := membership.NewHandler(db, paymentH, cfg.JWTSecret)
 	mpLogin := wechat.NewLoginClient(cfg.MpAppID, cfg.MpSecret)
 
+	// 公网基址：生成上传文件的可访问 URL；未配 PUBLIC_HOST 时回落 AppBaseURL（dev）。
+	publicHost := cfg.PublicHost
+	if publicHost == "" {
+		publicHost = cfg.AppBaseURL
+	}
+
 	a := &App{
 		cfg:      cfg,
 		authH:    auth.NewHandler(db, loginClient, appLoginClient, cfg.JWTSecret, cfg.JWTExpiresHours, cfg.Env),
@@ -103,6 +112,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		membershipH: mbrH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH:  clientcfg.NewHandler(),
+		uploadH:     upload.NewHandler(storage.NewLocal(cfg.UploadDir), publicHost+"/api/uploads", cfg.JWTSecret),
 		scheduler:   tasks.NewScheduler(db, paymentH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
 	}
 	return a
@@ -126,6 +136,9 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.membershipH.Register(api)
 	a.mpH.Register(api)
 	a.clientcfgH.Register(api)
+	a.uploadH.Register(api)
+	// 静态服务上传的语音文件（公开，文件名为随机 id；落点 /api/uploads/...）。
+	api.Static("/uploads", a.cfg.UploadDir)
 }
 
 func (a *App) StartCron() {

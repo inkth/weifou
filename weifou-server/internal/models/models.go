@@ -327,7 +327,9 @@ type AsyncQuestion struct {
 	Status         string     `gorm:"size:16;default:pending_payment;index:idx_aq_host_status" json:"status"`
 	PaidAt         *time.Time `json:"paidAt,omitempty"`
 	AnswerDeadline *time.Time `json:"answerDeadline,omitempty"`
-	Answer         string     `gorm:"type:text" json:"answer"`
+	Answer         string     `gorm:"type:text" json:"answer"`   // 文字回答（可与语音并存，也可为空）
+	VoiceURL       string     `gorm:"type:text" json:"voiceUrl"` // 语音回答的公开 URL（空=无语音）
+	VoiceDuration  int        `json:"voiceDuration"`             // 语音时长（秒）
 	AnsweredAt     *time.Time `json:"answeredAt,omitempty"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
