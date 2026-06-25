@@ -1,8 +1,7 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fenToYuan } = require('../../utils/pay');
-const { fmtDateTime } = require('../../utils/datetime');
-const { bookConsult, sendTip } = require('../../utils/consult');
+const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
 const { buildTrustLine } = require('../../utils/trust');
@@ -25,7 +24,6 @@ Page({
     startersRevealed: false, // 开场动画结束后才淡入引导问题
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
     contactAvailable: false,
-    consultAvailable: false,
     asyncAvailable: false, // 是否开放付费提问
     asyncPriceYuan: '',
     trustLine: '', // 信任徽章文案（社会证明，来自既有交易数据；冷启动数字过小时为空）
@@ -36,7 +34,6 @@ Page({
     draft: '',
     pending: false,
     introState: '', // 开场动画期间覆盖 avatar 状态（thinking/speaking）
-    acting: false, // 对话内成交卡片支付中
     showInput: false, // “自己问”展开自由输入
     // —— 沉浸式对话舞台 ——
     stageTier: 'warm', // 氛围档 cool|warm|lively（驱动 .tier-* class），骨架首帧用默认暖底
@@ -44,12 +41,11 @@ Page({
     stageEntered: false, // 开幕（curtain-up）触发；与拉取资料的等待重叠
     delight: false, // 一次性"欣喜"beat（开场 & 成交/留资后）
     liheSrc: '', // 全屏立绘图：avatar 为 image 类型时启用"星野式"全屏立绘模式
-    // —— 访客页内浮层（不跳 profile）：关于 / 打赏 / 约档期 ——
+    // —— 访客页内浮层（不跳 profile）：关于 / 打赏 ——
     title: '', company: '', city: '', tags: [], fullIntro: '',
     pricing: {},
     aboutVisible: false,
     tipVisible: false, tipPresets: [6, 18, 66, 88], tipAmount: 18, tipMessage: '', tipPaying: false,
-    slotsVisible: false, slotList: [], selectedSlotId: '', booking: false,
   },
 
   async onLoad(query) {
@@ -118,14 +114,12 @@ Page({
       return;
     }
 
-    // 是否开放付费咨询（用于行动选项）
+    // 是否开放付费提问（用于行动选项）
     try {
       const pricing = await request({ url: `/consult/pricing/${profileId}` });
-      if (pricing.enabled) { pricing.price30Yuan = fenToYuan(pricing.price30); pricing.price60Yuan = fenToYuan(pricing.price60); }
       if (pricing.asyncEnabled) { pricing.asyncPriceYuan = fenToYuan(pricing.asyncPrice); }
       this.setData({
         pricing,
-        consultAvailable: !!pricing.enabled,
         asyncAvailable: !!pricing.asyncEnabled,
         asyncPriceYuan: pricing.asyncEnabled ? fenToYuan(pricing.asyncPrice) : '',
       });
@@ -329,9 +323,6 @@ Page({
       const idx = msgs.length - 1;
       this.setData({ messages: msgs, pending: false, answeredOnce: true, introState: 'speaking' });
       await this._typeAnswer(idx, data.answer || '');
-      if (data.card && data.card.type === 'consult_offer') {
-        this.setData({ [`messages[${idx}].card`]: this.decorateCard(data.card) });
-      }
       this.setData({ introState: '' });
       // 轻线索：访客被第 2 个回答"种草"后，给一条不抢戏的"我也要一个"入口（仅一次）
       this._answerCount = (this._answerCount || 0) + 1;
@@ -343,57 +334,6 @@ Page({
         messages: this.data.messages.concat({ role: 'assistant', content: tip }),
       });
     }
-  },
-
-  // 把后端档期卡片加工成可展示结构（时间文案 + 价格）
-  decorateCard(card) {
-    const slots = (card.slots || []).map((s) => ({
-      id: s.id,
-      durationMin: s.durationMin,
-      timeText: fmtDateTime(s.startAt),
-      priceYuan: fenToYuan(s.durationMin === 60 ? card.price60 : card.price30),
-    }));
-    return { type: card.type, slots, selectedSlotId: '' };
-  },
-
-  // 选择卡片里的某个档期
-  selectCardSlot(e) {
-    const mi = e.currentTarget.dataset.mi;
-    const id = e.currentTarget.dataset.id;
-    const messages = this.data.messages.slice();
-    messages[mi] = { ...messages[mi], card: { ...messages[mi].card, selectedSlotId: id } };
-    this.setData({ messages });
-  },
-
-  // 对话内直接预约并支付（成交闭环）
-  async bookFromCard(e) {
-    const mi = e.currentTarget.dataset.mi;
-    const card = this.data.messages[mi] && this.data.messages[mi].card;
-    if (!card || !card.selectedSlotId || this.data.acting) return;
-    this.setData({ acting: true });
-    try {
-      await bookConsult(this.data.profileId, card.selectedSlotId, 'chat_card');
-      this.setData({
-        acting: false,
-        messages: this.data.messages.concat({
-          role: 'assistant',
-          content: '预约成功 ✅ 可在「我的通话」按时进入。',
-          action: 'go-sessions',
-        }),
-      });
-      wx.showToast({ title: '预约成功', icon: 'success' });
-      this._fireDelight();
-      this._showOwnHook('strong');
-    } catch (err) {
-      this.setData({ acting: false });
-      if (err.code !== 'PAY_CANCEL') {
-        wx.showToast({ title: err.message || '预约失败', icon: 'none' });
-      }
-    }
-  },
-
-  goSessions() {
-    wx.navigateTo({ url: '/pages/sessions/index' });
   },
 
   // —— 裂变钩子：体验过别人的 Agent → 想要自己的 ——
@@ -528,40 +468,4 @@ Page({
     }
   },
 
-  // —— 页内浮层：约档期 ——
-  async openSlots() {
-    this.setData({ slotsVisible: true, selectedSlotId: '' });
-    try {
-      const slots = await request({ url: `/consult/slots/public/${this.data.profileId}` });
-      slots.forEach((s) => {
-        s.timeText = fmtDateTime(s.startAt);
-        s.priceYuan = s.durationMin === 60 ? this.data.pricing.price60Yuan : this.data.pricing.price30Yuan;
-      });
-      this.setData({ slotList: slots });
-    } catch (e) {
-      // 失败时提示，避免弹层把网络错误显示成"对方暂无可约档期"
-      this.setData({ slotList: [] });
-      wx.showToast({ title: e.message || '档期加载失败', icon: 'none' });
-    }
-  },
-  closeSlots() { this.setData({ slotsVisible: false }); },
-  selectSlot(e) { this.setData({ selectedSlotId: e.currentTarget.dataset.id }); },
-  async paySlot() {
-    if (!this.data.selectedSlotId || this.data.booking) return;
-    this.setData({ booking: true });
-    try {
-      await bookConsult(this.data.profileId, this.data.selectedSlotId, 'chat');
-      this.setData({
-        slotsVisible: false,
-        messages: this.data.messages.concat({ role: 'assistant', content: '预约成功 ✅ 可在「我的通话」按时进入。', action: 'go-sessions' }),
-      });
-      wx.showToast({ title: '预约成功', icon: 'success' });
-      this._fireDelight();
-      this._showOwnHook('strong');
-    } catch (e) {
-      if (e.code !== 'PAY_CANCEL') wx.showToast({ title: e.message || '预约失败', icon: 'none' });
-    } finally {
-      this.setData({ booking: false });
-    }
-  },
 });

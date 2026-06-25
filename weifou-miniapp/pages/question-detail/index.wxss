@@ -9,3 +9,19 @@
 .qd-deadline, .qd-refunded { font-size: 26rpx; line-height: 1.5; }
 .qd-input { width: 100%; min-height: 240rpx; font-size: 30rpx; line-height: 1.6; margin-top: 8rpx; }
 .qd-submit { margin-top: 24rpx; }
+
+/* 语音播放（访客收听 / 主人试听） */
+.voice-player { display: flex; align-items: center; gap: 14rpx; padding: 22rpx 26rpx; margin-bottom: 14rpx; background: var(--accent-soft); border-radius: var(--r-md); color: var(--accent-ink); }
+.voice-player.on { background: var(--accent); color: #fff; }
+.vp-ic { font-size: 32rpx; }
+.vp-text { flex: 1; font-size: 28rpx; font-weight: 500; }
+.vp-dur { font-size: 24rpx; opacity: 0.85; }
+
+/* 录音条 */
+.rec-row { display: flex; align-items: center; gap: 20rpx; margin-top: 20rpx; }
+.rec-btn { display: flex; align-items: center; gap: 12rpx; padding: 18rpx 32rpx; border-radius: var(--r-full); border: 2rpx solid var(--border); color: var(--ink-2); font-size: 28rpx; }
+.rec-btn.on { background: var(--danger); border-color: var(--danger); color: #fff; }
+.rec-ic { font-size: 34rpx; }
+.rec-done { display: flex; align-items: center; gap: 12rpx; padding: 18rpx 32rpx; border-radius: var(--r-full); background: var(--accent-soft); color: var(--accent-ink); font-size: 28rpx; }
+.rec-done.on { background: var(--accent); color: #fff; }
+.rec-redo { color: var(--sub); font-size: 26rpx; padding: 12rpx 8rpx; }

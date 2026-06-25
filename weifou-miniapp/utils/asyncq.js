@@ -22,9 +22,10 @@ function fetchPricing(profileId) {
   return request({ url: `/consult/pricing/${profileId}` });
 }
 
-// 主人作答
-function answerQuestion(id, answer) {
-  return request({ url: `/async-question/${id}/answer`, method: 'POST', data: { answer } });
+// 主人作答。payload 可为字符串（纯文字，向后兼容）或 { answer, voiceUrl, voiceDuration }。
+function answerQuestion(id, payload) {
+  const data = typeof payload === 'string' ? { answer: payload } : (payload || {});
+  return request({ url: `/async-question/${id}/answer`, method: 'POST', data });
 }
 
 // 主人：收到的付费提问列表（status 可选过滤 paid/answered/refunded）
