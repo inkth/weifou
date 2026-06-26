@@ -50,6 +50,14 @@ page {
   /* —— 动效 —— */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* —— 沉浸件（角色层复用：立绘卡 / 玻璃浮层；底盘区不引入）——
+     源自「分身首页沉浸版」北极星样板，沉淀为真源，供 discover / profile / chat 复用 */
+  --glass-light: rgba(255, 255, 255, 0.72);  /* 浅色毛玻璃：悬浮底栏 / 浅底浮层 */
+  --glass-dark: rgba(18, 22, 28, 0.42);      /* 深色毛玻璃：立绘上的信息面板 */
+  --glass-hair: rgba(255, 255, 255, 0.16);   /* 玻璃描边 */
+  --blur-glass: blur(28rpx) saturate(180%);  /* 统一毛玻璃模糊 */
+  --shadow-lihe: 0 6rpx 22rpx rgba(31, 35, 48, 0.07), 0 1rpx 3rpx rgba(31, 35, 48, 0.04); /* 立绘卡浮起 */
 }
 
 page {

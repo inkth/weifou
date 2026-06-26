@@ -55,3 +55,28 @@
 .stage-indicator .dot:nth-child(2) { animation-delay: 0.15s; }
 .stage-indicator .dot:nth-child(3) { animation-delay: 0.30s; }
 @keyframes dotBob { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-6rpx); opacity: 1; } }
+
+/* === 立绘卡原子（discover 推荐墙 / 聚光位、profile 等角色层复用）===
+   art：角色立绘容器。无真图时用温度档深色渐变兜底；有真图则在其上叠 <image class="art-img"> 铺满。
+   纪律：仅角色层用；底盘卡片保持中性 surface，不引入本族深色渐变与光晕。 */
+.art { position: relative; overflow: hidden; background: linear-gradient(150deg, #2b2f3c, #1a1d27); }
+.art-warm   { background: linear-gradient(150deg, #0f5048, #073029); }
+.art-cool   { background: linear-gradient(150deg, #1c3f6b, #0f2643); }
+.art-lively { background: linear-gradient(150deg, #4a2c7a, #221248); }
+.art-img { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+/* 温度光晕：低 alpha 径向、明灭呼吸 */
+.art-glow { position: absolute; inset: 0; opacity: 0.5; animation: artGlow 3.6s ease-in-out infinite; }
+.art-warm   .art-glow { background: radial-gradient(120rpx 150rpx at 50% 24%, rgba(120, 235, 200, 0.5), transparent 62%); }
+.art-cool   .art-glow { background: radial-gradient(120rpx 150rpx at 50% 24%, rgba(120, 175, 240, 0.5), transparent 62%); }
+.art-lively .art-glow { background: radial-gradient(120rpx 150rpx at 50% 24%, rgba(190, 150, 255, 0.5), transparent 62%); }
+@keyframes artGlow { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+/* 立绘微动呼吸（聚光位用） */
+.art-breath { animation: artBreath 7s ease-in-out infinite; }
+@keyframes artBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+/* 名牌浮层：底部 scrim + 名字 */
+.art-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 120rpx; background: linear-gradient(transparent, rgba(8, 10, 16, 0.62)); z-index: 1; }
+.art-name { position: absolute; left: 22rpx; bottom: 18rpx; z-index: 2; }
+.art-name .n { display: block; font-size: 32rpx; font-weight: 700; color: #fff; text-shadow: 0 2rpx 14rpx rgba(0, 0, 0, 0.55); }
+.art-name .r { font-size: 22rpx; color: rgba(255, 255, 255, 0.86); }
+/* 角色层玻璃信息面板（聚光位浮底卡） */
+.glass-panel { background: var(--glass-dark); -webkit-backdrop-filter: var(--blur-glass); backdrop-filter: var(--blur-glass); border: 1rpx solid var(--glass-hair); }

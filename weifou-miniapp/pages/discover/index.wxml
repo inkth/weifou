@@ -1,60 +1,89 @@
 <view class="page">
-  <view class="hd">
-    <view class="hd-title">分身</view>
-    <view class="hd-sub">挑一个 AI 助手，先聊起来</view>
-  </view>
 
-  <!-- 搜索（骨架占位） -->
-  <view class="search tap" bindtap="onSearchTap">
-    <view class="ic ic-search search-ic"></view>
-    <text class="search-ph">搜索 AI 分身 / 工具</text>
-  </view>
+  <!-- 聚光位（全屏出血电影感）：种子分身，后端发现流就绪后接真数据 -->
+  <view class="spot art art-{{spotlight.tier}}" bindtap="openReco">
+    <view class="art-glow"></view>
+    <view class="spot-initial">{{spotlight.initial}}</view>
+    <!-- 真立绘就绪后启用：<image class="art-img" wx:if="{{spotlight.lihe}}" src="{{spotlight.lihe}}" mode="aspectFill"/> -->
+    <view class="spot-scrim"></view>
 
-  <!-- 分类：按功能 / 话题分，不按人分 -->
-  <scroll-view class="cats" scroll-x>
-    <view
-      class="cat {{activeCat === item ? 'on' : ''}}"
-      wx:for="{{cats}}"
-      wx:key="*this"
-      data-cat="{{item}}"
-      bindtap="pickCat"
-    >{{item}}</view>
-  </scroll-view>
+    <view class="spot-top" style="padding-top:{{statusBarH}}px">
+      <view class="spot-h1">分身</view>
+    </view>
 
-  <view wx:if="{{loading}}" class="state">加载中…</view>
-
-  <block wx:else>
-    <!-- 平台工具 Agent（真实数据，iOS 隐藏） -->
-    <view wx:if="{{agentEntry}}" class="sec">
-      <view class="sec-hd">
-        <text class="sec-title">AI 工具箱</text>
-        <view class="sec-more" bindtap="goAgents"><text>全部</text><view class="ic ic-chevron sec-more-ic"></view></view>
+    <view class="spot-panel glass-panel">
+      <view class="spot-tags">
+        <text class="spot-pill">聚光</text>
+        <text class="spot-role">{{spotlight.role}}</text>
       </view>
-      <view class="grid">
-        <view
-          class="acard"
-          wx:for="{{agents}}"
-          wx:key="id"
-          data-id="{{item.id}}"
-          data-name="{{item.name}}"
-          bindtap="openAgent"
-        >
-          <view class="acard-ic" style="background:{{item.accent}}1a;color:{{item.accent}};">{{item.icon}}</view>
-          <view class="acard-name">{{item.name}}</view>
-          <view class="acard-tag">{{item.tagline}}</view>
+      <view class="spot-name">{{spotlight.name}}</view>
+      <view class="spot-sub"><view class="dot"></view><text>{{spotlight.tagline}}</text></view>
+      <view class="spot-cta">
+        <view class="spot-btn" catchtap="openReco">开始聊</view>
+        <view class="spot-btn ghost" catchtap="openReco">提问 ¥9</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浅色底盘「上升浮层」 -->
+  <view class="sheet">
+
+    <!-- 搜索（底盘功能，骨架占位） -->
+    <view class="search tap" catchtap="onSearchTap">
+      <view class="ic ic-search search-ic"></view>
+      <text class="search-ph">找一个能替你的 AI 分身</text>
+    </view>
+
+    <!-- 继续聊（真实最近会话；无则不渲染，不造假） -->
+    <block wx:if="{{recents.length}}">
+      <view class="row-h">继续聊</view>
+      <scroll-view class="recents" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="recent tap" wx:for="{{recents}}" wx:key="profileId" data-profile="{{item.profileId}}" bindtap="enterRecent">
+          <view class="recent-av" style="background:{{item.grad}}">{{item.initial}}</view>
+          <text class="recent-nm">{{item.name}}</text>
+        </view>
+      </scroll-view>
+    </block>
+
+    <!-- 分类 -->
+    <scroll-view class="cats" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="cat {{activeCat === item ? 'on' : ''}}" wx:for="{{cats}}" wx:key="*this" data-cat="{{item}}" bindtap="pickCat">{{item}}</view>
+    </scroll-view>
+
+    <!-- 推荐分身（种子填充态 → 后端发现流） -->
+    <view class="sec-h">
+      <text class="sec-t">推荐分身</text>
+      <view class="sec-m" catchtap="openReco"><text>全部</text><view class="ic ic-chevron"></view></view>
+    </view>
+    <view class="wall">
+      <view class="cha tap" wx:for="{{recos}}" wx:key="id" bindtap="openReco">
+        <view class="cha-art art art-{{item.tier}}">
+          <view class="art-glow"></view>
+          <view class="cha-initial">{{item.initial}}</view>
+          <view class="art-scrim"></view>
+          <view class="art-name"><text class="n">{{item.name}}</text><text class="r">{{item.role}}</text></view>
+        </view>
+        <view class="cha-meta">
+          <view class="cha-tag">{{item.tagline}}</view>
+          <view class="cha-metric">{{item.metric}}</view>
         </view>
       </view>
-      <view wx:if="{{!agents.length}}" class="state sm">工具箱即将上线</view>
     </view>
 
-    <!-- 真人 AI 分身（待后端发现流接入） -->
-    <view class="sec">
-      <view class="sec-hd"><text class="sec-title">推荐分身</text></view>
-      <view class="ph-card">
-        <view class="ph-ic-wrap"><view class="ic ic-bot ph-ic"></view></view>
-        <view class="ph-title">更多真人 AI 分身陆续上线</view>
-        <view class="ph-sub">这里会出现可以聊天、提问、咨询的 AI 分身</view>
+    <!-- AI 工具箱（真实 agents，iOS 隐藏）卫星条 -->
+    <block wx:if="{{agentEntry && agents.length}}">
+      <view class="sec-h">
+        <text class="sec-t">AI 工具箱</text>
+        <view class="sec-m" catchtap="goAgents"><text>全部</text><view class="ic ic-chevron"></view></view>
       </view>
-    </view>
-  </block>
+      <scroll-view class="tools" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="tool tap" wx:for="{{agents}}" wx:key="id" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="openAgent">
+          <view class="tool-ic" style="background:{{item.accent}}1a;color:{{item.accent}};">{{item.icon}}</view>
+          <view class="tool-nm">{{item.name}}</view>
+          <view class="tool-tag">{{item.tagline}}</view>
+        </view>
+      </scroll-view>
+    </block>
+
+  </view>
 </view>
