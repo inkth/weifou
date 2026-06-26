@@ -65,7 +65,7 @@
   padding: 26rpx 0; text-align: center;
   font-size: 30rpx; font-weight: 500;
 }
-/* 主操作：暖橙半透明，略跳但仍守"半透明/点睛" */
+/* 主操作：碧绿半透明，略跳但仍守"半透明/点睛" */
 .glass-btn.primary {
   background: rgba(24, 182, 144,0.34);
   border-color: rgba(24, 182, 144,0.6);
@@ -73,7 +73,7 @@
 
 .loading { color: rgba(255,255,255,0.85); text-align: center; margin-top: 60rpx; }
 
-/* 收件箱待办角标：暖橙小徽章浮在按钮右上角（主人召回钩子） */
+/* 收件箱待办角标：碧绿小徽章浮在按钮右上角（主人召回钩子） */
 .inbox-btn { position: relative; }
 .todo-badge {
   position: absolute;

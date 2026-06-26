@@ -87,7 +87,7 @@
   font-weight: 500;
 }
 
-/* 快捷选项（承自原 5 步点选）：暗色毛玻璃气泡，点按高亮暖橙 */
+/* 快捷选项（承自原 5 步点选）：暗色毛玻璃气泡，点按高亮碧绿 */
 .ob-opts { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }
 .ob-opt {
   padding: 16rpx 26rpx;

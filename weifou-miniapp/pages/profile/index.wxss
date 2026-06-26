@@ -19,7 +19,7 @@
   box-shadow: none;
 }
 
-/* 全局按钮在暗场下的可见性：accent 橙不变；primary 改干净白（成交/分享入口），ghost 改玻璃 */
+/* 全局按钮在暗场下的可见性：accent 碧绿不变；primary 改干净白（成交/分享入口），ghost 改玻璃 */
 .btn-primary { background: rgba(255, 255, 255, 0.92); color: #1f2330; }
 .btn-ghost { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1rpx solid rgba(255, 255, 255, 0.24); }
 
@@ -155,7 +155,7 @@
 }
 .fresh-notify.done { color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.06); }
 
-/* 信任徽章：社会证明，暖金（与强调橙同系但更柔），不抢成交按钮 */
+/* 信任徽章：社会证明，柔薄荷（碧绿同族更柔），不抢成交按钮 */
 .trust-badge { font-size: 24rpx; color: #bfe6da; margin: -6rpx 0 16rpx; }
 
 /* 收入可见卡 */

@@ -74,7 +74,7 @@
 
 按钮三类：
 - `.btn-primary` / 默认 `ElevatedButton` —— 墨黑，底盘通用主按钮；按下 `scale(0.975)`
-- `.btn-accent` / `AppTheme.accentButton` —— 暖橙 + `--shadow-accent` 光晕，**仅关键转化点**（预约、立即开聊）
+- `.btn-accent` / `AppTheme.accentButton` —— 碧绿 + `--shadow-accent` 光晕，**仅关键转化点**（预约、立即开聊）
 - `.btn-ghost` / `OutlinedButton` —— 白底描边，次级操作
 
 ---
@@ -95,7 +95,7 @@
 
 ## 温度档（弹性体系）
 
-跨行业用户「都要覆盖」，故把沟通风格归到 3 档温度。**一档同时建议 头像气质 + 文案语气**；全局强调色不随档变（始终暖橙），保证品牌一致——档位差异体现在「头像 + 开场白语气」这两个低风险、强可感知的点上。
+跨行业用户「都要覆盖」，故把沟通风格归到 3 档温度。**一档同时建议 头像气质 + 文案语气**；全局强调色不随档变（始终碧绿 #18B690），保证品牌一致——档位差异体现在「头像 + 开场白语气」这两个低风险、强可感知的点上。
 
 实现见 `weifou-miniapp/utils/avatars.js` 的 `TONES` / `toneForStyle(style)`。沟通风格 `style` 白名单与服务端 `internal/persona/persona.go` 的 `StyleDescriptions` 同步维护。
 
