@@ -1,6 +1,6 @@
 const { ensureLogin } = require('../../utils/auth');
 const { loadEntries, agentVisible } = require('../../utils/entries');
-const { status, buyMembership, leaveIntent } = require('../../utils/membership');
+const { status, openMembership } = require('../../utils/membership');
 const { fenToYuan } = require('../../utils/pay');
 
 Page({
@@ -11,7 +11,6 @@ Page({
     expiresText: '',
     plans: [],
     paying: false,
-    intentDone: false,
   },
 
   async onShow() {
@@ -43,13 +42,10 @@ Page({
     const planId = e.currentTarget.dataset.id;
     this.setData({ paying: true });
     try {
-      await buyMembership(planId);
-      const s = await status();
-      this.setData({
-        isMember: !!s.isMember,
-        expiresText: s.expiresAt ? String(s.expiresAt).slice(0, 10) : '',
-      });
-      wx.showToast({ title: '开通成功', icon: 'success' });
+      await openMembership(planId);
+      // 虚拟支付异步发货：支付成功后会员到账靠服务端回调（秒级），稍候刷新状态。
+      wx.showToast({ title: '支付成功，开通中', icon: 'success' });
+      setTimeout(() => this.refreshStatus(2), 1500);
     } catch (e) {
       if (e.code !== 'PAY_CANCEL') wx.showToast({ title: e.message || '开通失败', icon: 'none' });
     } finally {
@@ -57,14 +53,18 @@ Page({
     }
   },
 
-  async onIntent() {
+  // 刷新会员状态；未到账则按递减次数重试（覆盖回调到账的短延迟）。
+  async refreshStatus(retries) {
     try {
-      await leaveIntent();
-      this.setData({ intentDone: true });
-      wx.showToast({ title: '已记录', icon: 'success' });
-    } catch (e) {
-      wx.showToast({ title: e.message || '提交失败', icon: 'none' });
-    }
+      const s = await status();
+      this.setData({
+        isMember: !!s.isMember,
+        expiresText: s.expiresAt ? String(s.expiresAt).slice(0, 10) : '',
+      });
+      if (!s.isMember && retries > 0) {
+        setTimeout(() => this.refreshStatus(retries - 1), 2500);
+      }
+    } catch (e) {}
   },
 
 });

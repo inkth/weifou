@@ -19,7 +19,7 @@
       <view class="bf"><view class="ic ic-sparkle bf-ic"></view>新上线 Agent 自动包含</view>
     </view>
 
-    <!-- 安卓：套餐 + 微信支付 -->
+    <!-- 虚拟支付：iOS / 安卓统一（iOS 走苹果 IAP，安卓走微信虚拟支付） -->
     <block wx:if="{{canPay}}">
       <view class="plans">
         <view wx:for="{{plans}}" wx:key="id" class="plan" bindtap="openPlan" data-id="{{item.id}}">
@@ -28,17 +28,14 @@
           <view class="pl-day" wx:if="{{item.perDay}}">约 ¥{{item.perDay}}/天</view>
         </view>
       </view>
-      <view class="pay-tip">点套餐用微信支付开通{{isMember ? '（续费在原有效期上叠加）' : ''}}</view>
+      <view class="pay-tip">点套餐开通{{isMember ? '（续费在原有效期上叠加）' : ''}}</view>
     </block>
 
-    <!-- iOS：小程序内不做支付/外链引导（合规）→ 关注服务号承接 + 留意向 -->
+    <!-- 虚拟支付未配置时由 clientcfg 关闭入口 -->
     <block wx:else>
       <view class="ios-box">
-        <view class="ios-title">iOS 会员开通</view>
-        <view class="ios-desc">关注「微否」服务号，我们把开通入口发给你；也可以先留个意向，开放时第一时间通知你。</view>
-        <official-account></official-account>
-        <button wx:if="{{!intentDone}}" class="ios-btn" bindtap="onIntent">留个意向，通知我</button>
-        <view wx:else class="ios-done">已记录 ✅ 我们会通知你</view>
+        <view class="ios-title">会员开通</view>
+        <view class="ios-desc">会员开通暂未开放，敬请期待。</view>
       </view>
     </block>
   </block>

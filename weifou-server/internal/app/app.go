@@ -28,6 +28,7 @@ import (
 	"weifou-server/internal/visit"
 	"weifou-server/internal/wechat"
 	"weifou-server/internal/wxpay"
+	"weifou-server/internal/wxvpay"
 )
 
 // App 持有所有 handler 与定时任务调度器。
@@ -79,7 +80,8 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	personaSvc := persona.NewService(db, ds, security)
 	profitShare := payment.NewProfitShareService(db, payClient, cfg.ProfitSharing, cfg.PlatformFeeRate)
 	paymentH := payment.NewHandler(db, payClient, security, profitShare, subscribe, cfg.JWTSecret, cfg.TipMaxAmount, cfg.AsyncQSLAHours)
-	mbrH := membership.NewHandler(db, paymentH, cfg.JWTSecret)
+	vpayClient := wxvpay.New(cfg.WxAppID, cfg.WxvOfferID, cfg.WxvAppKey, cfg.WxvSandbox, loginClient)
+	mbrH := membership.NewHandler(db, paymentH, vpayClient, loginClient, cfg.JWTSecret)
 	mpLogin := wechat.NewLoginClient(cfg.MpAppID, cfg.MpSecret)
 
 	// 公网基址：生成上传文件的可访问 URL；未配 PUBLIC_HOST 时回落 AppBaseURL（dev）。
@@ -111,7 +113,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
 		membershipH: mbrH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
-		clientcfgH:  clientcfg.NewHandler(),
+		clientcfgH:  clientcfg.NewHandler(vpayClient.Ready()),
 		uploadH:     upload.NewHandler(storage.NewLocal(cfg.UploadDir), publicHost+"/api/uploads", cfg.JWTSecret),
 		scheduler:   tasks.NewScheduler(db, paymentH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
 	}

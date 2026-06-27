@@ -20,6 +20,8 @@ type User struct {
 	Nickname        *string   `gorm:"size:128" json:"nickname,omitempty"`
 	AvatarURL       *string   `gorm:"size:512" json:"avatarUrl,omitempty"`
 	PsReceiverAdded bool      `gorm:"default:false" json:"psReceiverAdded"`
+	// 最近一次小程序 session_key（虚拟支付发货确认 NotifyProvideGoods 的离线兜底；会过期）。
+	WxSessionKey    *string   `gorm:"size:64" json:"-"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
@@ -470,6 +472,7 @@ type MembershipPlan struct {
 	Name      string    `gorm:"size:32" json:"name"`
 	Days      int       `json:"days"`  // 时长（天）
 	Price     int       `json:"price"` // 价格（分）
+	ProductID string    `gorm:"size:64" json:"productId"` // 米大师商品 ID（虚拟支付商品直购；空则回退用 goodsPrice 现价）
 	Enabled   bool      `gorm:"default:true" json:"enabled"`
 	Sort      int       `gorm:"default:0" json:"sort"`
 	CreatedAt time.Time `json:"createdAt"`

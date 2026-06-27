@@ -10,9 +10,11 @@ import (
 	"weifou-server/internal/httpx"
 )
 
-type Handler struct{}
+type Handler struct {
+	vpayReady bool // 虚拟支付是否已配置就绪（决定小程序端虚拟商品入口是否下发，未就绪则隐藏避免点了报错）
+}
 
-func NewHandler() *Handler { return &Handler{} }
+func NewHandler(vpayReady bool) *Handler { return &Handler{vpayReady: vpayReady} }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/config/entries", httpx.Handle(h.entries))
@@ -20,13 +22,21 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 
 func (h *Handler) entries(c *gin.Context) error {
 	isIOS := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Platform"))) == "ios"
+	isApp := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Client-Type"))) == "app"
+	// 虚拟商品入口可见性：
+	//   小程序端 = 虚拟支付是否就绪（未配 offerId/appKey 则隐藏，避免点了才报「未开通」）；
+	//   App 端  = 维持原红线（iOS 隐藏，尚未接苹果 IAP）。
+	virtualVisible := !isIOS
+	if !isApp {
+		virtualVisible = h.vpayReady
+	}
 	// 键名与 App 端 PayEntry 对齐（tip/consult/virtualGoods），并新增 agent。
 	httpx.OK(c, gin.H{
-		"tip":           !isIOS, // 打赏：iOS 合规灰区，隐藏
+		"tip":           !isIOS, // 打赏：iOS 合规灰区，隐藏（未迁虚拟支付）
 		"consult":       true,   // 真人一对一服务：iOS 允许第三方支付
 		"asyncQuestion": true,   // 真人作答：允许
-		"virtualGoods":  !isIOS, // 虚拟商品：iOS 必须 IAP，隐藏
-		"agent":         !isIOS, // AI 工具 Agent = 虚拟商品，iOS 隐藏
+		"virtualGoods":  virtualVisible,
+		"agent":         virtualVisible,
 	})
 	return nil
 }

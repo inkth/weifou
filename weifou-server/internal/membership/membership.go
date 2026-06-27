@@ -22,22 +22,33 @@ import (
 	"weifou-server/internal/middleware"
 	"weifou-server/internal/models"
 	"weifou-server/internal/payment"
+	"weifou-server/internal/wechat"
+	"weifou-server/internal/wxvpay"
 )
 
 type Handler struct {
 	db        *gorm.DB
 	pay       *payment.Handler
+	vpay      *wxvpay.Client      // 虚拟支付（虚拟商品=会员）
+	login     *wechat.LoginClient // 小程序 jscode2session：下单时换 session_key 用于虚拟支付签名
 	jwtSecret string
 }
 
-func NewHandler(db *gorm.DB, pay *payment.Handler, jwtSecret string) *Handler {
-	return &Handler{db: db, pay: pay, jwtSecret: jwtSecret}
+func NewHandler(db *gorm.DB, pay *payment.Handler, vpay *wxvpay.Client, login *wechat.LoginClient, jwtSecret string) *Handler {
+	return &Handler{db: db, pay: pay, vpay: vpay, login: login, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
 	rg.GET("/membership/status", auth, httpx.Handle(h.status))
-	rg.GET("/membership/h5page", h.h5Page) // 外部浏览器打开的收银页（HTML，凭 ?t= 令牌）
+	// 虚拟支付：下单（商品直购，iOS/安卓统一）+ 发货回调（小程序消息推送）。
+	// 2026-04 起虚拟商品（会员）的唯一合规收款通道。
+	rg.POST("/membership/vpay-order", auth, httpx.Handle(h.vpayOrder))
+	rg.GET("/membership/vpay/notify", h.vpayNotify)
+	rg.POST("/membership/vpay/notify", h.vpayNotify)
+	// ⚠️ 以下为 2026-04 前旧通道：对虚拟商品已属违规，仅暂留过渡（前端已切 vpay-order），
+	//    待服务号(mp)召回链路解耦 H5URL 后物理删除。
+	rg.GET("/membership/h5page", h.h5Page)
 	rg.POST("/membership/buy", auth, httpx.Handle(h.buy))
 	rg.POST("/membership/intent", auth, httpx.Handle(h.intent))
 	rg.POST("/membership/h5-link", auth, httpx.Handle(h.h5Link))
@@ -108,7 +119,119 @@ func (h *Handler) findPlan(id string) (*models.MembershipPlan, error) {
 	return &plan, nil
 }
 
-// buy 开通/续费会员（小程序内微信支付 JSAPI，安卓）。iOS 兜底拒单。
+// vpayOrder 虚拟支付下单（商品直购）：iOS / 安卓统一在小程序内合规收款。
+// 前端先 wx.login() 取新鲜 code 一并传入，后端实时 Code2Session 换 session_key
+// 用于用户态签名（signature）+ 顺手存 User.WxSessionKey 供发货确认离线兜底。
+func (h *Handler) vpayOrder(c *gin.Context) error {
+	auth := middleware.Current(c)
+	if h.vpay == nil || !h.vpay.Ready() {
+		return httpx.Forbidden("VPAY_NOT_READY", "虚拟支付尚未开通")
+	}
+	var req struct {
+		PlanID string `json:"planId" binding:"required"`
+		Code   string `json:"code" binding:"required"` // wx.login() 新鲜 code
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
+	}
+	plan, err := h.findPlan(req.PlanID)
+	if err != nil {
+		return err
+	}
+	session, err := h.login.Code2Session(req.Code)
+	if err != nil {
+		return httpx.BadRequest("WX_LOGIN_FAILED", "登录态获取失败，请重试")
+	}
+	if session.SessionKey != "" {
+		h.db.Model(&models.User{}).Where("id = ?", auth.UserID).Update("wx_session_key", session.SessionKey)
+	}
+	rawPlatform := platformOf(c)
+	vpPlatform := "android" // 虚拟支付 platform 仅 android / ios
+	if rawPlatform == "ios" {
+		vpPlatform = "ios"
+	}
+	planID := plan.ID
+	order := models.Order{
+		ID: idgen.New(), OutTradeNo: idgen.WithPrefix("MBR"), Type: models.OrderMembership,
+		Amount: plan.Price, PayerOpenid: auth.Openid, PayerUserID: &auth.UserID,
+		PlanID: &planID, Platform: rawPlatform,
+	}
+	if err := h.db.Create(&order).Error; err != nil {
+		return httpx.Internal("ORDER_CREATE_FAILED", "下单失败，请稍后重试")
+	}
+	// OutTradeNo（MBR + cuid）需满足虚拟支付 out_trade_no 规则（8-32 字符，数字/字母/_-|*@）。
+	params, perr := h.vpay.BuildGoodsPayment(wxvpay.GoodsOrder{
+		OutTradeNo: order.OutTradeNo,
+		ProductID:  plan.ProductID,
+		GoodsPrice: plan.Price,
+		Quantity:   1,
+		Platform:   vpPlatform,
+		Attach:     order.ID,
+	}, session.SessionKey)
+	if perr != nil {
+		return httpx.Internal("VPAY_SIGN_FAILED", "下单失败，请稍后重试")
+	}
+	httpx.OK(c, gin.H{"orderId": order.ID, "outTradeNo": order.OutTradeNo, "vpayParams": params})
+	return nil
+}
+
+// vpayNotify 虚拟支付发货回调（小程序「消息推送」xpay_goods_deliver_notify）。
+// ⚠️ TODO：补 signature(sha1) 校验 + 加密模式 AES-CBC 解密（对齐 mp 模块明文/兼容降级风格；
+//    虚拟支付若强制加密模式，需用小程序消息推送 EncodingAESKey 解密）。当前按明文/兼容解析。
+func (h *Handler) vpayNotify(c *gin.Context) {
+	if c.Request.Method == "GET" {
+		c.String(200, c.Query("echostr")) // 配置消息推送 URL 时的接入校验
+		return
+	}
+	raw, _ := c.GetRawData()
+	var n wxvpay.DeliverNotify
+	if json.Unmarshal(raw, &n) == nil && n.IsGoodsDeliver() {
+		h.fulfillVpayOrder(n)
+	}
+	c.String(200, "success") // 微信要求返回 200 + "success"，否则会重试
+}
+
+// fulfillVpayOrder 处理一笔已支付的虚拟支付订单：标记 paid → 开通会员（幂等）→ 确认发货。
+func (h *Handler) fulfillVpayOrder(n wxvpay.DeliverNotify) {
+	if n.OutTradeNo == "" {
+		return
+	}
+	var order models.Order
+	if h.db.First(&order, "out_trade_no = ?", n.OutTradeNo).Error != nil {
+		return
+	}
+	if order.Status == models.OrderPaid {
+		return // 幂等
+	}
+	if n.GoodsInfo.ActualPrice > 0 && n.GoodsInfo.ActualPrice != order.Amount {
+		return // 金额不符，拒绝发货
+	}
+	updates := map[string]interface{}{"status": models.OrderPaid, "paid_at": time.Now()}
+	if n.WeChatPayInfo.TransactionID != "" {
+		updates["transaction_id"] = n.WeChatPayInfo.TransactionID
+	}
+	h.db.Model(&order).Updates(updates)
+	h.pay.GrantMembershipByOrder(&order)
+	go h.confirmDeliver(&order, n.OpenID)
+}
+
+// confirmDeliver 调米大师确认发货（用下单时存的 session_key 离线兜底）。失败不回滚已开通会员。
+func (h *Handler) confirmDeliver(order *models.Order, openid string) {
+	if h.vpay == nil || !h.vpay.Ready() {
+		return
+	}
+	var sk string
+	if order.PayerUserID != nil {
+		var u models.User
+		if h.db.First(&u, "id = ?", *order.PayerUserID).Error == nil && u.WxSessionKey != nil {
+			sk = *u.WxSessionKey
+		}
+	}
+	_ = h.vpay.NotifyProvideGoods(openid, order.OutTradeNo, sk)
+}
+
+// buy 开通/续费会员（旧通道：小程序内微信支付 JSAPI）。
+// ⚠️ DEPRECATED：虚拟商品 2026-04 起必须走虚拟支付（vpayOrder），此 JSAPI 通道已违规，仅暂留过渡。
 func (h *Handler) buy(c *gin.Context) error {
 	auth := middleware.Current(c)
 	if platformOf(c) == "ios" {

@@ -385,6 +385,18 @@ func (h *Handler) grantMembership(userID *string, days int) {
 		Update("expires_at", base.AddDate(0, 0, days))
 }
 
+// GrantMembershipByOrder 供虚拟支付发货回调复用：按已支付的会员订单开通/续费。
+// 幂等由调用方的「订单 paid 守卫」保证（同一订单只发货一次）。
+func (h *Handler) GrantMembershipByOrder(order *models.Order) {
+	if order.Type != models.OrderMembership || order.PlanID == nil {
+		return
+	}
+	var plan models.MembershipPlan
+	if h.db.First(&plan, "id = ?", *order.PlanID).Error == nil {
+		h.grantMembership(order.PayerUserID, plan.Days)
+	}
+}
+
 // ---------- 退款 ----------
 
 type refundReq struct {

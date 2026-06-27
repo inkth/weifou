@@ -45,6 +45,12 @@ type Config struct {
 	CallEarlyJoinMin    int
 	CallGraceMin        int
 
+	// 微信小程序虚拟支付（虚拟商品=会员；iOS 自动走苹果 IAP，2026-04 起强制接入）。
+	// appID 复用 WxAppID（同一小程序）；offerId/appKey 来自开通虚拟支付后的米大师控制台。
+	WxvOfferID string
+	WxvAppKey  string
+	WxvSandbox bool
+
 	// TRTC
 	TRTCSdkAppID int
 	TRTCSecret   string
@@ -139,6 +145,10 @@ func Load() *Config {
 		OrderTimeoutMin:     getInt("ORDER_TIMEOUT_MIN", 15),
 		CallEarlyJoinMin:    getInt("CALL_EARLY_JOIN_MIN", 5),
 		CallGraceMin:        getInt("CALL_GRACE_MIN", 15),
+
+		WxvOfferID: os.Getenv("WXV_OFFER_ID"),
+		WxvAppKey:  os.Getenv("WXV_APP_KEY"),
+		WxvSandbox: getBool("WXV_SANDBOX", false),
 
 		TRTCSdkAppID: getInt("TRTC_SDK_APPID", 0),
 		TRTCSecret:   os.Getenv("TRTC_SECRET_KEY"),
