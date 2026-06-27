@@ -3,9 +3,6 @@
     <view class="tab {{tab === 'gaps' ? 'on' : ''}}" bindtap="switchTab" data-tab="gaps">
       待回答{{gaps.length ? ' · ' + gaps.length : ''}}
     </view>
-    <view class="tab {{tab === 'questions' ? 'on' : ''}}" bindtap="switchTab" data-tab="questions">
-      付费提问{{questions.length ? ' · ' + questions.length : ''}}
-    </view>
     <view class="tab {{tab === 'leads' ? 'on' : ''}}" bindtap="switchTab" data-tab="leads">
       访客线索{{leads.length ? ' · ' + leads.length : ''}}
     </view>
@@ -48,27 +45,6 @@
         <view class="op primary" bindtap="answerGap" data-id="{{item.id}}" data-q="{{item.question}}">回答</view>
         <view class="op" bindtap="dismissGap" data-id="{{item.id}}">忽略</view>
       </view>
-    </view>
-  </block>
-
-  <!-- 付费提问 -->
-  <block wx:if="{{!loading && tab === 'questions'}}">
-    <view class="tip muted">访客付费向你提的问题。在时限内回答，否则系统自动全额退款。</view>
-    <view wx:if="{{canNotify}}" class="notify-row" bindtap="enableNotify">
-      <view class="ic ic-bell notify-ico"></view>
-      <text>开启提醒：有新付费提问时微信通知我 ›</text>
-    </view>
-    <view wx:if="{{!questions.length}}" class="empty-share">
-      <view class="es-text muted">还没有付费提问</view>
-      <button wx:if="{{profileId}}" class="es-btn" open-type="share">分享你的 AI，让更多人来问 →</button>
-    </view>
-    <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="goQuestion" data-id="{{item.id}}">
-      <view class="lead-head">
-        <text class="lead-name">¥{{item.priceYuan}} · {{item.statusText}}</text>
-        <text class="meta muted">{{item.timeText}}</text>
-      </view>
-      <view class="note">{{item.question}}</view>
-      <view class="meta muted">{{item.status === 'paid' ? '点击回答 ›' : '点击查看 ›'}}</view>
     </view>
   </block>
 

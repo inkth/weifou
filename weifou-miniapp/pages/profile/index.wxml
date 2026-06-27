@@ -70,14 +70,6 @@
     <view class="income-sub muted">本月 ¥{{stats.incomeMonthYuan}} · 分账后直接进你的微信零钱</view>
   </view>
 
-  <view class="card section consult" wx:if="{{!isMine && pricing.asyncEnabled}}">
-    <view class="section-title">付费向本人提问</view>
-    <view class="consult-price muted">¥{{pricing.asyncPriceYuan}} / 个问题 · 由 {{profile.realName}} 本人作答</view>
-    <view class="trust-badge" wx:if="{{trustLine}}">★ {{trustLine}}</view>
-    <button class="btn-primary book-btn" bindtap="goAsk">写下你的问题</button>
-    <view class="consult-note muted" bindtap="goMyQuestions">超时未答全额退款 · 我的提问 ›</view>
-  </view>
-
   <view class="actions">
     <button class="btn-accent" bindtap="goChat">问 {{profile.realName}} 的 AI 助理</button>
     <button class="btn-ghost" bindtap="openTip" wx:if="{{!isMine}}">打赏 TA</button>
