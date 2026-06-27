@@ -15,7 +15,7 @@
   <view class="float" wx:if="{{!profileId && !loading}}">
     <view class="float-id">
       <text class="float-name">苏窈 的 AI 助理</text>
-      <view class="dot"></view><text class="float-on">在线</text>
+      <view class="dot"></view><text class="float-on">随时答</text>
     </view>
     <view class="float-bubble">我是苏窈的 AI 助理，茶席、香道、古琴的事都能问我——想先了解她，还是直接约一席？<text class="caret"></text></view>
     <view class="float-note">示例 · 你的 AI 上岗后就这样接待访客</view>

@@ -6,19 +6,19 @@ const { getPreset, initial } = require('../../utils/avatars');
 
 // 分身 = AI 助手目录（对外逛）：聚光分身 + 推荐分身 + 平台工具 Agent。
 // 刻意定位为「AI 内容 / 工具」目录，不做真人社交信号（在线 / 距离 / 打招呼），规避社交类目。
-const CATS = ['推荐', '情感陪伴', '职业咨询', '学习辅导', '生活答疑', '我收藏'];
+const CATS = ['推荐', '情感咨询', '职业咨询', '学习辅导', '生活答疑', '我收藏'];
 
 // —— 种子分身（TEMP）——
 // 后端「发现流」未就绪前的填充态，让旗舰页不空场；上线接 /discover 后整体替换为真数据。
 // tier: warm|cool|lively（温度档，驱动立绘渐变+光晕，见 styles/stage.wxss .art-*）。
 // lihe: 可选真立绘图（走 scripts/gen-avatars.mjs 产出后填入；为空则用渐变+首字兜底）。
 const USE_SEED_DISCOVER = true; // 后端发现流就绪后置 false，spotlight/recos 改接 API
-const SEED_SPOTLIGHT = { id: 'seed-xiaoman', name: '小满', initial: '小', role: '深夜树洞', tier: 'warm', tagline: '陪你聊到能睡着' };
+const SEED_SPOTLIGHT = { id: 'seed-xiaoman', name: '小满', initial: '小', role: '情绪解压', tier: 'warm', tagline: '烦心事 · 帮你理清思路' };
 const SEED_RECOS = [
   { id: 'seed-avery', name: 'Avery', initial: 'A', role: '职业咨询', tier: 'cool', tagline: '留学选校 · 文书把关', metric: '本周答了 128 问' },
   { id: 'seed-ale', name: '阿乐', initial: '阿', role: '生活答疑', tier: 'lively', tagline: '装修 · 数码 · 省钱', metric: '4.9 · 已服务 600+' },
-  { id: 'seed-zhou', name: '周明', initial: '周', role: '夜诊医生', tier: 'warm', tagline: '用药 · 症状初判', metric: '已服务 2300+ 人' },
-  { id: 'seed-xia', name: '林夏', initial: '林', role: '情感陪伴', tier: 'cool', tagline: '失眠 · 情绪 · 陪聊', metric: '4.9 · 夜间在线' },
+  { id: 'seed-zhou', name: '周明', initial: '周', role: '健身计划', tier: 'warm', tagline: '增肌 · 减脂 · 训练', metric: '已服务 2300+ 人' },
+  { id: 'seed-xia', name: '林夏', initial: '林', role: '情感咨询', tier: 'cool', tagline: '关系 · 沟通 · 情绪', metric: '4.9 · 已答 800 问' },
 ];
 
 Page({
@@ -113,6 +113,6 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: '来微否，和各种 AI 分身聊聊', path: '/pages/discover/index' };
+    return { title: '来微否，找个 AI 分身替你答疑解惑', path: '/pages/discover/index' };
   },
 });
