@@ -1,0 +1,71 @@
+<view class="page">
+
+  <!-- 聚光位（全屏出血电影感）：别人的分身，后端发现流就绪后接真数据 -->
+  <view class="spot art art-{{spotlight.tier}}" bindtap="openReco">
+    <view class="art-glow"></view>
+    <view class="spot-initial">{{spotlight.initial}}</view>
+    <view class="spot-scrim"></view>
+
+    <view class="spot-top" style="padding-top:{{statusBarH}}px">
+      <view class="spot-h1">发现</view>
+    </view>
+
+    <view class="spot-panel glass-panel">
+      <view class="spot-tags">
+        <text class="spot-pill">聚光</text>
+        <text class="spot-role">{{spotlight.role}}</text>
+      </view>
+      <view class="spot-name">{{spotlight.name}}</view>
+      <view class="spot-sub"><view class="dot"></view><text>{{spotlight.tagline}}</text></view>
+      <view class="spot-cta">
+        <view class="spot-btn" catchtap="openReco">开始聊</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浅色底盘「上升浮层」 -->
+  <view class="sheet">
+
+    <view class="search tap" catchtap="onSearchTap">
+      <view class="ic ic-search search-ic"></view>
+      <text class="search-ph">找一个能替你办事的 AI 分身</text>
+    </view>
+
+    <!-- 最近看过（真实最近会话；无则不渲染，不造假） -->
+    <block wx:if="{{recents.length}}">
+      <view class="row-h">最近看过</view>
+      <scroll-view class="recents" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="recent tap" wx:for="{{recents}}" wx:key="profileId" data-profile="{{item.profileId}}" bindtap="enterRecent">
+          <view class="recent-av" style="background:{{item.grad}}">{{item.initial}}</view>
+          <text class="recent-nm">{{item.name}}</text>
+        </view>
+      </scroll-view>
+    </block>
+
+    <!-- 分类 -->
+    <scroll-view class="cats" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="cat {{activeCat === item ? 'on' : ''}}" wx:for="{{cats}}" wx:key="*this" data-cat="{{item}}" bindtap="pickCat">{{item}}</view>
+    </scroll-view>
+
+    <!-- 推荐分身（种子填充态 → 后端发现流） -->
+    <view class="sec-h">
+      <text class="sec-t">推荐分身</text>
+      <view class="sec-m" catchtap="openReco"><text>全部</text><view class="ic ic-chevron"></view></view>
+    </view>
+    <view class="wall">
+      <view class="cha tap" wx:for="{{recos}}" wx:key="id" bindtap="openReco">
+        <view class="cha-art art art-{{item.tier}}">
+          <view class="art-glow"></view>
+          <view class="cha-initial">{{item.initial}}</view>
+          <view class="art-scrim"></view>
+          <view class="art-name"><text class="n">{{item.name}}</text><text class="r">{{item.role}}</text></view>
+        </view>
+        <view class="cha-meta">
+          <view class="cha-tag">{{item.tagline}}</view>
+          <view class="cha-metric">{{item.metric}}</view>
+        </view>
+      </view>
+    </view>
+
+  </view>
+</view>

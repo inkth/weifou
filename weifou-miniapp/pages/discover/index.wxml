@@ -1,89 +1,40 @@
-<view class="page">
+<view class="squad">
 
-  <!-- 聚光位（全屏出血电影感）：种子分身，后端发现流就绪后接真数据 -->
-  <view class="spot art art-{{spotlight.tier}}" bindtap="openReco">
+  <view class="sq-top" style="padding-top:{{statusBarH}}px">
+    <view class="sq-h1">我的分身</view>
+    <view class="sq-sub">都在等你一句话</view>
+  </view>
+
+  <!-- 总管大卡（关系锚 / 唯一有人格的脸）-->
+  <view class="chief art art-{{chief.tier}}" bindtap="enterChief">
     <view class="art-glow"></view>
-    <view class="spot-initial">{{spotlight.initial}}</view>
-    <!-- 真立绘就绪后启用：<image class="art-img" wx:if="{{spotlight.lihe}}" src="{{spotlight.lihe}}" mode="aspectFill"/> -->
-    <view class="spot-scrim"></view>
-
-    <view class="spot-top" style="padding-top:{{statusBarH}}px">
-      <view class="spot-h1">分身</view>
+    <view class="chief-av">{{chief.initial}}</view>
+    <view class="chief-meta">
+      <view class="chief-name">{{chief.name}}</view>
+      <view class="chief-line">{{chief.line}}</view>
     </view>
-
-    <view class="spot-panel glass-panel">
-      <view class="spot-tags">
-        <text class="spot-pill">聚光</text>
-        <text class="spot-role">{{spotlight.role}}</text>
-      </view>
-      <view class="spot-name">{{spotlight.name}}</view>
-      <view class="spot-sub"><view class="dot"></view><text>{{spotlight.tagline}}</text></view>
-      <view class="spot-cta">
-        <view class="spot-btn" catchtap="openReco">开始聊</view>
-        <view class="spot-btn ghost" catchtap="openReco">提问 ¥9</view>
-      </view>
-    </view>
+    <view class="ic ic-arrow chief-go"></view>
   </view>
 
-  <!-- 浅色底盘「上升浮层」 -->
-  <view class="sheet">
-
-    <!-- 搜索（底盘功能，骨架占位） -->
-    <view class="search tap" catchtap="onSearchTap">
-      <view class="ic ic-search search-ic"></view>
-      <text class="search-ph">找一个能替你的 AI 分身</text>
+  <!-- 专才卡（平台工具 Agent / 种子兜底）-->
+  <view class="spec" wx:for="{{specialists}}" wx:key="id"
+        data-id="{{item.id}}" data-name="{{item.name}}" data-real="{{item.real}}"
+        bindtap="enterSpecialist">
+    <view class="spec-av art art-{{item.tier}}">
+      <view class="art-glow"></view>
+      <text>{{item.initial}}</text>
     </view>
-
-    <!-- 继续聊（真实最近会话；无则不渲染，不造假） -->
-    <block wx:if="{{recents.length}}">
-      <view class="row-h">继续聊</view>
-      <scroll-view class="recents" scroll-x enhanced show-scrollbar="{{false}}">
-        <view class="recent tap" wx:for="{{recents}}" wx:key="profileId" data-profile="{{item.profileId}}" bindtap="enterRecent">
-          <view class="recent-av" style="background:{{item.grad}}">{{item.initial}}</view>
-          <text class="recent-nm">{{item.name}}</text>
-        </view>
-      </scroll-view>
-    </block>
-
-    <!-- 分类 -->
-    <scroll-view class="cats" scroll-x enhanced show-scrollbar="{{false}}">
-      <view class="cat {{activeCat === item ? 'on' : ''}}" wx:for="{{cats}}" wx:key="*this" data-cat="{{item}}" bindtap="pickCat">{{item}}</view>
-    </scroll-view>
-
-    <!-- 推荐分身（种子填充态 → 后端发现流） -->
-    <view class="sec-h">
-      <text class="sec-t">推荐分身</text>
-      <view class="sec-m" catchtap="openReco"><text>全部</text><view class="ic ic-chevron"></view></view>
+    <view class="spec-meta">
+      <view class="spec-name">{{item.name}}</view>
+      <view class="spec-line">{{item.line}}</view>
     </view>
-    <view class="wall">
-      <view class="cha tap" wx:for="{{recos}}" wx:key="id" bindtap="openReco">
-        <view class="cha-art art art-{{item.tier}}">
-          <view class="art-glow"></view>
-          <view class="cha-initial">{{item.initial}}</view>
-          <view class="art-scrim"></view>
-          <view class="art-name"><text class="n">{{item.name}}</text><text class="r">{{item.role}}</text></view>
-        </view>
-        <view class="cha-meta">
-          <view class="cha-tag">{{item.tagline}}</view>
-          <view class="cha-metric">{{item.metric}}</view>
-        </view>
-      </view>
-    </view>
-
-    <!-- AI 工具箱（真实 agents，iOS 隐藏）卫星条 -->
-    <block wx:if="{{agentEntry && agents.length}}">
-      <view class="sec-h">
-        <text class="sec-t">AI 工具箱</text>
-        <view class="sec-m" catchtap="goAgents"><text>全部</text><view class="ic ic-chevron"></view></view>
-      </view>
-      <scroll-view class="tools" scroll-x enhanced show-scrollbar="{{false}}">
-        <view class="tool tap" wx:for="{{agents}}" wx:key="id" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="openAgent">
-          <view class="tool-ic" style="background:{{item.accent}}1a;color:{{item.accent}};">{{item.icon}}</view>
-          <view class="tool-nm">{{item.name}}</view>
-          <view class="tool-tag">{{item.tagline}}</view>
-        </view>
-      </scroll-view>
-    </block>
-
+    <view class="ic ic-chevron spec-go"></view>
   </view>
+
+  <!-- 召新 -->
+  <view class="add" bindtap="addAgent">
+    <view class="ic ic-plus"></view>
+    <text>交给它一件你想办成的事</text>
+  </view>
+
 </view>

@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/discover/index",
+    "pages/explore/index",
     "pages/messages/index",
     "pages/me/index",
     "pages/index/index",
@@ -27,7 +28,7 @@
     "backgroundColor": "#ffffff",
     "list": [
       { "pagePath": "pages/discover/index", "text": "分身" },
-      { "pagePath": "pages/messages/index", "text": "消息" },
+      { "pagePath": "pages/explore/index", "text": "发现" },
       { "pagePath": "pages/me/index", "text": "我的" }
     ]
   },

@@ -2,35 +2,22 @@ const { ensureLogin } = require('../../utils/auth');
 const { listAgents } = require('../../utils/agent');
 const { loadEntries, agentVisible } = require('../../utils/entries');
 const { request } = require('../../utils/request');
-const { getPreset, initial } = require('../../utils/avatars');
 
-// 分身 = AI 助手目录（对外逛）：聚光分身 + 推荐分身 + 平台工具 Agent。
-// 刻意定位为「AI 内容 / 工具」目录，不做真人社交信号（在线 / 距离 / 打招呼），规避社交类目。
-const CATS = ['推荐', '情感咨询', '职业咨询', '学习辅导', '生活答疑', '我收藏'];
-
-// —— 种子分身（TEMP）——
-// 后端「发现流」未就绪前的填充态，让旗舰页不空场；上线接 /discover 后整体替换为真数据。
-// tier: warm|cool|lively（温度档，驱动立绘渐变+光晕，见 styles/stage.wxss .art-*）。
-// lihe: 可选真立绘图（走 scripts/gen-avatars.mjs 产出后填入；为空则用渐变+首字兜底）。
-const USE_SEED_DISCOVER = true; // 后端发现流就绪后置 false，spotlight/recos 改接 API
-const SEED_SPOTLIGHT = { id: 'seed-xiaoman', name: '小满', initial: '小', role: '情绪解压', tier: 'warm', tagline: '烦心事 · 帮你理清思路' };
-const SEED_RECOS = [
-  { id: 'seed-avery', name: 'Avery', initial: 'A', role: '职业咨询', tier: 'cool', tagline: '留学选校 · 文书把关', metric: '本周答了 128 问' },
-  { id: 'seed-ale', name: '阿乐', initial: '阿', role: '生活答疑', tier: 'lively', tagline: '装修 · 数码 · 省钱', metric: '4.9 · 已服务 600+' },
-  { id: 'seed-zhou', name: '周明', initial: '周', role: '健身计划', tier: 'warm', tagline: '增肌 · 减脂 · 训练', metric: '已服务 2300+ 人' },
-  { id: 'seed-xia', name: '林夏', initial: '林', role: '情感咨询', tier: 'cool', tagline: '关系 · 沟通 · 情绪', metric: '4.9 · 已答 800 问' },
+// 分身（首页）= 我的私有 Agent 小队：总管（关系锚）+ 专才（平台工具 Agent / 种子兜底）。
+// 「把事办成」的魂：每张卡用第一人称说要替你办的那件事，不做进度条仪表盘。
+// 暗场沉浸（借猫箱/星野的壳），主角是「我养的那一个」，不是逛别人（逛别人在「发现」tab）。
+const SEED_SPECIALISTS = [
+  { id: 'seed-en', name: '英语教练', initial: 'EN', tier: 'cool', line: '就差开口一次，陪我念两句？' },
+  { id: 'seed-date', name: '约会复盘', initial: '约', tier: 'lively', line: '昨晚那场，我帮你捋捋？' },
+  { id: 'seed-life', name: '生活助理', initial: '活', tier: 'warm', line: '杂事交给我，省你半天。' },
 ];
 
 Page({
   data: {
     statusBarH: 20,
-    cats: CATS,
-    activeCat: '推荐',
-    spotlight: SEED_SPOTLIGHT,
-    recos: [],
-    recents: [], // 继续聊（真实最近会话）
+    chief: { name: '小否 · 总管', initial: '否', tier: 'warm', line: '先告诉我你想办成的一件事，我替你张罗。', hasProfile: false },
+    specialists: [],
     agentEntry: false, // 工具 Agent 入口（iOS 隐藏，见 utils/entries）
-    agents: [],
     loading: true,
   },
 
@@ -55,64 +42,68 @@ Page({
       await loadEntries();
       const show = agentVisible();
 
-      // 并行：工具 Agent（iOS 门控）+ 最近会话（继续聊真数据）
-      const [agents, recents] = await Promise.all([
+      const [me, agents] = await Promise.all([
+        request({ url: '/user/me' }).catch(() => ({})),
         show ? listAgents().catch(() => []) : Promise.resolve([]),
-        request({ url: '/chat/sessions/mine' }).catch(() => []),
       ]);
 
-      this.setData({
-        agentEntry: show,
-        agents: (agents || []).slice(0, 6),
-        recents: (recents || []).slice(0, 8).map((s) => {
-          const p = getPreset(null, s.profileId || s.realName);
-          const c = (p && p.colors) || ['#18b690', '#0e9c7a'];
-          return {
-            profileId: s.profileId,
-            name: s.realName || '·',
-            initial: initial(s.realName),
-            grad: `linear-gradient(140deg, ${c[0]}, ${c[1] || c[0]})`,
+      // 总管 = 我的分身（若已创建则它对外替我办事 + 回报结果），否则引导创建
+      const chief = (me && me.profileId)
+        ? {
+            name: me.realName ? me.realName + ' 的分身' : '我的分身',
+            initial: (me.realName || '否').slice(0, 1),
+            tier: 'warm', hasProfile: true, profileId: me.profileId,
+            line: '我替你把对外的事看着，有结果就喊你。',
+          }
+        : {
+            name: '小否 · 总管', initial: '否', tier: 'warm', hasProfile: false,
+            line: '先告诉我你想办成的一件事，我替你张罗。',
           };
-        }),
-        recos: USE_SEED_DISCOVER ? SEED_RECOS : [],
+
+      // 专才 = 平台工具 Agent（真）；iOS 隐藏或为空时用种子兜底，保证不空场
+      const real = (agents || []).slice(0, 6).map((a, i) => ({
+        id: a.id,
+        name: a.name,
+        initial: (a.name || 'A').slice(0, 1),
+        tier: ['cool', 'lively', 'warm'][i % 3],
+        line: a.tagline || '点开，交给我一件事。',
+        real: true,
+      }));
+
+      this.setData({
+        chief,
+        specialists: real.length ? real : SEED_SPECIALISTS,
+        agentEntry: show,
         loading: false,
       });
     } catch (e) {
-      this.setData({ loading: false });
+      this.setData({ specialists: SEED_SPECIALISTS, loading: false });
     }
   },
 
-  // 分类目前为占位（视觉），未接后端筛选
-  pickCat(e) {
-    this.setData({ activeCat: e.currentTarget.dataset.cat });
+  enterChief() {
+    if (this.data.chief.hasProfile) {
+      wx.navigateTo({ url: `/pages/chat/index?profileId=${this.data.chief.profileId}` });
+    } else {
+      wx.navigateTo({ url: '/pages/onboarding/index' });
+    }
   },
 
-  // 继续聊：真实会话 → 回对话页续聊
-  enterRecent(e) {
-    const id = e.currentTarget.dataset.profile;
-    if (!id) return;
-    wx.navigateTo({ url: `/pages/chat/index?profileId=${id}` });
+  enterSpecialist(e) {
+    const { id, name, real } = e.currentTarget.dataset;
+    if (real) {
+      wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
+    } else {
+      wx.showToast({ title: '更多专才陆续上线', icon: 'none' });
+    }
   },
 
-  // 聚光 / 推荐分身：后端发现流就绪前为种子，优雅占位
-  openReco() {
-    wx.showToast({ title: '更多分身陆续上线', icon: 'none' });
-  },
-
-  openAgent(e) {
-    const { id, name } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
-  },
-
-  goAgents() {
-    wx.navigateTo({ url: '/pages/agents/index' });
-  },
-
-  onSearchTap() {
-    wx.showToast({ title: '搜索即将上线', icon: 'none' });
+  addAgent() {
+    if (this.data.agentEntry) wx.navigateTo({ url: '/pages/agents/index' });
+    else wx.navigateTo({ url: '/pages/onboarding/index' });
   },
 
   onShareAppMessage() {
-    return { title: '来微否，找个 AI 分身替你答疑解惑', path: '/pages/discover/index' };
+    return { title: '来微否，养一个替你把事办成的 AI 分身', path: '/pages/discover/index' };
   },
 });
