@@ -2,7 +2,6 @@
   "pages": [
     "pages/discover/index",
     "pages/explore/index",
-    "pages/messages/index",
     "pages/me/index",
     "pages/index/index",
     "pages/onboarding/index",
