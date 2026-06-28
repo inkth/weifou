@@ -52,7 +52,8 @@ func (s *ProfitShareService) SettleForOrder(orderID string) {
 	if err := s.db.First(&order, "id = ?", orderID).Error; err != nil {
 		return
 	}
-	if (order.Type != models.OrderConsult && order.Type != models.OrderAsyncQuestion) || order.Status != models.OrderPaid || order.TransactionID == nil {
+	// 分账目前无在用业务（通话/付费咨询已下线，会员为平台自营不分账）；保留通道，按订单状态守卫。
+	if order.Status != models.OrderPaid || order.TransactionID == nil {
 		return
 	}
 
@@ -76,10 +77,7 @@ func (s *ProfitShareService) SettleForOrder(orderID string) {
 		outOrderNo = idgen.WithPrefix("PS")
 	}
 
-	desc := "咨询通话分成"
-	if order.Type == models.OrderAsyncQuestion {
-		desc = "付费提问分成"
-	}
+	desc := "服务分成"
 	resp, err := s.pay.CreateProfitShare(wxpay.ProfitShareReq{
 		TransactionID:  *order.TransactionID,
 		OutOrderNo:     outOrderNo,

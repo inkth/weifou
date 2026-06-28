@@ -16,14 +16,14 @@ type User struct {
 	WxMpOpenid  *string `gorm:"size:64;index" json:"-"` // 小程序 openid
 	WxAppOpenid *string `gorm:"size:64;index" json:"-"` // 移动应用 openid
 	// Unionid：同一开放平台主体下跨端唯一，作为账号合并主键。
-	Unionid         *string   `gorm:"uniqueIndex;size:64" json:"unionid,omitempty"`
-	Nickname        *string   `gorm:"size:128" json:"nickname,omitempty"`
-	AvatarURL       *string   `gorm:"size:512" json:"avatarUrl,omitempty"`
-	PsReceiverAdded bool      `gorm:"default:false" json:"psReceiverAdded"`
+	Unionid         *string `gorm:"uniqueIndex;size:64" json:"unionid,omitempty"`
+	Nickname        *string `gorm:"size:128" json:"nickname,omitempty"`
+	AvatarURL       *string `gorm:"size:512" json:"avatarUrl,omitempty"`
+	PsReceiverAdded bool    `gorm:"default:false" json:"psReceiverAdded"`
 	// 最近一次小程序 session_key（虚拟支付发货确认 NotifyProvideGoods 的离线兜底；会过期）。
-	WxSessionKey    *string   `gorm:"size:64" json:"-"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	WxSessionKey *string   `gorm:"size:64" json:"-"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 func (User) TableName() string { return "users" }
@@ -203,30 +203,12 @@ type ChatMessage struct {
 
 func (ChatMessage) TableName() string { return "chat_messages" }
 
-// ========== 付费 ==========
-
-type ConsultSetting struct {
-	ID      string  `gorm:"primaryKey;size:32" json:"id"`
-	UserID  string  `gorm:"uniqueIndex;size:32" json:"userId"`
-	Enabled bool    `gorm:"default:false" json:"enabled"`
-	Price30 int     `gorm:"default:9900" json:"price30"`
-	Price60 int     `gorm:"default:19900" json:"price60"`
-	Intro   *string `gorm:"type:text" json:"intro,omitempty"`
-	// 付费异步咨询（独立于音视频咨询开关，可只开异步）。
-	AsyncEnabled bool      `gorm:"default:false" json:"asyncEnabled"`
-	AsyncPrice   int       `gorm:"default:4900" json:"asyncPrice"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-}
-
-func (ConsultSetting) TableName() string { return "consult_settings" }
+// ========== 订单 ==========
 
 const (
-	OrderTip           = "tip"
-	OrderConsult       = "consult"
-	OrderAsyncQuestion = "async_question"
-	OrderAgent         = "agent"      // 旧：单 Agent 次卡（已被会员制取代，保留兼容）
-	OrderMembership    = "membership" // 会员：一价解锁全部工具 Agent（虚拟商品，平台自营、不分账）
+	OrderTip        = "tip"
+	OrderAgent      = "agent"      // 旧：单 Agent 次卡（已被会员制取代，保留兼容）
+	OrderMembership = "membership" // 会员：一价解锁全部工具 Agent（虚拟商品，平台自营、不分账）
 
 	OrderPending   = "pending"
 	OrderPaid      = "paid"
@@ -262,79 +244,29 @@ type Order struct {
 
 func (Order) TableName() string { return "orders" }
 
-const (
-	ConsultPending  = "pending"
-	ConsultOngoing  = "ongoing"
-	ConsultEnded    = "ended"
-	ConsultCanceled = "canceled"
-)
-
-type ConsultSession struct {
-	ID          string     `gorm:"primaryKey;size:32" json:"id"`
-	OrderID     string     `gorm:"uniqueIndex;size:32" json:"orderId"`
-	ProfileID   string     `gorm:"size:32" json:"profileId"`
-	HostUserID  string     `gorm:"size:32;index:idx_cs_host" json:"hostUserId"`
-	GuestOpenid string     `gorm:"size:64;index:idx_cs_guest" json:"guestOpenid"`
-	TrtcRoomID  string     `gorm:"uniqueIndex;size:64" json:"trtcRoomId"`
-	Status      string     `gorm:"size:16;default:pending" json:"status"`
-	DurationMin int        `json:"durationMin"`
-	ScheduledAt *time.Time `json:"scheduledAt,omitempty"`
-	StartedAt   *time.Time `json:"startedAt,omitempty"`
-	EndedAt     *time.Time `json:"endedAt,omitempty"`
-	DurationSec *int       `json:"durationSec,omitempty"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
-}
-
-func (ConsultSession) TableName() string { return "consult_sessions" }
+// ========== 异步提问（访客免费向本人提问，本人异步作答） ==========
 
 const (
-	SlotOpen     = "open"
-	SlotBooked   = "booked"
-	SlotCanceled = "canceled"
+	AsyncPending  = "pending"  // 待主人作答
+	AsyncAnswered = "answered" // 主人已作答
 )
 
-type ConsultSlot struct {
-	ID          string    `gorm:"primaryKey;size:32" json:"id"`
-	HostUserID  string    `gorm:"size:32;index:idx_slot_host" json:"hostUserId"`
-	StartAt     time.Time `gorm:"index:idx_slot_host" json:"startAt"`
-	DurationMin int       `json:"durationMin"`
-	Status      string    `gorm:"size:16;default:open" json:"status"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-func (ConsultSlot) TableName() string { return "consult_slots" }
-
-// ========== 付费异步咨询（付费向本人提问，本人异步作答） ==========
-
-const (
-	AsyncPendingPayment = "pending_payment" // 已创建，待支付
-	AsyncPaid           = "paid"            // 已支付，待主人作答
-	AsyncAnswered       = "answered"        // 主人已作答
-	AsyncRefunded       = "refunded"        // 超时未答自动退款 / 退款
-)
-
-// AsyncQuestion 访客付费向主人提问，主人在 SLA 时限内异步作答；
-// 超时未答由定时任务自动全额退款。付费购买的是「主人本人作答」（真人服务），非 AI 回答。
+// AsyncQuestion 访客免费向主人提问，主人异步作答（一问一答闭环，不是私信）。
+// AI 默认已对外作答；本结构是「让主人本人也能回一句」的可选动作，不涉及任何支付。
 type AsyncQuestion struct {
-	ID             string     `gorm:"primaryKey;size:32" json:"id"`
-	OrderID        string     `gorm:"uniqueIndex;size:32" json:"orderId"`
-	ProfileID      string     `gorm:"size:32;index" json:"profileId"`
-	HostUserID     string     `gorm:"size:32;index:idx_aq_host_status" json:"hostUserId"`
-	AskerOpenid    string     `gorm:"size:64;index:idx_aq_asker" json:"askerOpenid"`
-	AskerUserID    *string    `gorm:"size:32" json:"askerUserId,omitempty"`
-	Question       string     `gorm:"type:text" json:"question"`
-	Price          int        `json:"price"` // 下单时主人定价快照（分）
-	Status         string     `gorm:"size:16;default:pending_payment;index:idx_aq_host_status" json:"status"`
-	PaidAt         *time.Time `json:"paidAt,omitempty"`
-	AnswerDeadline *time.Time `json:"answerDeadline,omitempty"`
-	Answer         string     `gorm:"type:text" json:"answer"`   // 文字回答（可与语音并存，也可为空）
-	VoiceURL       string     `gorm:"type:text" json:"voiceUrl"` // 语音回答的公开 URL（空=无语音）
-	VoiceDuration  int        `json:"voiceDuration"`             // 语音时长（秒）
-	AnsweredAt     *time.Time `json:"answeredAt,omitempty"`
-	CreatedAt      time.Time  `json:"createdAt"`
-	UpdatedAt      time.Time  `json:"updatedAt"`
+	ID            string     `gorm:"primaryKey;size:32" json:"id"`
+	ProfileID     string     `gorm:"size:32;index" json:"profileId"`
+	HostUserID    string     `gorm:"size:32;index:idx_aq_host_status" json:"hostUserId"`
+	AskerOpenid   string     `gorm:"size:64;index:idx_aq_asker" json:"askerOpenid"`
+	AskerUserID   *string    `gorm:"size:32" json:"askerUserId,omitempty"`
+	Question      string     `gorm:"type:text" json:"question"`
+	Status        string     `gorm:"size:16;default:pending;index:idx_aq_host_status" json:"status"`
+	Answer        string     `gorm:"type:text" json:"answer"`   // 文字回答（可与语音并存，也可为空）
+	VoiceURL      string     `gorm:"type:text" json:"voiceUrl"` // 语音回答的公开 URL（空=无语音）
+	VoiceDuration int        `json:"voiceDuration"`             // 语音时长（秒）
+	AnsweredAt    *time.Time `json:"answeredAt,omitempty"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
 }
 
 func (AsyncQuestion) TableName() string { return "async_questions" }
@@ -470,8 +402,8 @@ type MembershipPlan struct {
 	ID        string    `gorm:"primaryKey;size:32" json:"id"`
 	Slug      string    `gorm:"uniqueIndex;size:32" json:"slug"`
 	Name      string    `gorm:"size:32" json:"name"`
-	Days      int       `json:"days"`  // 时长（天）
-	Price     int       `json:"price"` // 价格（分）
+	Days      int       `json:"days"`                     // 时长（天）
+	Price     int       `json:"price"`                    // 价格（分）
 	ProductID string    `gorm:"size:64" json:"productId"` // 米大师商品 ID（虚拟支付商品直购；空则回退用 goodsPrice 现价）
 	Enabled   bool      `gorm:"default:true" json:"enabled"`
 	Sort      int       `gorm:"default:0" json:"sort"`
@@ -498,7 +430,7 @@ func AllModels() []interface{} {
 		&User{}, &Profile{}, &PersonaInput{}, &PersonaAI{},
 		&KnowledgeItem{}, &KnowledgeGap{}, &Lead{},
 		&Visit{}, &Event{}, &ChatSession{}, &ChatMessage{},
-		&ConsultSetting{}, &Order{}, &ConsultSession{}, &ConsultSlot{},
+		&Order{},
 		&AsyncQuestion{},
 		&Refund{}, &ProfitShare{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{},

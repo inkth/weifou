@@ -37,20 +37,20 @@ Page({
     }
   },
 
-  // 收件箱待办计数：知识缺口(open) + 未跟进线索(new) + 付费提问(paid，有钱有时限，最该召回)。
+  // 收件箱待办计数：知识缺口(open) + 未跟进线索(new) + 待回答提问(pending，有人在等你回一句)。
   // 三个接口各自兜底，任一失败不影响其余计数；非主人态不调用。
   async loadTodo() {
     try {
-      const [gaps, leads, paid] = await Promise.all([
+      const [gaps, leads, pending] = await Promise.all([
         request({ url: '/profile/gaps' }).catch(() => []),
         request({ url: '/profile/leads' }).catch(() => []),
-        hostQuestions('paid').catch(() => []),
+        hostQuestions('pending').catch(() => []),
       ]);
-      const paidCount = (paid || []).length;
+      const pendingCount = (pending || []).length;
       const newLeads = (leads || []).filter((l) => l.status === 'new').length;
-      const todoCount = (gaps || []).length + newLeads + paidCount;
+      const todoCount = (gaps || []).length + newLeads + pendingCount;
       let inboxLabel = '收件箱 · 待回答 / 访客线索';
-      if (paidCount > 0) inboxLabel = `收件箱 · ${paidCount} 条付费提问待答`;
+      if (pendingCount > 0) inboxLabel = `收件箱 · ${pendingCount} 条提问待答`;
       else if (todoCount > 0) inboxLabel = `收件箱 · ${todoCount} 条待处理`;
       this.setData({ todoCount, inboxLabel });
     } catch (e) {}

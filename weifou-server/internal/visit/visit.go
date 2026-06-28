@@ -119,9 +119,9 @@ func (h *Handler) stats(c *gin.Context) error {
 		Where("chat_sessions.profile_id = ? AND chat_messages.role = ?", profile.ID, models.RoleUser).
 		Count(&askCount)
 
-	// 主人收入可见：累计成交（已支付的咨询/提问订单）+ 本月成交 + 已分账到账（净）。
-	// 分账由微信直接打到主人 openid，所以这里是"可见"而非"提现"。
-	payTypes := []string{models.OrderConsult, models.OrderAsyncQuestion}
+	// 主人收入可见：累计成交（已支付的打赏订单）+ 本月成交 + 已分账到账（净）。
+	// 通话/付费咨询已下线，C2C 收费仅剩打赏（自愿赠予）。
+	payTypes := []string{models.OrderTip}
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	var incomeGross, incomeMonth, incomeNet int64

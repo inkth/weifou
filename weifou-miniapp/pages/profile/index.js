@@ -71,14 +71,8 @@ Page({
         this.setData({ stats });
       } catch (e) {}
     } else {
-      // 访客：拉取咨询定价
-      try {
-        const pricing = await request({ url: `/consult/pricing/${id}` });
-        if (pricing.asyncEnabled) {
-          pricing.asyncPriceYuan = fenToYuan(pricing.asyncPrice);
-        }
-        this.setData({ pricing });
-      } catch (e) {}
+      // 访客：提问对所有分身免费开放（AI 即时答 + 本人可异步补一句）
+      this.setData({ pricing: { asyncEnabled: true } });
     }
   },
 

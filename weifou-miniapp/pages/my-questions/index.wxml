@@ -1,14 +1,14 @@
 <view class="page">
   <view wx:if="{{loading}}" class="muted empty">加载中…</view>
   <block wx:else>
-    <view wx:if="{{!list.length}}" class="empty muted">你还没有付费提问</view>
+    <view wx:if="{{!list.length}}" class="empty muted">你还没有提问</view>
     <view class="card mq-card" wx:for="{{list}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
       <view class="mq-head">
         <text class="mq-name">{{item.realName}}</text>
         <text class="mq-status {{item.status}}">{{item.statusText}}</text>
       </view>
       <view class="mq-q">{{item.question}}</view>
-      <view class="mq-foot muted">¥{{item.priceYuan}} · {{item.timeText}} · 点击查看 ›</view>
+      <view class="mq-foot muted">{{item.timeText}} · 点击查看 ›</view>
     </view>
   </block>
 </view>

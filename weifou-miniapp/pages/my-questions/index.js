@@ -1,4 +1,3 @@
-const { fenToYuan } = require('../../utils/pay');
 const { fmtDateTime } = require('../../utils/datetime');
 const { ensureLogin } = require('../../utils/auth');
 const { myQuestions } = require('../../utils/asyncq');
@@ -17,9 +16,8 @@ Page({
       this.setData({
         list: (list || []).map((q) => ({
           ...q,
-          priceYuan: fenToYuan(q.price),
           timeText: fmtDateTime(q.createdAt),
-          statusText: q.status === 'paid' ? '等待回答' : q.status === 'answered' ? '已回答' : '已退款',
+          statusText: q.status === 'pending' ? '等待回答' : q.status === 'answered' ? '已回答' : '',
         })),
         loading: false,
       });

@@ -1,14 +1,14 @@
 <view class="page" wx:if="{{q}}">
   <view class="card">
-    <view class="qd-status {{q.status}}">{{q.statusText}} · ¥{{q.priceYuan}}</view>
+    <view class="qd-status {{q.status}}">{{q.statusText}}</view>
     <view class="qd-label muted">{{role === 'host' ? '访客的问题' : '我的提问'}}</view>
     <view class="qd-question">{{q.question}}</view>
     <view class="meta muted">{{q.createdText}}</view>
   </view>
 
-  <!-- 待回答：截止时间提醒 -->
-  <view wx:if="{{q.status === 'paid' && q.deadlineText}}" class="card qd-deadline muted">
-    {{role === 'host' ? '请在 ' + q.deadlineText + ' 前回答，超时将自动全额退款给访客。' : '对方将在 ' + q.deadlineText + ' 前回答，超时自动全额退款给你。'}}
+  <!-- 待回答提示 -->
+  <view wx:if="{{q.status === 'pending'}}" class="card qd-deadline muted">
+    {{role === 'host' ? '访客在等你回一句，有空时答一下即可。' : 'AI 已先回过你；本人有空时可能再补一句。'}}
   </view>
 
   <!-- 已回答：语音 和/或 文字 -->
@@ -23,16 +23,11 @@
     <view class="meta muted">{{q.answeredText}}</view>
   </view>
 
-  <!-- 已退款 -->
-  <view wx:if="{{q.status === 'refunded'}}" class="card qd-refunded muted">
-    {{role === 'host' ? '该提问已超时，已自动退款给访客。' : '对方未在时限内回答，已为你全额退款。'}}
-  </view>
-
   <!-- 主人作答（仅 host 且待回答）：文字 / 语音任一即可，可并用 -->
-  <block wx:if="{{role === 'host' && q.status === 'paid'}}">
+  <block wx:if="{{role === 'host' && q.status === 'pending'}}">
     <view class="card">
       <view class="qd-label">你的回答 · 打字或录语音都行</view>
-      <textarea class="qd-input" placeholder="访客付费购买的就是你这段回答；也可以只录一段语音" maxlength="2000" value="{{answer}}" bindinput="onAnswerInput" auto-height/>
+      <textarea class="qd-input" placeholder="亲自回一句会让访客很惊喜；也可以只录一段语音" maxlength="2000" value="{{answer}}" bindinput="onAnswerInput" auto-height/>
       <view class="rec-row">
         <view wx:if="{{recState !== 'recorded'}}" class="rec-btn {{recState === 'recording' ? 'on' : ''}}" bindtap="toggleRecord">
           <view class="ic ic-mic rec-ic"></view>

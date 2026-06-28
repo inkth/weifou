@@ -1,10 +1,10 @@
 <view class="page">
   <view wx:if="{{loading}}" class="muted empty">加载中…</view>
 
-  <block wx:elif="{{asyncEnabled}}">
+  <block wx:else>
     <view class="card">
-      <view class="ask-title">付费向 {{realName}} 提问</view>
-      <view class="ask-sub muted">由 {{realName}} 本人作答（非 AI）。问题越具体，回答越有用。</view>
+      <view class="ask-title">向 {{realName}} 提问</view>
+      <view class="ask-sub muted">AI 助理会即时回答；这条会直接送到 {{realName}} 本人，TA 有空时可能亲自回你一句。问题越具体，回答越有用。</view>
       <textarea
         class="ask-input"
         placeholder="把你的问题说清楚：背景是什么、你想解决什么…"
@@ -16,23 +16,17 @@
       <view class="ask-count muted">{{question.length}}/500</view>
     </view>
 
-    <view class="card promise">
+    <view class="card promise" wx:if="{{trustLine}}">
       <view class="promise-row">
-        <text class="promise-k muted">价格</text>
-        <text class="promise-v">¥{{priceYuan}}</text>
-      </view>
-      <view class="promise-row" wx:if="{{trustLine}}">
         <text class="promise-k muted">口碑</text>
         <text class="promise-v trust">★ {{trustLine}}</text>
       </view>
-      <view class="promise-note muted">{{realName}} 会尽快回答；若超时未答，系统将<text class="hl">全额退款</text>给你。</view>
+      <view class="promise-note muted">{{realName}} 会尽量抽空回答，免费。</view>
     </view>
 
-    <button class="btn-primary ask-pay" bindtap="pay" disabled="{{paying || question.length < 5}}">
-      {{paying ? '处理中…' : '支付 ¥' + priceYuan + ' 提问'}}
+    <button class="btn-primary ask-pay" bindtap="submit" disabled="{{submitting || question.length < 5}}">
+      {{submitting ? '提交中…' : '免费提问'}}
     </button>
-    <view class="ask-foot muted">付费购买的是 {{realName}} 本人的回答时间，非虚拟商品。</view>
+    <view class="ask-foot muted">提问免费，回答与否取决于 {{realName}} 本人。</view>
   </block>
-
-  <view wx:else class="empty muted">对方暂未开放付费提问</view>
 </view>

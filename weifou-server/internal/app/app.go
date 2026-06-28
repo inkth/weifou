@@ -10,7 +10,6 @@ import (
 	"weifou-server/internal/chat"
 	"weifou-server/internal/clientcfg"
 	"weifou-server/internal/config"
-	"weifou-server/internal/consult"
 	"weifou-server/internal/deepseek"
 	"weifou-server/internal/membership"
 	"weifou-server/internal/mp"
@@ -18,7 +17,6 @@ import (
 	"weifou-server/internal/persona"
 	"weifou-server/internal/plaza"
 	"weifou-server/internal/profile"
-	"weifou-server/internal/rtc"
 	"weifou-server/internal/share"
 	"weifou-server/internal/storage"
 	"weifou-server/internal/tasks"
@@ -41,10 +39,8 @@ type App struct {
 	chatH       *chat.Handler
 	visitH      *visit.Handler
 	shareH      *share.Handler
-	consultH    *consult.Handler
 	paymentH    *payment.Handler
 	asyncqH     *asyncq.Handler
-	rtcH        *rtc.Handler
 	plazaH      *plaza.Handler
 	toolagentH  *toolagent.Handler
 	membershipH *membership.Handler
@@ -79,7 +75,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	// 业务服务
 	personaSvc := persona.NewService(db, ds, security)
 	profitShare := payment.NewProfitShareService(db, payClient, cfg.ProfitSharing, cfg.PlatformFeeRate)
-	paymentH := payment.NewHandler(db, payClient, security, profitShare, subscribe, cfg.JWTSecret, cfg.TipMaxAmount, cfg.AsyncQSLAHours)
+	paymentH := payment.NewHandler(db, payClient, security, profitShare, subscribe, cfg.JWTSecret, cfg.TipMaxAmount)
 	vpayClient := wxvpay.New(cfg.WxAppID, cfg.WxvOfferID, cfg.WxvAppKey, cfg.WxvSandbox, loginClient)
 	mbrH := membership.NewHandler(db, paymentH, vpayClient, loginClient, cfg.JWTSecret)
 	mpLogin := wechat.NewLoginClient(cfg.MpAppID, cfg.MpSecret)
@@ -91,24 +87,15 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	}
 
 	a := &App{
-		cfg:      cfg,
-		authH:    auth.NewHandler(db, loginClient, appLoginClient, cfg.JWTSecret, cfg.JWTExpiresHours, cfg.Env),
-		userH:    user.NewHandler(db, cfg.JWTSecret),
-		profileH: profile.NewHandler(db, personaSvc, cfg.JWTSecret),
-		chatH:    chat.NewHandler(db, rdb, ds, security, subscribe, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
-		visitH:   visit.NewHandler(db, cfg.JWTSecret),
-		shareH:   share.NewHandler(db, loginClient),
-		consultH: consult.NewHandler(db, cfg.JWTSecret),
-		paymentH: paymentH,
-		asyncqH:  asyncq.NewHandler(db, paymentH, security, subscribe, cfg.JWTSecret),
-		rtcH: rtc.NewHandler(db, profitShare, rtc.Config{
-			JWTSecret:    cfg.JWTSecret,
-			SdkAppID:     cfg.TRTCSdkAppID,
-			SecretKey:    cfg.TRTCSecret,
-			SigExpire:    cfg.TRTCSigExp,
-			EarlyJoinMin: cfg.CallEarlyJoinMin,
-			GraceMin:     cfg.CallGraceMin,
-		}),
+		cfg:         cfg,
+		authH:       auth.NewHandler(db, loginClient, appLoginClient, cfg.JWTSecret, cfg.JWTExpiresHours, cfg.Env),
+		userH:       user.NewHandler(db, cfg.JWTSecret),
+		profileH:    profile.NewHandler(db, personaSvc, cfg.JWTSecret),
+		chatH:       chat.NewHandler(db, rdb, ds, security, subscribe, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
+		visitH:      visit.NewHandler(db, cfg.JWTSecret),
+		shareH:      share.NewHandler(db, loginClient),
+		paymentH:    paymentH,
+		asyncqH:     asyncq.NewHandler(db, security, subscribe, cfg.JWTSecret),
 		plazaH:      plaza.NewHandler(db),
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
 		membershipH: mbrH,
@@ -129,10 +116,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.chatH.Register(api)
 	a.visitH.Register(api)
 	a.shareH.Register(api)
-	a.consultH.Register(api)
 	a.paymentH.Register(api)
 	a.asyncqH.Register(api)
-	a.rtcH.Register(api)
 	a.plazaH.Register(api)
 	a.toolagentH.Register(api)
 	a.membershipH.Register(api)

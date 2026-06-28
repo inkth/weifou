@@ -1,7 +1,6 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { fmtDateTime } = require('../../utils/datetime');
-const { fenToYuan } = require('../../utils/pay');
 const { hostQuestions } = require('../../utils/asyncq');
 const { requestNewQuestionNotify, NEW_QUESTION_TMPL_ID, requestLeadNotify, LEAD_TMPL_ID } = require('../../utils/subscribe');
 
@@ -11,11 +10,11 @@ Page({
     loading: true,
     profileId: '', // 用于空态"分享你的 AI"的分享落点
     gaps: [],
-    questions: [], // 付费提问（待我回答 / 已回答 / 已退款）
+    questions: [], // 访客提问（待我回答 / 已回答）
     leads: [],
     knowledge: [],
     sessions: [], // 会话回放：助理替我接待的访客对话
-    canNotify: !!NEW_QUESTION_TMPL_ID, // 付费提问订阅模板已配才显示入口（未配静默降级）
+    canNotify: !!NEW_QUESTION_TMPL_ID, // 新提问订阅模板已配才显示入口（未配静默降级）
     canNotifyLead: !!LEAD_TMPL_ID, // 访客线索订阅模板已配才显示入口
   },
 
@@ -50,9 +49,8 @@ Page({
         sessions: (sessions || []).map((s) => ({ ...s, timeText: fmtDateTime(s.updatedAt) })),
         questions: (questions || []).map((q) => ({
           ...q,
-          priceYuan: fenToYuan(q.price),
           timeText: fmtDateTime(q.createdAt),
-          statusText: q.status === 'paid' ? '待回答' : q.status === 'answered' ? '已回答' : '已退款',
+          statusText: q.status === 'pending' ? '待回答' : q.status === 'answered' ? '已回答' : '',
         })),
         loading: false,
       });

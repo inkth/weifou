@@ -1,6 +1,5 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
-const { fenToYuan } = require('../../utils/pay');
 const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
@@ -24,8 +23,7 @@ Page({
     startersRevealed: false, // 开场动画结束后才淡入引导问题
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
     contactAvailable: false,
-    asyncAvailable: false, // 是否开放付费提问
-    asyncPriceYuan: '',
+    asyncAvailable: false, // 是否可向本人提问（免费，AI 即时答 + 本人可异步补一句）
     trustLine: '', // 信任徽章文案（社会证明，来自既有交易数据；冷启动数字过小时为空）
     isMine: false, // 主人预览自己的 AI（profile 页透传 mine=1）
     hasOwnProfile: true, // 默认 true：确认是"无主页访客"前不展示裂变钩子
@@ -43,7 +41,6 @@ Page({
     liheSrc: '', // 全屏立绘图：avatar 为 image 类型时启用"星野式"全屏立绘模式
     // —— 访客页内浮层（不跳 profile）：关于 / 打赏 ——
     title: '', company: '', city: '', tags: [], fullIntro: '',
-    pricing: {},
     aboutVisible: false,
     tipVisible: false, tipPresets: [6, 18, 66, 88], tipAmount: 18, tipMessage: '', tipPaying: false,
   },
@@ -114,16 +111,8 @@ Page({
       return;
     }
 
-    // 是否开放付费提问（用于行动选项）
-    try {
-      const pricing = await request({ url: `/consult/pricing/${profileId}` });
-      if (pricing.asyncEnabled) { pricing.asyncPriceYuan = fenToYuan(pricing.asyncPrice); }
-      this.setData({
-        pricing,
-        asyncAvailable: !!pricing.asyncEnabled,
-        asyncPriceYuan: pricing.asyncEnabled ? fenToYuan(pricing.asyncPrice) : '',
-      });
-    } catch (e) {}
+    // 提问对所有分身免费开放（AI 即时答 + 本人可异步补一句）
+    this.setData({ asyncAvailable: true });
   },
 
   onUnload() {

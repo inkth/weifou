@@ -253,32 +253,27 @@ func (h *Handler) trustFor(profileID string) gin.H {
 	h.db.Model(&models.AsyncQuestion{}).
 		Where("profile_id = ? AND status = ?", profileID, models.AsyncAnswered).
 		Distinct("asker_openid").Count(&answeredAskers)
-	// 完成过语音/视频咨询的访客数（去重）
-	var endedGuests int64
-	h.db.Model(&models.ConsultSession{}).
-		Where("profile_id = ? AND status = ?", profileID, models.ConsultEnded).
-		Distinct("guest_openid").Count(&endedGuests)
 
-	var answeredCount, refundedCount int64
+	var answeredCount, totalCount int64
 	h.db.Model(&models.AsyncQuestion{}).
 		Where("profile_id = ? AND status = ?", profileID, models.AsyncAnswered).Count(&answeredCount)
 	h.db.Model(&models.AsyncQuestion{}).
-		Where("profile_id = ? AND status = ?", profileID, models.AsyncRefunded).Count(&refundedCount)
+		Where("profile_id = ?", profileID).Count(&totalCount)
 
-	// 平均回答时长（小时）：仅已答且有支付时间的提问
+	// 平均回答时长（小时）：已答提问从提出到作答的时长
 	var avgHours float64
 	h.db.Model(&models.AsyncQuestion{}).
-		Where("profile_id = ? AND status = ? AND paid_at IS NOT NULL AND answered_at IS NOT NULL", profileID, models.AsyncAnswered).
-		Select("COALESCE(AVG(EXTRACT(EPOCH FROM (answered_at - paid_at)) / 3600.0), 0)").
+		Where("profile_id = ? AND status = ? AND answered_at IS NOT NULL", profileID, models.AsyncAnswered).
+		Select("COALESCE(AVG(EXTRACT(EPOCH FROM (answered_at - created_at)) / 3600.0), 0)").
 		Scan(&avgHours)
 
 	repliedRate := 0
-	if total := answeredCount + refundedCount; total > 0 {
-		repliedRate = int(answeredCount * 100 / total)
+	if totalCount > 0 {
+		repliedRate = int(answeredCount * 100 / totalCount)
 	}
 
 	return gin.H{
-		"consultedPeople": answeredAskers + endedGuests,
+		"consultedPeople": answeredAskers,
 		"answeredCount":   answeredCount,
 		"avgAnswerHours":  math.Round(avgHours*10) / 10,
 		"repliedRate":     repliedRate,

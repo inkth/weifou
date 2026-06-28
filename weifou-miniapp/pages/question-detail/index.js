@@ -1,4 +1,3 @@
-const { fenToYuan } = require('../../utils/pay');
 const { fmtDateTime } = require('../../utils/datetime');
 const { ensureLogin } = require('../../utils/auth');
 const { questionDetail, answerQuestion } = require('../../utils/asyncq');
@@ -42,15 +41,11 @@ Page({
 
   _decorate(q) {
     const statusText =
-      q.status === 'paid' ? '待回答'
-      : q.status === 'answered' ? '已回答'
-      : q.status === 'refunded' ? '已退款'
-      : q.status === 'pending_payment' ? '支付确认中' : '';
+      q.status === 'pending' ? '待回答'
+      : q.status === 'answered' ? '已回答' : '';
     return {
       ...q,
-      priceYuan: fenToYuan(q.price),
       createdText: fmtDateTime(q.createdAt),
-      deadlineText: q.answerDeadline ? fmtDateTime(q.answerDeadline) : '',
       answeredText: q.answeredAt ? fmtDateTime(q.answeredAt) : '',
       statusText,
     };

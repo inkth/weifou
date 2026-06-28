@@ -1,6 +1,6 @@
-// Package asyncq 实现「付费异步咨询」：访客付费向主人提问，主人在 SLA 时限内异步作答。
-// 付费购买的是「主人本人作答」（真人服务），AI 不参与付费内容生产——这是变现合规的承重墙。
-// 支付/退款/分账复用 payment 包；超时未答自动退款由 tasks 定时任务驱动。
+// Package asyncq 实现「异步提问」：访客免费向主人提问，主人异步作答。
+// 这是「AI 默认对外作答」之外的可选动作——让主人本人也能回一句，一问一答闭环（不是私信）。
+// 不涉及任何支付/分账/退款；所有分身默认开放提问，无开关。
 package asyncq
 
 import (
@@ -14,20 +14,18 @@ import (
 	"weifou-server/internal/idgen"
 	"weifou-server/internal/middleware"
 	"weifou-server/internal/models"
-	"weifou-server/internal/payment"
 	"weifou-server/internal/wechat"
 )
 
 type Handler struct {
 	db        *gorm.DB
-	pay       *payment.Handler
 	security  *wechat.SecurityService
 	subscribe *wechat.SubscribeService
 	jwtSecret string
 }
 
-func NewHandler(db *gorm.DB, pay *payment.Handler, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string) *Handler {
-	return &Handler{db: db, pay: pay, security: security, subscribe: subscribe, jwtSecret: jwtSecret}
+func NewHandler(db *gorm.DB, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string) *Handler {
+	return &Handler{db: db, security: security, subscribe: subscribe, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
@@ -40,19 +38,11 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/async-question/detail/:id", auth, httpx.Handle(h.detail))
 }
 
-func normSource(s string) string {
-	if s == "chat_card" {
-		return "chat_card"
-	}
-	return "profile"
-}
-
-// ---------- 访客：付费提问下单 ----------
+// ---------- 访客：免费提问 ----------
 
 type createReq struct {
 	ProfileID string `json:"profileId" binding:"required"`
 	Question  string `json:"question" binding:"required"`
-	Source    string `json:"source"`
 }
 
 func (h *Handler) create(c *gin.Context) error {
@@ -74,34 +64,39 @@ func (h *Handler) create(c *gin.Context) error {
 	if profile.UserID == auth.UserID {
 		return httpx.BadRequest("CANNOT_ASK_SELF", "不能向自己提问")
 	}
-	var setting models.ConsultSetting
-	if err := h.db.First(&setting, "user_id = ?", profile.UserID).Error; err != nil || !setting.AsyncEnabled {
-		return httpx.Forbidden("ASYNC_DISABLED", "对方未开放付费提问")
-	}
-	if setting.AsyncPrice < 100 {
-		return httpx.BadRequest("PRICE_INVALID", "提问价格未正确设置")
-	}
 	if !h.security.CheckText(q, auth.Openid) {
 		return httpx.BadRequest("CONTENT_UNSAFE", "问题包含不当内容")
 	}
 
-	order := models.Order{
-		ID: idgen.New(), OutTradeNo: idgen.WithPrefix("ASK"), Type: models.OrderAsyncQuestion,
-		Amount: setting.AsyncPrice, ProfileID: profile.ID, PayerOpenid: auth.Openid,
-		PayerUserID: &auth.UserID, PayeeUserID: profile.UserID,
-		Source: normSource(req.Source),
-	}
-	if err := h.db.Create(&order).Error; err != nil {
-		return httpx.Internal("ORDER_CREATE_FAILED", "下单失败")
-	}
-	h.db.Create(&models.AsyncQuestion{
-		ID: idgen.New(), OrderID: order.ID, ProfileID: profile.ID,
+	question := models.AsyncQuestion{
+		ID: idgen.New(), ProfileID: profile.ID,
 		HostUserID: profile.UserID, AskerOpenid: auth.Openid, AskerUserID: &auth.UserID,
-		Question: q, Price: setting.AsyncPrice, Status: models.AsyncPendingPayment,
-	})
+		Question: q, Status: models.AsyncPending,
+	}
+	if err := h.db.Create(&question).Error; err != nil {
+		return httpx.Internal("QUESTION_CREATE_FAILED", "提交失败，请稍后重试")
+	}
 
-	// 复用支付下单（profitSharing=true：开启分账时冻结资金，作答提交时再分账）。
-	return h.pay.PrepayOrder(c, &order, "付费提问 · "+profile.RealName, true)
+	go h.notifyHostNewQuestion(&question)
+
+	httpx.OK(c, gin.H{"id": question.ID, "status": question.Status})
+	return nil
+}
+
+// notifyHostNewQuestion 给主人下发「有新的提问」订阅消息（按小程序 openid，纯 App 主人会静默失败）。
+func (h *Handler) notifyHostNewQuestion(q *models.AsyncQuestion) {
+	if h.subscribe == nil {
+		return
+	}
+	var host models.User
+	if h.db.First(&host, "id = ?", q.HostUserID).Error != nil {
+		return
+	}
+	openid := host.Openid
+	if host.WxMpOpenid != nil && *host.WxMpOpenid != "" {
+		openid = *host.WxMpOpenid
+	}
+	h.subscribe.NotifyNewQuestion(openid, q.Question, 0, time.Now(), "pages/inbox/index")
 }
 
 // ---------- 主人：作答 ----------
@@ -130,7 +125,7 @@ func (h *Handler) answer(c *gin.Context) error {
 	if qst.HostUserID != auth.UserID {
 		return httpx.Forbidden("NOT_HOST", "只有本人可以回答")
 	}
-	if qst.Status != models.AsyncPaid {
+	if qst.Status != models.AsyncPending {
 		return httpx.BadRequest("NOT_ANSWERABLE", "该提问当前不可回答")
 	}
 	// 文字部分过安全审核；语音内容审核暂缺（MVP：仅本人可发，风险可控），后续可接音频审核。
@@ -142,19 +137,16 @@ func (h *Handler) answer(c *gin.Context) error {
 		dur = 0
 	}
 	now := time.Now()
-	// 原子作答：仅当仍为 paid 时置 answered，防止与超时自动退款竞态。
+	// 原子作答：仅当仍为 pending 时置 answered。
 	res := h.db.Model(&models.AsyncQuestion{}).
-		Where("id = ? AND status = ?", qst.ID, models.AsyncPaid).
+		Where("id = ? AND status = ?", qst.ID, models.AsyncPending).
 		Updates(map[string]interface{}{
 			"answer": ans, "voice_url": voiceURL, "voice_duration": dur,
 			"answered_at": now, "status": models.AsyncAnswered,
 		})
 	if res.RowsAffected == 0 {
-		return httpx.BadRequest("NOT_ANSWERABLE", "该提问当前不可回答（可能已超时退款）")
+		return httpx.BadRequest("NOT_ANSWERABLE", "该提问当前不可回答")
 	}
-
-	// 服务已交付，触发分账。
-	go h.pay.Settle(qst.OrderID)
 
 	// 通知访客「已回答」。
 	if h.subscribe != nil && qst.AskerOpenid != "" {
@@ -181,8 +173,6 @@ func (h *Handler) hostList(c *gin.Context) error {
 	q := h.db.Where("host_user_id = ?", auth.UserID)
 	if status := c.Query("status"); status != "" {
 		q = q.Where("status = ?", status)
-	} else {
-		q = q.Where("status <> ?", models.AsyncPendingPayment) // 默认排除未支付
 	}
 	var items []models.AsyncQuestion
 	q.Order("created_at desc").Limit(100).Find(&items)
@@ -193,8 +183,7 @@ func (h *Handler) hostList(c *gin.Context) error {
 func (h *Handler) myList(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var items []models.AsyncQuestion
-	h.db.Where("(asker_user_id = ? OR asker_openid = ?) AND status <> ?",
-		auth.UserID, auth.Openid, models.AsyncPendingPayment).
+	h.db.Where("asker_user_id = ? OR asker_openid = ?", auth.UserID, auth.Openid).
 		Order("created_at desc").Limit(100).Find(&items)
 	httpx.OK(c, h.decorate(items, "asker"))
 	return nil
@@ -232,9 +221,8 @@ func (h *Handler) row(q *models.AsyncQuestion, role string) gin.H {
 	h.db.Select("real_name").First(&profile, "id = ?", q.ProfileID)
 	return gin.H{
 		"id": q.ID, "profileId": q.ProfileID, "realName": profile.RealName,
-		"question": q.Question, "price": q.Price, "status": q.Status,
+		"question": q.Question, "status": q.Status,
 		"answer": q.Answer, "voiceUrl": q.VoiceURL, "voiceDuration": q.VoiceDuration,
-		"answeredAt": q.AnsweredAt, "answerDeadline": q.AnswerDeadline,
-		"paidAt": q.PaidAt, "createdAt": q.CreatedAt, "role": role,
+		"answeredAt": q.AnsweredAt, "createdAt": q.CreatedAt, "role": role,
 	}
 }

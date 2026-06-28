@@ -1,25 +1,16 @@
-// 付费异步咨询（付费向本人提问，本人异步作答）的接口封装。
-// 付费购买的是「主人本人作答」（真人服务），与 AI 回答无关。
+// 异步提问（访客免费向本人提问，本人异步作答）的接口封装。
+// AI 默认已对外作答；这是「让主人本人也回一句」的可选动作，一问一答闭环，不涉及支付。
 const { request } = require('./request');
 const { ensureLogin } = require('./auth');
-const { requestPayment } = require('./pay');
 
-// 访客付费提问并完成支付。source: 'profile' / 'chat_card'。
-// 成功返回订单详情（含 asyncQuestionId）。失败抛 { code, message }，PAY_CANCEL=用户取消。
-async function askQuestion(profileId, question, source) {
+// 访客免费提问。成功返回 { id, status }。失败抛 { code, message }。
+async function askQuestion(profileId, question) {
   await ensureLogin();
-  const data = await request({
+  return request({
     url: '/async-question',
     method: 'POST',
-    data: { profileId, question, source },
+    data: { profileId, question },
   });
-  await requestPayment(data.payParams);
-  return request({ url: `/payment/orders/${data.orderId}` });
-}
-
-// 定价（含 asyncEnabled / asyncPrice），复用 consult pricing 接口。
-function fetchPricing(profileId) {
-  return request({ url: `/consult/pricing/${profileId}` });
 }
 
 // 主人作答。payload 可为字符串（纯文字，向后兼容）或 { answer, voiceUrl, voiceDuration }。
@@ -28,12 +19,12 @@ function answerQuestion(id, payload) {
   return request({ url: `/async-question/${id}/answer`, method: 'POST', data });
 }
 
-// 主人：收到的付费提问列表（status 可选过滤 paid/answered/refunded）
+// 主人：收到的提问列表（status 可选过滤 pending/answered）
 function hostQuestions(status) {
   return request({ url: `/async-question/host${status ? '?status=' + status : ''}` });
 }
 
-// 访客：我发起的付费提问列表
+// 访客：我发起的提问列表
 function myQuestions() {
   return request({ url: '/async-question/mine' });
 }
@@ -43,4 +34,4 @@ function questionDetail(id) {
   return request({ url: `/async-question/detail/${id}` });
 }
 
-module.exports = { askQuestion, fetchPricing, answerQuestion, hostQuestions, myQuestions, questionDetail };
+module.exports = { askQuestion, answerQuestion, hostQuestions, myQuestions, questionDetail };

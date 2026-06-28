@@ -183,7 +183,7 @@ func (h *Handler) sessionMessages(c *gin.Context) error {
 	return nil
 }
 
-func buildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []string, tone, style, knowledge string, canOffer bool) string {
+func buildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []string, tone, style, knowledge string) string {
 	company := ""
 	if p.Company != nil && *p.Company != "" {
 		company = "（" + *p.Company + "）"
@@ -200,10 +200,6 @@ func buildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []str
 	knowledgeRule := ""
 	if strings.TrimSpace(knowledge) != "" {
 		knowledgeRule = "\n== 补充资料（本人补充的问答，优先据此回答）==\n" + knowledge + "\n== 补充资料结束 ==\n"
-	}
-	offerRule := "本人当前未开放可预约档期，offerConsult 必须为 false。"
-	if canOffer {
-		offerRule = `当访客表达合作、咨询、深入沟通或约时间的意向时，将 offerConsult 设为 true，系统会在对话内展示真实的预约入口；answer 里可用助理口吻自然引导（如"我看一下 TA 的档期"），其余情况设为 false。严禁在 answer 里编造价格或具体时间——真实档期由系统展示。`
 	}
 	return fmt.Sprintf(`你是 %s 的 AI 助理。你以助理身份代他/她接待访客、介绍 TA，不是 %s 本人。
 你代表主人的利益：亲和但不卑微，热情但有边界，像一位称职的助理那样有立场地接待。
@@ -223,31 +219,16 @@ func buildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []str
 
 == 输出格式 ==
 只输出一个 JSON 对象，不要任何额外文字或代码块：
-{"answer": "给访客的回答", "offerConsult": true 或 false, "gap": true 或 false}
+{"answer": "给访客的回答", "gap": true 或 false}
 answer：中文回答，规则同上，不超过 200 字。
-offerConsult：%s
 gap：当且仅当访客问的是一个具体、合理、但现有资料无法回答的问题（你只能含糊带过或建议联系本人）时设为 true，用于提醒本人补充资料；闲聊、寒暄、与专业方向无关或资料已能回答的问题一律为 false。`,
-		p.RealName, p.RealName, p.Title, company, oneLiner, fullIntro, strings.Join(tags, "、"), toneRule, knowledgeRule, offerRule)
+		p.RealName, p.RealName, p.Title, company, oneLiner, fullIntro, strings.Join(tags, "、"), toneRule, knowledgeRule)
 }
 
 // aiResult 是模型按要求返回的 JSON 结构。
 type aiResult struct {
-	Answer       string `json:"answer"`
-	OfferConsult bool   `json:"offerConsult"`
-	Gap          bool   `json:"gap"`
-}
-
-type slotBrief struct {
-	ID          string    `json:"id"`
-	StartAt     time.Time `json:"startAt"`
-	DurationMin int       `json:"durationMin"`
-}
-
-type offerCard struct {
-	Type    string      `json:"type"` // "consult_offer"
-	Price30 int         `json:"price30"`
-	Price60 int         `json:"price60"`
-	Slots   []slotBrief `json:"slots"`
+	Answer string `json:"answer"`
+	Gap    bool   `json:"gap"`
 }
 
 type askReq struct {
@@ -325,13 +306,9 @@ func (h *Handler) ask(c *gin.Context) error {
 		Content: content, SafeCheckStatus: models.SafePass,
 	})
 
-	// 是否可在对话内促成预约：本人已开放付费咨询 + 存在未来开放档期
-	setting, openSlots := h.consultOffer(profile.UserID)
-	canOffer := setting != nil && setting.Enabled && len(openSlots) > 0
-
 	var tags []string
 	_ = json.Unmarshal(p.Tags, &tags)
-	sys := buildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.knowledgeFor(profileID), canOffer)
+	sys := buildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.knowledgeFor(profileID))
 
 	// 最近 20 条历史（沉浸式对话需要更长记忆窗口）
 	var recent []models.ChatMessage
@@ -346,10 +323,10 @@ func (h *Handler) ask(c *gin.Context) error {
 		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 
-	// 解析 JSON 输出；失败则降级为纯文本，不展示卡片
+	// 解析 JSON 输出；失败则降级为纯文本
 	var result aiResult
 	if jerr := json.Unmarshal([]byte(raw), &result); jerr != nil || strings.TrimSpace(result.Answer) == "" {
-		result = aiResult{Answer: strings.TrimSpace(raw), OfferConsult: false}
+		result = aiResult{Answer: strings.TrimSpace(raw)}
 	}
 
 	safe := models.SafePass
@@ -357,7 +334,6 @@ func (h *Handler) ask(c *gin.Context) error {
 	if !h.security.CheckText(finalAnswer, auth.Openid) {
 		safe = models.SafeReject
 		finalAnswer = "抱歉，这个问题不方便由 AI 直接回答，建议联系本人沟通。"
-		result.OfferConsult = false
 	}
 	h.db.Create(&models.ChatMessage{
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
@@ -369,31 +345,8 @@ func (h *Handler) ask(c *gin.Context) error {
 		h.recordGap(profileID, content)
 	}
 
-	resp := gin.H{"sessionId": session.ID, "answer": finalAnswer}
-	if result.OfferConsult && canOffer {
-		briefs := make([]slotBrief, 0, len(openSlots))
-		for _, s := range openSlots {
-			briefs = append(briefs, slotBrief{ID: s.ID, StartAt: s.StartAt, DurationMin: s.DurationMin})
-		}
-		resp["card"] = offerCard{
-			Type: "consult_offer", Price30: setting.Price30, Price60: setting.Price60, Slots: briefs,
-		}
-	}
-	httpx.OK(c, resp)
+	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer})
 	return nil
-}
-
-// consultOffer 取本人的咨询设置与最多 3 个未来开放档期（用于对话内成交卡片）。
-func (h *Handler) consultOffer(hostUserID string) (*models.ConsultSetting, []models.ConsultSlot) {
-	var setting models.ConsultSetting
-	if err := h.db.First(&setting, "user_id = ?", hostUserID).Error; err != nil || !setting.Enabled {
-		return nil, nil
-	}
-	var slots []models.ConsultSlot
-	h.db.Where("host_user_id = ? AND status = ? AND start_at >= ?",
-		hostUserID, models.SlotOpen, time.Now()).
-		Order("start_at asc").Limit(3).Find(&slots)
-	return &setting, slots
 }
 
 // knowledgeFor 取该主页启用的补充知识，拼成注入对话的文本（最多 30 条，控制 token）。
