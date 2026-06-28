@@ -34,7 +34,8 @@ func NewHandler(db *gorm.DB, engine *answer.Engine, security *wechat.SecuritySer
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
 	rg.POST("/async-question", auth, httpx.Handle(h.create))
-	rg.POST("/async-question/qabox", auth, httpx.Handle(h.qaboxAsk)) // 问答箱：AI 即答 + 入库供主人围观
+	rg.POST("/async-question/qabox", auth, httpx.Handle(h.qaboxAsk))             // 问答箱：AI 即答 + 入库供主人围观
+	rg.POST("/async-question/:id/escalate", auth, httpx.Handle(h.escalate))     // 访客把 AI 已答的问题升温为「请本人亲自回答」
 	rg.POST("/async-question/:id/answer", auth, httpx.Handle(h.answer))
 	rg.GET("/async-question/host", auth, httpx.Handle(h.hostList))
 	rg.GET("/async-question/mine", auth, httpx.Handle(h.myList))
@@ -141,9 +142,12 @@ func (h *Handler) qaboxAsk(c *gin.Context) error {
 		}
 		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
+	// gap：分身自认答不上来（具体合理但资料覆盖不到）→ 前端据此高亮「请本人亲自回答」升温入口。
+	gap := res.Gap
 	aiAns := strings.TrimSpace(res.Answer)
 	if aiAns != "" && !h.security.CheckText(aiAns, auth.Openid) {
 		aiAns = "这个问题不方便由 AI 直接回答，等本人来补充一句吧。"
+		gap = true // 被安全兜底替换 → 同样引导升温给本人
 	}
 
 	question := models.AsyncQuestion{
@@ -160,7 +164,48 @@ func (h *Handler) qaboxAsk(c *gin.Context) error {
 		go h.notifyHostNewQuestion(&question)
 	}
 
-	httpx.OK(c, gin.H{"id": question.ID, "answer": aiAns, "status": question.Status})
+	httpx.OK(c, gin.H{"id": question.ID, "answer": aiAns, "gap": gap, "status": question.Status})
+	return nil
+}
+
+// ---------- 访客：把 AI 已答的问题升温为「请本人亲自回答」 ----------
+
+// escalate 提问者对一条问答箱（AI 已即时作答）的问题点名「请本人亲自回答」：
+// 标记 EscalatedAt 并强制通知主人（不受每日首问限制）。不改 status（仍 ai_answered，
+// 主人作答入口与原来一致），只是把这条从「AI 答过算了」提升为「访客明确要本人答」，
+// 给主人更强的回答动机——这是「问」从 AI 即答升温到真人答的那一跳，吸收了原独立「异步问」。
+func (h *Handler) escalate(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var qst models.AsyncQuestion
+	if err := h.db.First(&qst, "id = ?", c.Param("id")).Error; err != nil {
+		return httpx.NotFound("QUESTION_NOT_FOUND", "提问不存在")
+	}
+	// 仅提问者本人可点名；主人不能替访客点名。
+	isAsker := (qst.AskerUserID != nil && *qst.AskerUserID == auth.UserID) || qst.AskerOpenid == auth.Openid
+	if !isAsker {
+		return httpx.Forbidden("NOT_ASKER", "只有提问者可以请本人回答")
+	}
+	if qst.EscalatedAt != nil {
+		// 幂等：已点名过，直接当成功返回。
+		httpx.OK(c, gin.H{"id": qst.ID, "escalatedAt": qst.EscalatedAt})
+		return nil
+	}
+	// 仅「AI 已答、本人尚未补充」的问答箱问题需要升温；已被本人回答的无需再点名。
+	if qst.Status != models.AsyncAIAnswered {
+		return httpx.BadRequest("NOT_ESCALATABLE", "该提问当前无需请本人回答")
+	}
+	now := time.Now()
+	// 原子升温：仅当仍为 ai_answered 且未点名时落 escalated_at，避免并发重复通知。
+	res := h.db.Model(&models.AsyncQuestion{}).
+		Where("id = ? AND status = ? AND escalated_at IS NULL", qst.ID, models.AsyncAIAnswered).
+		Update("escalated_at", now)
+	if res.RowsAffected == 0 {
+		httpx.OK(c, gin.H{"id": qst.ID})
+		return nil
+	}
+	qst.EscalatedAt = &now
+	go h.notifyHostNewQuestion(&qst) // 访客点名 → 强制通知主人
+	httpx.OK(c, gin.H{"id": qst.ID, "escalatedAt": now})
 	return nil
 }
 
@@ -302,6 +347,7 @@ func (h *Handler) row(q *models.AsyncQuestion, role string) gin.H {
 		"question": q.Question, "status": q.Status, "source": q.Source,
 		"aiAnswer": q.AIAnswer, // 分身即时作答（问答箱）；NGL 匿名：不下发任何访客身份
 		"answer":   q.Answer, "voiceUrl": q.VoiceURL, "voiceDuration": q.VoiceDuration,
-		"answeredAt": q.AnsweredAt, "createdAt": q.CreatedAt, "role": role,
+		"escalatedAt": q.EscalatedAt, // 非空=访客点名要本人亲自答，主人端可据此高亮优先回
+		"answeredAt":  q.AnsweredAt, "createdAt": q.CreatedAt, "role": role,
 	}
 }

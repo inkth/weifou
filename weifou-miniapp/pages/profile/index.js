@@ -128,14 +128,6 @@ Page({
     wx.showToast({ title: '已开启来访通知', icon: 'success' });
   },
 
-  // 付费向本人提问（异步咨询）
-  goAsk() {
-    const p = this.data.profile;
-    wx.navigateTo({
-      url: `/pages/ask/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(p.realName)}&source=profile`,
-    });
-  },
-
   goMyQuestions() {
     wx.navigateTo({ url: '/pages/my-questions/index' });
   },

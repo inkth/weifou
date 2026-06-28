@@ -424,13 +424,6 @@ Page({
     wx.navigateTo({ url: `/pages/profile/index?id=${this.data.profileId}&from=chat` });
   },
 
-  // 行动选项：付费向本人提问（异步咨询）
-  goAsk() {
-    wx.navigateTo({
-      url: `/pages/ask/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(this.data.realName)}&source=chat_card`,
-    });
-  },
-
   // —— 页内浮层：关于 TA ——
   openAbout() { this.setData({ aboutVisible: true }); },
   closeAbout() { this.setData({ aboutVisible: false }); },

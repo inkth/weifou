@@ -40,6 +40,20 @@
         <view class="qb-a-note muted">这条已送到 {{realName}} 的收件箱，TA 有空可能亲自补一句。</view>
       </view>
 
+      <!-- 升温：从 AI 即答 → 请本人亲自回答（gap 时高亮主推） -->
+      <view class="qb-esc {{gap ? 'hot' : ''}}">
+        <block wx:if="{{!escalated}}">
+          <view wx:if="{{gap}}" class="qb-esc-tip">这题分身答得不一定准 —— 要不要点名 {{realName}} 本人亲自回答？</view>
+          <button wx:if="{{gap}}" class="qb-esc-btn" bindtap="escalate" disabled="{{escalating}}">
+            {{escalating ? '转达中…' : '请本人亲自回答'}}
+          </button>
+          <view wx:else class="qb-esc-link {{escalating ? 'busy' : ''}}" bindtap="escalate">
+            {{escalating ? '转达中…' : '想让 ' + realName + ' 本人亲自回答？›'}}
+          </view>
+        </block>
+        <view wx:else class="qb-esc-done muted">✓ 已转达 {{realName}}，本人回答后会通知你</view>
+      </view>
+
       <button class="qb-again" bindtap="askAnother">再问一个 →</button>
 
       <!-- 病毒转化钩子 -->

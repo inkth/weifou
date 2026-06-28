@@ -254,10 +254,11 @@ const (
 // AsyncQuestion 来源：区分历史「异步问」与「问答箱(qabox)」。
 const SourceQABox = "qabox"
 
-// AsyncQuestion 访客向主人提问、一问一答闭环（不是私信）。两种来源共用此表：
-//   - 历史异步问：访客问、主人本人异步答（AIAnswer 空，status=pending）。
-//   - 问答箱(qabox)：访客匿名问、分身据画像即时作答（AIAnswer 已填，status=ai_answered），主人可再补一句。
+// AsyncQuestion 访客向分身提问、一问一答闭环（不是私信）。「问 TA」统一走问答箱：
+//   - 访客匿名问、分身据画像即时作答（AIAnswer 已填，status=ai_answered）；
+//   - 分身答不好/访客点名时升温为「请本人亲自回答」（EscalatedAt 非空，主人补 Answer 后 status=answered）。
 //
+// 历史「异步问」(Source 空、纯 pending)接口仍保留作 App 兼容，但小程序已不再单独发起。
 // 不涉及任何支付。NGL 匿名靠展示层保证（对外/对主人均不下发访客身份）。
 type AsyncQuestion struct {
 	ID            string     `gorm:"primaryKey;size:32" json:"id"`
@@ -273,6 +274,7 @@ type AsyncQuestion struct {
 	VoiceURL      string     `gorm:"type:text" json:"voiceUrl"` // 语音回答的公开 URL（空=无语音）
 	VoiceDuration int        `json:"voiceDuration"`             // 语音时长（秒）
 	AnsweredAt    *time.Time `json:"answeredAt,omitempty"`
+	EscalatedAt   *time.Time `json:"escalatedAt,omitempty"` // 访客对 AI 已答的问题「点名请本人亲自回答」的时间（空=未点名）
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 }

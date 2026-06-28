@@ -3,16 +3,6 @@
 const { request } = require('./request');
 const { ensureLogin } = require('./auth');
 
-// 访客免费提问。成功返回 { id, status }。失败抛 { code, message }。
-async function askQuestion(profileId, question) {
-  await ensureLogin();
-  return request({
-    url: '/async-question',
-    method: 'POST',
-    data: { profileId, question },
-  });
-}
-
 // 问答箱：访客（对主人匿名）向 TA 的 AI 分身问一句，分身据画像即时作答。
 // 成功返回 { id, answer, status }；同时入库供主人围观、补一句。
 async function qaboxAsk(profileId, question) {
@@ -22,6 +12,11 @@ async function qaboxAsk(profileId, question) {
     method: 'POST',
     data: { profileId, question },
   });
+}
+
+// 访客：把 AI 已答的问题升温为「请本人亲自回答」，强制通知主人。成功返回 { id, escalatedAt }。
+function escalateQuestion(id) {
+  return request({ url: `/async-question/${id}/escalate`, method: 'POST' });
 }
 
 // 主人作答。payload 可为字符串（纯文字，向后兼容）或 { answer, voiceUrl, voiceDuration }。
@@ -45,4 +40,4 @@ function questionDetail(id) {
   return request({ url: `/async-question/detail/${id}` });
 }
 
-module.exports = { askQuestion, qaboxAsk, answerQuestion, hostQuestions, myQuestions, questionDetail };
+module.exports = { qaboxAsk, escalateQuestion, answerQuestion, hostQuestions, myQuestions, questionDetail };

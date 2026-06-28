@@ -37,6 +37,25 @@
 }
 .qb-again::after { border: none; }
 
+/* 升温：请本人亲自回答 */
+.qb-esc { margin-top: 24rpx; }
+.qb-esc.hot {
+  padding: 28rpx 28rpx 24rpx; border-radius: var(--r-xl);
+  background: var(--accent-soft); border: 1rpx solid var(--accent);
+}
+.qb-esc-tip {
+  font-size: 26rpx; color: var(--accent-ink); line-height: 1.5; margin-bottom: 20rpx;
+}
+.qb-esc-btn {
+  width: 100%; background: var(--accent); color: #fff;
+  border-radius: var(--r-full); font-size: 28rpx; padding: 20rpx 0;
+}
+.qb-esc-btn::after { border: none; }
+.qb-esc-btn[disabled] { opacity: .6; }
+.qb-esc-link { font-size: 26rpx; color: var(--accent-ink); text-align: center; padding: 8rpx 0; }
+.qb-esc-link.busy { opacity: .6; }
+.qb-esc-done { font-size: 24rpx; text-align: center; padding: 8rpx 0; }
+
 /* 病毒转化钩子 */
 .qb-cta {
   margin-top: 32rpx; padding: 40rpx 32rpx; text-align: center;

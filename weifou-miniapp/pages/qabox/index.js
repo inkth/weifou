@@ -2,7 +2,8 @@
 // 这是拉新楔子的落点——答完即抛「也给自己建一个分身」的转化钩子。
 const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
-const { qaboxAsk } = require('../../utils/asyncq');
+const { qaboxAsk, escalateQuestion } = require('../../utils/asyncq');
+const { requestQuestionNotify } = require('../../utils/subscribe');
 
 // 小程序码 scene 仅传 id=xxx，需在此解析。
 function parseScene(scene) {
@@ -21,6 +22,10 @@ Page({
     submitting: false,
     asked: '', // 已提交的问题（结果屏回显）
     answer: '', // 分身的即时回答（提交后填充 → 进入结果屏）
+    qid: '', // 刚提交问题的 id（用于升温到本人作答）
+    gap: false, // 分身自认答不上来 → 高亮「请本人亲自回答」
+    escalating: false, // 升温请求进行中
+    escalated: false, // 已点名请本人回答
     hasOwnClone: false, // 访客自己是否已有分身（决定转化 CTA 形态）
     loading: true,
   },
@@ -57,7 +62,14 @@ Page({
     this.setData({ submitting: true });
     try {
       const res = await qaboxAsk(this.data.profileId, q);
-      this.setData({ asked: q, answer: (res && res.answer) || '', question: '' });
+      this.setData({
+        asked: q,
+        answer: (res && res.answer) || '',
+        qid: (res && res.id) || '',
+        gap: !!(res && res.gap),
+        escalated: false,
+        question: '',
+      });
     } catch (e) {
       wx.showToast({ title: e.message || '提交失败', icon: 'none' });
     } finally {
@@ -65,7 +77,24 @@ Page({
     }
   },
 
-  askAnother() { this.setData({ asked: '', answer: '' }); },
+  // 升温：AI 答得不够好时，请 TA 本人亲自回答（落到主人收件箱、强制通知本人）。
+  async escalate() {
+    if (!this.data.qid || this.data.escalating || this.data.escalated) return;
+    this.setData({ escalating: true });
+    try {
+      await escalateQuestion(this.data.qid);
+      // 顺带请求「已回答」订阅授权（未配置模板则静默跳过）。
+      try { await requestQuestionNotify(); } catch (e) {}
+      this.setData({ escalated: true });
+      wx.showToast({ title: '已转达本人', icon: 'success' });
+    } catch (e) {
+      wx.showToast({ title: e.message || '操作失败', icon: 'none' });
+    } finally {
+      this.setData({ escalating: false });
+    }
+  },
+
+  askAnother() { this.setData({ asked: '', answer: '', qid: '', gap: false, escalated: false }); },
 
   // 病毒转化：访客也去建一个自己的分身（拉新闭环的关键一跳）。
   goCreate() { wx.navigateTo({ url: '/pages/onboarding/index' }); },

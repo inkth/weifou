@@ -50,9 +50,11 @@ Page({
         questions: (questions || []).map((q) => ({
           ...q,
           timeText: fmtDateTime(q.createdAt),
-          statusText: q.status === 'pending' ? '待回答'
-            : q.status === 'ai_answered' ? '分身已答 · 可补一句'
-            : q.status === 'answered' ? '已回答' : '',
+          // 访客点名要本人亲自答（escalatedAt）→ 比普通「分身已答」更优先，提示更醒目。
+          statusText: q.status === 'answered' ? '已回答'
+            : q.escalatedAt ? '🙋 访客点名要你亲自答'
+            : q.status === 'pending' ? '待回答'
+            : q.status === 'ai_answered' ? '分身已答 · 可补一句' : '',
         })),
         loading: false,
       });
