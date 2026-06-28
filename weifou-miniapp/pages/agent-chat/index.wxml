@@ -10,6 +10,35 @@
     <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">开通会员</view>
   </view>
 
+  <!-- 学习型 Agent：三维段位面板（升级感）。段位只升不降，三维条次次微动。 -->
+  <view wx:if="{{skill}}" class="skill" style="--accent: {{accent}};">
+    <view class="sk-head">
+      <view class="sk-tier">
+        <text class="sk-lv">Lv.{{skill.level}}</text>
+        <text class="sk-name">{{skill.levelName}}</text>
+      </view>
+      <view wx:if="{{skill.assessed === 0}}" class="sk-hint">用英文开口，我来给你定级 →</view>
+      <view wx:elif="{{skill.note}}" class="sk-note">{{skill.note}}</view>
+    </view>
+    <view class="sk-bars">
+      <view class="sk-bar">
+        <text class="sk-bl">流利</text>
+        <view class="sk-track"><view class="sk-fill" style="width: {{skill.fluency}}%;"></view></view>
+        <text class="sk-bv">{{skill.fluency}}</text>
+      </view>
+      <view class="sk-bar">
+        <text class="sk-bl">准确</text>
+        <view class="sk-track"><view class="sk-fill" style="width: {{skill.accuracy}}%;"></view></view>
+        <text class="sk-bv">{{skill.accuracy}}</text>
+      </view>
+      <view class="sk-bar">
+        <text class="sk-bl">表达</text>
+        <view class="sk-track"><view class="sk-fill" style="width: {{skill.expression}}%;"></view></view>
+        <text class="sk-bv">{{skill.expression}}</text>
+      </view>
+    </view>
+  </view>
+
   <scroll-view class="msgs" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
     <view wx:for="{{messages}}" wx:key="index" id="m{{index}}" class="row row-{{item.role}}">
       <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
@@ -32,6 +61,16 @@
       disabled="{{pending}}"
     />
     <button class="cp-send" bindtap="send" disabled="{{pending || !draft}}">发送</button>
+  </view>
+
+  <!-- 升级庆祝浮层：跨段位时短暂展示新身份 -->
+  <view wx:if="{{celebrate}}" class="celebrate" style="--accent: {{accent}};">
+    <view class="celeb-card">
+      <view class="celeb-spark">🎉</view>
+      <view class="celeb-up">升级！</view>
+      <view class="celeb-name">{{celebrate.levelName}}</view>
+      <view class="celeb-sub">你的英语又上了一个台阶</view>
+    </view>
   </view>
 
   <!-- 历史会话抽屉（多会话：每段对话各自成流） -->

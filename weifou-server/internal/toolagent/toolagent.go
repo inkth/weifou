@@ -38,6 +38,7 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/agents/detail/:id", auth, httpx.Handle(h.detail))
 	rg.GET("/agents/sessions/:id", auth, httpx.Handle(h.sessionList)) // :id = agentId → 我的历史会话
 	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))    // :id = sessionId → 该会话消息
+	rg.GET("/agents/skill/:id", auth, httpx.Handle(h.skill))          // :id = agentId → 我在该学习型 Agent 的三维段位
 	rg.POST("/agents/:id/chat", auth, httpx.Handle(h.chat))
 }
 
@@ -168,8 +169,36 @@ func (h *Handler) chat(c *gin.Context) error {
 	})
 	h.db.Model(&session).Update("updated_at", time.Now())
 
+	resp := gin.H{"sessionId": session.ID, "answer": answer, "member": member, "remaining": remaining}
+
+	// 学习型 Agent（如英语陪练）：评估用户本轮表达、更新三维段位，给升级感。
+	if a.Assess {
+		sk := h.loadSkill(auth.UserID, a.ID)
+		_, leveledUp := h.assessAndUpdate(sk, content)
+		resp["skill"] = skillView(sk)
+		resp["levelUp"] = leveledUp
+	}
+
 	// member=true → remaining=-1（畅用，前端不显额度）。
-	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": answer, "member": member, "remaining": remaining})
+	httpx.OK(c, resp)
+	return nil
+}
+
+// skill 返回我在某学习型 Agent（:id = agentId）的三维段位档案；非学习型 Agent 返回 enabled=false。
+func (h *Handler) skill(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var a models.ToolAgent
+	if err := h.db.First(&a, "id = ? AND enabled = ?", c.Param("id"), true).Error; err != nil {
+		return httpx.NotFound("AGENT_NOT_FOUND", "该 Agent 不存在或已下架")
+	}
+	if !a.Assess {
+		httpx.OK(c, gin.H{"enabled": false})
+		return nil
+	}
+	sk := h.loadSkill(auth.UserID, a.ID)
+	out := skillView(sk)
+	out["enabled"] = true
+	httpx.OK(c, out)
 	return nil
 }
 
@@ -297,8 +326,9 @@ func Seed(db *gorm.DB) {
 			Tagline:     "随时开口的 AI 英语口语教练",
 			Description: "用中文也能学：纠音、造句、模拟对话，按日常 / 旅行 / 商务 / 面试场景陪你开口，循序渐进。",
 			Category:    models.AgentCatEducation, Icon: "🗣️", Accent: "#FB923C",
-			Greeting:     "Hi！我是你的英语陪练。想练点什么？日常对话、面试还是旅行场景都行——直接用中文告诉我也可以。",
+			Greeting:     "Hi！我是你的英语陪练。想练点什么？日常对话、面试还是旅行场景都行——直接用中文告诉我也可以。多用英文开口，我会帮你测出流利度 / 准确度 / 表达力，陪你一段段往上升级。",
 			SystemPrompt: spokenEnglishPrompt,
+			Assess:       true,
 			FreeTrial:    5, Sort: 1,
 		},
 		{
@@ -325,6 +355,7 @@ func Seed(db *gorm.DB) {
 			"name": p.Name, "tagline": p.Tagline, "description": p.Description,
 			"category": p.Category, "icon": p.Icon, "accent": p.Accent,
 			"greeting": p.Greeting, "system_prompt": p.SystemPrompt,
+			"assess":     p.Assess,
 			"free_trial": p.FreeTrial, "sort": p.Sort,
 		})
 	}

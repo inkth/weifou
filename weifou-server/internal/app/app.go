@@ -10,6 +10,7 @@ import (
 	"weifou-server/internal/chat"
 	"weifou-server/internal/clientcfg"
 	"weifou-server/internal/config"
+	"weifou-server/internal/dating"
 	"weifou-server/internal/deepseek"
 	"weifou-server/internal/membership"
 	"weifou-server/internal/mp"
@@ -43,6 +44,7 @@ type App struct {
 	asyncqH     *asyncq.Handler
 	plazaH      *plaza.Handler
 	toolagentH  *toolagent.Handler
+	datingH     *dating.Handler
 	membershipH *membership.Handler
 	mpH         *mp.Handler
 	clientcfgH  *clientcfg.Handler
@@ -97,6 +99,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		asyncqH:     asyncq.NewHandler(db, security, subscribe, cfg.JWTSecret),
 		plazaH:      plaza.NewHandler(db),
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
+		datingH:     dating.NewHandler(db, ds, security, cfg.JWTSecret),
 		membershipH: mbrH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH:  clientcfg.NewHandler(vpayClient.Ready()),
@@ -119,6 +122,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.asyncqH.Register(api)
 	a.plazaH.Register(api)
 	a.toolagentH.Register(api)
+	a.datingH.Register(api)
 	a.membershipH.Register(api)
 	a.mpH.Register(api)
 	a.clientcfgH.Register(api)

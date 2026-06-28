@@ -313,9 +313,10 @@ type ToolAgent struct {
 	Accent       string    `gorm:"size:16" json:"accent"` // 主题色（前端氛围）
 	Greeting     string    `gorm:"type:text" json:"greeting"`
 	SystemPrompt string    `gorm:"type:text" json:"-"`
-	Price        int       `json:"price"`        // 一次购买价格（分）
-	QuotaPerPack int       `json:"quotaPerPack"` // 每次购买发放的对话条数
-	FreeTrial    int       `json:"freeTrial"`    // 首次免费体验条数
+	Assess       bool      `gorm:"default:false" json:"assess"` // 是否为「学习型」Agent：每轮评估用户能力、给三维段位升级感（如英语陪练）
+	Price        int       `json:"price"`                       // 一次购买价格（分）
+	QuotaPerPack int       `json:"quotaPerPack"`                // 每次购买发放的对话条数
+	FreeTrial    int       `json:"freeTrial"`                   // 首次免费体验条数
 	Enabled      bool      `gorm:"default:true;index" json:"enabled"`
 	Sort         int       `gorm:"default:0" json:"sort"`
 	CreatedAt    time.Time `json:"createdAt"`
@@ -360,6 +361,25 @@ type AgentMessage struct {
 
 func (AgentMessage) TableName() string { return "agent_messages" }
 
+// AgentSkill 用户在某「学习型」工具 Agent（Assess=true，如英语陪练）上的能力档案。
+// 三维（流利度/准确度/表达力）+ 由三维派生的总段位，给用户「升级感」。
+// 设计纪律（见产品决策）：三维分数「只升不降」——状态差的一轮不掉分（消除惩罚感）；
+// 首轮直接定级（baseline），其后每轮按曲线小幅向上爬（前段快后段慢），每次对话都能看到自己挪了一点。
+type AgentSkill struct {
+	ID         string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID     string    `gorm:"size:32;uniqueIndex:idx_skill_user_agent" json:"userId"`
+	AgentID    string    `gorm:"size:32;uniqueIndex:idx_skill_user_agent" json:"agentId"`
+	Fluency    int       `json:"fluency"`                  // 流利度（敢说·不卡）0-100
+	Accuracy   int       `json:"accuracy"`                 // 准确度（说得对）0-100
+	Expression int       `json:"expression"`               // 表达力（说得地道/高级）0-100
+	Assessed   int       `json:"assessed"`                 // 已评估轮次（0 = 尚未定级）
+	LastNote   string    `gorm:"size:255" json:"lastNote"` // 最近一次涨分归因（"因为你把 very like 升级成 really into"）
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+func (AgentSkill) TableName() string { return "agent_skills" }
+
 // ========== 会员（一价解锁全部工具 Agent；虚拟商品，平台自营、不分账） ==========
 
 // Membership 账号级会员状态（一人一条）。ExpiresAt 之前为有效会员，工具 Agent 畅用。
@@ -401,6 +421,45 @@ type MembershipLead struct {
 
 func (MembershipLead) TableName() string { return "membership_leads" }
 
+// ========== 找对象 · 择偶测试（B 形态：我 × 平台预设原型 → 匹配度 + 择偶画像） ==========
+//
+// AI 动态出题、LLM 直接打分；题目与结果均存库以便复盘。匹配对象是平台预设的「原型」
+// （非真人），故落「自测/知识付费」叙事，不连接真人、避开婚恋交友红线。
+// 产出的「择偶画像」回写为 KnowledgeItem 喂养主人的分身（成为对话记忆）。
+
+const (
+	DatingQuizOpen = "open" // 已出题，待作答
+	DatingQuizDone = "done" // 已提交并出结果
+)
+
+// DatingQuiz 一次测试的题目（AI 动态生成，存库以便复盘 / 提交时按 id 还原题面）。
+type DatingQuiz struct {
+	ID        string         `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string         `gorm:"size:32;index:idx_dquiz_user_time" json:"userId"`
+	Questions datatypes.JSON `gorm:"type:jsonb" json:"questions"` // [{id,text,options:[{key,label}]}]
+	Status    string         `gorm:"size:16;default:open" json:"status"`
+	Model     string         `gorm:"size:64" json:"-"`
+	CreatedAt time.Time      `gorm:"index:idx_dquiz_user_time" json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+}
+
+func (DatingQuiz) TableName() string { return "dating_quizzes" }
+
+// DatingResult 一次测试的结果：择偶画像 + 与各原型的匹配度（LLM 直接打分）。
+type DatingResult struct {
+	ID        string         `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string         `gorm:"size:32;index:idx_dres_user_time" json:"userId"`
+	QuizID    string         `gorm:"size:32;index" json:"quizId"`
+	Answers   datatypes.JSON `gorm:"type:jsonb" json:"answers"`  // [{questionId,key}]
+	Profile   string         `gorm:"type:text" json:"profile"`   // 择偶画像（自然语言）
+	Headline  datatypes.JSON `gorm:"type:jsonb" json:"headline"` // 头条：最契合原型 + 3 维拆解 {archetype,total,dimensions,summary}
+	Matches   datatypes.JSON `gorm:"type:jsonb" json:"matches"`  // [{archetype,score,reason}]，按 score 降序
+	Model     string         `gorm:"size:64" json:"-"`
+	CreatedAt time.Time      `gorm:"index:idx_dres_user_time" json:"createdAt"`
+}
+
+func (DatingResult) TableName() string { return "dating_results" }
+
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -410,7 +469,8 @@ func AllModels() []interface{} {
 		&Order{},
 		&AsyncQuestion{},
 		&Refund{},
-		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{},
+		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
+		&DatingQuiz{}, &DatingResult{},
 	}
 }

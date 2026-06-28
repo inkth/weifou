@@ -26,6 +26,12 @@ function sessionMessages(sessionId) {
   return request({ url: `/agents/messages/${sessionId}` });
 }
 
+// 我在某「学习型」Agent（如英语陪练）的三维段位档案。
+// 非学习型 Agent 返回 { enabled: false }；学习型返回 { enabled, level, levelName, fluency, accuracy, expression, assessed, note }。
+function agentSkill(agentId) {
+  return request({ url: `/agents/skill/${agentId}` });
+}
+
 // 对话。sessionId 续聊指定会话，空 = 新开一段；返回里带 sessionId（新建时回传新 id）。
 // 会员畅用;非会员扣免费体验,耗尽抛 { code: 'MEMBERSHIP_REQUIRED' }。
 function chatAgent(agentId, content, sessionId) {
@@ -36,4 +42,4 @@ function chatAgent(agentId, content, sessionId) {
   });
 }
 
-module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, chatAgent };
+module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, chatAgent };

@@ -30,6 +30,9 @@
     <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
       <view class="ic ic-crown cell-ic cell-ic-accent"></view><text class="cell-label">会员</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
+    <view class="cell" bindtap="goDating">
+      <view class="ic ic-heart cell-ic cell-ic-accent"></view><text class="cell-label">找对象 · 择偶画像测试</text><view class="ic ic-chevron cell-arrow"></view>
+    </view>
     <view class="cell" bindtap="goSettings">
       <view class="ic ic-settings cell-ic"></view><text class="cell-label">设置</text><view class="ic ic-chevron cell-arrow"></view>
     </view>

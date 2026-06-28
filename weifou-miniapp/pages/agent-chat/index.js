@@ -1,5 +1,5 @@
 const { ensureLogin } = require('../../utils/auth');
-const { agentDetail, agentSessions, sessionMessages, chatAgent } = require('../../utils/agent');
+const { agentDetail, agentSessions, sessionMessages, agentSkill, chatAgent } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 const { fmtDateTime } = require('../../utils/datetime');
 
@@ -21,6 +21,8 @@ Page({
     sessions: [],         // 历史会话（抽屉）
     currentSessionId: '', // 当前续聊的会话；空 = 新开一段（下一条消息创建）
     historyVisible: false,
+    skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
+    celebrate: null,      // 升级庆祝：{ levelName } 浮层，触发后短暂展示
   },
 
   async onLoad(query) {
@@ -34,10 +36,11 @@ Page({
       await ensureLogin();
     } catch (e) {}
     try {
-      const [d, sessions, ms] = await Promise.all([
+      const [d, sessions, ms, sk] = await Promise.all([
         agentDetail(id),
         agentSessions(id).catch(() => []),
         membershipStatus().catch(() => ({ isMember: false })),
+        agentSkill(id).catch(() => ({ enabled: false })),
       ]);
       const member = !!ms.isMember;
       // 默认载入最近一段会话；没有则以开场白起新的一段
@@ -60,6 +63,7 @@ Page({
         messages,
         currentSessionId,
         sessions: this._decorate(sessions || []),
+        skill: sk && sk.enabled ? sk : null,
         loading: false,
       });
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
@@ -72,6 +76,14 @@ Page({
 
   _quota(member, remaining) {
     return member ? '会员 · 畅用' : `免费体验剩 ${remaining} 次`;
+  },
+
+  // 升级庆祝浮层：展示新段位名，2.4s 后自动收起。
+  _celebrate(levelName) {
+    if (this._celebTimer) clearTimeout(this._celebTimer);
+    wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
+    this.setData({ celebrate: { levelName: levelName || '' } });
+    this._celebTimer = setTimeout(() => this.setData({ celebrate: null }), 2400);
   },
 
   _decorate(sessions) {
@@ -95,7 +107,7 @@ Page({
       const data = await chatAgent(this.data.id, content, this.data.currentSessionId);
       const member = !!data.member;
       const remaining = member ? this.data.remaining : data.remaining;
-      this.setData({
+      const patch = {
         messages: this.data.messages.concat({ role: 'assistant', content: data.answer }),
         member,
         remaining,
@@ -103,7 +115,13 @@ Page({
         // 新开一段时服务端回传新建会话 id，记下来后续消息续到同一段
         currentSessionId: data.sessionId || this.data.currentSessionId,
         pending: false,
-      });
+      };
+      // 学习型 Agent：更新三维段位，升级时弹庆祝浮层
+      if (data.skill) {
+        patch.skill = { enabled: true, ...data.skill };
+        if (data.levelUp) this._celebrate(data.skill.levelName);
+      }
+      this.setData(patch);
       this._scrollEnd();
     } catch (e) {
       this.setData({ pending: false });

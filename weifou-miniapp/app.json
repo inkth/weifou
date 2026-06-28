@@ -18,7 +18,8 @@
     "pages/my-chats/index",
     "pages/agents/index",
     "pages/agent-chat/index",
-    "pages/membership/index"
+    "pages/membership/index",
+    "pages/dating/index"
   ],
   "tabBar": {
     "custom": true,

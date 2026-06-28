@@ -37,6 +37,31 @@ page { background: #f5f6fa; height: 100%; }
 .typing { color: #9aa0ad; }
 .msgs-pad { height: 24rpx; }
 
+/* 三维段位面板（升级感） */
+.skill { flex: 0 0 auto; background: #fff; padding: 16rpx 28rpx 20rpx; border-top: 2rpx solid #f0f1f5; box-shadow: 0 2rpx 12rpx rgba(31, 35, 48, 0.03); }
+.sk-head { display: flex; align-items: center; gap: 16rpx; margin-bottom: 14rpx; }
+.sk-tier { display: flex; align-items: baseline; gap: 8rpx; flex: 0 0 auto; }
+.sk-lv { font-size: 22rpx; font-weight: 700; color: var(--accent, #18b690); letter-spacing: 0.5rpx; }
+.sk-name { font-size: 28rpx; font-weight: 700; color: #1f2330; }
+.sk-hint { font-size: 22rpx; color: var(--accent, #18b690); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-note { font-size: 22rpx; color: #8a90a0; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-bars { display: flex; gap: 22rpx; }
+.sk-bar { flex: 1 1 0; display: flex; align-items: center; gap: 8rpx; }
+.sk-bl { font-size: 20rpx; color: #9aa0ad; flex: 0 0 auto; }
+.sk-track { flex: 1 1 auto; height: 10rpx; border-radius: 999rpx; background: #eef0f4; overflow: hidden; }
+.sk-fill { height: 100%; border-radius: 999rpx; background: var(--accent, #18b690); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.sk-bv { font-size: 20rpx; color: #6b7180; flex: 0 0 auto; width: 36rpx; text-align: right; }
+
+/* 升级庆祝浮层 */
+.celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.32); animation: celebFade 0.25s ease; pointer-events: none; }
+.celeb-card { background: #fff; border-radius: 28rpx; padding: 48rpx 64rpx; text-align: center; box-shadow: 0 16rpx 56rpx rgba(31, 35, 48, 0.22); animation: celebPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.celeb-spark { font-size: 64rpx; line-height: 1; }
+.celeb-up { font-size: 24rpx; font-weight: 700; color: var(--accent, #18b690); letter-spacing: 4rpx; margin-top: 12rpx; }
+.celeb-name { font-size: 44rpx; font-weight: 800; color: #1f2330; margin-top: 8rpx; }
+.celeb-sub { font-size: 24rpx; color: #8a90a0; margin-top: 12rpx; }
+@keyframes celebFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes celebPop { 0% { opacity: 0; transform: scale(0.7); } 60% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+
 .composer { flex: 0 0 auto; display: flex; align-items: center; gap: 16rpx; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); background: #fff; box-shadow: 0 -2rpx 12rpx rgba(31, 35, 48, 0.04); }
 .cp-input { flex: 1 1 auto; min-width: 0; background: #f1f2f6; border-radius: 999rpx; padding: 18rpx 28rpx; font-size: 29rpx; }
 .cp-send { flex: 0 0 auto; background: #18b690; color: #fff; font-size: 28rpx; font-weight: 600; border-radius: 999rpx; padding: 0 36rpx; height: 72rpx; line-height: 72rpx; }

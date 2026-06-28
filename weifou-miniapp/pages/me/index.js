@@ -45,4 +45,5 @@ Page({
   goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
   goQuestions() { wx.navigateTo({ url: '/pages/my-questions/index' }); },
+  goDating() { wx.navigateTo({ url: '/pages/dating/index' }); },
 });
