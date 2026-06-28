@@ -119,26 +119,22 @@ func (h *Handler) stats(c *gin.Context) error {
 		Where("chat_sessions.profile_id = ? AND chat_messages.role = ?", profile.ID, models.RoleUser).
 		Count(&askCount)
 
-	// 主人收入可见：累计成交（已支付的打赏订单）+ 本月成交 + 已分账到账（净）。
-	// 通话/付费咨询已下线，C2C 收费仅剩打赏（自愿赠予）。
+	// 主人收入可见：累计成交（已支付的打赏订单）+ 本月成交。
+	// 通话/付费咨询已下线、分账已移除，C2C 收费仅剩打赏（自愿赠予）。incomeNet 保留为 0 兼容前端。
 	payTypes := []string{models.OrderTip}
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	var incomeGross, incomeMonth, incomeNet int64
+	var incomeGross, incomeMonth int64
 	h.db.Model(&models.Order{}).
 		Where("payee_user_id = ? AND status = ? AND type IN ?", auth.UserID, models.OrderPaid, payTypes).
 		Select("COALESCE(SUM(amount),0)").Scan(&incomeGross)
 	h.db.Model(&models.Order{}).
 		Where("payee_user_id = ? AND status = ? AND type IN ? AND created_at >= ?", auth.UserID, models.OrderPaid, payTypes, monthStart).
 		Select("COALESCE(SUM(amount),0)").Scan(&incomeMonth)
-	h.db.Table("profit_shares").
-		Joins("JOIN orders ON orders.id = profit_shares.order_id").
-		Where("orders.payee_user_id = ? AND profit_shares.finished = ?", auth.UserID, true).
-		Select("COALESCE(SUM(profit_shares.payee_amount),0)").Scan(&incomeNet)
 
 	httpx.OK(c, gin.H{
 		"profileId": profile.ID, "pv": pv, "uv": uv, "askCount": askCount,
-		"incomeGross": incomeGross, "incomeMonth": incomeMonth, "incomeNet": incomeNet,
+		"incomeGross": incomeGross, "incomeMonth": incomeMonth, "incomeNet": 0,
 	})
 	return nil
 }

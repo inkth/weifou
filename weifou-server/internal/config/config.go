@@ -39,8 +39,6 @@ type Config struct {
 	WxPayPlatformCert   string
 	WxPayNotifyURL      string
 	TipMaxAmount        int
-	PlatformFeeRate     float64
-	ProfitSharing       bool
 	OrderTimeoutMin     int
 	CallEarlyJoinMin    int
 	CallGraceMin        int
@@ -91,15 +89,6 @@ func getInt(key string, def int) int {
 	return def
 }
 
-func getFloat(key string, def float64) float64 {
-	if v := os.Getenv(key); v != "" {
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			return f
-		}
-	}
-	return def
-}
-
 func getBool(key string, def bool) bool {
 	if v := os.Getenv(key); v != "" {
 		return v == "true" || v == "1"
@@ -140,8 +129,6 @@ func Load() *Config {
 		WxPayPlatformCert:   os.Getenv("WXPAY_PLATFORM_CERT_PATH"),
 		WxPayNotifyURL:      os.Getenv("WXPAY_NOTIFY_URL"),
 		TipMaxAmount:        getInt("TIP_MAX_AMOUNT", 50000),
-		PlatformFeeRate:     getFloat("PLATFORM_FEE_RATE", 0),
-		ProfitSharing:       getBool("PROFIT_SHARING_ENABLED", false),
 		OrderTimeoutMin:     getInt("ORDER_TIMEOUT_MIN", 15),
 		CallEarlyJoinMin:    getInt("CALL_EARLY_JOIN_MIN", 5),
 		CallGraceMin:        getInt("CALL_GRACE_MIN", 15),

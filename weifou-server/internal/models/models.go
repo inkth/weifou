@@ -16,10 +16,9 @@ type User struct {
 	WxMpOpenid  *string `gorm:"size:64;index" json:"-"` // 小程序 openid
 	WxAppOpenid *string `gorm:"size:64;index" json:"-"` // 移动应用 openid
 	// Unionid：同一开放平台主体下跨端唯一，作为账号合并主键。
-	Unionid         *string `gorm:"uniqueIndex;size:64" json:"unionid,omitempty"`
-	Nickname        *string `gorm:"size:128" json:"nickname,omitempty"`
-	AvatarURL       *string `gorm:"size:512" json:"avatarUrl,omitempty"`
-	PsReceiverAdded bool    `gorm:"default:false" json:"psReceiverAdded"`
+	Unionid   *string `gorm:"uniqueIndex;size:64" json:"unionid,omitempty"`
+	Nickname  *string `gorm:"size:128" json:"nickname,omitempty"`
+	AvatarURL *string `gorm:"size:512" json:"avatarUrl,omitempty"`
 	// 最近一次小程序 session_key（虚拟支付发货确认 NotifyProvideGoods 的离线兜底；会过期）。
 	WxSessionKey *string   `gorm:"size:64" json:"-"`
 	CreatedAt    time.Time `json:"createdAt"`
@@ -291,28 +290,6 @@ type Refund struct {
 
 func (Refund) TableName() string { return "refunds" }
 
-const (
-	PSProcessing = "processing"
-	PSSuccess    = "success"
-	PSFinished   = "finished"
-	PSFail       = "fail"
-)
-
-type ProfitShare struct {
-	ID          string    `gorm:"primaryKey;size:32" json:"id"`
-	OrderID     string    `gorm:"uniqueIndex;size:32" json:"orderId"`
-	OutOrderNo  string    `gorm:"uniqueIndex;size:64" json:"outOrderNo"`
-	PlatformFee int       `json:"platformFee"`
-	PayeeAmount int       `json:"payeeAmount"`
-	Status      string    `gorm:"size:16;default:processing" json:"status"`
-	WxOrderID   *string   `gorm:"size:64" json:"wxOrderId,omitempty"`
-	Finished    bool      `gorm:"default:false" json:"finished"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-func (ProfitShare) TableName() string { return "profit_shares" }
-
 // ========== AI 工具 Agent（平台预设、付费使用的虚拟商品；与"代表真人的对外助理"并存） ==========
 //
 // 与对外助理的本质差异：ToolAgent 不绑定任何真人 Profile，平台是卖家（无真人 payee、不分账）。
@@ -432,7 +409,7 @@ func AllModels() []interface{} {
 		&Visit{}, &Event{}, &ChatSession{}, &ChatMessage{},
 		&Order{},
 		&AsyncQuestion{},
-		&Refund{}, &ProfitShare{},
+		&Refund{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 	}

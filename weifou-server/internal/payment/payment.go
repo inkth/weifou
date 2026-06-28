@@ -23,14 +23,13 @@ type Handler struct {
 	db           *gorm.DB
 	pay          *wxpay.Client
 	security     *wechat.SecurityService
-	profitShare  *ProfitShareService
 	subscribe    *wechat.SubscribeService
 	jwtSecret    string
 	tipMaxAmount int
 }
 
-func NewHandler(db *gorm.DB, pay *wxpay.Client, security *wechat.SecurityService, ps *ProfitShareService, subscribe *wechat.SubscribeService, jwtSecret string, tipMax int) *Handler {
-	return &Handler{db: db, pay: pay, security: security, profitShare: ps, subscribe: subscribe, jwtSecret: jwtSecret, tipMaxAmount: tipMax}
+func NewHandler(db *gorm.DB, pay *wxpay.Client, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string, tipMax int) *Handler {
+	return &Handler{db: db, pay: pay, security: security, subscribe: subscribe, jwtSecret: jwtSecret, tipMaxAmount: tipMax}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
@@ -88,10 +87,10 @@ func (h *Handler) tip(c *gin.Context) error {
 	}
 	h.db.Create(&order)
 
-	return h.prepay(c, &order, fmt.Sprintf("打赏 %s", profile.RealName), false)
+	return h.prepay(c, &order, fmt.Sprintf("打赏 %s", profile.RealName))
 }
 
-func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string, profitSharing bool) error {
+func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string) error {
 	// 记录下单端（合规分流/兜底）。业务方已设置则不覆盖。
 	if order.Platform == "" {
 		if p := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Platform"))); p != "" {
@@ -100,12 +99,11 @@ func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string, profi
 		}
 	}
 	prepayID, err := h.pay.CreateJsapiOrder(wxpay.JsapiOrder{
-		OutTradeNo:    order.OutTradeNo,
-		Description:   desc,
-		Amount:        order.Amount,
-		PayerOpenid:   order.PayerOpenid,
-		Attach:        order.ID,
-		ProfitSharing: profitSharing && h.profitShare.Enabled(),
+		OutTradeNo:  order.OutTradeNo,
+		Description: desc,
+		Amount:      order.Amount,
+		PayerOpenid: order.PayerOpenid,
+		Attach:      order.ID,
 	})
 	if err != nil {
 		return httpx.Internal("WXPAY_ORDER_FAILED", "下单失败，请稍后重试")
@@ -119,9 +117,9 @@ func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string, profi
 	return nil
 }
 
-// PrepayOrder 通用预下单：业务方建好 order 后调用，复用下单 + 返回 payParams（如付费提问）。
-func (h *Handler) PrepayOrder(c *gin.Context, order *models.Order, desc string, profitSharing bool) error {
-	return h.prepay(c, order, desc, profitSharing)
+// PrepayOrder 通用预下单：业务方建好 order 后调用，复用下单 + 返回 payParams。
+func (h *Handler) PrepayOrder(c *gin.Context, order *models.Order, desc string) error {
+	return h.prepay(c, order, desc)
 }
 
 // PrepayH5 H5(MWEB) 下单：业务方建好 order 后调用，返回外部浏览器跳转的 h5_url（已附 redirect_url）。

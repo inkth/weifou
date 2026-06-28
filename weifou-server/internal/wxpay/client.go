@@ -181,12 +181,11 @@ func (c *Client) doV3(method, urlPath string, payload interface{}) ([]byte, erro
 // ---------- 下单 ----------
 
 type JsapiOrder struct {
-	OutTradeNo    string
-	Description   string
-	Amount        int
-	PayerOpenid   string
-	Attach        string
-	ProfitSharing bool
+	OutTradeNo  string
+	Description string
+	Amount      int
+	PayerOpenid string
+	Attach      string
 }
 
 func (c *Client) CreateJsapiOrder(o JsapiOrder) (string, error) {
@@ -201,9 +200,6 @@ func (c *Client) CreateJsapiOrder(o JsapiOrder) (string, error) {
 	}
 	if o.Attach != "" {
 		payload["attach"] = o.Attach
-	}
-	if o.ProfitSharing {
-		payload["settle_info"] = map[string]bool{"profit_sharing": true}
 	}
 	body, err := c.doV3("POST", "/v3/pay/transactions/jsapi", payload)
 	if err != nil {
@@ -327,59 +323,6 @@ func (c *Client) Refund(r RefundReq) (*RefundResp, error) {
 		return nil, err
 	}
 	var data RefundResp
-	_ = json.Unmarshal(body, &data)
-	return &data, nil
-}
-
-// ---------- 分账 ----------
-
-func (c *Client) AddProfitShareReceiver(openid, name string) error {
-	payload := map[string]interface{}{
-		"appid":         c.appID,
-		"type":          "PERSONAL_OPENID",
-		"account":       openid,
-		"relation_type": "PARTNER",
-	}
-	if name != "" {
-		payload["name"] = name
-	}
-	_, err := c.doV3("POST", "/v3/profitsharing/receivers/add", payload)
-	return err
-}
-
-type ProfitShareReq struct {
-	TransactionID  string
-	OutOrderNo     string
-	ReceiverOpenid string
-	Amount         int
-	Description    string
-}
-
-type ProfitShareResp struct {
-	OrderID string `json:"order_id"`
-	State   string `json:"state"`
-}
-
-func (c *Client) CreateProfitShare(r ProfitShareReq) (*ProfitShareResp, error) {
-	payload := map[string]interface{}{
-		"appid":          c.appID,
-		"transaction_id": r.TransactionID,
-		"out_order_no":   r.OutOrderNo,
-		"receivers": []map[string]interface{}{
-			{
-				"type":        "PERSONAL_OPENID",
-				"account":     r.ReceiverOpenid,
-				"amount":      r.Amount,
-				"description": r.Description,
-			},
-		},
-		"unfreeze_unsplit": true,
-	}
-	body, err := c.doV3("POST", "/v3/profitsharing/orders", payload)
-	if err != nil {
-		return nil, err
-	}
-	var data ProfitShareResp
 	_ = json.Unmarshal(body, &data)
 	return &data, nil
 }

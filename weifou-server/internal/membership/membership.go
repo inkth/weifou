@@ -256,7 +256,7 @@ func (h *Handler) buy(c *gin.Context) error {
 	if err := h.db.Create(&order).Error; err != nil {
 		return httpx.Internal("ORDER_CREATE_FAILED", "下单失败，请稍后重试")
 	}
-	return h.pay.PrepayOrder(c, &order, "微否会员 · "+plan.Name, false) // 平台自营、不分账
+	return h.pay.PrepayOrder(c, &order, "微否会员 · "+plan.Name) // 平台自营
 }
 
 // intent 留资意向（多为 iOS 用户：当下不能在小程序内开通，记录意向）。
