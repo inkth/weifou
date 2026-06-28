@@ -42,6 +42,7 @@ Page({
   _decorate(q) {
     const statusText =
       q.status === 'pending' ? '待回答'
+      : q.status === 'ai_answered' ? '分身已答'
       : q.status === 'answered' ? '已回答' : '';
     return {
       ...q,

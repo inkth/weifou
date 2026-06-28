@@ -5,7 +5,7 @@
 //   未配置时全部静默降级：不弹授权、不报错，闭环退化为「进页刷新」。
 const ANSWERED_TMPL_ID = ''; // 访客：你的提问已回答
 const REFUNDED_TMPL_ID = ''; // 访客：你的提问已退款
-const NEW_QUESTION_TMPL_ID = ''; // 主人：有新的付费提问
+const NEW_QUESTION_TMPL_ID = ''; // 主人：有人问了你的问答箱（召回）
 const LEAD_TMPL_ID = ''; // 主人：有新的访客线索
 
 // 请求一次性订阅授权；空模板自动剔除，全空则直接 resolve（降级，不打扰用户）。

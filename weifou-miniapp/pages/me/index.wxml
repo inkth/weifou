@@ -25,6 +25,18 @@
     <view class="create-btn"><text>开始创建</text><view class="ic ic-arrow create-btn-ic"></view></view>
   </view>
 
+  <!-- 我的问答箱：拉新楔子的对外入口（分享出去让人匿名来问） -->
+  <view wx:if="{{profileId}}" class="qabox card">
+    <view class="qabox-info">
+      <view class="qabox-title">我的问答箱</view>
+      <view class="qabox-sub muted">分享出去，让人匿名问你的 AI 分身 —— 别人认识你的入口。</view>
+    </view>
+    <view class="qabox-acts">
+      <button class="qabox-share" open-type="share">分享</button>
+      <view class="qabox-preview" catchtap="goQabox">预览 ›</view>
+    </view>
+  </view>
+
   <!-- 功能入口 -->
   <view class="group">
     <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">

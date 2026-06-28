@@ -1,0 +1,60 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="muted empty">加载中…</view>
+
+  <block wx:else>
+    <!-- 顶部：被问的分身 -->
+    <view class="qb-hero">
+      <view class="qb-ava"><view class="ic ic-bot"></view></view>
+      <view class="qb-name">{{realName}} 的 AI 分身</view>
+      <view wx:if="{{oneLiner}}" class="qb-oneliner muted">{{oneLiner}}</view>
+      <view class="qb-badge">🔒 匿名提问 · TA 不知道是谁问的</view>
+    </view>
+
+    <!-- 提问态 -->
+    <block wx:if="{{!answer}}">
+      <view class="card qb-ask">
+        <view class="qb-ask-title">想问 {{realName}} 什么？</view>
+        <textarea
+          class="qb-input"
+          placeholder="随便问——TA 在忙什么、怎么合作、对某事怎么看…分身会替 TA 答你"
+          maxlength="200"
+          value="{{question}}"
+          bindinput="onInput"
+          auto-height
+        />
+        <view class="qb-count muted">{{question.length}}/200</view>
+      </view>
+      <button class="btn-primary qb-submit" bindtap="submit" disabled="{{submitting || question.length < 2}}">
+        {{submitting ? '分身思考中…' : '匿名问 TA 的分身'}}
+      </button>
+      <view class="qb-foot muted">由 AI 分身即时作答 · {{realName}} 本人有空时可能再补一句</view>
+    </block>
+
+    <!-- 结果态：分身的即时回答 + 转化钩子 -->
+    <block wx:else>
+      <view class="card qb-qa">
+        <view class="qb-q-label muted">你问</view>
+        <view class="qb-q">{{asked}}</view>
+        <view class="qb-a-label">{{realName}} 的分身答</view>
+        <view class="qb-a">{{answer}}</view>
+        <view class="qb-a-note muted">这条已送到 {{realName}} 的收件箱，TA 有空可能亲自补一句。</view>
+      </view>
+
+      <button class="qb-again" bindtap="askAnother">再问一个 →</button>
+
+      <!-- 病毒转化钩子 -->
+      <view class="qb-cta">
+        <block wx:if="{{!hasOwnClone}}">
+          <view class="qb-cta-title">也给自己建一个 AI 分身？</view>
+          <view class="qb-cta-sub muted">让你的分身替你接待、回答、被人匿名问 —— 30 秒搞定。</view>
+          <button class="btn-primary qb-cta-btn" bindtap="goCreate">30 秒建我的分身</button>
+        </block>
+        <block wx:else>
+          <view class="qb-cta-title">你也有自己的分身</view>
+          <view class="qb-cta-sub muted">把你的问答箱分享出去，看看谁来问你。</view>
+          <button class="btn-primary qb-cta-btn" bindtap="goMyClone">去我的分身</button>
+        </block>
+      </view>
+    </block>
+  </block>
+</view>

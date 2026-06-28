@@ -17,7 +17,9 @@ Page({
         list: (list || []).map((q) => ({
           ...q,
           timeText: fmtDateTime(q.createdAt),
-          statusText: q.status === 'pending' ? '等待回答' : q.status === 'answered' ? '已回答' : '',
+          statusText: q.status === 'pending' ? '等待回答'
+            : q.status === 'ai_answered' ? '分身已答'
+            : q.status === 'answered' ? '本人已补充' : '',
         })),
         loading: false,
       });

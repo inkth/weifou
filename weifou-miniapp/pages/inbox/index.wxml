@@ -3,6 +3,9 @@
     <view class="tab {{tab === 'gaps' ? 'on' : ''}}" bindtap="switchTab" data-tab="gaps">
       待回答{{gaps.length ? ' · ' + gaps.length : ''}}
     </view>
+    <view class="tab {{tab === 'questions' ? 'on' : ''}}" bindtap="switchTab" data-tab="questions">
+      问答箱{{questions.length ? ' · ' + questions.length : ''}}
+    </view>
     <view class="tab {{tab === 'leads' ? 'on' : ''}}" bindtap="switchTab" data-tab="leads">
       访客线索{{leads.length ? ' · ' + leads.length : ''}}
     </view>
@@ -68,6 +71,28 @@
       <view wx:if="{{item.contact}}" class="op contact" bindtap="copyContact" data-contact="{{item.contact}}">
         复制联系方式：{{item.contact}}
       </view>
+    </view>
+  </block>
+
+  <!-- 问答箱：访客匿名问、分身已即时作答，你可以再补一句（看不到是谁问的） -->
+  <block wx:if="{{!loading && tab === 'questions'}}">
+    <view class="tip muted">有人匿名问了你的分身。分身已替你答过，亲自补一句会让对方更惊喜。</view>
+    <view wx:if="{{canNotify}}" class="notify-row" bindtap="enableNotify">
+      <view class="ic ic-bell notify-ico"></view>
+      <text>开启提醒：有人问你的问答箱时微信通知我 ›</text>
+    </view>
+    <view wx:if="{{!questions.length}}" class="empty-share">
+      <view class="es-text muted">还没有人来问你的分身</view>
+      <button wx:if="{{profileId}}" class="es-btn" open-type="share">分享你的问答箱，让人来问 →</button>
+    </view>
+    <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="goQuestion" data-id="{{item.id}}">
+      <view class="lead-head">
+        <text class="lead-name">匿名访客</text>
+        <text class="meta muted">{{item.timeText}}</text>
+      </view>
+      <view class="q">{{item.question}}</view>
+      <view wx:if="{{item.aiAnswer}}" class="note session-last">分身答：{{item.aiAnswer}}</view>
+      <view class="meta muted">{{item.statusText}} ›</view>
     </view>
   </block>
 

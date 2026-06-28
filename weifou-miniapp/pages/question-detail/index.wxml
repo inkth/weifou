@@ -6,14 +6,22 @@
     <view class="meta muted">{{q.createdText}}</view>
   </view>
 
-  <!-- 待回答提示 -->
-  <view wx:if="{{q.status === 'pending'}}" class="card qd-deadline muted">
-    {{role === 'host' ? '访客在等你回一句，有空时答一下即可。' : 'AI 已先回过你；本人有空时可能再补一句。'}}
+  <!-- 分身的即时回答（问答箱）：访客与主人都能看到 -->
+  <view wx:if="{{q.aiAnswer}}" class="card">
+    <view class="qd-label muted">{{(q.realName || 'TA') + ' 的分身答'}}</view>
+    <view class="qd-answer">{{q.aiAnswer}}</view>
   </view>
 
-  <!-- 已回答：语音 和/或 文字 -->
+  <!-- 待回答 / 分身已答 提示 -->
+  <view wx:if="{{q.status !== 'answered'}}" class="card qd-deadline muted">
+    {{role === 'host'
+      ? (q.aiAnswer ? '分身已替你答过；亲自补一句会让访客更惊喜，有空答一下即可。' : '访客在等你回一句，有空时答一下即可。')
+      : (q.aiAnswer ? '本人有空时可能再补一句。' : 'AI 已先回过你；本人有空时可能再补一句。')}}
+  </view>
+
+  <!-- 已回答：本人补充的语音 和/或 文字 -->
   <view wx:if="{{q.status === 'answered'}}" class="card">
-    <view class="qd-label muted">{{role === 'host' ? '你的回答' : (q.realName || 'TA') + ' 的回答'}}</view>
+    <view class="qd-label muted">{{role === 'host' ? '你的回答' : (q.realName || 'TA') + ' 本人补充'}}</view>
     <view wx:if="{{q.voiceUrl}}" class="voice-player {{playing ? 'on' : ''}}" bindtap="playAnswer">
       <view class="ic ic-play vp-ic"></view>
       <text class="vp-text">{{playing ? '播放中…' : '收听语音回答'}}</text>
@@ -23,8 +31,8 @@
     <view class="meta muted">{{q.answeredText}}</view>
   </view>
 
-  <!-- 主人作答（仅 host 且待回答）：文字 / 语音任一即可，可并用 -->
-  <block wx:if="{{role === 'host' && q.status === 'pending'}}">
+  <!-- 主人作答（仅 host 且未补充）：文字 / 语音任一即可，可并用 -->
+  <block wx:if="{{role === 'host' && q.status !== 'answered'}}">
     <view class="card">
       <view class="qd-label">你的回答 · 打字或录语音都行</view>
       <textarea class="qd-input" placeholder="亲自回一句会让访客很惊喜；也可以只录一段语音" maxlength="2000" value="{{answer}}" bindinput="onAnswerInput" auto-height/>

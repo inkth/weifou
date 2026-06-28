@@ -1,0 +1,47 @@
+.empty { text-align: center; padding: 80rpx 0; }
+
+/* 顶部被问的分身 */
+.qb-hero { text-align: center; padding: 40rpx 0 28rpx; }
+.qb-ava {
+  width: 128rpx; height: 128rpx; margin: 0 auto 20rpx;
+  border-radius: 50%; background: var(--accent-soft);
+  display: flex; align-items: center; justify-content: center;
+}
+.qb-ava .ic-bot { width: 72rpx; height: 72rpx; background: var(--accent); }
+.qb-name { font-size: 36rpx; font-weight: 700; color: var(--ink); }
+.qb-oneliner { font-size: 26rpx; margin-top: 8rpx; line-height: 1.5; padding: 0 40rpx; }
+.qb-badge {
+  display: inline-block; margin-top: 20rpx; padding: 8rpx 24rpx;
+  background: var(--fill); border-radius: var(--r-full);
+  font-size: 24rpx; color: var(--ink-2);
+}
+
+/* 提问态 */
+.qb-ask { margin-top: 8rpx; }
+.qb-ask-title { font-size: 30rpx; font-weight: 600; margin-bottom: 16rpx; }
+.qb-input { width: 100%; min-height: 200rpx; font-size: 30rpx; line-height: 1.6; }
+.qb-count { text-align: right; font-size: 22rpx; margin-top: 8rpx; }
+.qb-submit { margin-top: 30rpx; }
+.qb-foot { font-size: 22rpx; text-align: center; margin-top: 16rpx; line-height: 1.5; }
+
+/* 结果态 */
+.qb-qa { margin-top: 8rpx; }
+.qb-q-label { font-size: 24rpx; }
+.qb-q { font-size: 30rpx; color: var(--ink); margin: 8rpx 0 28rpx; line-height: 1.5; }
+.qb-a-label { font-size: 24rpx; color: var(--accent-ink); font-weight: 600; }
+.qb-a { font-size: 31rpx; color: var(--ink); margin-top: 12rpx; line-height: 1.7; }
+.qb-a-note { font-size: 22rpx; margin-top: 20rpx; line-height: 1.5; }
+.qb-again {
+  background: transparent; color: var(--accent-ink); font-size: 28rpx;
+  margin-top: 24rpx; text-align: center;
+}
+.qb-again::after { border: none; }
+
+/* 病毒转化钩子 */
+.qb-cta {
+  margin-top: 32rpx; padding: 40rpx 32rpx; text-align: center;
+  background: var(--accent-soft); border-radius: var(--r-xl);
+}
+.qb-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink); }
+.qb-cta-sub { font-size: 26rpx; margin-top: 12rpx; line-height: 1.5; }
+.qb-cta-btn { margin-top: 28rpx; }

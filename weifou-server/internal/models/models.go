@@ -246,12 +246,19 @@ func (Order) TableName() string { return "orders" }
 // ========== 异步提问（访客免费向本人提问，本人异步作答） ==========
 
 const (
-	AsyncPending  = "pending"  // 待主人作答
-	AsyncAnswered = "answered" // 主人已作答
+	AsyncPending    = "pending"     // 待主人作答
+	AsyncAnswered   = "answered"    // 主人已作答
+	AsyncAIAnswered = "ai_answered" // 问答箱：分身已即时作答、主人尚未补充
 )
 
-// AsyncQuestion 访客免费向主人提问，主人异步作答（一问一答闭环，不是私信）。
-// AI 默认已对外作答；本结构是「让主人本人也能回一句」的可选动作，不涉及任何支付。
+// AsyncQuestion 来源：区分历史「异步问」与「问答箱(qabox)」。
+const SourceQABox = "qabox"
+
+// AsyncQuestion 访客向主人提问、一问一答闭环（不是私信）。两种来源共用此表：
+//   - 历史异步问：访客问、主人本人异步答（AIAnswer 空，status=pending）。
+//   - 问答箱(qabox)：访客匿名问、分身据画像即时作答（AIAnswer 已填，status=ai_answered），主人可再补一句。
+//
+// 不涉及任何支付。NGL 匿名靠展示层保证（对外/对主人均不下发访客身份）。
 type AsyncQuestion struct {
 	ID            string     `gorm:"primaryKey;size:32" json:"id"`
 	ProfileID     string     `gorm:"size:32;index" json:"profileId"`
@@ -259,8 +266,10 @@ type AsyncQuestion struct {
 	AskerOpenid   string     `gorm:"size:64;index:idx_aq_asker" json:"askerOpenid"`
 	AskerUserID   *string    `gorm:"size:32" json:"askerUserId,omitempty"`
 	Question      string     `gorm:"type:text" json:"question"`
+	Source        string     `gorm:"size:16;index" json:"source"` // ""=异步问，qabox=问答箱
 	Status        string     `gorm:"size:16;default:pending;index:idx_aq_host_status" json:"status"`
-	Answer        string     `gorm:"type:text" json:"answer"`   // 文字回答（可与语音并存，也可为空）
+	AIAnswer      string     `gorm:"type:text" json:"aiAnswer"` // 分身即时作答（问答箱），与本人 Answer 并存
+	Answer        string     `gorm:"type:text" json:"answer"`   // 主人文字回答（可与语音并存，也可为空）
 	VoiceURL      string     `gorm:"type:text" json:"voiceUrl"` // 语音回答的公开 URL（空=无语音）
 	VoiceDuration int        `json:"voiceDuration"`             // 语音时长（秒）
 	AnsweredAt    *time.Time `json:"answeredAt,omitempty"`

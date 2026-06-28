@@ -5,6 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"weifou-server/internal/answer"
 	"weifou-server/internal/asyncq"
 	"weifou-server/internal/auth"
 	"weifou-server/internal/chat"
@@ -64,6 +65,8 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	security := wechat.NewSecurityService(loginClient)
 	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeLeadTmpl, cfg.SubscribeMiniState)
 	ds := deepseek.New(cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel)
+	// 分身作答共享内核：chat（对话）与 asyncq（问答箱）共用，避免 prompt/知识注入逻辑分叉。
+	ansEngine := answer.NewEngine(db, ds)
 	payClient := wxpay.New(wxpay.Config{
 		AppID:            cfg.WxAppID,
 		MchID:            cfg.WxPayMchID,
@@ -92,11 +95,11 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		authH:       auth.NewHandler(db, loginClient, appLoginClient, cfg.JWTSecret, cfg.JWTExpiresHours, cfg.Env),
 		userH:       user.NewHandler(db, cfg.JWTSecret),
 		profileH:    profile.NewHandler(db, personaSvc, cfg.JWTSecret),
-		chatH:       chat.NewHandler(db, rdb, ds, security, subscribe, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
+		chatH:       chat.NewHandler(db, rdb, ansEngine, security, subscribe, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
 		visitH:      visit.NewHandler(db, cfg.JWTSecret),
 		shareH:      share.NewHandler(db, loginClient),
 		paymentH:    paymentH,
-		asyncqH:     asyncq.NewHandler(db, security, subscribe, cfg.JWTSecret),
+		asyncqH:     asyncq.NewHandler(db, ansEngine, security, subscribe, cfg.JWTSecret),
 		plazaH:      plaza.NewHandler(db),
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
 		datingH:     dating.NewHandler(db, ds, security, cfg.JWTSecret),

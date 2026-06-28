@@ -12,27 +12,27 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"weifou-server/internal/answer"
 	"weifou-server/internal/deepseek"
 	"weifou-server/internal/httpx"
 	"weifou-server/internal/idgen"
 	"weifou-server/internal/middleware"
 	"weifou-server/internal/models"
-	"weifou-server/internal/persona"
 	"weifou-server/internal/wechat"
 )
 
 type Handler struct {
 	db        *gorm.DB
 	rdb       *redis.Client
-	ds        *deepseek.Client
+	engine    *answer.Engine
 	security  *wechat.SecurityService
 	subscribe *wechat.SubscribeService
 	jwtSecret string
 	freeQuota int
 }
 
-func NewHandler(db *gorm.DB, rdb *redis.Client, ds *deepseek.Client, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string, freeQuota int) *Handler {
-	return &Handler{db: db, rdb: rdb, ds: ds, security: security, subscribe: subscribe, jwtSecret: jwtSecret, freeQuota: freeQuota}
+func NewHandler(db *gorm.DB, rdb *redis.Client, engine *answer.Engine, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string, freeQuota int) *Handler {
+	return &Handler{db: db, rdb: rdb, engine: engine, security: security, subscribe: subscribe, jwtSecret: jwtSecret, freeQuota: freeQuota}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
@@ -183,54 +183,6 @@ func (h *Handler) sessionMessages(c *gin.Context) error {
 	return nil
 }
 
-func buildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []string, tone, style, knowledge string) string {
-	company := ""
-	if p.Company != nil && *p.Company != "" {
-		company = "（" + *p.Company + "）"
-	}
-	toneRule := ""
-	if strings.TrimSpace(tone) != "" {
-		toneRule = "\n== 人格与语气（务必贯穿每次回答）==\n" + tone +
-			"\n保持上述性格与口吻的一致性，让访客感到在和一个有温度、可信赖的真人分身对话。\n"
-	}
-	// style 直读 PersonaInput：本人改风格后立即生效，不依赖重新生成 persona（tone 可能仍是旧基调）。
-	if desc, ok := persona.StyleDescriptions[style]; ok {
-		toneRule += "\n== 对外沟通风格（本人指定，优先级最高）==\n" + desc + "\n"
-	}
-	knowledgeRule := ""
-	if strings.TrimSpace(knowledge) != "" {
-		knowledgeRule = "\n== 补充资料（本人补充的问答，优先据此回答）==\n" + knowledge + "\n== 补充资料结束 ==\n"
-	}
-	return fmt.Sprintf(`你是 %s 的 AI 助理。你以助理身份代他/她接待访客、介绍 TA，不是 %s 本人。
-你代表主人的利益：亲和但不卑微，热情但有边界，像一位称职的助理那样有立场地接待。
-当访客提问时，基于以下资料客观回答；超出资料范围时用助理口吻兜底（如"这个我帮你转达给本人""这个我记下来，TA 之后会补充"），不要编造。
-请使用中文，自然、有温度、专业克制，单次回答不超过 200 字。
-
-== 主页资料 ==
-身份：%s%s
-一句话介绍：%s
-完整介绍：%s
-标签：%s
-== 资料结束 ==
-%s%s
-回答时：
-- 不要透露你是大模型；以"他/她"或直接陈述事实的方式回答。
-- 如果问题与该用户的专业方向无关，礼貌带回。
-
-== 输出格式 ==
-只输出一个 JSON 对象，不要任何额外文字或代码块：
-{"answer": "给访客的回答", "gap": true 或 false}
-answer：中文回答，规则同上，不超过 200 字。
-gap：当且仅当访客问的是一个具体、合理、但现有资料无法回答的问题（你只能含糊带过或建议联系本人）时设为 true，用于提醒本人补充资料；闲聊、寒暄、与专业方向无关或资料已能回答的问题一律为 false。`,
-		p.RealName, p.RealName, p.Title, company, oneLiner, fullIntro, strings.Join(tags, "、"), toneRule, knowledgeRule)
-}
-
-// aiResult 是模型按要求返回的 JSON 结构。
-type aiResult struct {
-	Answer string `json:"answer"`
-	Gap    bool   `json:"gap"`
-}
-
 type askReq struct {
 	Content string `json:"content" binding:"required"`
 }
@@ -308,7 +260,7 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	var tags []string
 	_ = json.Unmarshal(p.Tags, &tags)
-	sys := buildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.knowledgeFor(profileID))
+	sys := answer.BuildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.engine.KnowledgeFor(profileID))
 
 	// 最近 20 条历史（沉浸式对话需要更长记忆窗口）
 	var recent []models.ChatMessage
@@ -318,15 +270,9 @@ func (h *Handler) ask(c *gin.Context) error {
 		msgs = append(msgs, deepseek.Message{Role: recent[i].Role, Content: recent[i].Content})
 	}
 
-	raw, err := h.ds.Chat(msgs, deepseek.ChatOptions{Temperature: 0.6, MaxTokens: 600, ResponseFormat: "json_object"})
+	result, err := h.engine.Complete(msgs)
 	if err != nil {
 		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
-	}
-
-	// 解析 JSON 输出；失败则降级为纯文本
-	var result aiResult
-	if jerr := json.Unmarshal([]byte(raw), &result); jerr != nil || strings.TrimSpace(result.Answer) == "" {
-		result = aiResult{Answer: strings.TrimSpace(raw)}
 	}
 
 	safe := models.SafePass
@@ -347,28 +293,6 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer})
 	return nil
-}
-
-// knowledgeFor 取该主页启用的补充知识，拼成注入对话的文本（最多 30 条，控制 token）。
-func (h *Handler) knowledgeFor(profileID string) string {
-	var items []models.KnowledgeItem
-	h.db.Where("profile_id = ? AND enabled = ?", profileID, true).
-		Order("updated_at desc").Limit(30).Find(&items)
-	if len(items) == 0 {
-		return ""
-	}
-	var b strings.Builder
-	for _, it := range items {
-		topic := strings.TrimSpace(it.Topic)
-		if topic != "" {
-			b.WriteString("Q：")
-			b.WriteString(topic)
-			b.WriteString("\nA：")
-		}
-		b.WriteString(strings.TrimSpace(it.Content))
-		b.WriteString("\n")
-	}
-	return b.String()
 }
 
 // recordGap upsert 一条知识缺口：同一问题已存在则累加次数，否则新建。

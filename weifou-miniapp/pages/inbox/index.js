@@ -50,7 +50,9 @@ Page({
         questions: (questions || []).map((q) => ({
           ...q,
           timeText: fmtDateTime(q.createdAt),
-          statusText: q.status === 'pending' ? '待回答' : q.status === 'answered' ? '已回答' : '',
+          statusText: q.status === 'pending' ? '待回答'
+            : q.status === 'ai_answered' ? '分身已答 · 可补一句'
+            : q.status === 'answered' ? '已回答' : '',
         })),
         loading: false,
       });
@@ -229,12 +231,12 @@ Page({
     wx.setClipboardData({ data: contact });
   },
 
-  // 空收件箱的破局：分享自己的 AI 直达对话（让"还没人来"变成可行动的下一步）
+  // 空收件箱的破局：分享自己的问答箱，让人匿名来问（"还没人来"变成可行动的下一步）
   onShareAppMessage() {
     const id = this.data.profileId;
     return {
-      title: '加我微信前，先和我的 AI 助理聊聊',
-      path: id ? `/pages/chat/index?profileId=${id}` : '/pages/index/index',
+      title: '匿名问问我的 AI 分身 👀',
+      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/index/index',
     };
   },
 });

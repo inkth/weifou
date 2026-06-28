@@ -4,12 +4,14 @@
 package asyncq
 
 import (
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"weifou-server/internal/answer"
 	"weifou-server/internal/httpx"
 	"weifou-server/internal/idgen"
 	"weifou-server/internal/middleware"
@@ -19,18 +21,20 @@ import (
 
 type Handler struct {
 	db        *gorm.DB
+	engine    *answer.Engine
 	security  *wechat.SecurityService
 	subscribe *wechat.SubscribeService
 	jwtSecret string
 }
 
-func NewHandler(db *gorm.DB, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string) *Handler {
-	return &Handler{db: db, security: security, subscribe: subscribe, jwtSecret: jwtSecret}
+func NewHandler(db *gorm.DB, engine *answer.Engine, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string) *Handler {
+	return &Handler{db: db, engine: engine, security: security, subscribe: subscribe, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
 	rg.POST("/async-question", auth, httpx.Handle(h.create))
+	rg.POST("/async-question/qabox", auth, httpx.Handle(h.qaboxAsk)) // 问答箱：AI 即答 + 入库供主人围观
 	rg.POST("/async-question/:id/answer", auth, httpx.Handle(h.answer))
 	rg.GET("/async-question/host", auth, httpx.Handle(h.hostList))
 	rg.GET("/async-question/mine", auth, httpx.Handle(h.myList))
@@ -99,6 +103,79 @@ func (h *Handler) notifyHostNewQuestion(q *models.AsyncQuestion) {
 	h.subscribe.NotifyNewQuestion(openid, q.Question, 0, time.Now(), "pages/inbox/index")
 }
 
+// ---------- 访客：问答箱（AI 即答 + 主人围观） ----------
+
+type qaboxReq struct {
+	ProfileID string `json:"profileId" binding:"required"`
+	Question  string `json:"question" binding:"required"`
+}
+
+// qaboxAsk 问答箱：访客（对主人匿名）向主人的 AI 分身提一个问题，分身据画像即时作答，
+// 同时入库为一条 AsyncQuestion（source=qabox, status=ai_answered），主人可在收件箱围观并补一句。
+// 这是拉新楔子的访客侧落点——结果屏会引导访客「也给自己建一个分身」。
+func (h *Handler) qaboxAsk(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var req qaboxReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
+	}
+	q := strings.TrimSpace(req.Question)
+	if n := len([]rune(q)); n < 2 {
+		return httpx.BadRequest("QUESTION_TOO_SHORT", "问题太短，再多写一点")
+	} else if n > 200 {
+		return httpx.BadRequest("QUESTION_TOO_LONG", "问题太长了，精简到 200 字内")
+	}
+	var profile models.Profile
+	if err := h.db.First(&profile, "id = ?", req.ProfileID).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+	}
+	if !h.security.CheckText(q, auth.Openid) {
+		return httpx.BadRequest("CONTENT_UNSAFE", "问题包含不当内容")
+	}
+
+	// 分身据主人画像即时作答。
+	res, err := h.engine.Generate(req.ProfileID, q)
+	if err != nil {
+		if errors.Is(err, answer.ErrProfileNotReady) {
+			return httpx.NotFound("PROFILE_NOT_READY", "Ta 的分身还没准备好")
+		}
+		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
+	}
+	aiAns := strings.TrimSpace(res.Answer)
+	if aiAns != "" && !h.security.CheckText(aiAns, auth.Openid) {
+		aiAns = "这个问题不方便由 AI 直接回答，等本人来补充一句吧。"
+	}
+
+	question := models.AsyncQuestion{
+		ID: idgen.New(), ProfileID: profile.ID,
+		HostUserID: profile.UserID, AskerOpenid: auth.Openid, AskerUserID: &auth.UserID,
+		Question: q, AIAnswer: aiAns, Source: models.SourceQABox, Status: models.AsyncAIAnswered,
+	}
+	if err := h.db.Create(&question).Error; err != nil {
+		return httpx.Internal("QUESTION_CREATE_FAILED", "提交失败，请稍后重试")
+	}
+
+	// 召回主人：自问（主人预览自己的箱）不推；同一访客同一箱「每日首问」才推，避免刷屏。
+	if profile.UserID != auth.UserID && h.isFirstQABoxToday(profile.ID, auth.Openid) {
+		go h.notifyHostNewQuestion(&question)
+	}
+
+	httpx.OK(c, gin.H{"id": question.ID, "answer": aiAns, "status": question.Status})
+	return nil
+}
+
+// isFirstQABoxToday 判断该访客今天对该主页是否首次问答箱提问（含刚创建的这条 → count==1 即首问）。
+func (h *Handler) isFirstQABoxToday(profileID, askerOpenid string) bool {
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	var n int64
+	h.db.Model(&models.AsyncQuestion{}).
+		Where("profile_id = ? AND asker_openid = ? AND source = ? AND created_at >= ?",
+			profileID, askerOpenid, models.SourceQABox, start).
+		Count(&n)
+	return n == 1
+}
+
 // ---------- 主人：作答 ----------
 
 type answerReq struct {
@@ -125,7 +202,8 @@ func (h *Handler) answer(c *gin.Context) error {
 	if qst.HostUserID != auth.UserID {
 		return httpx.Forbidden("NOT_HOST", "只有本人可以回答")
 	}
-	if qst.Status != models.AsyncPending {
+	// pending（异步问待答）与 ai_answered（问答箱 AI 已答、主人补一句）均可作答。
+	if qst.Status != models.AsyncPending && qst.Status != models.AsyncAIAnswered {
 		return httpx.BadRequest("NOT_ANSWERABLE", "该提问当前不可回答")
 	}
 	// 文字部分过安全审核；语音内容审核暂缺（MVP：仅本人可发，风险可控），后续可接音频审核。
@@ -139,7 +217,7 @@ func (h *Handler) answer(c *gin.Context) error {
 	now := time.Now()
 	// 原子作答：仅当仍为 pending 时置 answered。
 	res := h.db.Model(&models.AsyncQuestion{}).
-		Where("id = ? AND status = ?", qst.ID, models.AsyncPending).
+		Where("id = ? AND status IN ?", qst.ID, []string{models.AsyncPending, models.AsyncAIAnswered}).
 		Updates(map[string]interface{}{
 			"answer": ans, "voice_url": voiceURL, "voice_duration": dur,
 			"answered_at": now, "status": models.AsyncAnswered,
@@ -221,8 +299,9 @@ func (h *Handler) row(q *models.AsyncQuestion, role string) gin.H {
 	h.db.Select("real_name").First(&profile, "id = ?", q.ProfileID)
 	return gin.H{
 		"id": q.ID, "profileId": q.ProfileID, "realName": profile.RealName,
-		"question": q.Question, "status": q.Status,
-		"answer": q.Answer, "voiceUrl": q.VoiceURL, "voiceDuration": q.VoiceDuration,
+		"question": q.Question, "status": q.Status, "source": q.Source,
+		"aiAnswer": q.AIAnswer, // 分身即时作答（问答箱）；NGL 匿名：不下发任何访客身份
+		"answer":   q.Answer, "voiceUrl": q.VoiceURL, "voiceDuration": q.VoiceDuration,
 		"answeredAt": q.AnsweredAt, "createdAt": q.CreatedAt, "role": role,
 	}
 }

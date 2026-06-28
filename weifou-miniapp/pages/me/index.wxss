@@ -84,6 +84,19 @@
 .cell-label { flex: 1; font-size: 30rpx; color: var(--ink); }
 .cell-arrow { font-size: 28rpx; color: var(--faint); }
 
+/* 我的问答箱入口 */
+.qabox { margin-top: 20rpx; display: flex; align-items: center; gap: 20rpx; }
+.qabox-info { flex: 1; }
+.qabox-title { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.qabox-sub { font-size: 24rpx; margin-top: 6rpx; line-height: 1.5; }
+.qabox-acts { display: flex; flex-direction: column; align-items: flex-end; gap: 12rpx; }
+.qabox-share {
+  background: var(--accent); color: #fff; font-size: 26rpx; font-weight: 600;
+  border-radius: var(--r-full); padding: 12rpx 36rpx; line-height: 1.4; margin: 0;
+}
+.qabox-share::after { border: none; }
+.qabox-preview { font-size: 24rpx; color: var(--faint); }
+
 .legal { margin-top: 40rpx; text-align: center; color: var(--faint); font-size: 22rpx; line-height: 1.8; }
 .brand-sign { color: var(--ink); opacity: 0.5; font-size: 26rpx; letter-spacing: 1rpx; margin-bottom: 14rpx; }
 .legal-links { margin-top: 4rpx; }

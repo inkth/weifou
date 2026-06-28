@@ -46,4 +46,21 @@ Page({
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
   goQuestions() { wx.navigateTo({ url: '/pages/my-questions/index' }); },
   goDating() { wx.navigateTo({ url: '/pages/dating/index' }); },
+
+  // 问答箱：主人预览自己的分身被问的样子
+  goQabox() {
+    if (!this.data.profileId) return;
+    wx.navigateTo({
+      url: `/pages/qabox/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(this.data.realName || '')}`,
+    });
+  },
+
+  // 分享问答箱：拉新楔子的对外入口（别人匿名问 → 看到产品 → 也来建分身）
+  onShareAppMessage() {
+    const id = this.data.profileId;
+    return {
+      title: '匿名问问我的 AI 分身 👀',
+      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/index/index',
+    };
+  },
 });

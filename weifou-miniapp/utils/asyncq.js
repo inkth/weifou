@@ -13,6 +13,17 @@ async function askQuestion(profileId, question) {
   });
 }
 
+// 问答箱：访客（对主人匿名）向 TA 的 AI 分身问一句，分身据画像即时作答。
+// 成功返回 { id, answer, status }；同时入库供主人围观、补一句。
+async function qaboxAsk(profileId, question) {
+  await ensureLogin();
+  return request({
+    url: '/async-question/qabox',
+    method: 'POST',
+    data: { profileId, question },
+  });
+}
+
 // 主人作答。payload 可为字符串（纯文字，向后兼容）或 { answer, voiceUrl, voiceDuration }。
 function answerQuestion(id, payload) {
   const data = typeof payload === 'string' ? { answer: payload } : (payload || {});
@@ -34,4 +45,4 @@ function questionDetail(id) {
   return request({ url: `/async-question/detail/${id}` });
 }
 
-module.exports = { askQuestion, answerQuestion, hostQuestions, myQuestions, questionDetail };
+module.exports = { askQuestion, qaboxAsk, answerQuestion, hostQuestions, myQuestions, questionDetail };
