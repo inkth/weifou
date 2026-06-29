@@ -47,7 +47,7 @@ Page({
   goQuestions() { wx.navigateTo({ url: '/pages/my-questions/index' }); },
   goDating() { wx.navigateTo({ url: '/pages/dating/index' }); },
 
-  // 问答箱：主人预览自己的分身被问的样子
+  // 预览：主人看看自己这张活名片被问的样子
   goQabox() {
     if (!this.data.profileId) return;
     wx.navigateTo({
@@ -55,12 +55,19 @@ Page({
     });
   },
 
-  // 分享问答箱：拉新楔子的对外入口（别人匿名问 → 看到产品 → 也来建分身）
+  // 生成海报：可贴到朋友圈 / 线下的活名片物料（含二维码）
+  goPoster() {
+    if (!this.data.profileId) return;
+    wx.navigateTo({ url: `/pages/poster/index?profileId=${this.data.profileId}` });
+  },
+
+  // 分享活名片：落到 chat（会说话的你）—— 别人点开能直接问你、和你聊，而不只是看一段简介。
   onShareAppMessage() {
     const id = this.data.profileId;
+    const name = this.data.realName || '';
     return {
-      title: '匿名问问我的 AI 分身 👀',
-      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/index/index',
+      title: name ? `这是 ${name} 的 AI 分身，有事直接问 TA 👋` : '这是我的 AI 分身，有事直接问 TA 👋',
+      path: id ? `/pages/chat/index?profileId=${id}` : '/pages/index/index',
     };
   },
 });
