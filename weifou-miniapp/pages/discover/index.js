@@ -8,6 +8,8 @@ const { request } = require('../../utils/request');
 // 暗场沉浸（借猫箱/星野的壳），主角是「我养的那一个」，不是逛别人（逛别人在「发现」tab）。
 // 找对象：不依赖工具会员、两端都可用，固定作为首位专才（点击进择偶测试，结果回喂我的分身画像）。
 const DATING_SPECIALIST = { id: 'dating', name: '找对象', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的分身。', kind: 'dating' };
+// 镜子分身：分身反过来说「我眼中的你」。只在已建分身时出现（没分身则无可端详）。
+const MIRROR_SPECIALIST = { id: 'mirror', name: '镜子分身', initial: '镜', tier: 'warm', line: '想知道我眼中的你是什么样吗？', kind: 'mirror' };
 
 Page({
   data: {
@@ -67,9 +69,11 @@ Page({
         real: true,
       }));
 
+      // 已建分身：镜子分身紧贴主卡（都关于「你」）；找对象 + 真实工具 Agent 随后。iOS/空场也至少有真实可点的卡。
+      const specials = chief.hasProfile ? [MIRROR_SPECIALIST, DATING_SPECIALIST, ...real] : [DATING_SPECIALIST, ...real];
       this.setData({
         chief,
-        specialists: [DATING_SPECIALIST, ...real], // 找对象置首，其后接真实工具 Agent（iOS/空场则仅找对象，不再放点不动的假卡）
+        specialists: specials,
         agentEntry: show,
         loading: false,
       });
@@ -90,6 +94,8 @@ Page({
     const { id, name, real, kind } = e.currentTarget.dataset;
     if (kind === 'dating') {
       wx.navigateTo({ url: '/pages/dating/index' });
+    } else if (kind === 'mirror') {
+      wx.navigateTo({ url: '/pages/mirror/index' });
     } else if (real) {
       wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
     } else {
