@@ -3,13 +3,15 @@ const { listAgents } = require('../../utils/agent');
 const { loadEntries, agentVisible } = require('../../utils/entries');
 const { request } = require('../../utils/request');
 
-// 分身（首页）= 我的私有 Agent 小队：我的分身（主卡 / 关系锚）+ 专才（平台工具 Agent / 种子兜底）。
-// 「把事办成」的魂：每张卡用第一人称说要替你办的那件事，不做进度条仪表盘。
-// 暗场沉浸（借猫箱/星野的壳），主角是「我养的那一个」，不是逛别人（逛别人在「发现」tab）。
-// 找对象：不依赖工具会员、两端都可用，固定作为首位专才（点击进择偶测试，结果回喂我的分身画像）。
-const DATING_SPECIALIST = { id: 'dating', name: '找对象', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的分身。', kind: 'dating' };
-// 镜子分身：分身反过来说「我眼中的你」。只在已建分身时出现（没分身则无可端详）。
-const MIRROR_SPECIALIST = { id: 'mirror', name: '镜子分身', initial: '镜', tier: 'warm', line: '想知道我眼中的你是什么样吗？', kind: 'mirror' };
+// 分身（首页）= 我的分身小队，固定四卡：我的主分身（代表你的对外分身）+ 学英语 + 学商业 + 找对象。
+// 主分身是「你」、是核心；其余三个是能力分身（工具/玩法）。暗场沉浸，主角是「我养的这一队」。
+// 找对象分身：不依赖工具会员、两端都可用（点击进择偶测试，结果回喂我的主分身画像）。
+const DATING_SPECIALIST = { id: 'dating', name: '找对象分身', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的主分身。', kind: 'dating' };
+// 学习型工具分身（会员畅用 · 非会员免费体验几次）；id 运行时按 slug 从 /agents 取真实 Agent。
+const TOOL_CARDS = [
+  { slug: 'spoken-english', name: '学英语分身', initial: 'EN', tier: 'cool', line: '陪你开口练——纠音、对话、一段段升级。' },
+  { slug: 'business-coach', name: '学商业分身', initial: '商', tier: 'lively', line: '生意卡哪了？我陪你拆，给能落地的下一步。' },
+];
 
 Page({
   data: {
@@ -39,42 +41,37 @@ Page({
     try {
       await ensureLogin();
       await loadEntries();
-      const show = agentVisible();
-
       const [me, agents] = await Promise.all([
         request({ url: '/user/me' }).catch(() => ({})),
-        show ? listAgents().catch(() => []) : Promise.resolve([]),
+        listAgents().catch(() => []), // 工具分身两端固定展示（iOS 虚拟支付已开放，不再隐藏）
       ]);
 
-      // 主卡 = 我的分身（若已创建则它对外替我办事 + 回报结果），否则引导创建
+      // 主分身 = 代表你的对外分身（已建则替你接待 + 回报结果），否则引导创建
       const chief = (me && me.profileId)
         ? {
-            name: me.realName ? me.realName + ' 的分身' : '我的分身',
+            name: me.realName ? me.realName + ' 的主分身' : '我的主分身',
             initial: (me.realName || '否').slice(0, 1),
             tier: 'warm', hasProfile: true, profileId: me.profileId,
             line: '我替你把对外的事看着，有结果就喊你。',
           }
         : {
-            name: '我的分身', initial: '+', tier: 'warm', hasProfile: false,
+            name: '我的主分身', initial: '+', tier: 'warm', hasProfile: false,
             line: '先建一个，替你对外接待、有结果喊你。',
           };
 
-      // 专才 = 平台工具 Agent（真）；iOS 隐藏或为空时用种子兜底，保证不空场
-      const real = (agents || []).slice(0, 6).map((a, i) => ({
-        id: a.id,
-        name: a.name,
-        initial: (a.name || 'A').slice(0, 1),
-        tier: ['cool', 'lively', 'warm'][i % 3],
-        line: a.tagline || '点开，交给我一件事。',
-        real: true,
-      }));
+      // 工具分身按 slug 取真实 Agent id（学英语 / 学商业）
+      const bySlug = {};
+      (agents || []).forEach((a) => { if (a.slug) bySlug[a.slug] = a; });
+      const toolCards = TOOL_CARDS.map((t) => {
+        const a = bySlug[t.slug];
+        return { id: a ? a.id : '', name: t.name, initial: t.initial, tier: t.tier, line: t.line, kind: 'tool' };
+      });
 
-      // 已建分身：镜子分身紧贴主卡（都关于「你」）；找对象 + 真实工具 Agent 随后。iOS/空场也至少有真实可点的卡。
-      const specials = chief.hasProfile ? [MIRROR_SPECIALIST, DATING_SPECIALIST, ...real] : [DATING_SPECIALIST, ...real];
+      // 首页固定四卡：我的主分身（大卡）+ 学英语分身 + 学商业分身 + 找对象分身
       this.setData({
         chief,
-        specialists: specials,
-        agentEntry: show,
+        specialists: [...toolCards, DATING_SPECIALIST],
+        agentEntry: agentVisible(),
         loading: false,
       });
     } catch (e) {
@@ -91,15 +88,12 @@ Page({
   },
 
   enterSpecialist(e) {
-    const { id, name, real, kind } = e.currentTarget.dataset;
+    const { id, name, kind } = e.currentTarget.dataset;
     if (kind === 'dating') {
       wx.navigateTo({ url: '/pages/dating/index' });
-    } else if (kind === 'mirror') {
-      wx.navigateTo({ url: '/pages/mirror/index' });
-    } else if (real) {
+    } else if (kind === 'tool') {
+      if (!id) { wx.showToast({ title: '正在上线，稍后再来', icon: 'none' }); return; }
       wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
-    } else {
-      wx.showToast({ title: '更多专才陆续上线', icon: 'none' });
     }
   },
 
