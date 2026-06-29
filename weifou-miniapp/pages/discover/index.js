@@ -3,19 +3,16 @@ const { listAgents } = require('../../utils/agent');
 const { loadEntries, agentVisible } = require('../../utils/entries');
 const { request } = require('../../utils/request');
 
-// 分身（首页）= 我的私有 Agent 小队：总管（关系锚）+ 专才（平台工具 Agent / 种子兜底）。
+// 分身（首页）= 我的私有 Agent 小队：我的分身（主卡 / 关系锚）+ 专才（平台工具 Agent / 种子兜底）。
 // 「把事办成」的魂：每张卡用第一人称说要替你办的那件事，不做进度条仪表盘。
 // 暗场沉浸（借猫箱/星野的壳），主角是「我养的那一个」，不是逛别人（逛别人在「发现」tab）。
-const SEED_SPECIALISTS = [
-  { id: 'seed-en', name: '英语教练', initial: 'EN', tier: 'cool', line: '就差开口一次，陪我念两句？' },
-  { id: 'seed-date', name: '约会复盘', initial: '约', tier: 'lively', line: '昨晚那场，我帮你捋捋？' },
-  { id: 'seed-life', name: '生活助理', initial: '活', tier: 'warm', line: '杂事交给我，省你半天。' },
-];
+// 找对象：不依赖工具会员、两端都可用，固定作为首位专才（点击进择偶测试，结果回喂我的分身画像）。
+const DATING_SPECIALIST = { id: 'dating', name: '找对象', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的分身。', kind: 'dating' };
 
 Page({
   data: {
     statusBarH: 20,
-    chief: { name: '小否 · 总管', initial: '否', tier: 'warm', line: '先告诉我你想办成的一件事，我替你张罗。', hasProfile: false },
+    chief: { name: '我的分身', initial: '+', tier: 'warm', line: '先建一个，替你对外接待、有结果喊你。', hasProfile: false },
     specialists: [],
     agentEntry: false, // 工具 Agent 入口（iOS 隐藏，见 utils/entries）
     loading: true,
@@ -47,7 +44,7 @@ Page({
         show ? listAgents().catch(() => []) : Promise.resolve([]),
       ]);
 
-      // 总管 = 我的分身（若已创建则它对外替我办事 + 回报结果），否则引导创建
+      // 主卡 = 我的分身（若已创建则它对外替我办事 + 回报结果），否则引导创建
       const chief = (me && me.profileId)
         ? {
             name: me.realName ? me.realName + ' 的分身' : '我的分身',
@@ -56,8 +53,8 @@ Page({
             line: '我替你把对外的事看着，有结果就喊你。',
           }
         : {
-            name: '小否 · 总管', initial: '否', tier: 'warm', hasProfile: false,
-            line: '先告诉我你想办成的一件事，我替你张罗。',
+            name: '我的分身', initial: '+', tier: 'warm', hasProfile: false,
+            line: '先建一个，替你对外接待、有结果喊你。',
           };
 
       // 专才 = 平台工具 Agent（真）；iOS 隐藏或为空时用种子兜底，保证不空场
@@ -72,12 +69,12 @@ Page({
 
       this.setData({
         chief,
-        specialists: real.length ? real : SEED_SPECIALISTS,
+        specialists: [DATING_SPECIALIST, ...real], // 找对象置首，其后接真实工具 Agent（iOS/空场则仅找对象，不再放点不动的假卡）
         agentEntry: show,
         loading: false,
       });
     } catch (e) {
-      this.setData({ specialists: SEED_SPECIALISTS, loading: false });
+      this.setData({ specialists: [DATING_SPECIALIST], loading: false });
     }
   },
 
@@ -90,8 +87,10 @@ Page({
   },
 
   enterSpecialist(e) {
-    const { id, name, real } = e.currentTarget.dataset;
-    if (real) {
+    const { id, name, real, kind } = e.currentTarget.dataset;
+    if (kind === 'dating') {
+      wx.navigateTo({ url: '/pages/dating/index' });
+    } else if (real) {
       wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
     } else {
       wx.showToast({ title: '更多专才陆续上线', icon: 'none' });

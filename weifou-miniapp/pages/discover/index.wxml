@@ -1,8 +1,8 @@
 <view class="squad">
 
   <view class="sq-top" style="padding-top:{{statusBarH}}px">
-    <view class="sq-h1">我的分身</view>
-    <view class="sq-sub">都在等你一句话</view>
+    <view class="sq-h1">想办成什么？</view>
+    <view class="sq-sub">你的分身和专才，都在等你一句话</view>
   </view>
 
   <!-- 总管大卡（关系锚 / 唯一有人格的脸）-->
@@ -18,7 +18,7 @@
 
   <!-- 专才卡（平台工具 Agent / 种子兜底）-->
   <view class="spec" wx:for="{{specialists}}" wx:key="id"
-        data-id="{{item.id}}" data-name="{{item.name}}" data-real="{{item.real}}"
+        data-id="{{item.id}}" data-name="{{item.name}}" data-real="{{item.real}}" data-kind="{{item.kind}}"
         bindtap="enterSpecialist">
     <view class="spec-av art art-{{item.tier}}">
       <view class="art-glow"></view>
