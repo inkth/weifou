@@ -25,9 +25,9 @@
     </view>
 
     <view class="stage-meta">
-      <view class="stage-name">{{realName ? realName + ' 的 AI 助理' : '正在连线…'}} <text class="stage-more">›</text></view>
+      <view class="stage-name">{{realName ? realName + ' 的 AI 分身' : '正在连线…'}} <text class="stage-more">›</text></view>
       <!-- 副标题优先 oneLiner：访客 3 秒内完成"这是谁、值不值得聊"的判断 -->
-      <view class="stage-status muted">{{oneLiner || (pending ? '思考中…' : '助理随时答 · 点这里看 TA 的主页')}}</view>
+      <view class="stage-status muted">{{oneLiner || (pending ? '思考中…' : '分身随时答 · 点这里看 TA 的主页')}}</view>
     </view>
 
     <view class="stage-indicator {{(pending || introState === 'thinking') ? 'on' : ''}}">
@@ -43,14 +43,14 @@
 
       <!-- 裂变：对话内轻线索（被回答种草后） -->
       <view wx:if="{{item.action === 'create-own'}}" id="msg-{{index}}" class="sys-link own-hook" bindtap="goCreateOwn">
-        ✨ 这位 AI 助理是 {{realName}} 用 1 分钟请来的 · 我也要一个 ›
+        ✨ 这个 AI 分身是 {{realName}} 用 1 分钟建的 · 我也要一个 ›
       </view>
 
       <!-- 裂变：目的达成后的身份反转 CTA -->
       <view wx:if="{{item.action === 'create-own-strong'}}" id="msg-{{index}}" class="own-cta">
         <view class="own-cta-title">也有很多人想了解你</view>
-        <view class="own-cta-sub">刚才它替 {{realName}} 接待了你。1 分钟，让你的 AI 助理替你先聊。</view>
-        <button class="own-cta-btn" bindtap="goCreateOwn">请一位我的 AI 助理</button>
+        <view class="own-cta-sub">刚才它替 {{realName}} 接待了你。1 分钟，建一个你的 AI 分身替你先聊。</view>
+        <button class="own-cta-btn" bindtap="goCreateOwn">建一个我的 AI 分身</button>
       </view>
     </block>
   </scroll-view>

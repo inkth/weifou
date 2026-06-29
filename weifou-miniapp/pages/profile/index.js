@@ -210,8 +210,8 @@ Page({
     const p = this.data.profile;
     return {
       title: p?.persona?.oneLiner
-        ? `和 ${p.realName} 的 AI 助理聊聊：${p.persona.oneLiner}`
-        : `和 ${p?.realName || ''} 的 AI 助理聊聊`,
+        ? `和 ${p.realName} 的 AI 分身聊聊：${p.persona.oneLiner}`
+        : `和 ${p?.realName || ''} 的 AI 分身聊聊`,
       // chat-first：好友分享直接落对话
       path: `/pages/chat/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(p?.realName || '')}&avatarStyle=${p?.avatarStyle || ''}`,
       imageUrl: p?.avatarUrl,

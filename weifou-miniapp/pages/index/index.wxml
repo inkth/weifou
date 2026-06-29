@@ -5,7 +5,7 @@
 
   <view class="hero">
     <view class="brand">微否 · weifou</view>
-    <view class="tagline">每个人的 AI 助理</view>
+    <view class="tagline">每个人的 AI 分身</view>
     <view class="headline">{{profileId ? '我的 AI 主页' : '替你聊、替你约、替你成交'}}</view>
   </view>
 
@@ -14,16 +14,16 @@
   <!-- 新用户：示例助理名牌 + 招呼气泡（毛玻璃浮层）-->
   <view class="float" wx:if="{{!profileId && !loading}}">
     <view class="float-id">
-      <text class="float-name">苏窈 的 AI 助理</text>
+      <text class="float-name">苏窈 的 AI 分身</text>
       <view class="dot"></view><text class="float-on">随时答</text>
     </view>
-    <view class="float-bubble">我是苏窈的 AI 助理，茶席、香道、古琴的事都能问我——想先了解她，还是直接约一席？<text class="caret"></text></view>
-    <view class="float-note">示例 · 你的 AI 上岗后就这样接待访客</view>
+    <view class="float-bubble">我是苏窈的 AI 分身，茶席、香道、古琴的事都能问我——想先了解她，还是直接约一席？<text class="caret"></text></view>
+    <view class="float-note">示例 · 你的 AI 上线后就这样接待访客</view>
   </view>
 
   <!-- 操作区：全部毛玻璃半透明 -->
   <view class="actions" wx:if="{{!loading}}">
-    <button class="glass-btn primary" bindtap="goOnboarding" wx:if="{{!profileId}}">开始创建我的 AI 助理</button>
+    <button class="glass-btn primary" bindtap="goOnboarding" wx:if="{{!profileId}}">开始创建我的 AI 分身</button>
     <button class="glass-btn primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 主页</button>
     <button class="glass-btn" bindtap="goAgents" wx:if="{{agentEntry}}">🧰 AI 工具箱 · 学英语 / 面试</button>
     <button class="glass-btn" bindtap="goMyChats" wx:if="{{chatCount}}">我聊过的 · {{chatCount}}</button>

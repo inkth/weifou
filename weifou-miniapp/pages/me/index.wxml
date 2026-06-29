@@ -56,7 +56,7 @@
 
   <!-- 合规位（AIGC 必备：备案 / 协议） -->
   <view class="legal">
-    <view class="brand-sign">微否 · 每个人的 AI 助理</view>
+    <view class="brand-sign">微否 · 每个人的 AI 分身</view>
     <view>大模型服务已依法备案 · 内容由 AI 生成</view>
     <view class="legal-links"><text>用户协议</text><text class="dot">·</text><text>隐私政策</text></view>
   </view>

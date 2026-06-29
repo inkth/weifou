@@ -5,7 +5,7 @@
 
   <!-- 晒点：刚生成完的庆祝时刻，分享意愿峰值 -->
   <view class="card fresh-card" wx:if="{{fresh && isMine && profile.persona}}">
-    <view class="fresh-title">🎉 你的 AI 助理上岗了</view>
+    <view class="fresh-title">🎉 你的 AI 分身上线了</view>
     <view class="fresh-sub muted">它已经会替你回答：</view>
     <view class="fresh-starters">
       <view class="fresh-starter" wx:for="{{profile.persona.starters}}" wx:key="*this">「{{item}}」</view>
@@ -71,7 +71,7 @@
   </view>
 
   <view class="actions">
-    <button class="btn-accent" bindtap="goChat">问 {{profile.realName}} 的 AI 助理</button>
+    <button class="btn-accent" bindtap="goChat">问 {{profile.realName}} 的 AI 分身</button>
     <button class="btn-ghost" bindtap="openTip" wx:if="{{!isMine}}">打赏 TA</button>
     <button class="btn-ghost" bindtap="onContact" wx:if="{{profile.contactVisible || isMine}}">联系本人</button>
     <button class="btn-ghost" open-type="share" wx:if="{{!isMine}}">分享给好友</button>
@@ -80,7 +80,7 @@
   </view>
 
   <!-- 裂变：访客视图的平台线索（克制、不抢主人的转化场景） -->
-  <view class="brand-foot muted" wx:if="{{!isMine}}" bindtap="goCreateOwn">微否 · 让你的 AI 助理替你先聊 ›</view>
+  <view class="brand-foot muted" wx:if="{{!isMine}}" bindtap="goCreateOwn">微否 · 让你的 AI 分身替你先聊 ›</view>
 </view>
 
 <view wx:if="{{!profile && !loading}}" class="empty muted">主页不存在或加载失败</view>

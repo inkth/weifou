@@ -82,8 +82,8 @@ Page({
       // persona.greeting 是 AI 生成的第一人称开场白；早期记录可能为空，兜底拼接
       const greeting = persona.greeting
         || (persona.oneLiner
-          ? `你好，我是 ${p.realName} 的 AI 助理。${persona.oneLiner}\n想了解些什么？`
-          : `你好，我是 ${p.realName} 的 AI 助理，TA 的事都可以问我。`);
+          ? `你好，我是 ${p.realName} 的 AI 分身。${persona.oneLiner}\n想了解些什么？`
+          : `你好，我是 ${p.realName} 的 AI 分身，TA 的事都可以问我。`);
       this.setData({
         realName: p.realName || this.data.realName,
         avatarStyle: this.data.avatarStyle || p.avatarStyle || '',
@@ -253,8 +253,8 @@ Page({
     track('share_tap', this.data.profileId, 'chat');
     const name = this.data.realName || 'TA';
     const title = this.data.oneLiner
-      ? `和 ${name} 的 AI 助理聊聊：${this.data.oneLiner}`
-      : `加微信前，先和 ${name} 的 AI 助理聊聊`;
+      ? `和 ${name} 的 AI 分身聊聊：${this.data.oneLiner}`
+      : `加微信前，先和 ${name} 的 AI 分身聊聊`;
     return {
       title,
       path: `/pages/chat/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(name)}&avatarStyle=${this.data.avatarStyle || ''}`,

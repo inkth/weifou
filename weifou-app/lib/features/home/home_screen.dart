@@ -62,7 +62,7 @@ class _NoProfile extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 60),
-        const Text('创建你的 AI 助理',
+        const Text('创建你的 AI 分身',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
         const SizedBox(height: 40),

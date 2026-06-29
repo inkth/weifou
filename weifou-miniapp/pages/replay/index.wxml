@@ -10,7 +10,7 @@
     </view>
     <view class="replay-head-row">
       <view class="presence-dot"></view>
-      <view class="replay-head-name">你的 AI 助理</view>
+      <view class="replay-head-name">你的 AI 分身</view>
     </view>
     <view class="replay-head-sub muted">与「{{visitorName}}」的对话回放</view>
   </view>
@@ -20,7 +20,7 @@
 
   <block wx:for="{{messages}}" wx:key="index">
     <view class="msg {{item.role === 'assistant' ? 'right' : 'left'}}">
-      <view class="who muted">{{item.role === 'assistant' ? '你的 AI 助理' : visitorName}} · {{item.timeText}}</view>
+      <view class="who muted">{{item.role === 'assistant' ? '你的 AI 分身' : visitorName}} · {{item.timeText}}</view>
       <view class="bubble {{item.role}}">{{item.content}}</view>
     </view>
   </block>

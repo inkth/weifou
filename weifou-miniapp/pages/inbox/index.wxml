@@ -21,7 +21,7 @@
 
   <!-- 会话回放 -->
   <block wx:if="{{!loading && tab === 'sessions'}}">
-    <view class="tip muted">你的 AI 助理替你接待的对话，点开可回看它说了什么。</view>
+    <view class="tip muted">你的 AI 分身替你接待的对话，点开可回看它说了什么。</view>
     <view wx:if="{{!sessions.length}}" class="empty-share">
       <view class="es-text muted">还没有访客和你的 AI 聊过</view>
       <button wx:if="{{profileId}}" class="es-btn" open-type="share">把你的 AI 分享出去 →</button>

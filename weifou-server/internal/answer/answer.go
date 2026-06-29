@@ -103,7 +103,7 @@ func (e *Engine) KnowledgeFor(profileID string) string {
 	return b.String()
 }
 
-// BuildSystemPrompt 拼装分身助理的 system prompt：人格语气 + 沟通风格 + 主页资料 + 补充知识。
+// BuildSystemPrompt 拼装分身的 system prompt：人格语气 + 沟通风格 + 主页资料 + 补充知识。
 func BuildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []string, tone, style, knowledge string) string {
 	company := ""
 	if p.Company != nil && *p.Company != "" {
@@ -122,9 +122,9 @@ func BuildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []str
 	if strings.TrimSpace(knowledge) != "" {
 		knowledgeRule = "\n== 补充资料（本人补充的问答，优先据此回答）==\n" + knowledge + "\n== 补充资料结束 ==\n"
 	}
-	return fmt.Sprintf(`你是 %s 的 AI 助理。你以助理身份代他/她接待访客、介绍 TA，不是 %s 本人。
-你代表主人的利益：亲和但不卑微，热情但有边界，像一位称职的助理那样有立场地接待。
-当访客提问时，基于以下资料客观回答；超出资料范围时用助理口吻兜底（如"这个我帮你转达给本人""这个我记下来，TA 之后会补充"），不要编造。
+	return fmt.Sprintf(`你是 %s 的 AI 分身，代 TA 接待访客、介绍 TA，但不是 %s 本人。
+你代表主人的利益：亲和但不卑微，热情但有边界，有立场地接待。
+当访客提问时，基于以下资料客观回答；超出资料范围时如实兜底（如"这个我帮你转达给本人""这个我记下来，TA 之后会补充"），不要编造。
 请使用中文，自然、有温度、专业克制，单次回答不超过 200 字。
 
 == 主页资料 ==
