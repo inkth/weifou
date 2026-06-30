@@ -2,24 +2,27 @@ const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
 const { unpinAgent } = require('../../utils/agent');
 
-// 分身（首页）= 我的 Agent 小队，由服务端 /home/agents 驱动（阵容/顺序/状态都在后端）。
-// 主分身（primary）渲染为大卡，其余为专才卡；前端只渲染、按 type 路由。
-// 兜底：接口失败时铺一份最简四卡，绝不空场、也不被网络错误带崩。
+// 首页 = 我的 Agent 小队，由 /home/agents 驱动；清新浅色 + 薄荷青。
+// 接口失败兜底最简卡，绝不空场、也不被网络错误带崩。
 const FALLBACK = {
-  chief: { name: '我的 AI 名片', initial: '+', tier: 'warm', hasProfile: false, profileId: '', line: '先建一个，别人点开就能直接问你、和你聊。' },
+  chief: { name: '我的 AI 名片', initial: '+', online: false, hasProfile: false, profileId: '', line: '先建一个，别人点开就能直接问你、和你聊' },
   specialists: [
-    { id: '', name: '学英语 Agent', initial: 'EN', tier: 'cool', line: '陪你开口练——纠音、对话、一段段升级。', kind: 'tool' },
-    { id: '', name: '学商业 Agent', initial: '商', tier: 'lively', line: '生意卡哪了？我陪你拆，给能落地的下一步。', kind: 'tool' },
+    { id: '', name: '学英语', initial: 'EN', line: '随时开口练，纠音到对话', kind: 'tool', pill: '剩 5 次' },
+    { id: '', name: '学商业', initial: '商', line: '把卡住的生意拆成下一步', kind: 'tool', pill: '剩 3 次' },
   ],
 };
 
+function greet() {
+  const h = new Date().getHours();
+  if (h < 6) return '夜深了';
+  if (h < 11) return '上午好';
+  if (h < 14) return '中午好';
+  if (h < 18) return '下午好';
+  return '晚上好';
+}
+
 Page({
-  data: {
-    statusBarH: 20,
-    chief: FALLBACK.chief,
-    specialists: [],
-    loading: true,
-  },
+  data: { statusBarH: 20, greeting: '你好', chief: FALLBACK.chief, specialists: [], loading: true },
 
   onLoad() {
     try {
@@ -32,12 +35,13 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
+    this.setData({ greeting: greet() });
     this.load();
   },
 
   async load() {
     this.setData({ loading: true });
-    try { await ensureLogin(); } catch (e) { /* 未登录也照常铺卡，点进去再引导 */ }
+    try { await ensureLogin(); } catch (e) { /* 未登录也照常铺卡 */ }
 
     const cards = await request({ url: '/home/agents' }).catch(() => null);
     if (!cards || !cards.length) {
@@ -49,21 +53,16 @@ Page({
     const chief = {
       name: primary.name,
       initial: primary.initial || '+',
-      tier: primary.tier || 'warm',
       line: primary.line,
       hasProfile: !!primary.ready,
+      online: !!primary.ready,
       profileId: primary.profileId || '',
     };
-    const specialists = cards
-      .filter((c) => c !== primary)
-      .map((c) => ({
-        id: c.agentId || '',
-        name: c.name,
-        initial: c.initial,
-        tier: c.tier,
-        line: c.line,
-        kind: c.type === 'dating' ? 'dating' : 'tool',
-      }));
+    const specialists = cards.filter((c) => c !== primary).map((c) => {
+      const fr = c.freeRemaining;
+      const pill = c.member ? '会员畅用' : (typeof fr === 'number' && fr >= 0 ? `剩 ${fr} 次` : '');
+      return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, kind: c.type === 'dating' ? 'dating' : 'tool', pill };
+    });
 
     this.setData({ chief, specialists, loading: false });
   },
@@ -79,14 +78,13 @@ Page({
   enterSpecialist(e) {
     const { id, name, kind } = e.currentTarget.dataset;
     if (kind === 'dating') {
-      wx.navigateTo({ url: '/pages/dating/index' }); // 找对象已移出首页，保留分支兼容历史/他处入口
+      wx.navigateTo({ url: '/pages/dating/index' });
     } else if (kind === 'tool') {
       if (!id) { wx.showToast({ title: '正在上线，稍后再来', icon: 'none' }); return; }
       wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
     }
   },
 
-  // 长按工具卡 → 从首页移除（unpin）。
   removeSpecialist(e) {
     const { id, name } = e.currentTarget.dataset;
     if (!id) return;
@@ -104,6 +102,6 @@ Page({
   goVisitors() { wx.navigateTo({ url: '/pages/visitors/index' }); },
 
   onShareAppMessage() {
-    return { title: '来微否，养一个替你把事办成的 AI 分身', path: '/pages/discover/index' };
+    return { title: '来微否，养一个替你把事办成的 AI 名片', path: '/pages/discover/index' };
   },
 });

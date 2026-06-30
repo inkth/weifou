@@ -1,39 +1,35 @@
 <view class="squad">
 
   <view class="sq-top" style="padding-top:{{statusBarH}}px">
+    <view class="sq-eyebrow">{{greeting}}</view>
     <view class="sq-h1">想办成什么？</view>
-    <view class="sq-sub">你的 AI 名片和 Agent，都在等你一句话</view>
   </view>
 
-  <!-- 总管大卡（关系锚 / 唯一有人格的脸）-->
-  <view class="chief art art-{{chief.tier}}" bindtap="enterChief">
-    <view class="art-glow"></view>
-    <view class="chief-av">{{chief.initial}}</view>
+  <view class="chief" hover-class="card-press" hover-stay-time="0" bindtap="enterChief">
+    <view class="chief-av">{{chief.initial}}<view wx:if="{{chief.online}}" class="chief-dot"></view></view>
     <view class="chief-meta">
       <view class="chief-name">{{chief.name}}</view>
       <view class="chief-line">{{chief.line}}</view>
     </view>
-    <view class="ic ic-arrow chief-go"></view>
+    <view class="ic ic-chevron chief-go"></view>
   </view>
 
-  <!-- 谁看过我（仅已建名片时）-->
-  <view wx:if="{{chief.hasProfile}}" class="seen-link" bindtap="goVisitors"
-        style="text-align:center;color:var(--accent-ink);font-size:26rpx;padding:12rpx 0 2rpx;">👀 谁看过我 ›</view>
+  <view wx:if="{{chief.hasProfile}}" class="seen" bindtap="goVisitors">
+    <view class="ic ic-user seen-ic"></view><text>谁看过你的名片</text>
+  </view>
 
-  <!-- 工具 Agent 卡（长按可从首页移除）-->
+  <view wx:if="{{specialists.length}}" class="sec-label">我的 Agent</view>
+
   <view class="spec" wx:for="{{specialists}}" wx:key="id"
         data-id="{{item.id}}" data-name="{{item.name}}" data-kind="{{item.kind}}"
+        hover-class="card-press" hover-stay-time="0"
         bindtap="enterSpecialist" bindlongpress="removeSpecialist">
-    <view class="spec-av art art-{{item.tier}}">
-      <view class="art-glow"></view>
-      <text>{{item.initial}}</text>
-    </view>
+    <view class="spec-av"><text>{{item.initial}}</text></view>
     <view class="spec-meta">
       <view class="spec-name">{{item.name}}</view>
       <view class="spec-line">{{item.line}}</view>
     </view>
-    <view class="ic ic-chevron spec-go"></view>
+    <view wx:if="{{item.pill}}" class="spec-pill">{{item.pill}}</view>
   </view>
-
 
 </view>
