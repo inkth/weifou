@@ -35,10 +35,5 @@
     <view class="ic ic-chevron spec-go"></view>
   </view>
 
-  <!-- 去市场添加更多 Agent -->
-  <view class="add" bindtap="addAgent">
-    <view class="ic ic-plus"></view>
-    <text>去 Agent 市场，添加更多</text>
-  </view>
 
 </view>

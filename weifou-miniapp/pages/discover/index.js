@@ -103,10 +103,6 @@ Page({
 
   goVisitors() { wx.navigateTo({ url: '/pages/visitors/index' }); },
 
-  addAgent() {
-    wx.switchTab({ url: '/pages/explore/index' }); // 去 Agent 学习市场添加
-  },
-
   onShareAppMessage() {
     return { title: '来微否，养一个替你把事办成的 AI 分身', path: '/pages/discover/index' };
   },
