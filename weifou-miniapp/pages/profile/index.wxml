@@ -1,8 +1,4 @@
 <view class="page" wx:if="{{profile}}">
-  <!-- 全屏立绘铺底 + 暗场（与首页/对话统一）-->
-  <image class="bg-lihe" src="{{liheSrc}}" mode="aspectFill" wx:if="{{liheSrc}}"/>
-  <view class="bg-scrim" wx:if="{{liheSrc}}"></view>
-
   <!-- 晒点：刚生成完的庆祝时刻，分享意愿峰值 -->
   <view class="card fresh-card" wx:if="{{fresh && isMine && profile.persona}}">
     <view class="fresh-title">🎉 你的 AI 分身上线了</view>
@@ -27,6 +23,8 @@
       <view class="amb-blob amb-blob-1"></view>
     </view>
     <view class="hero-row">
+      <image class="hero-ava" src="{{liheSrc}}" mode="aspectFill" wx:if="{{liheSrc}}"/>
+      <view class="hero-ava hero-ava-ph" wx:else><view class="ic ic-user"></view></view>
       <view class="hero-meta">
         <view class="name">{{profile.realName}}</view>
         <view class="title-text muted">{{profile.title}}<text wx:if="{{profile.company}}"> · {{profile.company}}</text></view>

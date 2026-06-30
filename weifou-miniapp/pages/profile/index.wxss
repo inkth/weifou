@@ -1,166 +1,71 @@
-@import "../../styles/stage.wxss";
+/* 名片对外页 = 清新浅色 + 薄荷青；干净可信（发给客户/HR 的脸）。付费弹层保持白底。 */
+.page { padding: 36rpx 32rpx 120rpx; min-height: 100vh; box-sizing: border-box; background: #fbfcfb; }
 
-/* 全屏立绘沉浸（与首页/对话统一）：立绘铺底 + 暗场，内容玻璃卡浮其上。
-   付费弹层 .tip-sheet 保持白底——成交时刻干净可信（成交克制硬门）。 */
-.page { padding: 32rpx 32rpx 120rpx; position: relative; min-height: 100vh; box-sizing: border-box; }
-.bg-lihe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
-.bg-scrim {
-  position: fixed; inset: 0; z-index: 0;
-  background: linear-gradient(to bottom, rgba(16,18,26,0.55) 0%, rgba(16,18,26,0.34) 30%, rgba(16,18,26,0.62) 70%, rgba(16,18,26,0.9) 100%);
-}
-/* 内容浮于立绘之上 */
-.card, .actions, .brand-foot { position: relative; z-index: 1; }
+.card { background: #fff; border-radius: 28rpx; border: 1rpx solid #ecefec; box-shadow: 0 2rpx 8rpx rgba(20, 40, 30, 0.04); }
+.muted { color: #8a9a93; }
 
-/* 卡片：白底 → 暗场玻璃 */
-.card {
-  background: rgba(20, 22, 30, 0.5);
-  backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.14);
-  box-shadow: none;
-}
-
-/* 全局按钮在暗场下的可见性：accent 碧绿不变；primary 改干净白（成交/分享入口），ghost 改玻璃 */
-.btn-primary { background: rgba(255, 255, 255, 0.92); color: #1f2330; }
-.btn-ghost { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1rpx solid rgba(255, 255, 255, 0.24); }
-
-/* 标签 / 次要文字 暗场配色（白底弹层内单独恢复，见底部） */
-.tag { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.82); }
-.muted { color: rgba(255, 255, 255, 0.6); }
-
-.hero {
-  margin-bottom: 24rpx;
-  position: relative;
-  overflow: hidden;
-  animation: heroRise 0.5s ease both;
-}
-@keyframes heroRise { from { opacity: 0; transform: translateY(10rpx); } to { opacity: 1; transform: none; } }
-.hero-row, .one-liner, .tags { position: relative; z-index: 1; }
-/* 立绘即人物：隐藏 hero 的氛围色块光晕（避免光斑叠在立绘上） */
+/* hero */
+.hero { margin-bottom: 22rpx; padding: 36rpx 32rpx; }
 .hero .amb-layer { display: none; }
-.hero-row { display: flex; align-items: center; }
+.hero-row { display: flex; align-items: center; gap: 24rpx; }
+.hero-ava { flex: 0 0 auto; width: 120rpx; height: 120rpx; border-radius: 32rpx; background: #e8f5ef; }
+.hero-ava-ph { display: flex; align-items: center; justify-content: center; }
+.hero-ava-ph .ic { font-size: 56rpx; color: #18b690; }
 .hero-meta { flex: 1; min-width: 0; }
-.name { font-size: 36rpx; font-weight: 600; color: #fff; text-shadow: 0 1rpx 10rpx rgba(0, 0, 0, 0.4); }
-.title-text { font-size: 26rpx; margin-top: 8rpx; color: rgba(255, 255, 255, 0.78); }
-.city { font-size: 24rpx; margin-top: 4rpx; color: rgba(255, 255, 255, 0.6); }
+.name { font-size: 38rpx; font-weight: 600; color: #16241e; letter-spacing: -0.5rpx; }
+.title-text { font-size: 26rpx; margin-top: 8rpx; color: #8a9a93; }
+.city { font-size: 24rpx; margin-top: 4rpx; color: #aab4af; }
 
-.one-liner { margin-top: 24rpx; font-size: 32rpx; font-weight: 500; color: #fff; line-height: 1.5; }
-.tags { margin-top: 20rpx; display: flex; flex-wrap: wrap; }
+.one-liner { margin-top: 26rpx; font-size: 32rpx; font-weight: 500; color: #16241e; line-height: 1.55; }
+.tags { margin-top: 20rpx; display: flex; flex-wrap: wrap; gap: 14rpx; }
+.tag { background: #e8f5ef; color: #0c5a48; font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 999rpx; }
 
-.section { margin-bottom: 24rpx; }
-.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; color: #fff; }
-.full-intro { font-size: 28rpx; line-height: 1.7; color: rgba(255, 255, 255, 0.85); white-space: pre-wrap; }
+.section { margin-bottom: 22rpx; padding: 32rpx; }
+.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; color: #16241e; }
+.full-intro { font-size: 28rpx; line-height: 1.7; color: #4a5a53; white-space: pre-wrap; }
 
-.stats { display: flex; padding: 24rpx 0; }
-.stat { flex: 1; text-align: center; }
-.stat-num { font-size: 40rpx; font-weight: 700; color: #fff; }
-.stat-label { font-size: 22rpx; margin-top: 6rpx; color: rgba(255, 255, 255, 0.6); }
+.stats { display: flex; padding: 28rpx 0; }
+.stat { flex: 1; text-align: center; position: relative; }
+.stat::after { content: ''; position: absolute; right: 0; top: 10rpx; bottom: 10rpx; width: 1rpx; background: #f0f2f0; }
+.stat:last-child::after { display: none; }
+.stat-num { font-size: 44rpx; font-weight: 600; color: #16241e; }
+.stat-label { font-size: 22rpx; margin-top: 6rpx; color: #9aa8a1; }
 
-.actions { display: flex; flex-direction: column; gap: 20rpx; margin-top: 32rpx; }
+.income-card { padding: 28rpx 32rpx; margin-bottom: 22rpx; }
+.income-row { display: flex; align-items: baseline; gap: 16rpx; }
+.income-num { font-size: 48rpx; font-weight: 600; color: #16241e; }
+.income-label { font-size: 24rpx; color: #8a9a93; }
+.income-sub { font-size: 22rpx; margin-top: 10rpx; color: #8a9a93; }
 
-.empty { text-align: center; padding-top: 240rpx; color: rgba(255, 255, 255, 0.7); }
+.actions { display: flex; flex-direction: column; gap: 18rpx; margin-top: 32rpx; }
+.btn-accent { background: #18b690; color: #fff; border-radius: 999rpx; font-size: 30rpx; font-weight: 500; padding: 26rpx 0; }
+.btn-accent::after { border: none; }
+.btn-ghost { background: #fff; color: #2a3a33; border: 1rpx solid #dfe5e1; border-radius: 999rpx; font-size: 29rpx; padding: 26rpx 0; }
+.btn-ghost::after { border: none; }
 
-/* 咨询入口卡：更沉稳的深底（立绘不渗进价格区）、中性不升温；点击后在白色弹层完成付款 */
-.consult { background: rgba(20, 22, 30, 0.82); border-color: rgba(255, 255, 255, 0.12); }
-.consult-intro { font-size: 26rpx; margin-bottom: 20rpx; color: rgba(255, 255, 255, 0.72); }
-.consult-price { font-size: 26rpx; margin-bottom: 20rpx; color: rgba(255, 255, 255, 0.72); }
-.book-btn { margin-top: 8rpx; }
-.consult-note { font-size: 22rpx; margin-top: 20rpx; text-align: center; color: rgba(255, 255, 255, 0.6); }
+.empty { text-align: center; padding-top: 240rpx; color: #aab4af; }
+.brand-foot { text-align: center; font-size: 24rpx; padding: 32rpx 0 16rpx; color: #8a9a93; }
+.trust-badge { font-size: 24rpx; color: #2f8c72; margin: -6rpx 0 16rpx; }
 
-/* —— 付费弹层：保持白底（成交时刻干净可信，不沾沉浸暗场）—— */
-.mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 100;
-  display: flex;
-  align-items: flex-end;
-}
-.tip-sheet {
-  width: 100%;
-  background: #fff;
-  border-radius: 32rpx 32rpx 0 0;
-  padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
-}
-.tip-sheet .muted { color: #8a8f9c; }              /* 白底弹层内恢复灰字 */
-.tip-sheet .btn-primary { background: #1f2330; color: #fff; }  /* 白底上恢复墨黑实心 */
-.tip-title { font-size: 34rpx; font-weight: 600; color: #1f2330; }
-.tip-sub { font-size: 24rpx; margin-top: 8rpx; }
-.tip-amounts { display: flex; gap: 20rpx; margin: 32rpx 0; }
-.tip-amount {
-  flex: 1;
-  text-align: center;
-  padding: 28rpx 0;
-  background: #f5f6fa;
-  border-radius: 16rpx;
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1f2330;
-  border: 2rpx solid transparent;
-}
-.tip-amount.active { border-color: #1f2330; background: #fff; }
-.tip-msg {
-  background: #f5f6fa;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  font-size: 28rpx;
-  margin-bottom: 32rpx;
-  color: #1f2330;
-}
-.tip-pay { margin-top: 8rpx; }
-
-/* 档期选择（白底弹层内） */
-.slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
-.slot-empty { text-align: center; padding: 48rpx 0; }
-.slot-pick {
-  padding: 24rpx;
-  background: #f5f6fa;
-  border-radius: 16rpx;
-  margin-bottom: 16rpx;
-  border: 2rpx solid transparent;
-}
-.slot-pick.active { border-color: #1f2330; background: #fff; }
-.sp-time { font-size: 30rpx; font-weight: 500; color: #1f2330; }
-.sp-meta { font-size: 24rpx; margin-top: 6rpx; }
-
-/* —— 生成完成晒点（庆祝时刻，暖色玻璃；非成交区，可升温）—— */
-.fresh-card {
-  padding: 32rpx;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg, rgba(24, 182, 144, 0.34), rgba(20, 22, 30, 0.55) 72%);
-  border: 1rpx solid rgba(24, 182, 144, 0.42);
-  animation: freshPop 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-@keyframes freshPop { from { opacity: 0; transform: translateY(12rpx) scale(0.98); } to { opacity: 1; transform: none; } }
-.fresh-title { font-size: 36rpx; font-weight: 700; color: #fff; }
-.fresh-sub { font-size: 26rpx; margin: 12rpx 0 8rpx; }
+/* fresh 庆祝卡：薄荷青浅底 */
+.fresh-card { padding: 32rpx; text-align: center; background: #e6f5ee; border: 1rpx solid rgba(24, 182, 144, 0.3); border-radius: 28rpx; margin-bottom: 22rpx; }
+.fresh-title { font-size: 36rpx; font-weight: 600; color: #0c3a2e; }
+.fresh-sub { font-size: 26rpx; margin: 12rpx 0 8rpx; color: #4a7a6c; }
 .fresh-starters { margin-bottom: 20rpx; }
-.fresh-starter { font-size: 26rpx; color: #fff; line-height: 1.9; }
+.fresh-starter { font-size: 26rpx; color: #2f6f5c; line-height: 1.9; }
 .fresh-actions { display: flex; gap: 16rpx; }
 .fresh-btn { flex: 1; }
+.fresh-notify { margin-top: 16rpx; padding: 18rpx 24rpx; border-radius: 16rpx; text-align: center; font-size: 24rpx; color: #0f766e; background: #d6efe4; }
+.fresh-notify.done { color: #6a9a8c; background: #e6f5ee; }
 
-/* —— 访客页脚平台线索 —— */
-.brand-foot { text-align: center; font-size: 24rpx; padding: 32rpx 0 16rpx; }
-
-/* 立绘微动：极轻的"呼吸"，让静止立绘有生命感（与对话页一致；scale≥1 不露底） */
-.bg-lihe { transform-origin: 50% 45%; animation: liheBreath 7s ease-in-out infinite; }
-@keyframes liheBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
-
-/* 首胜第三步：开启通知（暖色玻璃卡内的可点行） */
-.fresh-notify {
-  margin-top: 16rpx; padding: 18rpx 24rpx; border-radius: 16rpx; text-align: center;
-  font-size: 24rpx; color: #fff;
-  background: rgba(255, 255, 255, 0.12); border: 1rpx solid rgba(255, 255, 255, 0.24);
-}
-.fresh-notify.done { color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.06); }
-
-/* 信任徽章：社会证明，柔薄荷（碧绿同族更柔），不抢成交按钮 */
-.trust-badge { font-size: 24rpx; color: #bfe6da; margin: -6rpx 0 16rpx; }
-
-/* 收入可见卡 */
-.income-card { padding: 28rpx 32rpx; margin-bottom: 24rpx; }
-.income-row { display: flex; align-items: baseline; gap: 16rpx; }
-.income-num { font-size: 48rpx; font-weight: 700; color: #fff; }
-.income-label { font-size: 24rpx; color: rgba(255, 255, 255, 0.6); }
-.income-sub { font-size: 22rpx; margin-top: 10rpx; color: rgba(255, 255, 255, 0.6); }
+/* 付费弹层：白底（成交时刻干净可信） */
+.mask { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 100; display: flex; align-items: flex-end; }
+.tip-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); }
+.tip-title { font-size: 34rpx; font-weight: 600; color: #16241e; }
+.tip-sub { font-size: 24rpx; margin-top: 8rpx; color: #8a9a93; }
+.tip-amounts { display: flex; gap: 20rpx; margin: 32rpx 0; }
+.tip-amount { flex: 1; text-align: center; padding: 28rpx 0; background: #f3f6f4; border-radius: 16rpx; font-size: 32rpx; font-weight: 600; color: #16241e; border: 2rpx solid transparent; }
+.tip-amount.active { border-color: #18b690; background: #fff; }
+.tip-msg { background: #f3f6f4; border-radius: 16rpx; padding: 24rpx; font-size: 28rpx; margin-bottom: 32rpx; color: #16241e; }
+.tip-pay { margin-top: 8rpx; background: #18b690; color: #fff; }
+.tip-pay::after { border: none; }
