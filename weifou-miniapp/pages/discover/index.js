@@ -5,11 +5,10 @@ const { request } = require('../../utils/request');
 // 主分身（primary）渲染为大卡，其余为专才卡；前端只渲染、按 type 路由。
 // 兜底：接口失败时铺一份最简四卡，绝不空场、也不被网络错误带崩。
 const FALLBACK = {
-  chief: { name: '我的主分身', initial: '+', tier: 'warm', hasProfile: false, profileId: '', line: '先建一个，替你对外接待、有结果喊你。' },
+  chief: { name: '我的 AI 名片', initial: '+', tier: 'warm', hasProfile: false, profileId: '', line: '先建一个，别人点开就能直接问你、和你聊。' },
   specialists: [
-    { id: '', name: '学英语分身', initial: 'EN', tier: 'cool', line: '陪你开口练——纠音、对话、一段段升级。', kind: 'tool' },
-    { id: '', name: '学商业分身', initial: '商', tier: 'lively', line: '生意卡哪了？我陪你拆，给能落地的下一步。', kind: 'tool' },
-    { id: 'dating', name: '找对象分身', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的主分身。', kind: 'dating' },
+    { id: '', name: '学英语 Agent', initial: 'EN', tier: 'cool', line: '陪你开口练——纠音、对话、一段段升级。', kind: 'tool' },
+    { id: '', name: '学商业 Agent', initial: '商', tier: 'lively', line: '生意卡哪了？我陪你拆，给能落地的下一步。', kind: 'tool' },
   ],
 };
 
@@ -79,7 +78,7 @@ Page({
   enterSpecialist(e) {
     const { id, name, kind } = e.currentTarget.dataset;
     if (kind === 'dating') {
-      wx.navigateTo({ url: '/pages/dating/index' });
+      wx.navigateTo({ url: '/pages/dating/index' }); // 找对象已移出首页，保留分支兼容历史/他处入口
     } else if (kind === 'tool') {
       if (!id) { wx.showToast({ title: '正在上线，稍后再来', icon: 'none' }); return; }
       wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });

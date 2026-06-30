@@ -2,7 +2,7 @@
 
   <view class="sq-top" style="padding-top:{{statusBarH}}px">
     <view class="sq-h1">想办成什么？</view>
-    <view class="sq-sub">你的分身和专才，都在等你一句话</view>
+    <view class="sq-sub">你的 AI 名片和 Agent，都在等你一句话</view>
   </view>
 
   <!-- 总管大卡（关系锚 / 唯一有人格的脸）-->

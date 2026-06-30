@@ -30,8 +30,8 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 // 首页工具分身阵容：展示名/文案与 ToolAgent 内部名解耦（slug 取真实 Agent 与状态）。
 // 顺序即展示顺序；要加/减/换工具分身，改这张表即可。
 var homeTools = []struct{ Slug, Name, Line, Initial, Tier string }{
-	{"spoken-english", "学英语分身", "陪你开口练——纠音、对话、一段段升级。", "EN", "cool"},
-	{"business-coach", "学商业分身", "生意卡哪了？我陪你拆，给能落地的下一步。", "商", "lively"},
+	{"spoken-english", "学英语 Agent", "陪你开口练——纠音、对话、一段段升级。", "EN", "cool"},
+	{"business-coach", "学商业 Agent", "生意卡哪了？我陪你拆，给能落地的下一步。", "商", "lively"},
 }
 
 // agents 返回当前用户的首页 Agent 小队（主分身 + 工具分身 + 找对象）。
@@ -39,7 +39,7 @@ func (h *Handler) agents(c *gin.Context) error {
 	auth := middleware.Current(c)
 	out := make([]gin.H, 0, len(homeTools)+2)
 
-	// 1) 主分身 = 用户的 PersonaAI 实例（属于你、内容是你）。
+	// 1) AI 名片 = 代表你的对外分身（PersonaAI 实例：属于你、内容是你、会对话）。
 	var profile models.Profile
 	ready := h.db.First(&profile, "user_id = ?", auth.UserID).Error == nil
 	persona := gin.H{
@@ -47,18 +47,18 @@ func (h *Handler) agents(c *gin.Context) error {
 		"tier": "warm", "ready": ready,
 	}
 	if ready {
-		name := "我的主分身"
+		name := "我的 AI 名片"
 		if profile.RealName != "" {
-			name = profile.RealName + " 的主分身"
+			name = profile.RealName + " 的 AI 名片"
 		}
 		persona["name"] = name
 		persona["initial"] = firstRune(profile.RealName, "否")
 		persona["line"] = "我替你把对外的事看着，有结果就喊你。"
 		persona["profileId"] = profile.ID
 	} else {
-		persona["name"] = "我的主分身"
+		persona["name"] = "我的 AI 名片"
 		persona["initial"] = "+"
-		persona["line"] = "先建一个，替你对外接待、有结果喊你。"
+		persona["line"] = "先建一个，别人点开就能直接问你、和你聊。"
 	}
 	out = append(out, persona)
 
@@ -84,12 +84,8 @@ func (h *Handler) agents(c *gin.Context) error {
 		out = append(out, card)
 	}
 
-	// 3) 找对象 = 玩法/工具（结果回喂主分身画像）。
-	out = append(out, gin.H{
-		"key": "dating", "type": "dating", "name": "找对象分身",
-		"line": "测测你和谁最配，顺手喂懂我的主分身。", "initial": "❤", "tier": "lively",
-	})
-
+	// 首页固定三卡：AI 名片 + 学英语 Agent + 学商业 Agent。
+	// 找对象/契合度测试是支线（合规敏感），不进首页——从「我的」页进。
 	httpx.OK(c, out)
 	return nil
 }
