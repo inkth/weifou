@@ -1,0 +1,28 @@
+/* 复用择偶测试页的 intro / quiz / result / mask 样式，只补契合度特有的几个类 */
+@import "../dating/index.wxss";
+
+.res-headline {
+  margin-top: 18rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+
+.cv-point { padding: 18rpx 0; border-bottom: 1rpx solid var(--hairline, #eceef2); }
+.cv-point:last-child { border-bottom: none; }
+.cv-point-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
+.cv-point-note { font-size: 26rpx; color: var(--ink-2, #6b7280); line-height: 1.6; margin-top: 6rpx; }
+
+.cv-summary {
+  margin-top: 16rpx; padding-top: 18rpx; border-top: 1rpx solid var(--hairline, #eceef2);
+  font-size: 26rpx; color: var(--ink-2, #6b7280); line-height: 1.6;
+}
+
+.cv-cta {
+  margin-top: 32rpx; padding: 40rpx 32rpx; text-align: center;
+  background: var(--accent-soft, #fff4ec); border-radius: var(--r-xl, 28rpx);
+}
+.cv-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink, #b45309); }
+.cv-cta-sub { font-size: 26rpx; color: var(--ink-2, #6b7280); margin-top: 12rpx; line-height: 1.5; }
+.cv-cta-btn { margin-top: 28rpx; }

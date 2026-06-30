@@ -1,0 +1,78 @@
+<view class="page">
+
+  <!-- 开场 -->
+  <view wx:if="{{stage === 'intro'}}" class="intro">
+    <view class="intro-badge"><view class="ic ic-heart"></view></view>
+    <view class="intro-title">你和 {{realName}} 合得来吗？</view>
+    <view class="intro-sub">AI 出 8 道相处小题，结合 {{realName}} 的分身画像，算出你俩的契合度，看看哪里合拍、哪里要磨合。</view>
+    <view class="intro-note">纯趣味测试 · 匿名，{{realName}} 不会知道是谁测的</view>
+    <view class="intro-cta btn-accent {{loading ? 'is-busy' : ''}}" bindtap="onStart">
+      <text>{{loading ? '正在出题…' : '开始测契合度'}}</text>
+    </view>
+    <view class="intro-legal">结果仅供娱乐，由 AI 生成</view>
+  </view>
+
+  <!-- 答题 -->
+  <view wx:elif="{{stage === 'quiz'}}" class="quiz">
+    <view class="quiz-top">
+      <view class="quiz-back {{index === 0 ? 'is-off' : ''}}" bindtap="onBack"><view class="ic ic-back"></view></view>
+      <view class="quiz-progress">{{progressText}}</view>
+    </view>
+    <view class="quiz-q">{{cur.text}}</view>
+    <view class="quiz-opts">
+      <view
+        class="quiz-opt {{answers[cur.id] === item.key ? 'is-sel' : ''}}"
+        wx:for="{{cur.options}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="onPick">
+        <view class="quiz-opt-key">{{item.key}}</view>
+        <view class="quiz-opt-label">{{item.label}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 结果 -->
+  <view wx:elif="{{stage === 'result'}}" class="result">
+    <view class="res-top">
+      <view class="res-eyebrow">你和 {{realName}} 的契合度</view>
+      <view class="res-top-score">{{score}}<text class="res-top-unit">%</text></view>
+      <view wx:if="{{headline}}" class="res-headline">{{headline}}</view>
+    </view>
+
+    <view class="card res-points">
+      <view class="res-h"><view class="ic ic-stats res-h-ic"></view><text>合拍 / 要磨合</text></view>
+      <view class="cv-point" wx:for="{{points}}" wx:key="name">
+        <view class="cv-point-name">{{item.name}}</view>
+        <view class="cv-point-note">{{item.note}}</view>
+      </view>
+      <view wx:if="{{summary}}" class="cv-summary">{{summary}}</view>
+    </view>
+
+    <!-- 转化钩子 -->
+    <view class="cv-cta">
+      <block wx:if="{{!hasOwnClone}}">
+        <view class="cv-cta-title">也建一个你的分身？</view>
+        <view class="cv-cta-sub">让别人也能来测测和你合不合 —— 30 秒搞定。</view>
+        <view class="btn-accent cv-cta-btn" bindtap="goCreate">30 秒建我的分身</view>
+      </block>
+      <block wx:else>
+        <view class="cv-cta-title">把你的契合测试也发出去</view>
+        <view class="cv-cta-sub">看看谁来测和你合不合。</view>
+        <view class="btn-accent cv-cta-btn" bindtap="goMine">去我的分身</view>
+      </block>
+    </view>
+
+    <view class="res-acts">
+      <view class="btn-ghost res-act" bindtap="onRetake">再测一次</view>
+      <button class="btn-ghost res-act" open-type="share">分享结果</button>
+    </view>
+  </view>
+
+  <!-- 提交分析中的遮罩 -->
+  <view wx:if="{{loading && stage === 'quiz'}}" class="mask">
+    <view class="mask-spin"></view>
+    <view class="mask-text">正在算你俩的契合度…</view>
+  </view>
+
+</view>

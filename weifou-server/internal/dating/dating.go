@@ -69,6 +69,10 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.POST("/dating/start", auth, httpx.Handle(h.start))   // 出题
 	rg.POST("/dating/submit", auth, httpx.Handle(h.submit)) // 提交答案 → 画像 + 匹配度
 	rg.GET("/dating/result", auth, httpx.Handle(h.latest))  // 最近一次结果（结果页刷新/回看）
+	// 对外「趣味契合度测试」：访客 B 测和某主人 A 合不合（纯娱乐，不撮合、不下发联系方式）。
+	rg.POST("/dating/compat/start", auth, httpx.Handle(h.compatStart))   // 访客对某主人出题
+	rg.POST("/dating/compat/submit", auth, httpx.Handle(h.compatSubmit)) // 提交 → 契合度报告
+	rg.GET("/dating/compat/count", auth, httpx.Handle(h.compatCount))    // 主人：有多少人测过我
 }
 
 // ---------- 数据结构（前后端契约 / LLM JSON 形状） ----------
@@ -398,4 +402,209 @@ func (h *Handler) latest(c *gin.Context) error {
 	_ = json.Unmarshal(res.Headline, &head)
 	httpx.OK(c, gin.H{"profile": res.Profile, "headline": head, "matches": matches, "createdAt": res.CreatedAt})
 	return nil
+}
+
+// ========== 对外：趣味契合度测试（访客 B × 主人 A） ==========
+//
+// 与自测的差异：打分基准从「6 个预设原型」换成「主人 A 的真实画像」；访客答的是自己的相处偏好，
+// LLM 给出 B 和 A 的契合度报告。纯娱乐定位——不撮合、不下发任何一方联系方式（守社交红线）。
+
+type compatPoint struct {
+	Name string `json:"name"`
+	Note string `json:"note"`
+}
+
+type compatView struct {
+	Score    int           `json:"score"`
+	Headline string        `json:"headline"`
+	Points   []compatPoint `json:"points"`
+	Summary  string        `json:"summary"`
+}
+
+type compatStartReq struct {
+	ProfileID string `json:"profileId" binding:"required"` // 被测的主人 A
+}
+
+func (h *Handler) compatStart(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var req compatStartReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
+	}
+	var profile models.Profile
+	if err := h.db.First(&profile, "id = ?", req.ProfileID).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_FOUND", "对方的分身不存在")
+	}
+	if profile.UserID == auth.UserID {
+		return httpx.BadRequest("CANNOT_TEST_SELF", "不能测你和自己的契合度～")
+	}
+
+	// 日频限流（对外测试单独计数）。
+	var todayCount int64
+	since := time.Now().Truncate(24 * time.Hour)
+	h.db.Model(&models.DatingQuiz{}).
+		Where("user_id = ? AND target_profile_id <> '' AND created_at >= ?", auth.UserID, since).
+		Count(&todayCount)
+	if todayCount >= dailyQuizLimit {
+		return httpx.TooManyRequests("COMPAT_RATE_LIMIT", "今天测得有点多啦，明天再来吧")
+	}
+
+	questions, err := h.genQuestions()
+	if err != nil {
+		return httpx.Internal("DATING_GEN_FAIL", "出题失败，请稍后再试")
+	}
+	qjson, _ := json.Marshal(questions)
+	quiz := models.DatingQuiz{
+		ID: idgen.New(), UserID: auth.UserID, TargetProfileID: profile.ID,
+		Questions: datatypes.JSON(qjson), Status: models.DatingQuizOpen, Model: h.ds.ModelVersion(),
+	}
+	h.db.Create(&quiz)
+	httpx.OK(c, gin.H{"quizId": quiz.ID, "questions": questions, "realName": profile.RealName})
+	return nil
+}
+
+type compatSubmitReq struct {
+	QuizID  string   `json:"quizId" binding:"required"`
+	Answers []answer `json:"answers" binding:"required"`
+}
+
+func (h *Handler) compatSubmit(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var req compatSubmitReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("BAD_INPUT", "提交数据有误")
+	}
+	var quiz models.DatingQuiz
+	if err := h.db.First(&quiz, "id = ? AND user_id = ?", req.QuizID, auth.UserID).Error; err != nil {
+		return httpx.NotFound("QUIZ_NOT_FOUND", "测试不存在或已过期")
+	}
+	if quiz.TargetProfileID == "" {
+		return httpx.BadRequest("NOT_COMPAT_QUIZ", "该测试不是契合度测试")
+	}
+	var questions []quizQuestion
+	_ = json.Unmarshal(quiz.Questions, &questions)
+	qa := buildQA(questions, req.Answers)
+	if qa == "" {
+		return httpx.BadRequest("NO_ANSWERS", "请先完成答题")
+	}
+
+	var profile models.Profile
+	if err := h.db.First(&profile, "id = ?", quiz.TargetProfileID).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_FOUND", "对方的分身不存在")
+	}
+	persona, wants := h.loadTargetView(profile.ID, profile.UserID)
+	res, err := h.compatAnalyze(profile.RealName, persona, wants, qa)
+	if err != nil {
+		return httpx.Internal("COMPAT_ANALYZE_FAIL", "分析失败，请稍后再试")
+	}
+
+	ajson, _ := json.Marshal(req.Answers)
+	rjson, _ := json.Marshal(gin.H{"headline": res.Headline, "points": res.Points, "summary": res.Summary})
+	cr := models.CompatResult{
+		ID: idgen.New(), TargetProfileID: profile.ID,
+		AskerUserID: &auth.UserID, AskerOpenid: auth.Openid, QuizID: quiz.ID,
+		Answers: datatypes.JSON(ajson), Score: res.Score, Report: datatypes.JSON(rjson),
+		Model: h.ds.ModelVersion(),
+	}
+	h.db.Create(&cr)
+	h.db.Model(&quiz).Update("status", models.DatingQuizDone)
+
+	httpx.OK(c, gin.H{
+		"score": res.Score, "headline": res.Headline,
+		"points": res.Points, "summary": res.Summary, "realName": profile.RealName,
+	})
+	return nil
+}
+
+// compatCount 主人侧：有多少人测过和我的契合度（匿名计数，不下发访客身份）。
+func (h *Handler) compatCount(c *gin.Context) error {
+	auth := middleware.Current(c)
+	pid := c.Query("profileId")
+	if pid == "" {
+		var profile models.Profile
+		if h.db.First(&profile, "user_id = ?", auth.UserID).Error == nil {
+			pid = profile.ID
+		}
+	}
+	var n int64
+	if pid != "" {
+		h.db.Model(&models.CompatResult{}).Where("target_profile_id = ?", pid).Count(&n)
+	}
+	httpx.OK(c, gin.H{"count": n})
+	return nil
+}
+
+// loadTargetView 取主人 A 的画像：persona=A 是谁；wants=A 在关系里想要什么（A 自测过则更准）。
+func (h *Handler) loadTargetView(profileID, userID string) (string, string) {
+	persona := ""
+	var p models.PersonaAI
+	if h.db.First(&p, "profile_id = ?", profileID).Error == nil {
+		var tags []string
+		_ = json.Unmarshal(p.Tags, &tags)
+		var b strings.Builder
+		if s := strings.TrimSpace(p.OneLiner); s != "" {
+			b.WriteString("一句话：" + s + "\n")
+		}
+		if s := strings.TrimSpace(p.FullIntro); s != "" {
+			b.WriteString("介绍：" + s + "\n")
+		}
+		if len(tags) > 0 {
+			b.WriteString("标签：" + strings.Join(tags, "、") + "\n")
+		}
+		if s := strings.TrimSpace(p.Tone); s != "" {
+			b.WriteString("性格/语气：" + s + "\n")
+		}
+		persona = b.String()
+	}
+	wants := ""
+	var dr models.DatingResult
+	if h.db.Order("created_at desc").First(&dr, "user_id = ?", userID).Error == nil {
+		wants = dr.Profile
+	}
+	return persona, wants
+}
+
+func (h *Handler) compatAnalyze(targetName, persona, wants, qa string) (compatView, error) {
+	if strings.TrimSpace(persona) == "" {
+		persona = "（资料较少，请据下面信息合理推断，不要编造具体事实。）"
+	}
+	if strings.TrimSpace(wants) == "" {
+		wants = "（对方没有明确说，请据其人设合理推断。）"
+	}
+	sys := fmt.Sprintf(`你是一位轻松、会读心的"契合度"分析师，做的是一个**趣味契合度测试**（纯娱乐，不是婚恋匹配，不撮合、不涉及任何联系方式或见面）。
+下面是 A（%s）的资料，以及 B（来测试的人）在相处偏好上的作答。请评估 B 和 A 相处起来的契合度。
+
+== A 是谁 ==
+%s
+== A 在关系里看重什么 ==
+%s
+
+== B 的作答 ==
+%s
+
+要求：
+- 给一个 0-100 的契合度分数，要有区分度，别动不动 90+。
+- 趣味、温暖、具体，像朋友帮你看"你俩合不合得来"，可俏皮但不刻薄。
+- 给正好 3 个维度：每个 name=维度名（如 节奏/价值观/情绪表达），note=一句话说明哪里合拍或要磨合。
+- 一句话总结。
+只输出一个 JSON 对象，不要额外文字：
+{"score":78,"headline":"一句话定调（20字内）","points":[{"name":"节奏","note":"..."},{"name":"价值观","note":"..."},{"name":"情绪表达","note":"..."}],"summary":"一句话总结（40字内）"}`,
+		targetName, persona, wants, qa)
+
+	out, err := h.ds.Chat([]deepseek.Message{
+		{Role: "system", Content: sys},
+		{Role: "user", Content: "请给出契合度分析。"},
+	}, deepseek.ChatOptions{Temperature: 0.7, MaxTokens: 800, ResponseFormat: "json_object"})
+	if err != nil {
+		return compatView{}, err
+	}
+	var v compatView
+	if err := json.Unmarshal([]byte(out), &v); err != nil {
+		return compatView{}, err
+	}
+	v.Score = clamp(v.Score)
+	if strings.TrimSpace(v.Headline) == "" && len(v.Points) == 0 {
+		return compatView{}, fmt.Errorf("empty compat result")
+	}
+	return v, nil
 }

@@ -1,11 +1,14 @@
 // 找对象 · 择偶测试页：intro（开场）→ quiz（逐题作答）→ result（画像 + 匹配度）。
 // 匹配对象是平台预设原型（非真人），自测性质，避开婚恋交友红线。
 const { startQuiz, submitQuiz, latestResult } = require('../../utils/dating');
+const { request } = require('../../utils/request');
 
 Page({
   data: {
     stage: 'intro',      // intro | quiz | result
     loading: false,      // 出题 / 提交中的全屏态
+    myProfileId: '',     // 本人分身（有则可分享「对外契合测试」给别人测）
+    myName: '',
     quizId: '',
     questions: [],
     index: 0,            // 当前题序
@@ -26,6 +29,21 @@ Page({
         }
       })
       .catch(() => {});
+    // 取本人分身：有则展示「让别人测和你合不合」分享入口。
+    request({ url: '/user/me' })
+      .then((me) => {
+        if (me && me.profileId) this.setData({ myProfileId: me.profileId, myName: me.realName || '' });
+      })
+      .catch(() => {});
+  },
+
+  // 分享对外契合测试：别人点开会测「和你」的契合度（落 compat 页，带本人 profileId）。
+  onShareAppMessage() {
+    const id = this.data.myProfileId;
+    return {
+      title: id ? `测测你和${this.data.myName || '我'}的契合度 💘` : '择偶画像测试',
+      path: id ? `/pages/compat/index?profileId=${id}` : '/pages/dating/index',
+    };
   },
 
   // ---------- intro ----------

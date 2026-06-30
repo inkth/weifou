@@ -19,7 +19,8 @@
     "pages/agents/index",
     "pages/agent-chat/index",
     "pages/membership/index",
-    "pages/dating/index"
+    "pages/dating/index",
+    "pages/compat/index"
   ],
   "tabBar": {
     "custom": true,

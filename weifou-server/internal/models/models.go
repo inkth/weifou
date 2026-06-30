@@ -445,13 +445,14 @@ const (
 
 // DatingQuiz 一次测试的题目（AI 动态生成，存库以便复盘 / 提交时按 id 还原题面）。
 type DatingQuiz struct {
-	ID        string         `gorm:"primaryKey;size:32" json:"id"`
-	UserID    string         `gorm:"size:32;index:idx_dquiz_user_time" json:"userId"`
-	Questions datatypes.JSON `gorm:"type:jsonb" json:"questions"` // [{id,text,options:[{key,label}]}]
-	Status    string         `gorm:"size:16;default:open" json:"status"`
-	Model     string         `gorm:"size:64" json:"-"`
-	CreatedAt time.Time      `gorm:"index:idx_dquiz_user_time" json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
+	ID              string         `gorm:"primaryKey;size:32" json:"id"`
+	UserID          string         `gorm:"size:32;index:idx_dquiz_user_time" json:"userId"`
+	TargetProfileID string         `gorm:"size:32;index" json:"targetProfileId"` // 空=自测；非空=对外契合测试（被测的主人 A）
+	Questions       datatypes.JSON `gorm:"type:jsonb" json:"questions"`          // [{id,text,options:[{key,label}]}]
+	Status          string         `gorm:"size:16;default:open" json:"status"`
+	Model           string         `gorm:"size:64" json:"-"`
+	CreatedAt       time.Time      `gorm:"index:idx_dquiz_user_time" json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
 }
 
 func (DatingQuiz) TableName() string { return "dating_quizzes" }
@@ -471,6 +472,23 @@ type DatingResult struct {
 
 func (DatingResult) TableName() string { return "dating_results" }
 
+// CompatResult 对外「趣味契合度测试」结果：访客 B 与某主人 A 的契合度报告。
+// 纯娱乐测评——不撮合、不下发任何一方联系方式（NGL 匿名靠展示层保证）。
+type CompatResult struct {
+	ID              string         `gorm:"primaryKey;size:32" json:"id"`
+	TargetProfileID string         `gorm:"size:32;index:idx_compat_target" json:"targetProfileId"` // 被测的主人 A
+	AskerUserID     *string        `gorm:"size:32" json:"askerUserId,omitempty"`
+	AskerOpenid     string         `gorm:"size:64;index" json:"-"`
+	QuizID          string         `gorm:"size:32;index" json:"quizId"`
+	Answers         datatypes.JSON `gorm:"type:jsonb" json:"answers"`
+	Score           int            `json:"score"`                    // 契合度 0-100
+	Report          datatypes.JSON `gorm:"type:jsonb" json:"report"` // {headline, points:[{name,note}], summary}
+	Model           string         `gorm:"size:64" json:"-"`
+	CreatedAt       time.Time      `gorm:"index:idx_compat_target" json:"createdAt"`
+}
+
+func (CompatResult) TableName() string { return "compat_results" }
+
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -482,6 +500,6 @@ func AllModels() []interface{} {
 		&Refund{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
-		&DatingQuiz{}, &DatingResult{},
+		&DatingQuiz{}, &DatingResult{}, &CompatResult{},
 	}
 }

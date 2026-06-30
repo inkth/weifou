@@ -10,6 +10,7 @@
       <text>{{loading ? '正在出题…' : '开始测试'}}</text>
     </view>
     <view wx:if="{{hasHistory}}" class="intro-history" bindtap="onViewHistory">查看上次结果</view>
+    <button wx:if="{{myProfileId}}" class="btn-ghost intro-share" open-type="share">💘 让别人测测和你合不合</button>
     <view class="intro-legal">测试结果仅供自我了解，由 AI 生成</view>
   </view>
 
