@@ -1,10 +1,11 @@
 .page {
   min-height: 100vh;
   box-sizing: border-box;
+  background: #fbfcfb;
   padding: 16rpx 28rpx calc(env(safe-area-inset-bottom) + 140rpx);
 }
-.hd { padding: 20rpx 4rpx 8rpx; }
-.hd-title { font-size: 48rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.hd { padding: 28rpx 4rpx 12rpx; }
+.hd-title { font-size: 48rpx; font-weight: 600; color: var(--ink); letter-spacing: -0.5rpx; }
 
 .card { background: var(--surface); border-radius: var(--r-xl); box-shadow: var(--shadow-card); }
 
@@ -23,7 +24,7 @@
 }
 .clone-ava .ic { font-size: 56rpx; color: var(--accent); }
 .clone-id { flex: 1 1 auto; min-width: 0; }
-.clone-name { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.clone-name { font-size: 32rpx; font-weight: 600; color: var(--ink); letter-spacing: -0.3rpx; }
 .clone-sub { margin-top: 6rpx; font-size: 25rpx; color: var(--sub); }
 .clone-arrow { font-size: 30rpx; color: var(--faint); }
 .clone-acts {

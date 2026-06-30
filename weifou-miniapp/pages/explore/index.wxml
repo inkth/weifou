@@ -1,44 +1,30 @@
-<view class="wrap" style="padding-top:{{statusBarH}}px">
-  <view class="head">
-    <view class="h-title">用 AI 学习一切</view>
-    <view class="h-sub">挑一个 AI 老师，先免费体验，会员畅用全部</view>
+<view class="mkt" style="padding-top:{{statusBarH}}px">
+  <view class="mkt-top">
+    <view class="mkt-h1">用 AI 学习一切</view>
+    <view class="mkt-sub">挑一个 AI 老师，先免费体验，会员畅用全部</view>
   </view>
 
-  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <view wx:if="{{loading}}" class="mkt-state">加载中…</view>
 
   <block wx:else>
-    <view class="mbr-banner {{isMember ? 'on' : ''}}" bindtap="goMembership">
-      <view class="ic ic-crown mb-crown"></view>
-      <text class="mb-text">{{isMember ? '会员有效中 · 全部畅用' : '开通会员 · 一价畅用全部'}}</text>
-      <text class="mb-arrow" wx:if="{{!isMember}}">去开通 ›</text>
+    <view class="mbr {{isMember ? 'on' : ''}}" hover-class="card-press" hover-stay-time="0" bindtap="goMembership">
+      <view class="ic ic-crown mbr-ic"></view>
+      <text class="mbr-text">{{isMember ? '会员有效中 · 全部畅用' : '开通会员 · 一价畅用全部'}}</text>
+      <text wx:if="{{!isMember}}" class="mbr-go">去开通 ›</text>
     </view>
 
-    <view class="list">
-      <view
-        wx:for="{{agents}}"
-        wx:key="id"
-        class="card"
-        bindtap="open"
-        data-id="{{item.id}}"
-        data-name="{{item.name}}"
-      >
-        <view class="aic" style="background: {{item.accent}}1a; color: {{item.accent}};">{{item.icon}}</view>
-        <view class="body">
-          <view class="name">{{item.name}}</view>
-          <view class="tagline">{{item.tagline}}</view>
-          <view class="meta">
-            <text class="status status-{{item.statusKind}}">{{item.status}}</text>
-          </view>
-        </view>
-        <view
-          class="pin {{item.pinned ? 'on' : ''}}"
-          catchtap="togglePin"
-          data-id="{{item.id}}"
-          data-pinned="{{item.pinned}}"
-        >{{item.pinned ? '已添加' : '+ 首页'}}</view>
+    <view class="mcard" wx:for="{{agents}}" wx:key="id"
+          data-id="{{item.id}}" data-name="{{item.name}}"
+          hover-class="card-press" hover-stay-time="0" bindtap="open">
+      <view class="mcard-ic">{{item.icon}}</view>
+      <view class="mcard-meta">
+        <view class="mcard-name">{{item.name}}</view>
+        <view class="mcard-tag">{{item.tagline}}</view>
+        <view class="mcard-status status-{{item.statusKind}}">{{item.status}}</view>
       </view>
-
-      <view wx:if="{{agents.length === 0}}" class="state">暂无可用工具</view>
+      <view class="pin {{item.pinned ? 'on' : ''}}" catchtap="togglePin" data-id="{{item.id}}" data-pinned="{{item.pinned}}">{{item.pinned ? '已添加' : '＋ 首页'}}</view>
     </view>
+
+    <view wx:if="{{agents.length === 0}}" class="mkt-state">暂无可用工具</view>
   </block>
 </view>
