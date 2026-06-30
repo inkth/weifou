@@ -1,24 +1,23 @@
 const { ensureLogin } = require('../../utils/auth');
-const { listAgents } = require('../../utils/agent');
-const { loadEntries, agentVisible } = require('../../utils/entries');
 const { request } = require('../../utils/request');
 
-// 分身（首页）= 我的分身小队，固定四卡：我的主分身（代表你的对外分身）+ 学英语 + 学商业 + 找对象。
-// 主分身是「你」、是核心；其余三个是能力分身（工具/玩法）。暗场沉浸，主角是「我养的这一队」。
-// 找对象分身：不依赖工具会员、两端都可用（点击进择偶测试，结果回喂我的主分身画像）。
-const DATING_SPECIALIST = { id: 'dating', name: '找对象分身', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的主分身。', kind: 'dating' };
-// 学习型工具分身（会员畅用 · 非会员免费体验几次）；id 运行时按 slug 从 /agents 取真实 Agent。
-const TOOL_CARDS = [
-  { slug: 'spoken-english', name: '学英语分身', initial: 'EN', tier: 'cool', line: '陪你开口练——纠音、对话、一段段升级。' },
-  { slug: 'business-coach', name: '学商业分身', initial: '商', tier: 'lively', line: '生意卡哪了？我陪你拆，给能落地的下一步。' },
-];
+// 分身（首页）= 我的 Agent 小队，由服务端 /home/agents 驱动（阵容/顺序/状态都在后端）。
+// 主分身（primary）渲染为大卡，其余为专才卡；前端只渲染、按 type 路由。
+// 兜底：接口失败时铺一份最简四卡，绝不空场、也不被网络错误带崩。
+const FALLBACK = {
+  chief: { name: '我的主分身', initial: '+', tier: 'warm', hasProfile: false, profileId: '', line: '先建一个，替你对外接待、有结果喊你。' },
+  specialists: [
+    { id: '', name: '学英语分身', initial: 'EN', tier: 'cool', line: '陪你开口练——纠音、对话、一段段升级。', kind: 'tool' },
+    { id: '', name: '学商业分身', initial: '商', tier: 'lively', line: '生意卡哪了？我陪你拆，给能落地的下一步。', kind: 'tool' },
+    { id: 'dating', name: '找对象分身', initial: '❤', tier: 'lively', line: '测测你和谁最配，顺手喂懂我的主分身。', kind: 'dating' },
+  ],
+};
 
 Page({
   data: {
     statusBarH: 20,
-    chief: { name: '我的主分身', initial: '+', tier: 'warm', line: '先建一个，替你对外接待、有结果喊你。', hasProfile: false },
+    chief: FALLBACK.chief,
     specialists: [],
-    agentEntry: false, // 工具 Agent 入口（iOS 隐藏，见 utils/entries）
     loading: true,
   },
 
@@ -38,47 +37,35 @@ Page({
 
   async load() {
     this.setData({ loading: true });
-
-    // 登录 / entries 失败都不阻断四卡渲染（四卡是本地常量，不该被网络错误带崩）。
     try { await ensureLogin(); } catch (e) { /* 未登录也照常铺卡，点进去再引导 */ }
-    try { await loadEntries(); } catch (e) { /* entries 取失败不影响首页四卡 */ }
 
-    const [me, agents] = await Promise.all([
-      request({ url: '/user/me' }).catch(() => ({})),
-      listAgents().catch(() => []), // 工具分身两端固定展示（iOS 虚拟支付已开放，不再隐藏）
-    ]);
+    const cards = await request({ url: '/home/agents' }).catch(() => null);
+    if (!cards || !cards.length) {
+      this.setData({ chief: FALLBACK.chief, specialists: FALLBACK.specialists, loading: false });
+      return;
+    }
 
-    // 主分身 = 代表你的对外分身（已建则替你接待 + 回报结果），否则引导创建
-    const chief = (me && me.profileId)
-      ? {
-          name: me.realName ? me.realName + ' 的主分身' : '我的主分身',
-          initial: (me.realName || '否').slice(0, 1),
-          tier: 'warm', hasProfile: true, profileId: me.profileId,
-          line: '我替你把对外的事看着，有结果就喊你。',
-        }
-      : {
-          name: '我的主分身', initial: '+', tier: 'warm', hasProfile: false,
-          line: '先建一个，替你对外接待、有结果喊你。',
-        };
+    const primary = cards.find((c) => c.primary) || cards[0];
+    const chief = {
+      name: primary.name,
+      initial: primary.initial || '+',
+      tier: primary.tier || 'warm',
+      line: primary.line,
+      hasProfile: !!primary.ready,
+      profileId: primary.profileId || '',
+    };
+    const specialists = cards
+      .filter((c) => c !== primary)
+      .map((c) => ({
+        id: c.agentId || '',
+        name: c.name,
+        initial: c.initial,
+        tier: c.tier,
+        line: c.line,
+        kind: c.type === 'dating' ? 'dating' : 'tool',
+      }));
 
-    // 工具分身按 slug 取真实 Agent id（学英语 / 学商业）；取不到 id 不影响卡片展示
-    const bySlug = {};
-    (agents || []).forEach((a) => { if (a.slug) bySlug[a.slug] = a; });
-    const toolCards = TOOL_CARDS.map((t) => {
-      const a = bySlug[t.slug];
-      return { id: a ? a.id : '', name: t.name, initial: t.initial, tier: t.tier, line: t.line, kind: 'tool' };
-    });
-
-    let entry = false;
-    try { entry = agentVisible(); } catch (e) { /* 默认隐藏召新入口即可 */ }
-
-    // 首页固定四卡：我的主分身（大卡）+ 学英语分身 + 学商业分身 + 找对象分身
-    this.setData({
-      chief,
-      specialists: [...toolCards, DATING_SPECIALIST],
-      agentEntry: entry,
-      loading: false,
-    });
+    this.setData({ chief, specialists, loading: false });
   },
 
   enterChief() {
@@ -100,8 +87,7 @@ Page({
   },
 
   addAgent() {
-    if (this.data.agentEntry) wx.navigateTo({ url: '/pages/agents/index' });
-    else wx.navigateTo({ url: '/pages/onboarding/index' });
+    wx.navigateTo({ url: '/pages/agents/index' });
   },
 
   onShareAppMessage() {
