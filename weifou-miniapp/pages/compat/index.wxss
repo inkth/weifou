@@ -21,8 +21,8 @@
 
 .cv-cta {
   margin-top: 32rpx; padding: 40rpx 32rpx; text-align: center;
-  background: var(--accent-soft, #fff4ec); border-radius: var(--r-xl, 28rpx);
+  background: var(--accent-soft, #e2f5ef); border-radius: var(--r-xl, 28rpx);
 }
-.cv-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink, #b45309); }
+.cv-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink, #0c5a48); }
 .cv-cta-sub { font-size: 26rpx; color: var(--ink-2, #6b7280); margin-top: 12rpx; line-height: 1.5; }
 .cv-cta-btn { margin-top: 28rpx; }

@@ -7,8 +7,8 @@
   font-size: 24rpx;
   padding: 10rpx 20rpx;
   border-radius: 999rpx;
-  color: var(--accent, #FB923C);
-  border: 1rpx solid var(--accent, #FB923C);
+  color: var(--accent, #18b690);
+  border: 1rpx solid var(--accent, #18b690);
   background: transparent;
 }
 .pin.on {

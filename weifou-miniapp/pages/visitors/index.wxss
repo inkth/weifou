@@ -10,7 +10,7 @@ page { background: #f5f6fa; }
 .v-ava { width: 88rpx; height: 88rpx; border-radius: 50%; flex-shrink: 0; }
 .v-ava-ph {
   display: flex; align-items: center; justify-content: center;
-  background: var(--accent-soft, #fff4ec); color: var(--accent, #FB923C);
+  background: var(--accent-soft, #e2f5ef); color: var(--accent, #18b690);
   font-size: 36rpx; font-weight: 700;
 }
 .v-meta { flex: 1; min-width: 0; }
