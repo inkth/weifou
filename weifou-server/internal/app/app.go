@@ -14,7 +14,6 @@ import (
 	"weifou-server/internal/dating"
 	"weifou-server/internal/deepseek"
 	"weifou-server/internal/membership"
-	"weifou-server/internal/mirror"
 	"weifou-server/internal/mp"
 	"weifou-server/internal/payment"
 	"weifou-server/internal/persona"
@@ -47,7 +46,6 @@ type App struct {
 	plazaH      *plaza.Handler
 	toolagentH  *toolagent.Handler
 	datingH     *dating.Handler
-	mirrorH     *mirror.Handler
 	membershipH *membership.Handler
 	mpH         *mp.Handler
 	clientcfgH  *clientcfg.Handler
@@ -105,7 +103,6 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		plazaH:      plaza.NewHandler(db),
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
 		datingH:     dating.NewHandler(db, ds, security, cfg.JWTSecret),
-		mirrorH:     mirror.NewHandler(db, ds, ansEngine, cfg.JWTSecret),
 		membershipH: mbrH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH:  clientcfg.NewHandler(vpayClient.Ready()),
@@ -129,7 +126,6 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.plazaH.Register(api)
 	a.toolagentH.Register(api)
 	a.datingH.Register(api)
-	a.mirrorH.Register(api)
 	a.membershipH.Register(api)
 	a.mpH.Register(api)
 	a.clientcfgH.Register(api)
