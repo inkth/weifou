@@ -1,6 +1,8 @@
 /* 复用择偶测试页的 intro / quiz / result / mask 样式，只补契合度特有的几个类 */
 @import "../dating/index.wxss";
 
+page { background: #fbfcfb; }
+
 .res-headline {
   margin-top: 18rpx;
   font-size: 30rpx;

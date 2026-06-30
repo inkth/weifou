@@ -5,8 +5,8 @@
   </view>
 
   <view class="acts">
-    <view class="act" bindtap="ingestMemory">✨ 粘贴资料自动整理</view>
-    <view class="act" bindtap="addMemory">＋ 手动加一条</view>
+    <view class="act act-primary" hover-class="act-press" hover-stay-time="0" bindtap="ingestMemory">✨ 粘贴资料，自动整理</view>
+    <view class="act" hover-class="act-press" hover-stay-time="0" bindtap="addMemory">＋ 手动加一条</view>
   </view>
 
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
