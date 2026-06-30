@@ -2,13 +2,12 @@ const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
 const { unpinAgent } = require('../../utils/agent');
 
-// 首页 = 我的 Agent 小队，由 /home/agents 驱动；清新浅色 + 薄荷青。
-// 接口失败兜底最简卡，绝不空场、也不被网络错误带崩。
+// 首页 = 我的 Agent 小队，由 /home/agents 驱动；清新浅色 + 薄荷青，成熟产品质感（大卡 + 真实数据）。
 const FALLBACK = {
-  chief: { name: '我的 AI 名片', initial: '+', online: false, hasProfile: false, profileId: '', line: '先建一个，别人点开就能直接问你、和你聊' },
+  chief: { name: '我的 AI 名片', initial: '名', online: true, hasProfile: false, profileId: '', line: '替你接待每个来访的人，有结果就喊你', stats: null },
   specialists: [
-    { id: '', name: '学英语', initial: 'EN', line: '随时开口练，纠音到对话', kind: 'tool', pill: '剩 5 次' },
-    { id: '', name: '学商业', initial: '商', line: '把卡住的生意拆成下一步', kind: 'tool', pill: '剩 3 次' },
+    { id: '', name: '学英语', initial: 'EN', line: '随时开口练，纠音、对话、一段段升级', kind: 'tool', pill: '剩 5 次' },
+    { id: '', name: '学商业', initial: '商', line: '把卡住的生意拆开，给你能落地的下一步', kind: 'tool', pill: '剩 3 次' },
   ],
 };
 
@@ -52,15 +51,28 @@ Page({
     const primary = cards.find((c) => c.primary) || cards[0];
     const chief = {
       name: primary.name,
-      initial: primary.initial || '+',
+      initial: primary.initial || '名',
       line: primary.line,
       hasProfile: !!primary.ready,
       online: !!primary.ready,
       profileId: primary.profileId || '',
+      stats: null,
     };
+    // 已建名片：取真实数据填进大卡（成熟产品的 dashboard 感）。
+    if (chief.hasProfile) {
+      const s = await request({ url: '/visit/stats/mine' }).catch(() => null);
+      if (s) {
+        chief.stats = [
+          { n: s.pv || 0, label: '浏览' },
+          { n: s.uv || 0, label: '访客' },
+          { n: s.askCount || 0, label: '问答' },
+        ];
+      }
+    }
+
     const specialists = cards.filter((c) => c !== primary).map((c) => {
       const fr = c.freeRemaining;
-      const pill = c.member ? '会员畅用' : (typeof fr === 'number' && fr >= 0 ? `剩 ${fr} 次` : '');
+      const pill = c.member ? '会员畅用' : (typeof fr === 'number' && fr >= 0 ? `免费剩 ${fr} 次` : '');
       return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, kind: c.type === 'dating' ? 'dating' : 'tool', pill };
     });
 
@@ -74,6 +86,8 @@ Page({
       wx.navigateTo({ url: '/pages/onboarding/index' });
     }
   },
+
+  goVisitors() { wx.navigateTo({ url: '/pages/visitors/index' }); },
 
   enterSpecialist(e) {
     const { id, name, kind } = e.currentTarget.dataset;
@@ -98,8 +112,6 @@ Page({
       fail: () => {},
     });
   },
-
-  goVisitors() { wx.navigateTo({ url: '/pages/visitors/index' }); },
 
   onShareAppMessage() {
     return { title: '来微否，养一个替你把事办成的 AI 名片', path: '/pages/discover/index' };

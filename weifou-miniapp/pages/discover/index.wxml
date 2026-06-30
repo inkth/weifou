@@ -5,31 +5,47 @@
     <view class="sq-h1">想办成什么？</view>
   </view>
 
-  <view class="chief" hover-class="card-press" hover-stay-time="0" bindtap="enterChief">
-    <view class="chief-av">{{chief.initial}}<view wx:if="{{chief.online}}" class="chief-dot"></view></view>
-    <view class="chief-meta">
-      <view class="chief-name">{{chief.name}}</view>
-      <view class="chief-line">{{chief.line}}</view>
+  <!-- AI 名片大卡：头像 + 数据 dashboard -->
+  <view class="hero" hover-class="card-press" hover-stay-time="0" bindtap="enterChief">
+    <view class="hero-top">
+      <view class="hero-av">{{chief.initial}}<view wx:if="{{chief.online}}" class="hero-dot"></view></view>
+      <view class="hero-id">
+        <view class="hero-name">{{chief.name}}</view>
+        <view class="hero-line">{{chief.line}}</view>
+      </view>
+      <view class="ic ic-chevron hero-go"></view>
     </view>
-    <view class="ic ic-chevron chief-go"></view>
+
+    <view wx:if="{{chief.stats}}" class="hero-stats">
+      <view class="hstat" wx:for="{{chief.stats}}" wx:key="label">
+        <view class="hstat-n">{{item.n}}</view>
+        <view class="hstat-l">{{item.label}}</view>
+      </view>
+    </view>
   </view>
 
-  <view wx:if="{{chief.hasProfile}}" class="seen" bindtap="goVisitors">
-    <view class="ic ic-user seen-ic"></view><text>谁看过你的名片</text>
+  <view wx:if="{{chief.hasProfile}}" class="seen" hover-class="seen-press" hover-stay-time="0" bindtap="goVisitors">
+    <view class="ic ic-user seen-ic"></view><text>谁看过你的名片</text><view class="ic ic-chevron seen-go"></view>
   </view>
 
   <view wx:if="{{specialists.length}}" class="sec-label">我的 Agent</view>
 
-  <view class="spec" wx:for="{{specialists}}" wx:key="id"
+  <!-- Agent 大卡 -->
+  <view class="acard" wx:for="{{specialists}}" wx:key="id"
         data-id="{{item.id}}" data-name="{{item.name}}" data-kind="{{item.kind}}"
         hover-class="card-press" hover-stay-time="0"
         bindtap="enterSpecialist" bindlongpress="removeSpecialist">
-    <view class="spec-av"><text>{{item.initial}}</text></view>
-    <view class="spec-meta">
-      <view class="spec-name">{{item.name}}</view>
-      <view class="spec-line">{{item.line}}</view>
+    <view class="acard-top">
+      <view class="acard-ic"><text>{{item.initial}}</text></view>
+      <view class="acard-meta">
+        <view class="acard-name">{{item.name}}</view>
+        <view class="acard-tag">{{item.line}}</view>
+      </view>
     </view>
-    <view wx:if="{{item.pill}}" class="spec-pill">{{item.pill}}</view>
+    <view class="acard-foot">
+      <view wx:if="{{item.pill}}" class="acard-pill">{{item.pill}}</view>
+      <view class="acard-cta">去学习<view class="ic ic-arrow acard-cta-ic"></view></view>
+    </view>
   </view>
 
 </view>
