@@ -1,6 +1,5 @@
-// Package home 聚合「我的首页 Agent 小队」：把三种底层数据源（PersonaAI 实例 /
-// 平台 ToolAgent / 玩法）抹平成一个统一的卡片列表，由服务端决定阵容、顺序与每张卡的状态。
-// 前端只渲染、按 type 路由——加减换 Agent、调顺序、做会员灰度都改这里，不用前端发版。
+// Package home 聚合「我的首页」：AI 名片（PersonaAI 实例）+ 用户添加到首页的工具 Agent（AgentPin）。
+// 阵容由用户自定义（市场添加/移除），服务端组装统一卡片列表；前端只渲染、按 type 路由。
 package home
 
 import (
@@ -8,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"weifou-server/internal/httpx"
+	"weifou-server/internal/idgen"
 	"weifou-server/internal/membership"
 	"weifou-server/internal/middleware"
 	"weifou-server/internal/models"
@@ -25,19 +25,20 @@ func NewHandler(db *gorm.DB, jwtSecret string) *Handler {
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
 	rg.GET("/home/agents", auth, httpx.Handle(h.agents))
+	rg.POST("/home/agents/pin", auth, httpx.Handle(h.pin))              // 添加到首页
+	rg.DELETE("/home/agents/pin/:agentId", auth, httpx.Handle(h.unpin)) // 从首页移除
 }
 
-// 首页工具分身阵容：展示名/文案与 ToolAgent 内部名解耦（slug 取真实 Agent 与状态）。
-// 顺序即展示顺序；要加/减/换工具分身，改这张表即可。
-var homeTools = []struct{ Slug, Name, Line, Initial, Tier string }{
-	{"spoken-english", "学英语 Agent", "陪你开口练——纠音、对话、一段段升级。", "EN", "cool"},
-	{"business-coach", "学商业 Agent", "生意卡哪了？我陪你拆，给能落地的下一步。", "商", "lively"},
-}
+// 新用户首页默认放上去的工具 Agent（slug）；只在用户从未种过时种一次。
+var defaultPinSlugs = []string{"spoken-english", "business-coach"}
 
-// agents 返回当前用户的首页 Agent 小队（主分身 + 工具分身 + 找对象）。
+// 工具卡的温度档循环（视觉用）。
+var toolTiers = []string{"cool", "lively", "warm"}
+
+// agents 返回当前用户的首页：AI 名片（primary）+ 用户添加的工具 Agent。
 func (h *Handler) agents(c *gin.Context) error {
 	auth := middleware.Current(c)
-	out := make([]gin.H, 0, len(homeTools)+2)
+	out := make([]gin.H, 0, 6)
 
 	// 1) AI 名片 = 代表你的对外分身（PersonaAI 实例：属于你、内容是你、会对话）。
 	var profile models.Profile
@@ -62,31 +63,91 @@ func (h *Handler) agents(c *gin.Context) error {
 	}
 	out = append(out, persona)
 
-	// 2) 工具分身 = 平台 ToolAgent（你「用」不「拥有」），带会员/免费状态。
+	// 2) 工具 Agent = 用户添加到首页的（AgentPin）；新用户无 pin 则种默认一次。
+	h.ensureDefaultPins(auth.UserID)
+	var pins []models.AgentPin
+	h.db.Where("user_id = ?", auth.UserID).Order("sort asc, created_at asc").Find(&pins)
 	member := membership.IsActive(h.db, auth.UserID)
-	for _, t := range homeTools {
-		card := gin.H{
-			"key": t.Slug, "type": "tool", "name": t.Name, "line": t.Line,
-			"initial": t.Initial, "tier": t.Tier, "member": member,
-		}
+	for i := range pins {
 		var a models.ToolAgent
-		if h.db.First(&a, "slug = ? AND enabled = ?", t.Slug, true).Error == nil {
-			card["agentId"] = a.ID
-			remaining := a.FreeTrial
-			var ent models.AgentEntitlement
-			if h.db.First(&ent, "user_id = ? AND agent_id = ?", auth.UserID, a.ID).Error == nil {
-				remaining = ent.Remaining
-			}
-			card["freeRemaining"] = remaining
-		} else {
-			card["agentId"] = "" // 该 Agent 还没 seed → 前端提示「正在上线」
+		if h.db.First(&a, "id = ? AND enabled = ?", pins[i].AgentID, true).Error != nil {
+			continue // Agent 下架/不存在 → 跳过
 		}
-		out = append(out, card)
+		out = append(out, h.toolCard(&a, auth.UserID, member, len(out)))
 	}
 
-	// 首页固定三卡：AI 名片 + 学英语 Agent + 学商业 Agent。
-	// 找对象/契合度测试是支线（合规敏感），不进首页——从「我的」页进。
 	httpx.OK(c, out)
+	return nil
+}
+
+// ensureDefaultPins 新用户首次进首页：若从未种过，按默认 slug 自动 pin 一次（不空场、语义统一；
+// 用 User.HomeSeeded 记录，保证「移除全部」后默认不会再回来）。
+func (h *Handler) ensureDefaultPins(userID string) {
+	var u models.User
+	if h.db.First(&u, "id = ?", userID).Error != nil || u.HomeSeeded {
+		return
+	}
+	for i, slug := range defaultPinSlugs {
+		var a models.ToolAgent
+		if h.db.First(&a, "slug = ? AND enabled = ?", slug, true).Error == nil {
+			h.db.Create(&models.AgentPin{ID: idgen.New(), UserID: userID, AgentID: a.ID, Sort: i})
+		}
+	}
+	h.db.Model(&models.User{}).Where("id = ?", userID).Update("home_seeded", true)
+}
+
+// toolCard 把一个 ToolAgent + 用户状态序列化成首页工具卡。
+func (h *Handler) toolCard(a *models.ToolAgent, userID string, member bool, idx int) gin.H {
+	initial := a.Icon
+	if initial == "" {
+		initial = firstRune(a.Name, "A")
+	}
+	remaining := a.FreeTrial
+	var ent models.AgentEntitlement
+	if h.db.First(&ent, "user_id = ? AND agent_id = ?", userID, a.ID).Error == nil {
+		remaining = ent.Remaining
+	}
+	return gin.H{
+		"key": a.Slug, "type": "tool", "name": a.Name, "line": a.Tagline,
+		"initial": initial, "tier": toolTiers[idx%len(toolTiers)], "agentId": a.ID,
+		"member": member, "freeRemaining": remaining,
+	}
+}
+
+// ---------- 添加 / 移除 ----------
+
+type pinReq struct {
+	AgentID string `json:"agentId" binding:"required"`
+}
+
+func (h *Handler) pin(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var req pinReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
+	}
+	var a models.ToolAgent
+	if err := h.db.First(&a, "id = ? AND enabled = ?", req.AgentID, true).Error; err != nil {
+		return httpx.NotFound("AGENT_NOT_FOUND", "该 Agent 不存在或已下架")
+	}
+	var existing models.AgentPin
+	if h.db.First(&existing, "user_id = ? AND agent_id = ?", auth.UserID, a.ID).Error == nil {
+		httpx.OK(c, gin.H{"pinned": true}) // 幂等
+		return nil
+	}
+	var maxSort struct{ M int }
+	h.db.Model(&models.AgentPin{}).
+		Select("COALESCE(MAX(sort), -1) as m").
+		Where("user_id = ?", auth.UserID).Scan(&maxSort)
+	h.db.Create(&models.AgentPin{ID: idgen.New(), UserID: auth.UserID, AgentID: a.ID, Sort: maxSort.M + 1})
+	httpx.OK(c, gin.H{"pinned": true})
+	return nil
+}
+
+func (h *Handler) unpin(c *gin.Context) error {
+	auth := middleware.Current(c)
+	h.db.Where("user_id = ? AND agent_id = ?", auth.UserID, c.Param("agentId")).Delete(&models.AgentPin{})
+	httpx.OK(c, gin.H{"pinned": false})
 	return nil
 }
 

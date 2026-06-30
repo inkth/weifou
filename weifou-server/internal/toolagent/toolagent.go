@@ -49,12 +49,26 @@ func (h *Handler) list(c *gin.Context) error {
 	var agents []models.ToolAgent
 	h.db.Where("enabled = ?", true).Order("sort asc, created_at asc").Find(&agents)
 	ents := h.entitlementMap(auth.UserID)
+	pinned := h.pinnedSet(auth.UserID)
 	out := make([]gin.H, 0, len(agents))
 	for i := range agents {
-		out = append(out, h.card(&agents[i], ents[agents[i].ID]))
+		card := h.card(&agents[i], ents[agents[i].ID])
+		card["pinned"] = pinned[agents[i].ID] // 是否已添加到首页（市场据此显示 已添加/添加）
+		out = append(out, card)
 	}
 	httpx.OK(c, out)
 	return nil
+}
+
+// pinnedSet 返回用户已添加到首页的 agentId 集合。
+func (h *Handler) pinnedSet(userID string) map[string]bool {
+	var pins []models.AgentPin
+	h.db.Where("user_id = ?", userID).Find(&pins)
+	m := make(map[string]bool, len(pins))
+	for i := range pins {
+		m[pins[i].AgentID] = true
+	}
+	return m
 }
 
 func (h *Handler) detail(c *gin.Context) error {

@@ -1,5 +1,6 @@
 const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
+const { unpinAgent } = require('../../utils/agent');
 
 // 分身（首页）= 我的 Agent 小队，由服务端 /home/agents 驱动（阵容/顺序/状态都在后端）。
 // 主分身（primary）渲染为大卡，其余为专才卡；前端只渲染、按 type 路由。
@@ -85,8 +86,25 @@ Page({
     }
   },
 
+  // 长按工具卡 → 从首页移除（unpin）。
+  removeSpecialist(e) {
+    const { id, name } = e.currentTarget.dataset;
+    if (!id) return;
+    wx.showActionSheet({
+      itemList: [`从首页移除「${name}」`],
+      success: async (res) => {
+        if (res.tapIndex !== 0) return;
+        try { await unpinAgent(id); this.load(); }
+        catch (err) { wx.showToast({ title: (err && err.message) || '移除失败', icon: 'none' }); }
+      },
+      fail: () => {},
+    });
+  },
+
+  goVisitors() { wx.navigateTo({ url: '/pages/visitors/index' }); },
+
   addAgent() {
-    wx.navigateTo({ url: '/pages/agents/index' });
+    wx.switchTab({ url: '/pages/explore/index' }); // 去 Agent 学习市场添加
   },
 
   onShareAppMessage() {

@@ -42,4 +42,17 @@ function chatAgent(agentId, content, sessionId) {
   });
 }
 
-module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, chatAgent };
+// 添加 / 移除「首页」（我的小队）。
+function pinAgent(agentId) {
+  return request({ url: '/home/agents/pin', method: 'POST', data: { agentId } });
+}
+function unpinAgent(agentId) {
+  return request({ url: `/home/agents/pin/${agentId}`, method: 'DELETE' });
+}
+
+// 谁看过我（访客列表）。
+function listVisitors() {
+  return request({ url: '/visit/visitors' });
+}
+
+module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, chatAgent, pinAgent, unpinAgent, listVisitors };

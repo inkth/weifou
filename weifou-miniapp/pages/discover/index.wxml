@@ -16,10 +16,14 @@
     <view class="ic ic-arrow chief-go"></view>
   </view>
 
-  <!-- 专才卡（平台工具 Agent / 种子兜底）-->
+  <!-- 谁看过我（仅已建名片时）-->
+  <view wx:if="{{chief.hasProfile}}" class="seen-link" bindtap="goVisitors"
+        style="text-align:center;color:var(--accent-ink);font-size:26rpx;padding:12rpx 0 2rpx;">👀 谁看过我 ›</view>
+
+  <!-- 工具 Agent 卡（长按可从首页移除）-->
   <view class="spec" wx:for="{{specialists}}" wx:key="id"
-        data-id="{{item.id}}" data-name="{{item.name}}" data-real="{{item.real}}" data-kind="{{item.kind}}"
-        bindtap="enterSpecialist">
+        data-id="{{item.id}}" data-name="{{item.name}}" data-kind="{{item.kind}}"
+        bindtap="enterSpecialist" bindlongpress="removeSpecialist">
     <view class="spec-av art art-{{item.tier}}">
       <view class="art-glow"></view>
       <text>{{item.initial}}</text>
@@ -31,10 +35,10 @@
     <view class="ic ic-chevron spec-go"></view>
   </view>
 
-  <!-- 召新 -->
+  <!-- 去市场添加更多 Agent -->
   <view class="add" bindtap="addAgent">
     <view class="ic ic-plus"></view>
-    <text>交给它一件你想办成的事</text>
+    <text>去 Agent 市场，添加更多</text>
   </view>
 
 </view>

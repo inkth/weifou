@@ -1,0 +1,21 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="empty muted">加载中…</view>
+
+  <block wx:elif="{{visitors.length}}">
+    <view class="v-row" wx:for="{{visitors}}" wx:key="index" data-id="{{item.profileId}}" bindtap="openVisitor">
+      <image class="v-ava" src="{{item.avatar}}" wx:if="{{item.avatar}}" />
+      <view class="v-ava v-ava-ph" wx:else>{{item.initial}}</view>
+      <view class="v-meta">
+        <view class="v-name">{{item.name}}</view>
+        <view class="v-sub muted">看过你 · {{item.timeText}}</view>
+      </view>
+      <view wx:if="{{item.profileId}}" class="ic ic-chevron v-go"></view>
+      <view wx:else class="v-noprofile muted">没名片</view>
+    </view>
+  </block>
+
+  <view wx:else class="v-empty">
+    <view class="v-empty-t">还没有人看过你的名片</view>
+    <view class="v-empty-s muted">把名片分享出去，看看谁来 →</view>
+  </view>
+</view>

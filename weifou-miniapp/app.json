@@ -16,6 +16,7 @@
     "pages/question-detail/index",
     "pages/my-questions/index",
     "pages/my-chats/index",
+    "pages/visitors/index",
     "pages/agents/index",
     "pages/agent-chat/index",
     "pages/membership/index",

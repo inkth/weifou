@@ -20,9 +20,11 @@ type User struct {
 	Nickname  *string `gorm:"size:128" json:"nickname,omitempty"`
 	AvatarURL *string `gorm:"size:512" json:"avatarUrl,omitempty"`
 	// 最近一次小程序 session_key（虚拟支付发货确认 NotifyProvideGoods 的离线兜底；会过期）。
-	WxSessionKey *string   `gorm:"size:64" json:"-"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	WxSessionKey *string `gorm:"size:64" json:"-"`
+	// 首页默认 Agent 是否已种过（只种一次，避免用户「移除全部」后默认又回来）。
+	HomeSeeded bool      `gorm:"default:false" json:"-"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 func (User) TableName() string { return "users" }
@@ -350,6 +352,19 @@ type AgentEntitlement struct {
 
 func (AgentEntitlement) TableName() string { return "agent_entitlements" }
 
+// AgentPin 用户「添加到首页」的工具 Agent（首页精选 / 我的小队）。
+// 与 AgentEntitlement 分离：后者管额度（会被对话扣减），这里只管首页组成与顺序。
+type AgentPin struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"size:32;uniqueIndex:idx_pin_uniq;index:idx_pin_user_sort" json:"userId"`
+	AgentID   string    `gorm:"size:32;uniqueIndex:idx_pin_uniq" json:"agentId"`
+	Sort      int       `gorm:"index:idx_pin_user_sort" json:"sort"` // 首页展示顺序
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (AgentPin) TableName() string { return "agent_pins" }
+
 // AgentSession 用户与某工具 Agent 的对话会话（一人一 Agent 一会话，持续累积）。
 type AgentSession struct {
 	ID        string    `gorm:"primaryKey;size:32" json:"id"`
@@ -498,7 +513,7 @@ func AllModels() []interface{} {
 		&Order{},
 		&AsyncQuestion{},
 		&Refund{},
-		&ToolAgent{}, &AgentEntitlement{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
+		&ToolAgent{}, &AgentEntitlement{}, &AgentPin{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 		&DatingQuiz{}, &DatingResult{}, &CompatResult{},
 	}

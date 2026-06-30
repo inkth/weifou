@@ -27,6 +27,7 @@ func NewHandler(db *gorm.DB, jwtSecret string) *Handler {
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.POST("/visit/:profileId", middleware.OptionalJWT(h.jwtSecret), httpx.Handle(h.record))
 	rg.GET("/visit/stats/mine", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.stats))
+	rg.GET("/visit/visitors", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.visitors)) // 谁看过我（访客列表）
 	rg.POST("/visit/event/track", middleware.OptionalJWT(h.jwtSecret), httpx.Handle(h.trackEvent))
 }
 
@@ -136,5 +137,60 @@ func (h *Handler) stats(c *gin.Context) error {
 		"profileId": profile.ID, "pv": pv, "uv": uv, "askCount": askCount,
 		"incomeGross": incomeGross, "incomeMonth": incomeMonth, "incomeNet": 0,
 	})
+	return nil
+}
+
+// visitors 列出看过「我的名片」的访客（按访客去重、最近优先）。
+// 只露登录访客（有 openid→user）；全实名口径下展示身份；能关联到名片的给 profileId（可点进看 TA 的名片）。
+func (h *Handler) visitors(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var profile models.Profile
+	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+	}
+
+	type row struct {
+		VisitorOpenid string
+		LastAt        time.Time
+	}
+	var rows []row
+	h.db.Model(&models.Visit{}).
+		Select("visitor_openid, MAX(created_at) as last_at").
+		Where("profile_id = ? AND visitor_openid IS NOT NULL AND visitor_openid <> ?", profile.ID, auth.Openid).
+		Group("visitor_openid").
+		Order("last_at desc").
+		Limit(100).
+		Scan(&rows)
+
+	out := make([]gin.H, 0, len(rows))
+	for _, r := range rows {
+		// openid → user（复用跨端 openid 链路）
+		var u models.User
+		if h.db.Where("openid = ? OR wx_mp_openid = ? OR wx_app_openid = ?",
+			r.VisitorOpenid, r.VisitorOpenid, r.VisitorOpenid).First(&u).Error != nil {
+			continue // 非登录用户/查不到 → 不露
+		}
+		name, avatar := "", ""
+		if u.Nickname != nil {
+			name = *u.Nickname
+		}
+		if u.AvatarURL != nil {
+			avatar = *u.AvatarURL
+		}
+		item := gin.H{"name": name, "avatar": avatar, "lastVisitAt": r.LastAt, "profileId": ""}
+		// 访客也建了名片 → 给 profileId + realName 兜底名字
+		var vp models.Profile
+		if h.db.Where("user_id = ?", u.ID).First(&vp).Error == nil {
+			item["profileId"] = vp.ID
+			if name == "" && vp.RealName != "" {
+				item["name"] = vp.RealName
+			}
+		}
+		if item["name"] == "" {
+			item["name"] = "微信用户"
+		}
+		out = append(out, item)
+	}
+	httpx.OK(c, out)
 	return nil
 }
