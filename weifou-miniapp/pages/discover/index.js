@@ -16,7 +16,7 @@ const TOOL_CARDS = [
 Page({
   data: {
     statusBarH: 20,
-    chief: { name: '我的分身', initial: '+', tier: 'warm', line: '先建一个，替你对外接待、有结果喊你。', hasProfile: false },
+    chief: { name: '我的主分身', initial: '+', tier: 'warm', line: '先建一个，替你对外接待、有结果喊你。', hasProfile: false },
     specialists: [],
     agentEntry: false, // 工具 Agent 入口（iOS 隐藏，见 utils/entries）
     loading: true,
@@ -38,45 +38,47 @@ Page({
 
   async load() {
     this.setData({ loading: true });
-    try {
-      await ensureLogin();
-      await loadEntries();
-      const [me, agents] = await Promise.all([
-        request({ url: '/user/me' }).catch(() => ({})),
-        listAgents().catch(() => []), // 工具分身两端固定展示（iOS 虚拟支付已开放，不再隐藏）
-      ]);
 
-      // 主分身 = 代表你的对外分身（已建则替你接待 + 回报结果），否则引导创建
-      const chief = (me && me.profileId)
-        ? {
-            name: me.realName ? me.realName + ' 的主分身' : '我的主分身',
-            initial: (me.realName || '否').slice(0, 1),
-            tier: 'warm', hasProfile: true, profileId: me.profileId,
-            line: '我替你把对外的事看着，有结果就喊你。',
-          }
-        : {
-            name: '我的主分身', initial: '+', tier: 'warm', hasProfile: false,
-            line: '先建一个，替你对外接待、有结果喊你。',
-          };
+    // 登录 / entries 失败都不阻断四卡渲染（四卡是本地常量，不该被网络错误带崩）。
+    try { await ensureLogin(); } catch (e) { /* 未登录也照常铺卡，点进去再引导 */ }
+    try { await loadEntries(); } catch (e) { /* entries 取失败不影响首页四卡 */ }
 
-      // 工具分身按 slug 取真实 Agent id（学英语 / 学商业）
-      const bySlug = {};
-      (agents || []).forEach((a) => { if (a.slug) bySlug[a.slug] = a; });
-      const toolCards = TOOL_CARDS.map((t) => {
-        const a = bySlug[t.slug];
-        return { id: a ? a.id : '', name: t.name, initial: t.initial, tier: t.tier, line: t.line, kind: 'tool' };
-      });
+    const [me, agents] = await Promise.all([
+      request({ url: '/user/me' }).catch(() => ({})),
+      listAgents().catch(() => []), // 工具分身两端固定展示（iOS 虚拟支付已开放，不再隐藏）
+    ]);
 
-      // 首页固定四卡：我的主分身（大卡）+ 学英语分身 + 学商业分身 + 找对象分身
-      this.setData({
-        chief,
-        specialists: [...toolCards, DATING_SPECIALIST],
-        agentEntry: agentVisible(),
-        loading: false,
-      });
-    } catch (e) {
-      this.setData({ specialists: [DATING_SPECIALIST], loading: false });
-    }
+    // 主分身 = 代表你的对外分身（已建则替你接待 + 回报结果），否则引导创建
+    const chief = (me && me.profileId)
+      ? {
+          name: me.realName ? me.realName + ' 的主分身' : '我的主分身',
+          initial: (me.realName || '否').slice(0, 1),
+          tier: 'warm', hasProfile: true, profileId: me.profileId,
+          line: '我替你把对外的事看着，有结果就喊你。',
+        }
+      : {
+          name: '我的主分身', initial: '+', tier: 'warm', hasProfile: false,
+          line: '先建一个，替你对外接待、有结果喊你。',
+        };
+
+    // 工具分身按 slug 取真实 Agent id（学英语 / 学商业）；取不到 id 不影响卡片展示
+    const bySlug = {};
+    (agents || []).forEach((a) => { if (a.slug) bySlug[a.slug] = a; });
+    const toolCards = TOOL_CARDS.map((t) => {
+      const a = bySlug[t.slug];
+      return { id: a ? a.id : '', name: t.name, initial: t.initial, tier: t.tier, line: t.line, kind: 'tool' };
+    });
+
+    let entry = false;
+    try { entry = agentVisible(); } catch (e) { /* 默认隐藏召新入口即可 */ }
+
+    // 首页固定四卡：我的主分身（大卡）+ 学英语分身 + 学商业分身 + 找对象分身
+    this.setData({
+      chief,
+      specialists: [...toolCards, DATING_SPECIALIST],
+      agentEntry: entry,
+      loading: false,
+    });
   },
 
   enterChief() {
