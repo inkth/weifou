@@ -18,13 +18,6 @@
     </view>
   </view>
 
-  <!-- 未创建：引导创建 -->
-  <view wx:elif="{{!loading}}" class="create card" bindtap="goOnboarding">
-    <view class="create-title">创建我的 AI 分身</view>
-    <view class="create-sub">让你的 AI 替你接待、回答、变现</view>
-    <view class="create-btn"><text>开始创建</text><view class="ic ic-arrow create-btn-ic"></view></view>
-  </view>
-
   <!-- 我的活名片：会说话的你——发出去别人点开就能直接问你 / 和你聊（分发中心：分享 / 海报 / 预览） -->
   <view wx:if="{{profileId}}" class="qabox card">
     <view class="qabox-info">
@@ -46,11 +39,14 @@
     <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
       <view class="ic ic-crown cell-ic cell-ic-accent"></view><text class="cell-label">会员</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
-    <view class="cell" bindtap="goDating">
-      <view class="ic ic-heart cell-ic cell-ic-accent"></view><text class="cell-label">找对象 · 择偶画像测试</text><view class="ic ic-chevron cell-arrow"></view>
+    <view class="cell" bindtap="goMemory">
+      <view class="ic ic-edit cell-ic cell-ic-accent"></view><text class="cell-label">记忆管理 · 分身记住的你</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
-    <view class="cell" bindtap="goSettings">
-      <view class="ic ic-settings cell-ic"></view><text class="cell-label">设置</text><view class="ic ic-chevron cell-arrow"></view>
+  </view>
+
+  <view class="group">
+    <view class="cell" bindtap="logout">
+      <view class="ic ic-settings cell-ic"></view><text class="cell-label">退出登录</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
   </view>
 

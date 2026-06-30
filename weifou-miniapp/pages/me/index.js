@@ -1,4 +1,4 @@
-const { request } = require('../../utils/request');
+const { request, clearToken } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { loadEntries, entryVisible } = require('../../utils/entries');
 
@@ -42,10 +42,23 @@ Page({
   // 创建与编辑统一走对话式 onboarding（已无表单页）
   goOnboarding() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
   goInbox() { wx.navigateTo({ url: '/pages/inbox/index' }); },
-  goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
   goQuestions() { wx.navigateTo({ url: '/pages/my-questions/index' }); },
-  goDating() { wx.navigateTo({ url: '/pages/dating/index' }); },
+  // 记忆管理 = 分身记住的关于你的资料（KnowledgeItem），对外回答时会用上
+  goMemory() { wx.navigateTo({ url: '/pages/memory/index' }); },
+
+  logout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '确定要退出当前账号吗？',
+      success: (r) => {
+        if (r.confirm) {
+          clearToken();
+          wx.reLaunch({ url: '/pages/index/index' });
+        }
+      },
+    });
+  },
 
   // 预览：主人看看自己这张活名片被问的样子
   goQabox() {
