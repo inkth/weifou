@@ -38,6 +38,34 @@ function agentConcepts(agentId) {
   return request({ url: `/agents/concepts/${agentId}` });
 }
 
+// —— 写小说：作品/章节（:id = agentId） ——
+function getWork(agentId) {
+  return request({ url: `/agents/work/${agentId}` });
+}
+function updateWork(agentId, data) {
+  return request({ url: `/agents/work/${agentId}`, method: 'PUT', data });
+}
+function addChapter(agentId, data) {
+  return request({ url: `/agents/${agentId}/chapter`, method: 'POST', data });
+}
+function updateChapter(agentId, chapterId, data) {
+  return request({ url: `/agents/work/${agentId}/chapter/${chapterId}`, method: 'PUT', data });
+}
+function deleteChapter(agentId, chapterId) {
+  return request({ url: `/agents/work/${agentId}/chapter/${chapterId}`, method: 'DELETE' });
+}
+
+// —— 做音乐：生成/状态/我的曲库 ——
+function genMusic(agentId, data) {
+  return request({ url: `/agents/${agentId}/music/generate`, method: 'POST', data });
+}
+function musicStatus(songId) {
+  return request({ url: `/agents/music/status/${songId}` });
+}
+function myMusic(agentId) {
+  return request({ url: `/agents/music/mine/${agentId}` });
+}
+
 // 对话。sessionId 续聊指定会话，空 = 新开一段；返回里带 sessionId（新建时回传新 id）。
 // 会员畅用;非会员扣免费体验,耗尽抛 { code: 'MEMBERSHIP_REQUIRED' }。
 function chatAgent(agentId, content, sessionId) {
@@ -61,4 +89,9 @@ function listVisitors() {
   return request({ url: '/visit/visitors' });
 }
 
-module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts, chatAgent, pinAgent, unpinAgent, listVisitors };
+module.exports = {
+  listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts,
+  chatAgent, pinAgent, unpinAgent, listVisitors,
+  getWork, updateWork, addChapter, updateChapter, deleteChapter,
+  genMusic, musicStatus, myMusic,
+};

@@ -312,6 +312,7 @@ const (
 	AgentCatEducation = "education"
 	AgentCatCareer    = "career"
 	AgentCatLife      = "life"
+	AgentCatCreation  = "creation" // 创作型（写小说/做音乐）：产出作品而非学习
 )
 
 // ToolAgent 平台自编的工具型 AI 角色（如英语陪练）。SystemPrompt 不下发前端。
@@ -328,6 +329,8 @@ type ToolAgent struct {
 	SystemPrompt string    `gorm:"type:text" json:"-"`
 	Assess       bool      `gorm:"default:false" json:"assess"`  // 是否为「学习型」Agent：每轮评估用户能力、给三维段位升级感（如英语陪练）
 	Concept      bool      `gorm:"default:false" json:"concept"` // 是否为「概念型」学习 Agent：对话中点亮该领域核心概念、可视化 X/100（如学心理/学经济/学哲学）
+	Novel        bool      `gorm:"default:false" json:"novel"`   // 是否为「写小说」创作型 Agent：产出 Work(作品)+Chapter(章节)
+	Music        bool      `gorm:"default:false" json:"music"`   // 是否为「做音乐」创作型 Agent：产出 Song(带人声完整歌)
 	Price        int       `json:"price"`                       // 一次购买价格（分）
 	QuotaPerPack int       `json:"quotaPerPack"`                // 每次购买发放的对话条数
 	FreeTrial    int       `json:"freeTrial"`                   // 首次免费体验条数
@@ -436,6 +439,63 @@ type UserConcept struct {
 }
 
 func (UserConcept) TableName() string { return "user_concepts" }
+
+// ========== 创作型 Agent 产出物（写小说 Work/Chapter、做音乐 Song） ==========
+
+// Work 用户在某「写小说」Agent 下的作品（MVP：一人一 Agent 一作品）。
+// 进度不用 X/N，用完成度：阶段由状态推导（有 logline→立意 / 有 outline→大纲 / chapters>0→初稿 / Finalized→定稿）+ 总字数。
+type Work struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"size:32;uniqueIndex:idx_work_user_agent" json:"userId"`
+	AgentID   string    `gorm:"size:32;uniqueIndex:idx_work_user_agent" json:"agentId"`
+	Title     string    `gorm:"size:120" json:"title"`
+	Logline   string    `gorm:"size:255" json:"logline"` // 一句话立意
+	Genre     string    `gorm:"size:64" json:"genre"`    // 题材
+	Outline   string    `gorm:"type:text" json:"outline"`
+	Finalized bool      `gorm:"default:false" json:"finalized"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (Work) TableName() string { return "works" }
+
+// Chapter 作品的一章。
+type Chapter struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	WorkID    string    `gorm:"size:32;index:idx_chapter_work" json:"workId"`
+	Idx       int       `gorm:"index:idx_chapter_work" json:"idx"` // 章节序号（1 起）
+	Title     string    `gorm:"size:120" json:"title"`
+	Content   string    `gorm:"type:text" json:"content"`
+	WordCount int       `json:"wordCount"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (Chapter) TableName() string { return "chapters" }
+
+const (
+	SongPending    = "pending"
+	SongGenerating = "generating"
+	SongDone       = "done"
+	SongFailed     = "failed"
+)
+
+// Song 用户在某「做音乐」Agent 下的一次生成=一首歌（异步任务 + 成品）。
+type Song struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"size:32;index:idx_song_user_agent" json:"userId"`
+	AgentID   string    `gorm:"size:32;index:idx_song_user_agent" json:"agentId"`
+	Title     string    `gorm:"size:120" json:"title"`
+	Lyrics    string    `gorm:"type:text" json:"lyrics"`
+	Style     string    `gorm:"size:255" json:"style"` // 曲风/tags
+	Status    string    `gorm:"size:16;default:pending" json:"status"`
+	AudioURL  string    `gorm:"size:512" json:"audioUrl"` // 重存本站后的可播 URL
+	Err       string    `gorm:"size:255" json:"err"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (Song) TableName() string { return "songs" }
 
 // ========== 会员（一价解锁全部工具 Agent；虚拟商品，平台自营、不分账） ==========
 
@@ -546,6 +606,7 @@ func AllModels() []interface{} {
 		&Refund{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentPin{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
 		&AgentConcept{}, &UserConcept{},
+		&Work{}, &Chapter{}, &Song{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 		&DatingQuiz{}, &DatingResult{}, &CompatResult{},
 	}

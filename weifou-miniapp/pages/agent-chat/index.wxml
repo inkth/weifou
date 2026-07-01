@@ -55,15 +55,37 @@
     <view class="cp-track"><view class="cp-fill" style="width: {{concept.curPct}}%;"></view></view>
   </view>
 
+  <!-- 写小说：作品进度条（阶段 + 章数 + 字数），点开作品抽屉 -->
+  <view wx:if="{{novel && work}}" class="cprog" style="--accent: {{accent}};" bindtap="openWork">
+    <view class="cp-head">
+      <view class="cp-stat">
+        <text class="cp-tier">{{work.stage}}</text>
+        <text class="cp-all">· {{work.chapterCount}} 章 · {{work.wanText}}</text>
+      </view>
+      <view class="cp-note">我的作品 ›</view>
+    </view>
+  </view>
+
   <scroll-view class="msgs" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
     <view wx:for="{{messages}}" wx:key="index" id="m{{index}}" class="row row-{{item.role}}">
       <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
+      <view wx:if="{{novel && item.role === 'assistant'}}" class="bub-acts">
+        <text class="bub-act" data-idx="{{index}}" bindtap="saveAsOutline">存为大纲</text>
+        <text class="bub-act" data-idx="{{index}}" bindtap="saveAsChapter">存为一章</text>
+      </view>
     </view>
     <view wx:if="{{pending}}" class="row row-assistant">
       <view class="bubble bubble-assistant typing">思考中…</view>
     </view>
     <view class="msgs-pad"></view>
   </scroll-view>
+
+  <!-- 做音乐：生成/曲库工具条 -->
+  <view wx:if="{{music}}" class="mbar" style="--accent: {{accent}};">
+    <view class="mbar-btn" bindtap="openCompose" wx:if="{{genStatus !== 'generating'}}">🎵 生成歌曲</view>
+    <view class="mbar-btn gen" wx:else>生成中…约 30-60 秒</view>
+    <view class="mbar-btn ghost" bindtap="openLibrary">曲库</view>
+  </view>
 
   <!-- 输入栏 -->
   <view class="composer">
@@ -100,6 +122,65 @@
           <view class="cm-grid">
             <view wx:for="{{item.concepts}}" wx:for-item="c" wx:key="name" class="cm-chip lv{{c.level}}">{{c.name}}</view>
           </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 写小说：作品抽屉（阶段徽章 + 可编辑立意/大纲 + 章节列表） -->
+  <view class="drawer-mask" wx:if="{{workVisible}}" bindtap="closeWork">
+    <view class="drawer" catchtap="noop" style="--accent: {{accent}};">
+      <view class="drawer-grip"></view>
+      <view class="drawer-title">{{work.title || '未命名作品'}}</view>
+      <view class="wk-stages">
+        <view wx:for="{{work.stages}}" wx:key="label" class="wk-stage {{item.done ? 'done' : ''}}">{{item.label}}</view>
+      </view>
+      <scroll-view scroll-y class="drawer-list">
+        <view class="wk-field" data-field="title" bindtap="editWorkField"><text class="wk-lb">标题</text><text class="wk-val">{{work.title || '点击填写'}}</text></view>
+        <view class="wk-field" data-field="logline" bindtap="editWorkField"><text class="wk-lb">立意</text><text class="wk-val">{{work.logline || '一句话说清你的故事'}}</text></view>
+        <view class="wk-field" data-field="genre" bindtap="editWorkField"><text class="wk-lb">题材</text><text class="wk-val">{{work.genre || '点击填写'}}</text></view>
+        <view class="wk-field col" data-field="outline" bindtap="editWorkField"><text class="wk-lb">大纲</text><text class="wk-val ml">{{work.outline || '点击编辑大纲'}}</text></view>
+        <view class="wk-sec">章节 · {{work.wanText}}</view>
+        <view wx:for="{{work.chapters}}" wx:key="id" class="wk-chap" data-cid="{{item.id}}" data-content="{{item.content}}" bindtap="editChapter">
+          <view class="wk-chap-t">第{{item.idx}}章 · {{item.title}}</view>
+          <view class="wk-chap-c">{{item.content}}</view>
+        </view>
+        <view wx:if="{{!work.chapterCount}}" class="wk-empty">还没有章节——在对话里写好正文，点气泡下的「存为一章」。</view>
+        <view class="wk-final {{work.finalized ? 'on' : ''}}" bindtap="toggleFinalized">{{work.finalized ? '已定稿 ✓（点击取消）' : '标记为定稿'}}</view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 做音乐：写词/生成弹层 -->
+  <view class="drawer-mask" wx:if="{{composeVisible}}" bindtap="closeCompose">
+    <view class="drawer" catchtap="noop" style="--accent: {{accent}};">
+      <view class="drawer-grip"></view>
+      <view class="drawer-title">生成歌曲</view>
+      <view class="cm-lb">歌词（用 [verse]/[chorus] 分段更好）</view>
+      <textarea class="cm-lyrics" value="{{draftLyrics}}" bindinput="onLyrics" placeholder="把打磨好的歌词粘进来…" maxlength="2000" auto-height></textarea>
+      <view class="cm-row">
+        <input class="cm-in" value="{{draftStyle}}" bindinput="onStyle" placeholder="曲风，如：温暖民谣 木吉他 男声" />
+      </view>
+      <view class="cm-row">
+        <input class="cm-in" value="{{draftTitle}}" bindinput="onTitle" placeholder="歌名（可留空）" />
+      </view>
+      <view class="cm-gen" bindtap="doGenerate">开始生成（约 30-60 秒）</view>
+    </view>
+  </view>
+
+  <!-- 做音乐：曲库抽屉 -->
+  <view class="drawer-mask" wx:if="{{libVisible}}" bindtap="closeLibrary">
+    <view class="drawer" catchtap="noop" style="--accent: {{accent}};">
+      <view class="drawer-grip"></view>
+      <view class="drawer-title">我的曲库</view>
+      <scroll-view scroll-y class="drawer-list">
+        <view wx:if="{{!songs.length}}" class="wk-empty">还没有歌——去写词生成第一首吧。</view>
+        <view wx:for="{{songs}}" wx:key="songId" class="song">
+          <view class="song-meta">
+            <view class="song-t">{{item.title}}</view>
+            <view class="song-sub">{{item.status === 'done' ? item.timeText : (item.status === 'failed' ? '生成失败' : '生成中…')}}</view>
+          </view>
+          <view wx:if="{{item.audioUrl}}" class="song-play {{playingSongId === item.songId ? 'on' : ''}}" data-src="{{item.audioUrl}}" data-id="{{item.songId}}" catchtap="playSong">{{playingSongId === item.songId ? '⏸' : '▶'}}</view>
         </view>
       </scroll-view>
     </view>
