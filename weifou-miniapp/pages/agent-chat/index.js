@@ -1,5 +1,5 @@
 const { ensureLogin } = require('../../utils/auth');
-const { agentDetail, agentSessions, sessionMessages, agentSkill, chatAgent } = require('../../utils/agent');
+const { agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts, chatAgent } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 const { fmtDateTime } = require('../../utils/datetime');
 
@@ -22,7 +22,9 @@ Page({
     currentSessionId: '', // 当前续聊的会话；空 = 新开一段（下一条消息创建）
     historyVisible: false,
     skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
-    celebrate: null,      // 升级庆祝：{ levelName } 浮层，触发后短暂展示
+    concept: null,        // 概念型 Agent 的点亮进度（null/enabled=false 时不展示）
+    conceptMapVisible: false, // 概念地图抽屉
+    celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
   },
 
   async onLoad(query) {
@@ -36,11 +38,12 @@ Page({
       await ensureLogin();
     } catch (e) {}
     try {
-      const [d, sessions, ms, sk] = await Promise.all([
+      const [d, sessions, ms, sk, cp] = await Promise.all([
         agentDetail(id),
         agentSessions(id).catch(() => []),
         membershipStatus().catch(() => ({ isMember: false })),
         agentSkill(id).catch(() => ({ enabled: false })),
+        agentConcepts(id).catch(() => ({ enabled: false })),
       ]);
       const member = !!ms.isMember;
       // 默认载入最近一段会话；没有则以开场白起新的一段
@@ -64,6 +67,7 @@ Page({
         currentSessionId,
         sessions: this._decorate(sessions || []),
         skill: sk && sk.enabled ? sk : null,
+        concept: cp && cp.enabled ? this._concept(cp) : null,
         loading: false,
       });
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
@@ -78,12 +82,28 @@ Page({
     return member ? '会员 · 畅用' : `免费体验剩 ${remaining} 次`;
   },
 
-  // 升级庆祝浮层：展示新段位名，2.4s 后自动收起。
-  _celebrate(levelName) {
+  // 庆祝浮层：升级 / 点亮 / 掌握共用，2.4s 后自动收起。payload = { up, name, sub }
+  _celebrate(payload) {
     if (this._celebTimer) clearTimeout(this._celebTimer);
     wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
-    this.setData({ celebrate: { levelName: levelName || '' } });
+    this.setData({ celebrate: payload || null });
     this._celebTimer = setTimeout(() => this.setData({ celebrate: null }), 2400);
+  },
+
+  // 概念进度装饰：挑出「当前正在攻的档」(第一个未点满的档，都满则最后一档) 给头部进度条用。
+  _concept(cp) {
+    const tiers = cp.tiers || [];
+    const cur = tiers.find((t) => t.lit < t.total) || tiers[tiers.length - 1] || null;
+    const curPct = cur && cur.total ? Math.round((cur.lit / cur.total) * 100) : 0;
+    const allDone = tiers.length > 0 && tiers.every((t) => t.lit >= t.total);
+    return { ...cp, cur, curPct, allDone };
+  },
+
+  openConceptMap() {
+    if (this.data.concept) this.setData({ conceptMapVisible: true });
+  },
+  closeConceptMap() {
+    this.setData({ conceptMapVisible: false });
   },
 
   _decorate(sessions) {
@@ -119,7 +139,23 @@ Page({
       // 学习型 Agent：更新三维段位，升级时弹庆祝浮层
       if (data.skill) {
         patch.skill = { enabled: true, ...data.skill };
-        if (data.levelUp) this._celebrate(data.skill.levelName);
+        if (data.levelUp) {
+          this._celebrate({ up: '升级！', name: data.skill.levelName, sub: '你的英语又上了一个台阶' });
+        }
+      }
+      // 概念型 Agent：更新点亮进度。庆祝优先级：打通一档 > 掌握新概念 > 点亮新概念
+      if (data.concept) {
+        patch.concept = this._concept({ enabled: true, ...data.concept });
+        const cleared = data.tierCleared || [];
+        const mastered = data.newlyMastered || [];
+        const lit = data.newlyLit || [];
+        if (cleared.length) {
+          this._celebrate({ up: '打通一档！', name: `${cleared[0]}篇`, sub: `你已通关「${cleared[0]}」——继续下一档` });
+        } else if (mastered.length) {
+          this._celebrate({ up: '掌握新概念', name: mastered[0], sub: mastered.length > 1 ? `等 ${mastered.length} 个概念你已能讲透` : '你已经能自己讲透它了' });
+        } else if (lit.length) {
+          this._celebrate({ up: '点亮新概念', name: lit[0], sub: lit.length > 1 ? `本轮点亮了 ${lit.length} 个概念` : '又一个概念被你打开了' });
+        }
       }
       this.setData(patch);
       this._scrollEnd();

@@ -326,7 +326,8 @@ type ToolAgent struct {
 	Accent       string    `gorm:"size:16" json:"accent"` // 主题色（前端氛围）
 	Greeting     string    `gorm:"type:text" json:"greeting"`
 	SystemPrompt string    `gorm:"type:text" json:"-"`
-	Assess       bool      `gorm:"default:false" json:"assess"` // 是否为「学习型」Agent：每轮评估用户能力、给三维段位升级感（如英语陪练）
+	Assess       bool      `gorm:"default:false" json:"assess"`  // 是否为「学习型」Agent：每轮评估用户能力、给三维段位升级感（如英语陪练）
+	Concept      bool      `gorm:"default:false" json:"concept"` // 是否为「概念型」学习 Agent：对话中点亮该领域核心概念、可视化 X/100（如学心理/学经济/学哲学）
 	Price        int       `json:"price"`                       // 一次购买价格（分）
 	QuotaPerPack int       `json:"quotaPerPack"`                // 每次购买发放的对话条数
 	FreeTrial    int       `json:"freeTrial"`                   // 首次免费体验条数
@@ -405,6 +406,36 @@ type AgentSkill struct {
 }
 
 func (AgentSkill) TableName() string { return "agent_skills" }
+
+// AgentConcept 某「概念型」学习 Agent（Concept=true）的课程表：该领域的核心概念清单（平台 seed，按 agent_id+slug 幂等）。
+// 与 AgentSkill 的三维段位是两套互补的进度机制：技能型走三维分数，概念型走「点亮 X/100」。
+type AgentConcept struct {
+	ID      string `gorm:"primaryKey;size:32" json:"id"`
+	AgentID string `gorm:"size:32;uniqueIndex:idx_concept_agent_slug" json:"agentId"` // FK ToolAgent
+	Slug    string `gorm:"size:64;uniqueIndex:idx_concept_agent_slug" json:"slug"`    // Agent 内稳定 id，如 "anchoring"
+	Theme   string `gorm:"size:48;index" json:"theme"`                               // 主题分组，如 "认知偏误"
+	Tier    int    `gorm:"default:1" json:"tier"`                                    // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
+	Name    string `gorm:"size:64" json:"name"`                                      // 概念名，如 "锚定效应"
+	Blurb   string `gorm:"size:255" json:"blurb"`                                    // 一句话点题（前端展示 + 给打点 LLM 锚定）
+	Sort    int    `gorm:"default:0" json:"sort"`
+}
+
+func (AgentConcept) TableName() string { return "agent_concepts" }
+
+// UserConcept 用户在某概念上的掌握档位。Level：0 未触及 / 1 已点亮 / 2 已掌握。
+// 设计纪律同 AgentSkill：「只升不降」——状态差的一轮不掉档（消除惩罚感），每次对话都可能点亮新概念。
+type UserConcept struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"size:32;uniqueIndex:idx_uc_user_concept" json:"userId"`
+	ConceptID string    `gorm:"size:32;uniqueIndex:idx_uc_user_concept" json:"conceptId"`
+	AgentID   string    `gorm:"size:32;index:idx_uc_user_agent" json:"agentId"` // 冗余，便于按 Agent 聚合 X/100
+	Level     int       `json:"level"`                                          // 0/1/2
+	Touches   int       `json:"touches"`                                        // 命中次数
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (UserConcept) TableName() string { return "user_concepts" }
 
 // ========== 会员（一价解锁全部工具 Agent；虚拟商品，平台自营、不分账） ==========
 
@@ -514,6 +545,7 @@ func AllModels() []interface{} {
 		&AsyncQuestion{},
 		&Refund{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentPin{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
+		&AgentConcept{}, &UserConcept{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 		&DatingQuiz{}, &DatingResult{}, &CompatResult{},
 	}

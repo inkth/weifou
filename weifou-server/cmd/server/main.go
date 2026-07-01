@@ -28,8 +28,9 @@ func main() {
 	}
 
 	application := app.New(cfg, db, rdb)
-	toolagent.Seed(db)  // 首启写入平台自编的工具 Agent（按 slug 幂等）
-	membership.Seed(db) // 首启写入会员套餐
+	toolagent.Seed(db)         // 首启写入平台自编的工具 Agent（按 slug 幂等）
+	toolagent.SeedConcepts(db) // 须在 Seed 之后：写入概念型 Agent 的 100 概念课程表（按 agent+slug 幂等）
+	membership.Seed(db)        // 首启写入会员套餐
 	application.StartCron()
 
 	r := gin.Default()

@@ -39,6 +39,22 @@
     </view>
   </view>
 
+  <!-- 概念型 Agent：分档点亮进度条 + 概念地图入口。头部显示当前正在攻的那一档。 -->
+  <view wx:if="{{concept}}" class="cprog" style="--accent: {{accent}};" bindtap="openConceptMap">
+    <view class="cp-head">
+      <view class="cp-stat">
+        <block wx:if="{{concept.allDone}}"><text class="cp-tier">全部通关</text></block>
+        <block wx:else>
+          <text class="cp-tier">{{concept.cur.tier}}</text>
+          <text class="cp-num">{{concept.cur.lit}}</text><text class="cp-tot">/{{concept.cur.total}}</text>
+        </block>
+        <text class="cp-all">· 共点亮 {{concept.lit}}/{{concept.total}}</text>
+      </view>
+      <view class="cp-note">{{concept.note || '看概念地图 ›'}}</view>
+    </view>
+    <view class="cp-track"><view class="cp-fill" style="width: {{concept.curPct}}%;"></view></view>
+  </view>
+
   <scroll-view class="msgs" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
     <view wx:for="{{messages}}" wx:key="index" id="m{{index}}" class="row row-{{item.role}}">
       <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
@@ -63,13 +79,29 @@
     <button class="cp-send" bindtap="send" disabled="{{pending || !draft}}">发送</button>
   </view>
 
-  <!-- 升级庆祝浮层：跨段位时短暂展示新身份 -->
+  <!-- 庆祝浮层：升级 / 点亮 / 掌握共用 -->
   <view wx:if="{{celebrate}}" class="celebrate" style="--accent: {{accent}};">
     <view class="celeb-card">
       <view class="celeb-spark">🎉</view>
-      <view class="celeb-up">升级！</view>
-      <view class="celeb-name">{{celebrate.levelName}}</view>
-      <view class="celeb-sub">你的英语又上了一个台阶</view>
+      <view class="celeb-up">{{celebrate.up}}</view>
+      <view class="celeb-name">{{celebrate.name}}</view>
+      <view class="celeb-sub">{{celebrate.sub}}</view>
+    </view>
+  </view>
+
+  <!-- 概念地图抽屉：按主题列出全部概念，圆点亮度区分 未学/点亮/掌握 -->
+  <view class="drawer-mask" wx:if="{{conceptMapVisible}}" bindtap="closeConceptMap">
+    <view class="drawer" catchtap="noop" style="--accent: {{accent}};">
+      <view class="drawer-grip"></view>
+      <view class="drawer-title">概念地图 · 已点亮 {{concept.lit}}/{{concept.total}}</view>
+      <scroll-view scroll-y class="drawer-list">
+        <view wx:for="{{concept.tiers}}" wx:key="tier" class="cm-theme">
+          <view class="cm-th-name">{{item.tier}} · {{item.lit}}/{{item.total}}</view>
+          <view class="cm-grid">
+            <view wx:for="{{item.concepts}}" wx:for-item="c" wx:key="name" class="cm-chip lv{{c.level}}">{{c.name}}</view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
   </view>
 

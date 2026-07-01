@@ -52,6 +52,26 @@ page { background: #f5f6fa; height: 100%; }
 .sk-fill { height: 100%; border-radius: 999rpx; background: var(--accent, #18b690); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 .sk-bv { font-size: 20rpx; color: #6b7180; flex: 0 0 auto; width: 36rpx; text-align: right; }
 
+/* 概念型 Agent：点亮进度条 */
+.cprog { flex: 0 0 auto; background: #fff; padding: 16rpx 28rpx 20rpx; border-top: 2rpx solid #f0f1f5; box-shadow: 0 2rpx 12rpx rgba(31, 35, 48, 0.03); }
+.cp-head { display: flex; align-items: baseline; gap: 10rpx; margin-bottom: 14rpx; }
+.cp-stat { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 6rpx; }
+.cp-tier { font-size: 24rpx; font-weight: 700; color: #1f2330; }
+.cp-num { font-size: 34rpx; font-weight: 800; color: var(--accent, #18b690); margin-left: 4rpx; }
+.cp-tot { font-size: 24rpx; font-weight: 600; color: #9aa0ad; }
+.cp-all { font-size: 22rpx; color: #8a90a0; margin-left: 4rpx; }
+.cp-note { flex: 0 0 auto; font-size: 22rpx; color: var(--accent, #18b690); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260rpx; }
+.cp-track { height: 12rpx; border-radius: 999rpx; background: #eef0f4; overflow: hidden; }
+.cp-fill { height: 100%; border-radius: 999rpx; background: var(--accent, #18b690); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* 概念地图：按主题的概念芯片，亮度区分掌握档位 */
+.cm-theme { margin-bottom: 24rpx; }
+.cm-th-name { font-size: 24rpx; font-weight: 700; color: #1f2330; margin-bottom: 12rpx; }
+.cm-grid { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.cm-chip { font-size: 22rpx; padding: 8rpx 18rpx; border-radius: 999rpx; border: 2rpx solid #eceef3; color: #b6bcc8; background: #f7f8fa; }
+.cm-chip.lv1 { color: var(--accent, #18b690); border-color: var(--accent, #18b690); background: #fff; }
+.cm-chip.lv2 { color: #fff; border-color: var(--accent, #18b690); background: var(--accent, #18b690); font-weight: 600; }
+
 /* 升级庆祝浮层 */
 .celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.32); animation: celebFade 0.25s ease; pointer-events: none; }
 .celeb-card { background: #fff; border-radius: 28rpx; padding: 48rpx 64rpx; text-align: center; box-shadow: 0 16rpx 56rpx rgba(31, 35, 48, 0.22); animation: celebPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }

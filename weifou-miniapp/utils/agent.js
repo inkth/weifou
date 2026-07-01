@@ -32,6 +32,12 @@ function agentSkill(agentId) {
   return request({ url: `/agents/skill/${agentId}` });
 }
 
+// 我在某「概念型」学习 Agent（如学心理/学经济/学哲学）的点亮进度。
+// 非概念型返回 { enabled: false }；概念型返回 { enabled, total, lit, mastered, themes:[{theme, concepts:[{name, blurb, level}]}] }。
+function agentConcepts(agentId) {
+  return request({ url: `/agents/concepts/${agentId}` });
+}
+
 // 对话。sessionId 续聊指定会话，空 = 新开一段；返回里带 sessionId（新建时回传新 id）。
 // 会员畅用;非会员扣免费体验,耗尽抛 { code: 'MEMBERSHIP_REQUIRED' }。
 function chatAgent(agentId, content, sessionId) {
@@ -55,4 +61,4 @@ function listVisitors() {
   return request({ url: '/visit/visitors' });
 }
 
-module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, chatAgent, pinAgent, unpinAgent, listVisitors };
+module.exports = { listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts, chatAgent, pinAgent, unpinAgent, listVisitors };
