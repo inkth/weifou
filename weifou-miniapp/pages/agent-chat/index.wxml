@@ -97,6 +97,15 @@
   </view>
 
   <!-- 输入栏 -->
+  <!-- 提醒承诺：今日首学后递上「明天叫我」（执行意图；一天只邀一次，模板未配不出现） -->
+  <view wx:if="{{remindState === 'offer'}}" class="remind-bar" bindtap="onRemindTap">
+    <text class="remind-text">⏰ 明天这个点叫你继续吗？</text>
+    <text class="remind-yes">好啊</text>
+  </view>
+  <view wx:elif="{{remindState === 'done'}}" class="remind-bar done">
+    <text class="remind-text">✓ 说定了，明天见</text>
+  </view>
+
   <view class="composer">
     <input
       class="cp-input"

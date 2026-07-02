@@ -2,6 +2,7 @@
   <view class="mkt-top">
     <view class="mkt-h1">用 AI 学习一切</view>
     <view class="mkt-sub">挑一个 AI 老师，先免费体验，会员畅用全部</view>
+    <view wx:if="{{streak}}" class="mkt-streak">🔥 连续学习 {{streak.days}} 天{{streak.todayDone ? '' : ' · 今天还没学，别断'}}</view>
   </view>
 
   <block wx:if="{{loading}}">

@@ -66,7 +66,9 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		appLoginClient = wechat.NewLoginClient(cfg.WxMobileAppID, cfg.WxMobileSecret)
 	}
 	security := wechat.NewSecurityService(loginClient)
-	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeLeadTmpl, cfg.SubscribeMiniState)
+	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeLeadTmpl, cfg.SubscribeLearnRemindTmpl, cfg.SubscribeMiniState)
+	// 学习提醒承诺发送循环（模板未配时内部直接 no-op 不启动）
+	toolagent.StartLearnRemindLoop(db, subscribe)
 	ds := deepseek.New(cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel)
 	// 分身作答共享内核：chat（对话）与 asyncq（问答箱）共用，避免 prompt/知识注入逻辑分叉。
 	ansEngine := answer.NewEngine(db, ds)

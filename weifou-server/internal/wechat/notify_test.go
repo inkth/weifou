@@ -36,14 +36,21 @@ func TestSubscribeNoopWhenUnconfigured(t *testing.T) {
 	now := time.Now()
 
 	// 模板 ID 全空：send 在取 token 之前就 return。
-	s := NewSubscribeService(login, "", "", "", "", "")
+	s := NewSubscribeService(login, "", "", "", "", "", "")
 	s.NotifyNewQuestion("openid_x", "你好这是一个测试问题", 4900, now, "pages/inbox/index")
 	s.NotifyAnswered("openid_x", "张三", "这是回答内容", now, "p")
 	s.NotifyRefunded("openid_x", "问题内容", 4900, "超时未答", "p")
 	s.NotifyNewLead("openid_x", "想约个时间聊聊", "访客小明", now, "p")
+	s.NotifyLearnRemind("openid_x", "学心理", "下一个待点亮：『锚定效应』", now, "p")
+	if s.LearnRemindReady() {
+		t.Error("LearnRemindReady should be false when tmpl empty")
+	}
 
 	// 配了模板但拿不到 token：仍应静默降级，不 panic。
-	s2 := NewSubscribeService(login, "tmpl_new", "tmpl_ans", "tmpl_rfd", "tmpl_lead", "")
+	s2 := NewSubscribeService(login, "tmpl_new", "tmpl_ans", "tmpl_rfd", "tmpl_lead", "tmpl_learn", "")
+	if !s2.LearnRemindReady() {
+		t.Error("LearnRemindReady should be true when tmpl set")
+	}
 	if s2.miniState != "formal" {
 		t.Errorf("miniState should default to formal, got %q", s2.miniState)
 	}

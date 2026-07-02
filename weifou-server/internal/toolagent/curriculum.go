@@ -922,6 +922,11 @@ func NudgeLine(db *gorm.DB, a *models.ToolAgent, userID string) (string, bool) {
 	if db == nil || a == nil || userID == "" {
 		return "", false
 	}
+	// streak 火焰前缀：昨天学了、今天还没学 → 「别断」是最强的一句催课
+	prefix := ""
+	if days, risk := streakAtRisk(db, userID); risk {
+		prefix = "🔥 连学 " + strconv.Itoa(days) + " 天，别断 · "
+	}
 	if a.Concept {
 		var concepts []models.AgentConcept
 		db.Where("agent_id = ?", a.ID).Order("sort asc").Find(&concepts)
@@ -957,11 +962,11 @@ func NudgeLine(db *gorm.DB, a *models.ToolAgent, userID string) (string, bool) {
 			return "🔁 " + strconv.Itoa(n) + " 个概念好几天没碰了，快问快答保住它们", true
 		}
 		if next != nil {
-			return "下一个待点亮：『" + next.Name + "』 · " + tierLabels[next.Tier] + " " +
+			return prefix + "下一个待点亮：『" + next.Name + "』 · " + tierLabels[next.Tier] + " " +
 				strconv.Itoa(litByTier[next.Tier]) + "/" + strconv.Itoa(totByTier[next.Tier]), true
 		}
 		if mastered < len(concepts) {
-			return "整张地图已点亮 · 还剩 " + strconv.Itoa(len(concepts)-mastered) + " 个概念待「掌握」", true
+			return prefix + "整张地图已点亮 · 还剩 " + strconv.Itoa(len(concepts)-mastered) + " 个概念待「掌握」", true
 		}
 		return "整张地图已通关 🎉 随时来聊聊新的困惑", true
 	}
@@ -978,7 +983,7 @@ func NudgeLine(db *gorm.DB, a *models.ToolAgent, userID string) (string, bool) {
 		if sk.Expression < min {
 			weak = "表达"
 		}
-		return "Lv." + strconv.Itoa(level) + " " + tierName(level) + " · 弱项「" + weak + "」，今天练两句？", true
+		return prefix + "Lv." + strconv.Itoa(level) + " " + tierName(level) + " · 弱项「" + weak + "」，今天练两句？", true
 	}
 	return "", false
 }

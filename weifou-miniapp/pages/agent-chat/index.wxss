@@ -97,6 +97,31 @@ page { background: var(--bg); height: 100%; }
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .cp-review:active { transform: translate(2rpx, 2rpx) rotate(0deg); box-shadow: none; }
+
+/* 提醒承诺条：奶油黄贴条（课后邀请「明天叫我」，点整条即弹授权） */
+.remind-bar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 12rpx;
+  margin: 12rpx 24rpx 0;
+  padding: 18rpx 24rpx;
+  background: var(--pop-butter); color: var(--pop-butter-ink);
+  border: var(--bw-thin) solid var(--ink);
+  border-radius: var(--r-md);
+  font-size: 26rpx; font-weight: 600;
+  box-shadow: var(--shadow-hair);
+  animation: barIn 0.25s var(--ease) both;
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+.remind-bar:active { transform: translate(2rpx, 2rpx); box-shadow: none; }
+.remind-bar.done { background: var(--accent-soft); color: var(--accent-ink); }
+.remind-text { flex: 1; }
+.remind-yes {
+  flex: 0 0 auto; font-size: 24rpx; font-weight: 700;
+  padding: 4rpx 20rpx;
+  background: var(--surface); color: var(--ink);
+  border: var(--bw-thin) solid var(--ink); border-radius: var(--r-full);
+}
+@keyframes barIn { from { opacity: 0; transform: translateY(8rpx); } to { opacity: 1; transform: translateY(0); } }
 .cp-track { height: 14rpx; border: var(--bw-thin) solid var(--ink); border-radius: var(--r-full); background: var(--fill); overflow: hidden; }
 .cp-fill { height: 100%; border-radius: var(--r-full); background: var(--accent); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 

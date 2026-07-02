@@ -7,6 +7,9 @@ const ANSWERED_TMPL_ID = ''; // 访客：你的提问已回答
 const REFUNDED_TMPL_ID = ''; // 访客：你的提问已退款
 const NEW_QUESTION_TMPL_ID = ''; // 主人：有人问了你的问答箱（召回）
 const LEAD_TMPL_ID = ''; // 主人：有新的访客线索
+// 学员：学习提醒（明天叫你继续）。建议申请「学习提醒/上课提醒」类目模板，
+// 字段顺序：课程(thing1)+提醒内容(thing2)+时间(time3)，与服务端 WX_SUBSCRIBE_LEARN_REMIND_TMPL_ID 对齐。
+const LEARN_REMIND_TMPL_ID = '';
 
 // 请求一次性订阅授权；空模板自动剔除，全空则直接 resolve（降级，不打扰用户）。
 function requestSubscribe(tmplIds) {
@@ -37,10 +40,18 @@ function requestLeadNotify() {
   return requestSubscribe([LEAD_TMPL_ID]);
 }
 
+// 学员：课后「明天这个点叫你继续吗」的提醒承诺授权。
+// 返回 res[LEARN_REMIND_TMPL_ID] === 'accept' 表示用户点了允许。
+function requestLearnRemind() {
+  return requestSubscribe([LEARN_REMIND_TMPL_ID]);
+}
+
 module.exports = {
   requestQuestionNotify,
   requestNewQuestionNotify,
   requestLeadNotify,
+  requestLearnRemind,
+  LEARN_REMIND_TMPL_ID,
   ANSWERED_TMPL_ID,
   REFUNDED_TMPL_ID,
   NEW_QUESTION_TMPL_ID,

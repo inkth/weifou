@@ -60,6 +60,7 @@ type Config struct {
 	SubscribeAnsweredTmpl    string // 订阅消息模板：已回答→访客
 	SubscribeRefundedTmpl    string // 订阅消息模板：已退款→访客
 	SubscribeLeadTmpl        string // 订阅消息模板：新访客线索→主人
+	SubscribeLearnRemindTmpl string // 订阅消息模板：学习提醒（明天叫我继续）→学员
 	SubscribeMiniState       string // formal / trial / developer
 
 	// 服务号（公众号）：承接 iOS 会员开通引导 + 召回。未配则相关功能 no-op。
@@ -152,6 +153,7 @@ func Load() *Config {
 		SubscribeAnsweredTmpl:    os.Getenv("WX_SUBSCRIBE_ANSWERED_TMPL_ID"),
 		SubscribeRefundedTmpl:    os.Getenv("WX_SUBSCRIBE_REFUNDED_TMPL_ID"),
 		SubscribeLeadTmpl:        os.Getenv("WX_SUBSCRIBE_LEAD_TMPL_ID"),
+		SubscribeLearnRemindTmpl: os.Getenv("WX_SUBSCRIBE_LEARN_REMIND_TMPL_ID"),
 		SubscribeMiniState:       getEnv("WX_SUBSCRIBE_STATE", "formal"),
 
 		MpAppID:   os.Getenv("WX_MP_APPID"),

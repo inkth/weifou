@@ -77,6 +77,16 @@ function chatAgent(agentId, content, sessionId, mode) {
   });
 }
 
+// 连续学习天数（跨学习 Agent 全局一条）。
+function learnStreak() {
+  return request({ url: '/agents/streak' });
+}
+
+// 学习提醒承诺：订阅消息授权成功后落账，服务端明天这个点发一条提醒。
+function remindLearn(agentId) {
+  return request({ url: `/agents/${agentId}/remind`, method: 'POST', data: {} });
+}
+
 // 添加 / 移除「首页」（我的小队）。
 function pinAgent(agentId) {
   return request({ url: '/home/agents/pin', method: 'POST', data: { agentId } });

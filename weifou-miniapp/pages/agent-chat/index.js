@@ -1,11 +1,16 @@
 const { ensureLogin } = require('../../utils/auth');
 const {
   agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts, chatAgent,
+  remindLearn,
   getWork, updateWork, addChapter, updateChapter,
   genMusic, musicStatus, myMusic,
 } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 const { fmtDateTime } = require('../../utils/datetime');
+const { requestLearnRemind, LEARN_REMIND_TMPL_ID } = require('../../utils/subscribe');
+
+// streak 里程碑：只在这些天数弹庆祝，其余日子安静（轻而真，不做焦虑轰炸）
+const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
 
 Page({
   data: {
@@ -28,6 +33,7 @@ Page({
     skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
     concept: null,        // 概念型 Agent 的点亮进度（null/enabled=false 时不展示）
     reviewDue: 0,         // 到期待复习的概念数（>0 时进度条上出现「复习挑战」徽章）
+    remindState: '',      // 提醒承诺条：'' 隐藏 / offer 邀请 / done 已订
     conceptMapVisible: false, // 概念地图抽屉
     celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
 
@@ -154,6 +160,32 @@ Page({
     this._ask('开始复习挑战', 'review');
   },
 
+  // —— 提醒承诺（implementation intention）：一天只邀请一次，点了才弹微信授权 ——
+  _remindKey() {
+    const d = new Date();
+    const day = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    return `weifou_learn_remind_${day}`;
+  },
+  _remindAskedToday() {
+    try { return !!wx.getStorageSync(this._remindKey()); } catch (e) { return false; }
+  },
+  async onRemindTap() {
+    try { wx.setStorageSync(this._remindKey(), 1); } catch (e) {} // 无论结果，今天不再邀请
+    const res = await requestLearnRemind();
+    if (res && res[LEARN_REMIND_TMPL_ID] === 'accept') {
+      try {
+        const r = await remindLearn(this.data.id);
+        this.setData({ remindState: 'done' });
+        wx.showToast({ title: `说定了，${(r && r.sendAt) || '明天'}见`, icon: 'none' });
+        setTimeout(() => this.setData({ remindState: '' }), 2600);
+      } catch (e) {
+        this.setData({ remindState: '' });
+      }
+    } else {
+      this.setData({ remindState: '' }); // 拒绝/跳过：安静收起，明天再说
+    }
+  },
+
   async _ask(content, mode) {
     if (!content || this.data.pending) return;
     this.setData({
@@ -193,6 +225,18 @@ Page({
           this._celebrate({ up: '掌握新概念', name: mastered[0], sub: mastered.length > 1 ? `等 ${mastered.length} 个概念你已能讲透` : '你已经能自己讲透它了' });
         } else if (lit.length) {
           this._celebrate({ up: '点亮新概念', name: lit[0], sub: lit.length > 1 ? `本轮点亮了 ${lit.length} 个概念` : '又一个概念被你打开了' });
+        }
+      }
+      // 连续学习：里程碑庆祝 + 补签提示 + 今日首学时递上「明天叫我」的提醒承诺
+      if (data.streak && data.streak.newDay) {
+        const days = data.streak.days || 0;
+        if (data.streak.freeze) {
+          wx.showToast({ title: '自动补签，连续没断 🔥', icon: 'none' });
+        } else if (STREAK_MILESTONES.indexOf(days) >= 0) {
+          this._celebrate({ up: '连续学习', name: `${days} 天`, sub: '能把学习变成习惯的人是少数，你在其中' });
+        }
+        if (LEARN_REMIND_TMPL_ID && !this.data.remindState && !this._remindAskedToday()) {
+          patch.remindState = 'offer';
         }
       }
       this.setData(patch);

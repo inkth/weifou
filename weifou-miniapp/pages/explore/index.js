@@ -1,6 +1,6 @@
 // 发现 tab = Agent 学习市场「用 AI 学习一切」：全集工具 Agent，先免费体验、会员畅用、可添加到首页。
 const { ensureLogin } = require('../../utils/auth');
-const { listAgents, pinAgent, unpinAgent } = require('../../utils/agent');
+const { listAgents, pinAgent, unpinAgent, learnStreak } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 
 function decorate(a, isMember) {
@@ -39,12 +39,19 @@ Page({
     this.setData({ loading: true });
     try { await ensureLogin(); } catch (e) {}
     try {
-      const [list, ms] = await Promise.all([
+      const [list, ms, st] = await Promise.all([
         listAgents().catch(() => []),
         membershipStatus().catch(() => ({ isMember: false })),
+        learnStreak().catch(() => null),
       ]);
       const isMember = !!ms.isMember;
-      this.setData({ agents: (list || []).map((a) => decorate(a, isMember)), isMember, loading: false });
+      this.setData({
+        agents: (list || []).map((a) => decorate(a, isMember)),
+        isMember,
+        // 连续 ≥2 天才展示（第 1 天谈不上"连续"，安静）
+        streak: st && st.days >= 2 ? st : null,
+        loading: false,
+      });
     } catch (e) {
       this.setData({ loading: false });
       wx.showToast({ title: (e && e.message) || '加载失败', icon: 'none' });

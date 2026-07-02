@@ -442,6 +442,34 @@ type UserConcept struct {
 
 func (UserConcept) TableName() string { return "user_concepts" }
 
+// LearnStreak 用户的连续学习天数（跨全部学习型 Agent 全局一条；技能型/概念型对话即记一天）。
+// 温和版纪律：每自然月可自动补签 1 天（断一天不清零），拒绝焦虑轰炸；日期按东八区。
+type LearnStreak struct {
+	ID          string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID      string    `gorm:"size:32;uniqueIndex" json:"userId"`
+	Current     int       `json:"current"`                    // 当前连续天数
+	Best        int       `json:"best"`                       // 历史最佳
+	LastDay     string    `gorm:"size:10" json:"lastDay"`     // 最近学习日 YYYY-MM-DD（东八区）
+	FreezeMonth string    `gorm:"size:7" json:"freezeMonth"`  // 最近一次自动补签的月份 YYYY-MM（每月限 1 次）
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func (LearnStreak) TableName() string { return "learn_streaks" }
+
+// LearnReminder 学习提醒承诺：用户在课后点「明天叫我」并授权一次性订阅消息后建一条，
+// 到点由后台循环发一条订阅消息（一次授权=一次发送，微信硬约束）。发过即 Sent，不重试不轰炸。
+type LearnReminder struct {
+	ID        string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID    string    `gorm:"size:32;index:idx_lr_user_agent" json:"userId"`
+	AgentID   string    `gorm:"size:32;index:idx_lr_user_agent" json:"agentId"`
+	SendAt    time.Time `gorm:"index" json:"sendAt"` // 计划发送时间（=承诺时刻 +24h，"明天这个点"）
+	Sent      bool      `gorm:"index" json:"sent"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (LearnReminder) TableName() string { return "learn_reminders" }
+
 // ========== 创作型 Agent 产出物（写小说 Work/Chapter、做音乐 Song） ==========
 
 // Work 用户在某「写小说」Agent 下的作品（MVP：一人一 Agent 一作品）。
@@ -607,7 +635,7 @@ func AllModels() []interface{} {
 		&AsyncQuestion{},
 		&Refund{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentPin{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
-		&AgentConcept{}, &UserConcept{},
+		&AgentConcept{}, &UserConcept{}, &LearnStreak{}, &LearnReminder{},
 		&Work{}, &Chapter{}, &Song{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 		&DatingQuiz{}, &DatingResult{}, &CompatResult{},

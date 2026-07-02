@@ -7,6 +7,18 @@
 .mkt-top { padding: 36rpx 6rpx 28rpx; }
 .mkt-h1 { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; }
 .mkt-sub { margin-top: 10rpx; font-size: 25rpx; color: var(--sub); }
+/* 连续学习火焰条：贴纸小条，≥2 天才出现 */
+.mkt-streak {
+  display: inline-block;
+  margin-top: 14rpx;
+  padding: 6rpx 20rpx;
+  background: var(--pop-butter); color: var(--pop-butter-ink);
+  border: var(--bw-thin) solid var(--ink);
+  border-radius: var(--r-full);
+  font-size: 23rpx; font-weight: 600;
+  box-shadow: var(--shadow-hair);
+  transform: rotate(-1deg);
+}
 .mkt-state { text-align: center; padding: 80rpx 0; color: var(--faint); font-size: 26rpx; }
 .card-press { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink) !important; }
 

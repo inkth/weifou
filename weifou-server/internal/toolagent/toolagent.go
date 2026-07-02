@@ -45,7 +45,9 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))    // :id = sessionId → 该会话消息
 	rg.GET("/agents/skill/:id", auth, httpx.Handle(h.skill))          // :id = agentId → 我在该学习型 Agent 的三维段位
 	rg.GET("/agents/concepts/:id", auth, httpx.Handle(h.concepts))    // :id = agentId → 我在该概念型 Agent 的点亮进度
+	rg.GET("/agents/streak", auth, httpx.Handle(h.streakInfo))        // 连续学习天数（全局一条）
 	rg.POST("/agents/:id/chat", auth, httpx.Handle(h.chat))
+	rg.POST("/agents/:id/remind", auth, httpx.Handle(h.remind)) // 学习提醒承诺（订阅消息授权后落账）
 
 	// 写小说：作品/章节。所有 :id = agentId（作品按 user+agent 唯一），:cid = chapterId。
 	// POST 树第二段须统一 :id（与 /agents/:id/chat 同层），故 addChapter 走 /agents/:id/chapter。
@@ -222,6 +224,12 @@ func (h *Handler) chat(c *gin.Context) error {
 	h.db.Model(&session).Update("updated_at", time.Now())
 
 	resp := gin.H{"sessionId": session.ID, "answer": answer, "member": member, "remaining": remaining}
+
+	// 连续学习天数：学习型（技能/概念）对话记一天；newDay 时前端做里程碑庆祝/提醒承诺邀请。
+	if a.Assess || a.Concept {
+		days, newDay, usedFreeze := bumpStreak(h.db, auth.UserID)
+		resp["streak"] = gin.H{"days": days, "newDay": newDay, "freeze": usedFreeze}
+	}
 
 	// 学习型 Agent（如英语陪练）：评估用户本轮表达、更新三维段位，给升级感。
 	// sk 已在组装 system prompt 时加载（状态注入），此处直接复用。

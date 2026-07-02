@@ -25,10 +25,11 @@ type SubscribeService struct {
 	answeredTmpl    string
 	refundedTmpl    string
 	leadTmpl        string
+	learnRemindTmpl string
 	miniState       string
 }
 
-func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refundedTmpl, leadTmpl, miniState string) *SubscribeService {
+func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refundedTmpl, leadTmpl, learnRemindTmpl, miniState string) *SubscribeService {
 	if miniState == "" {
 		miniState = "formal"
 	}
@@ -39,9 +40,13 @@ func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refu
 		answeredTmpl:    answeredTmpl,
 		refundedTmpl:    refundedTmpl,
 		leadTmpl:        leadTmpl,
+		learnRemindTmpl: learnRemindTmpl,
 		miniState:       miniState,
 	}
 }
+
+// LearnRemindReady 学习提醒模板是否已配置（未配时提醒承诺链路整体 no-op）。
+func (s *SubscribeService) LearnRemindReady() bool { return s.learnRemindTmpl != "" }
 
 // send 下发一条订阅消息。templateID / openid 为空、或拿不到 token 时静默 no-op。
 func (s *SubscribeService) send(openid, templateID, page string, data map[string]string) {
@@ -139,6 +144,16 @@ func (s *SubscribeService) NotifyNewLead(openid, note, visitorName string, at ti
 	s.send(openid, s.leadTmpl, page, map[string]string{
 		"thing1": clip(note, 20),
 		"thing2": clip(visitorName, 20),
+		"time3":  at.Format("2006-01-02 15:04"),
+	})
+}
+
+// NotifyLearnRemind 学习提醒承诺：用户昨天课后点了「明天叫我」，现在到点了。
+// 建议申请「学习提醒/上课提醒」类目模板，字段顺序：thing1=课程  thing2=提醒内容  time3=时间。
+func (s *SubscribeService) NotifyLearnRemind(openid, agentName, note string, at time.Time, page string) {
+	s.send(openid, s.learnRemindTmpl, page, map[string]string{
+		"thing1": clip(agentName, 20),
+		"thing2": clip(note, 20),
 		"time3":  at.Format("2006-01-02 15:04"),
 	})
 }
