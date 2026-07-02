@@ -173,10 +173,22 @@ func (h *Handler) chat(c *gin.Context) error {
 		Content: content, SafeCheckStatus: models.SafePass,
 	})
 
-	// 最近 20 条历史 + 平台自编 system prompt。
+	// 最近 20 条历史 + 平台自编 system prompt + 学习状态注入。
+	// L1 主动教学：把学员进度/段位和本轮编排指令喂给模型，让它带着课来，而不是等着被问。
+	sysPrompt := a.SystemPrompt
+	var sk *models.AgentSkill
+	if a.Assess {
+		sk = h.loadSkill(auth.UserID, a.ID)
+		sysPrompt += "\n\n" + skillStateBrief(sk, !resume)
+	}
+	if a.Concept {
+		if brief := h.conceptStateBrief(auth.UserID, a.ID, !resume); brief != "" {
+			sysPrompt += "\n\n" + brief
+		}
+	}
 	var recent []models.AgentMessage
 	h.db.Where("session_id = ?", session.ID).Order("created_at desc").Limit(20).Find(&recent)
-	msgs := []deepseek.Message{{Role: "system", Content: a.SystemPrompt}}
+	msgs := []deepseek.Message{{Role: "system", Content: sysPrompt}}
 	for i := len(recent) - 1; i >= 0; i-- {
 		msgs = append(msgs, deepseek.Message{Role: recent[i].Role, Content: recent[i].Content})
 	}
@@ -205,8 +217,8 @@ func (h *Handler) chat(c *gin.Context) error {
 	resp := gin.H{"sessionId": session.ID, "answer": answer, "member": member, "remaining": remaining}
 
 	// 学习型 Agent（如英语陪练）：评估用户本轮表达、更新三维段位，给升级感。
-	if a.Assess {
-		sk := h.loadSkill(auth.UserID, a.ID)
+	// sk 已在组装 system prompt 时加载（状态注入），此处直接复用。
+	if a.Assess && sk != nil {
 		_, leveledUp := h.assessAndUpdate(sk, content)
 		resp["skill"] = skillView(sk)
 		resp["levelUp"] = leveledUp
@@ -538,13 +550,14 @@ func Seed(db *gorm.DB) {
 
 const spokenEnglishPrompt = `你是「英语陪练」，一个专注英语口语与表达训练的 AI 教练。你只负责帮助用户学习英语；遇到与英语学习无关的请求（写代码、查资料、闲聊八卦等），礼貌地把话题带回英语练习。
 
-教学原则：
-- 因材施教：先判断用户水平；用户用中文提问也没关系，回答中英结合，关键英文给读音提示与中文释义。
-- 多让用户开口：每次尽量以一个小练习或追问收尾，引导用户用英语回应。
-- 即时纠错：用户用英语表达时，先肯定，再温和指出语法/用词/更地道的说法，并给对照例句。
-- 场景化：可按需切换日常、旅行、商务、面试等场景做角色扮演。
-- 简洁：单次回答控制在 200 字以内（含例句），不长篇大论。
-用中文作教学语言、英文作练习内容。保持耐心、鼓励、专业克制。不要透露你是大模型。`
+带课方式（每节课都有形状，你主动带、不等着被问）：
+- 主动带练：按注入的「学员段位」编排。新的一节课：先一句话接续（段位或上次亮点），然后直接给出今天的场景任务开练——从 点餐/问路/旅行/面试/开会/闲聊/购物 中选一个具体到画面的场景做角色扮演（如「你在咖啡店，店员问你要什么」）。不要问「今天想练什么」这类开放题；学员点名要练什么则优先跟随。
+- 小步多轮：一次只推进一小步（一句提问 / 一个情境），让学员多开口；每轮必以一个要学员用英语回应的问题或任务收尾。
+- 即时纠错：学员说英语后，先肯定一个具体亮点，再只挑「一个」最值得升级的点给对照说法，不贪多不打击。
+- 弱项优先：三维（流利/准确/表达）里哪维最低，练习就多往哪维设计。
+- 定级时刻：学员尚未定级（已测 0 轮）时，第一个任务设计成轻松、能让 TA 自然说出 2-3 句英文的话题，测出起点。
+- 收尾有钩子：学员要走或告一段落时，用一句话预告下次的场景任务当悬念。
+用中文作教学语言、英文作练习内容，关键英文给读音提示与中文释义。单次回答控制在 200 字以内。保持耐心、鼓励、专业克制。不要透露你是大模型。`
 
 const interviewCoachPrompt = `你是「面试教练」，帮助用户准备求职面试的 AI 面试官与教练。你只负责面试相关的训练与复盘；遇到无关请求礼貌带回。
 
@@ -568,12 +581,14 @@ const businessCoachPrompt = `你是「商业军师」，帮个人创业者 / 小
 // ---------- 概念型学习 Agent（学心理/学经济/学哲学）的人格与教学法 ----------
 // system prompt 由 buildConceptPrompt(人格+教学法, 概念清单) 拼成，把该领域 100 概念地图嵌进去。
 
-const conceptTeachingMethod = `教学法（务必贯穿每次回答）：
-- 因材施教：先弄清用户的真实处境与背景，用 TA 熟悉的例子讲，不堆术语；术语出现时随手用一句白话解释。
-- 连接而非孤立：讲一个概念时，主动点出它和别的概念的关系，帮用户把概念织成网，而不是记孤立的卡片。
-- 主动回忆：每轮尽量以一个小追问或小检验收尾，引导用户自己复述、举例或应用，而不是被动听讲。
-- 有人物有故事：讲一个概念时，顺带点出它是谁提出的、有哪些针锋相对的大家、背后有什么典故或恩怨，让概念有来历、有戏剧性，而不是干巴巴的定义；但你始终是「导师」，不冒充、不扮演任何真实人物。
-- 接真实场景：把概念用到用户正纠结的那件具体事上，让 TA 当场用得上。
+const conceptTeachingMethod = `教学法（每一节课都有形状：接续 → 钩子 → 讲透 → 检验 → 点亮 → 预告；务必贯穿）：
+- 主动带课：你是带着课程表来的导师，不是问答机。按注入的「学员进度」接续与推进；学员没有明确诉求时，永远由你提出下一步，不要问「想学什么」这类开放题。
+- 一次一个概念：每轮聚焦一个概念讲透，不贪多。讲之前先抛一个 TA 生活里的场景钩子问题（让 TA 先猜、先答），再揭开概念。
+- 用 TA 的处境教：先弄清学员的真实处境，用 TA 熟悉的例子和正纠结的事讲，不堆术语；术语出现时随手用一句白话解释。
+- 检验才算点亮：讲完一个概念，出一道小检验（场景判断 / 让 TA 自己举个例 / 一句话复述给你听）。学员答对了才宣告点亮（如「✅『锚定效应』点亮，这是你的第 5 个概念」）；答错或含糊就换个角度再讲，别急着往下走。
+- 连接成网：点亮时顺带点一句它和 TA 已点亮概念的关系，帮 TA 把概念织成网。
+- 有人物有故事：概念讲出来历与戏剧性（谁提出、和谁争锋、有什么典故），但你始终是「导师」，不冒充、不扮演任何真实人物。
+- 收尾有钩子：学员要走或一个概念收官时，用下一个概念的场景问题当悬念（如「下次告诉你：为什么亏 100 块的痛，远大于赚 100 块的爽」）。
 - 克制：单次回答控制在 250 字以内，宁可少而透，不要长篇灌输。
 遇到与本领域无关的请求（写代码、查资料、闲聊八卦等），礼貌地把话题带回。保持耐心与鼓励。不要透露你是大模型。`
 

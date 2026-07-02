@@ -491,10 +491,10 @@ type conceptAssessResult struct {
 	Note     string   `json:"note"`
 }
 
-const conceptAssessPrompt = `你是「概念掌握判定器」。下面给你一份某学习领域的核心概念清单（每行格式 slug|概念名），以及用户与导师的一轮对话。判断这一轮**实际涉及**了清单中的哪些概念，以及用户是否对该概念**展现出真正的理解**（能自己解释、举例或应用，而非仅被导师提及）。
+const conceptAssessPrompt = `你是「概念掌握判定器」。下面给你一份某学习领域的核心概念清单（每行格式 slug|概念名），以及用户与导师的一轮对话。判断这一轮里用户对清单中哪些概念有了**实质参与**，以及是否**展现出真正的理解**。
 规则：
-- touched：本轮真实涉及/讲解到的概念 slug 列表（=被点亮）。只放清单里确实存在的 slug，没有就给空数组。
-- mastered：用户已展现真正理解的概念 slug（mastered 里的必须也在 touched 里）。把握不准就别放。
+- touched（=点亮）：用户**实质参与过**的概念——用户自己尝试解释过、举过例、回答了导师围绕它的提问、或把它对应到了自己的事上。导师单方面讲到而用户没有任何回应的，**不算** touched。只放清单里确实存在的 slug，没有就给空数组。
+- mastered（=掌握）：用户答对了检验并能自己迁移应用（独立解释/举出贴切新例）的概念 slug（必须也在 touched 里）。把握不准就别放。
 - 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。
 只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>"}`
 
@@ -583,6 +583,75 @@ func (h *Handler) assessConcepts(userID, agentID, userMsg, assistantMsg string) 
 		view["note"] = clipText(note, 80)
 	}
 	return view, newlyLit, newlyMastered, tierCleared
+}
+
+// conceptStateBrief 拼「学员进度」system 注入段（L1 主动教学的燃料）：分档进度、最近点亮、
+// 建议下一个概念（按课程表顺序取第一个未点亮，天然入门优先）+ 本轮编排指令。
+// fresh=true 表示新会话（要做开场编排：接续 + 场景钩子开课）。只给模型看，绝不直接展示给用户。
+func (h *Handler) conceptStateBrief(userID, agentID string, fresh bool) string {
+	concepts := h.conceptList(agentID)
+	if len(concepts) == 0 {
+		return ""
+	}
+	levels := h.userConceptLevels(userID, agentID)
+
+	litByTier, totByTier := map[int]int{}, map[int]int{}
+	lit, mastered := 0, 0
+	byID := make(map[string]*models.AgentConcept, len(concepts))
+	var next *models.AgentConcept
+	for i := range concepts {
+		c := &concepts[i]
+		byID[c.ID] = c
+		totByTier[c.Tier]++
+		if levels[c.ID] >= 1 {
+			lit++
+			litByTier[c.Tier]++
+		} else if next == nil {
+			next = c
+		}
+		if levels[c.ID] >= 2 {
+			mastered++
+		}
+	}
+
+	// 最近点亮的 2 个（按更新时间），用于「接续」
+	var recent []models.UserConcept
+	h.db.Where("user_id = ? AND agent_id = ? AND level >= 1", userID, agentID).
+		Order("updated_at desc").Limit(2).Find(&recent)
+	var recentNames []string
+	for i := range recent {
+		if c := byID[recent[i].ConceptID]; c != nil {
+			recentNames = append(recentNames, c.Name)
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString("== 学员进度（仅你可见，据此编排本轮；绝不把这段原样复述给学员）==\n进度：")
+	for _, t := range tierOrder {
+		if totByTier[t] == 0 {
+			continue
+		}
+		b.WriteString(tierLabels[t] + " " + strconv.Itoa(litByTier[t]) + "/" + strconv.Itoa(totByTier[t]) + "　")
+	}
+	b.WriteString("已点亮；已掌握 " + strconv.Itoa(mastered) + " 个。\n")
+	if len(recentNames) > 0 {
+		b.WriteString("最近点亮：" + strings.Join(recentNames, "、") + "。\n")
+	}
+	if next != nil {
+		b.WriteString("建议下一个概念：" + next.Name + "（" + next.Theme + "｜" + next.Blurb + "）。\n")
+	} else {
+		b.WriteString("整张地图已点亮：转入复习深化，挑「已点亮未掌握」的概念出检验，往掌握推。\n")
+	}
+	if fresh {
+		if lit == 0 {
+			b.WriteString("编排：这是学员的第一课。欢迎一句后，直接用「建议下一个概念」的生活场景钩子问题开课，不要问「想学什么」这类开放题。")
+		} else {
+			b.WriteString("编排：新的一节课。先用一句话接续进度（如「上次我们点亮了 X」），再用「建议下一个概念」的场景钩子问题开课。")
+		}
+		b.WriteString("若学员带着自己的问题来，先跟着 TA 的问题走，把相关概念顺势教透。\n")
+	}
+	b.WriteString("== 进度结束 ==")
+	return b.String()
 }
 
 // bumpConcept 命中某概念：touches+1，档位 level 只升不降（upsert）。

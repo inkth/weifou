@@ -3,6 +3,7 @@ package toolagent
 import (
 	"encoding/json"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -156,6 +157,37 @@ func (h *Handler) assessAndUpdate(sk *models.AgentSkill, sample string) (changed
 		"assessed": sk.Assessed, "last_note": sk.LastNote,
 	})
 	return true, newLevel > oldLevel
+}
+
+// skillStateBrief 拼「学员段位」system 注入段（技能型 Agent 的 L1 主动教学燃料）：
+// 段位/三维/弱项/上次亮点 + 本轮编排指令。fresh=true 表示新会话（要做开场编排）。只给模型看。
+func skillStateBrief(sk *models.AgentSkill, fresh bool) string {
+	var b strings.Builder
+	b.WriteString("== 学员段位（仅你可见，据此编排本轮；不要把数字原样报给学员）==\n")
+	if sk.Assessed == 0 {
+		b.WriteString("尚未定级（已测 0 轮）：第一个任务安排轻松、能让学员开口说 2-3 句英文的话题，完成定级。\n")
+	} else {
+		level := levelFromDims(sk.Fluency, sk.Accuracy, sk.Expression)
+		b.WriteString("段位 Lv" + strconv.Itoa(level) + "「" + tierName(level) + "」 · 流利 " + strconv.Itoa(sk.Fluency) +
+			" / 准确 " + strconv.Itoa(sk.Accuracy) + " / 表达 " + strconv.Itoa(sk.Expression) +
+			" · 已测 " + strconv.Itoa(sk.Assessed) + " 轮。\n")
+		weak, min := "流利度", sk.Fluency
+		if sk.Accuracy < min {
+			weak, min = "准确度", sk.Accuracy
+		}
+		if sk.Expression < min {
+			weak = "表达力"
+		}
+		b.WriteString("当前弱项：" + weak + "——练习设计向它倾斜。\n")
+		if sk.LastNote != "" {
+			b.WriteString("上次亮点：" + sk.LastNote + "\n")
+		}
+	}
+	if fresh {
+		b.WriteString("编排：新的一节课——先一句话接续（段位或上次亮点），然后直接给出今天的具体场景任务开练，不要问「想练什么」。\n")
+	}
+	b.WriteString("== 段位结束 ==")
+	return b.String()
 }
 
 // skillView 序列化能力档案给前端（含派生段位名）。
