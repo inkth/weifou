@@ -7,6 +7,7 @@
 
 .card {
   background: var(--surface);
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-card);
   padding: var(--sp-5);
@@ -25,6 +26,7 @@
   height: 132rpx;
   border-radius: var(--r-full);
   background: var(--accent-soft);
+  border: var(--bw-thin) solid var(--ink);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -110,14 +112,14 @@
   align-items: center;
   padding: 30rpx var(--sp-4);
   background: var(--surface);
-  border: 2rpx solid var(--border);
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-lg);
+  box-shadow: var(--shadow-hair);
   margin-bottom: var(--sp-3);
   transition: all 0.18s var(--ease-out);
 }
-.quiz-opt:active { background: var(--fill-pressed); }
+.quiz-opt:active { background: var(--fill-pressed); transform: translate(2rpx, 2rpx); box-shadow: 0 0 0 var(--ink); }
 .quiz-opt.is-sel {
-  border-color: var(--accent);
   background: var(--accent-soft);
 }
 .quiz-opt-key {
@@ -131,7 +133,7 @@
   display: flex; align-items: center; justify-content: center;
   margin-right: var(--sp-3);
 }
-.quiz-opt.is-sel .quiz-opt-key { background: var(--accent); color: #fff; }
+.quiz-opt.is-sel .quiz-opt-key { background: var(--accent); color: var(--on-accent); }
 .quiz-opt-label { flex: 1; font-size: 30rpx; color: var(--ink); line-height: 1.5; }
 
 /* ---------- 结果 ---------- */
@@ -139,8 +141,10 @@
 .res-top {
   text-align: center;
   padding: 56rpx var(--sp-4) 48rpx;
-  background: linear-gradient(180deg, var(--accent-soft), var(--surface));
+  background: var(--accent-soft);
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-card);
   margin-bottom: var(--sp-4);
 }
 .res-eyebrow { font-size: 24rpx; color: var(--accent-strong); letter-spacing: 1rpx; }
@@ -166,8 +170,8 @@
   border-radius: var(--r-full);
   line-height: 1.7;
 }
-.dim-tag-same { color: var(--accent-strong); background: var(--accent-soft); }
-.dim-tag-comp { color: #b4690e; background: rgba(251, 146, 60, 0.14); }
+.dim-tag-same { color: var(--accent-strong); background: var(--accent-soft); border: var(--bw-thin) solid var(--ink); }
+.dim-tag-comp { color: #b4690e; background: rgba(251, 146, 60, 0.14); border: var(--bw-thin) solid var(--ink); }
 .dim-score {
   margin-left: auto;
   font-size: 26rpx; font-weight: 700; color: var(--accent);

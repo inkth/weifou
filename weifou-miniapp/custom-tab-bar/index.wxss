@@ -1,66 +1,68 @@
 /* 组件默认 styleIsolation:isolated，app.wxss 的 .ic 不会下传，需自行 import 图标真源。
-   色值与 app.wxss 令牌真源对齐（青温灰 + 碧绿），组件隔离故落成字面量。 */
+   色值与 app.wxss 新粗野令牌对齐（组件隔离故落成字面量）。 */
 @import "../styles/icons.wxss";
 
-/* 毛玻璃悬浮底栏：半透明 + 背景模糊，页面内容从栏下透出 = Apple 式「悬浮毛玻璃」。
-   活跃态用 M3 式「胶囊指示器」（accent-soft 底 + 强调色图标）。
-   仅在 tabBar 页面渲染，沉浸页不出现。 */
+/* 新粗野悬浮 dock：白底胶囊 + 墨青粗描边 + 硬投影，悬浮于纸底之上。
+   活跃态 = 薄荷实底胶囊（描边 + 墨字）。仅 tabBar 页渲染，沉浸页不出现。 */
 .tabbar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 28rpx;
+  right: 28rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 20rpx);
   z-index: 1000;
   display: flex;
-  padding: 12rpx 0 calc(env(safe-area-inset-bottom) + 8rpx);
-  background: rgba(252, 253, 252, 0.8);
-  backdrop-filter: blur(40rpx) saturate(180%);
-  -webkit-backdrop-filter: blur(40rpx) saturate(180%);
-  border-top: 1rpx solid rgba(20, 40, 30, 0.05);
-  box-shadow: 0 -2rpx 24rpx rgba(20, 40, 30, 0.04);
+  align-items: center;
+  padding: 10rpx 12rpx;
+  background: #ffffff;
+  border: 3rpx solid #16241e;
+  border-radius: 999rpx;
+  box-shadow: 6rpx 6rpx 0 #16241e;
 }
 .tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4rpx;
-  padding: 4rpx 0;
+  gap: 2rpx;
+  padding: 6rpx 0;
   color: #8a9a93; /* = currentColor → 驱动图标颜色 */
+  border-radius: 999rpx;
+  transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-/* 活跃指示胶囊：图标外的圆角底，活跃时升起薄荷底 */
 .tab-pill {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 104rpx;
-  height: 56rpx;
+  width: 96rpx;
+  height: 52rpx;
   border-radius: 999rpx;
-  transition: background 0.24s cubic-bezier(0.16, 1, 0.3, 1), transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 2rpx solid transparent;
+  transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-ic {
-  font-size: 42rpx;
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 40rpx;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-label {
   font-size: 22rpx;
   color: #8a9a93;
   letter-spacing: 0.5rpx;
-  transition: color 0.18s ease;
+  transition: color 0.15s ease;
 }
 .tab.active {
-  color: #0e9c7a;
+  color: #06251c;
 }
 .tab.active .tab-pill {
-  background: #e8f5ef;
+  background: #18b690;
+  border-color: #16241e;
 }
 .tab.active .tab-ic {
   transform: scale(1.04);
 }
 .tab.active .tab-label {
-  color: #0e9c7a;
-  font-weight: 600;
+  color: #16241e;
+  font-weight: 700;
 }
 .tab:active .tab-pill {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }

@@ -1,39 +1,52 @@
 @import "./styles/icons.wxss";
 
 /* ============================================================================
-   微否设计系统 · 双端真源见 docs/design-tokens.md
-   原则：清新浅色 + 薄荷青。整套中性阶带一丝青温（绿相灰），墨青 #16241E 为主
-   文字与主按钮；碧绿 #18B690 只做点睛强调，绝不铺陈。
-   卡片语言统一为：白卡 + 1rpx 青边 + 极淡绿调阴影（克制、干净、可信）。
-   本文件是小程序端令牌真源；改色先改 docs，再同步 app_theme.dart。
+   微否设计系统 · 新粗野（Neo-brutalist）· 双端真源见 docs/design-tokens.md
+   语言：奶油纸底 + 墨青粗描边(3rpx) + 硬偏移投影(无模糊) + 薄荷点睛 + 糖果贴纸。
+   一切"柔"的手段（渐变/模糊阴影/半透明浮层）退场，深度只靠 offset 硬投影表达；
+   按压反馈 = 图章按下去：translate 位移 + 投影收没。
+   红线不变：成交/支付/资质区克制——描边照用，但贴纸/旋转/糖果色不进。
+   本文件是小程序端令牌真源；改色先改 docs。
    ========================================================================== */
 page {
-  /* —— 中性色阶（青温灰：同一绿相递进，从墨青到雾青）—— */
-  --ink: #16241e;        /* 主文字 / 墨青主按钮 / 用户气泡 */
-  --ink-2: #4a5a53;      /* 次级文字：副标题、正文辅助 */
-  --sub: #8a9a93;        /* 三级文字：说明、占位、非活跃 */
+  /* —— 中性色阶（青温灰递进，与旧版一致）—— */
+  --ink: #16241e;        /* 主文字 / 描边 / 硬投影 / 墨青主按钮 */
+  --ink-2: #4a5a53;      /* 次级文字 */
+  --sub: #8a9a93;        /* 三级文字：说明、占位 */
   --faint: #aab4af;      /* 四级文字：时间戳、极弱信息 */
-  --line: #f0f2f0;       /* 发丝分隔线 / 内部描边 */
-  --border: #ecefec;     /* 卡片 / 输入框边框 */
-  --fill: #eef2ef;       /* 中性填充：标签底、头像回退底 */
-  --fill-pressed: #f4f7f5; /* 单元格按下底 */
+  --line: #efede2;       /* 纸感发丝线：卡片内部分隔 */
+  --border: #16241e;     /* ⚠ 语义已变：边框=墨青。粗野卡用 var(--bw) solid var(--border) */
+  --fill: #f4f1e4;       /* 奶油填充：标签底、头像回退底 */
+  --fill-pressed: #f7f5ea; /* 单元格按下底 */
 
   /* —— 表面与底色 —— */
-  --bg: #fbfcfb;         /* 页面底色（近白、带一丝青） */
-  --surface: #ffffff;    /* 卡片 / 浮层表面 */
-  --surface-sunken: #f3f6f4; /* 内嵌凹陷区 / 输入底 */
+  --bg: #fdfbf2;         /* 页面底色：奶油纸 */
+  --surface: #ffffff;    /* 卡片表面 */
+  --surface-sunken: #f7f5ea; /* 内嵌凹陷区 / 输入底 */
 
-  /* —— 强调色（碧绿点睛，绝不替换主色）—— */
-  --accent: #18b690;     /* CTA 高亮 / 活跃态 / 强调图标 */
-  --accent-strong: #0e9c7a; /* accent 按下态 / 渐变深端 */
+  /* —— 强调色（薄荷点睛）—— */
+  --accent: #18b690;     /* CTA / 活跃态 / 强调图标 */
+  --accent-strong: #0e9c7a; /* accent 按下 / 深端 */
   --accent-deep: #0f766e;   /* soft 底上的图标 / 强化小字 */
-  --accent-soft: #e8f5ef;   /* 浅绿底：推荐位 / 标签背景 */
+  --accent-soft: #e8f5ef;   /* 浅薄荷底 */
   --accent-ink: #0c5a48;    /* accent-soft 上文字 */
+  --on-accent: #06251c;     /* 薄荷实底上的墨字（粗野风：亮底配墨字不配白字） */
+  --hl: #7ce3c4;            /* 马克笔高亮条（标题关键词底） */
 
-  /* —— 功能色（success 用草绿，与碧绿 accent 拉开避免撞色）—— */
+  /* —— 糖果贴纸色（仅角色层/学习层：agent 卡、徽章、庆祝；成交区禁入）—— */
+  --pop-butter: #ffd666;  --pop-butter-ink: #4a3502;
+  --pop-coral: #ffc9b5;   --pop-coral-ink: #4a1b0c;
+  --pop-mint: #b7ebd9;    --pop-mint-ink: #04342c;
+  --pop-lilac: #d8cbf6;   --pop-lilac-ink: #26215c;
+
+  /* —— 功能色 —— */
   --success: #16a34a;
   --warn: #f59e0b;
   --danger: #e0404b;
+
+  /* —— 描边宽度阶（粗野的骨头）—— */
+  --bw: 3rpx;            /* 标准卡片/按钮/输入框描边 */
+  --bw-thin: 2rpx;       /* 小件：chip / 徽章 / 头像框 */
 
   /* —— 间距阶（4 基数）—— */
   --sp-1: 8rpx; --sp-2: 16rpx; --sp-3: 24rpx; --sp-4: 32rpx;
@@ -43,26 +56,25 @@ page {
   --r-sm: 12rpx; --r-md: 16rpx; --r-lg: 20rpx; --r-xl: 24rpx;
   --r-2xl: 32rpx; --r-3xl: 36rpx; --r-full: 999rpx;
 
-  /* —— 高度 / 阴影（极淡、分层、带青温；成交克制区不滥用）—— */
-  --shadow-hair: 0 1rpx 2rpx rgba(20, 40, 30, 0.04);
-  --shadow-card: 0 2rpx 10rpx rgba(20, 40, 30, 0.04), 0 1rpx 2rpx rgba(20, 40, 30, 0.03);
-  --shadow-lift: 0 4rpx 16rpx rgba(20, 40, 30, 0.05), 0 1rpx 3rpx rgba(20, 40, 30, 0.04); /* hero 级大卡 */
-  --shadow-soft: 0 6rpx 26rpx rgba(24, 182, 144, 0.10); /* 绿柔：推荐位 */
-  --shadow-pop: 0 12rpx 40rpx rgba(20, 40, 30, 0.12);   /* 浮层 / 弹层 */
-  --shadow-accent: 0 10rpx 24rpx rgba(24, 182, 144, 0.28); /* accent CTA 光晕 */
+  /* —— 硬投影（offset 无模糊 = 扁平深度；层级靠位移量表达）—— */
+  --shadow-hair: 2rpx 2rpx 0 var(--ink);   /* 小件：chip / 气泡 */
+  --shadow-card: 5rpx 5rpx 0 var(--ink);   /* 默认卡片 */
+  --shadow-lift: 9rpx 9rpx 0 var(--ink);   /* hero 级大卡 */
+  --shadow-soft: 5rpx 5rpx 0 #cbe7da;      /* 薄荷软投影：推荐位（不抢墨） */
+  --shadow-pop: 12rpx 12rpx 0 var(--ink);  /* 浮层 / 弹层 */
+  --shadow-accent: 5rpx 5rpx 0 var(--ink); /* accent CTA 同样吃墨投影 */
 
   /* —— 动效 —— */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* —— 沉浸件（角色层复用：立绘卡 / 玻璃浮层；底盘区不引入）——
-     源自「分身首页沉浸版」北极星样板，沉淀为真源，供 discover / profile / chat 复用 */
-  --glass-light: rgba(252, 253, 252, 0.78); /* 浅色毛玻璃：悬浮底栏 / 浅底浮层 */
-  --glass-dark: rgba(18, 22, 28, 0.42);      /* 深色毛玻璃：立绘上的信息面板 */
-  --glass-hair: rgba(255, 255, 255, 0.16);   /* 玻璃描边 */
-  --blur-glass: blur(28rpx) saturate(180%);  /* 统一毛玻璃模糊 */
-  --shadow-lihe: 0 6rpx 22rpx rgba(20, 40, 30, 0.07), 0 1rpx 3rpx rgba(20, 40, 30, 0.04); /* 立绘卡浮起 */
+  /* —— 沉浸件（暗场角色层专用，不参与粗野底盘）—— */
+  --glass-light: rgba(253, 251, 242, 0.82);
+  --glass-dark: rgba(18, 22, 28, 0.42);
+  --glass-hair: rgba(255, 255, 255, 0.16);
+  --blur-glass: blur(28rpx) saturate(180%);
+  --shadow-lihe: 5rpx 5rpx 0 rgba(22, 36, 30, 0.16);
 }
 
 page {
@@ -83,72 +95,80 @@ button {
 }
 button::after { border: none; }
 
-/* —— 文字阶（语义化辅助类，在重写页面统一用）—— */
-.t-hero { font-size: 52rpx; font-weight: 600; color: var(--ink); letter-spacing: -1rpx; line-height: 1.2; }
-.t-display { font-size: 46rpx; font-weight: 600; color: var(--ink); letter-spacing: -1rpx; line-height: 1.2; }
-.t-section { font-size: 32rpx; font-weight: 600; color: var(--ink); letter-spacing: -0.3rpx; }
+/* —— 文字阶 —— */
+.t-hero { font-size: 52rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.25; }
+.t-display { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.25; }
+.t-section { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
 .t-body { font-size: 28rpx; color: var(--ink); }
 .t-sub { font-size: 26rpx; color: var(--ink-2); }
 .t-caption { font-size: 24rpx; color: var(--sub); }
 .t-micro { font-size: 22rpx; color: var(--faint); }
 
-.title { font-size: 36rpx; font-weight: 600; color: var(--ink); letter-spacing: -0.3rpx; }
+.title { font-size: 36rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
 .subtitle { font-size: 28rpx; color: var(--ink-2); }
 .muted { color: var(--sub); }
 
-/* 区段标（列表小节眉标：细字 + 大字距，安静地分区） */
-.eyebrow { font-size: 24rpx; letter-spacing: 3rpx; color: var(--faint); }
+/* 马克笔高亮：包住标题关键词 <text class="hl">什么？</text> */
+.hl { background: var(--hl); padding: 0 8rpx; color: var(--ink); }
 
-/* —— 按钮三类 —— */
+/* 区段眉标 + 裁切线（衣角小创意：像从纸上剪下来的分区） */
+.eyebrow { font-size: 24rpx; letter-spacing: 3rpx; color: var(--sub); font-weight: 600; }
+.cutline { border-top: var(--bw-thin) dashed rgba(22, 36, 30, 0.25); }
+
+/* —— 按钮三类（描边 + 硬投影 + 图章按压）—— */
 .btn-primary {
   background: var(--ink);
   color: #fff;
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-full);
-  padding: 24rpx 0;
-  text-align: center;
-  font-size: 30rpx;
-  font-weight: 500;
-  letter-spacing: 0.5rpx;
-  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
-}
-.btn-primary:active { transform: scale(0.975); opacity: 0.92; }
-.btn-primary[disabled] { opacity: 0.4; }
-
-.btn-ghost {
-  background: var(--surface);
-  color: var(--ink);
-  border: 1rpx solid var(--border);
-  border-radius: var(--r-full);
-  padding: 24rpx 0;
-  text-align: center;
-  font-size: 30rpx;
-  transition: transform 0.16s var(--ease), background 0.16s var(--ease);
-}
-.btn-ghost:active { transform: scale(0.975); background: var(--fill); }
-
-/* 碧绿强调主按钮：仅关键转化点（问分身 / 立即开聊），不替代墨青 .btn-primary */
-.btn-accent {
-  background: var(--accent);
-  color: #fff;
-  border-radius: var(--r-full);
-  padding: 24rpx 0;
+  padding: 22rpx 0;
   text-align: center;
   font-size: 30rpx;
   font-weight: 600;
   letter-spacing: 0.5rpx;
-  box-shadow: var(--shadow-accent);
-  transition: transform 0.16s var(--ease), box-shadow 0.16s var(--ease);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.btn-accent:active { transform: scale(0.975); box-shadow: 0 4rpx 12rpx rgba(24, 182, 144, 0.26); }
+.btn-primary:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
+.btn-primary[disabled] { opacity: 0.4; box-shadow: none; }
+
+.btn-ghost {
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--r-full);
+  padding: 22rpx 0;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 500;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+.btn-ghost:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); background: var(--fill-pressed); }
+
+/* 薄荷强调主按钮：亮底墨字（仅关键转化点） */
+.btn-accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--r-full);
+  padding: 22rpx 0;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 700;
+  letter-spacing: 0.5rpx;
+  box-shadow: var(--shadow-accent);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+.btn-accent:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
 .btn-accent[disabled] { opacity: 0.4; box-shadow: none; }
 
-/* 浅绿底高亮块（推荐位 / 强调标签） */
 .accent-soft { background: var(--accent-soft); color: var(--accent-ink); }
 
-/* —— 卡片 / 标签（统一卡片语言：白卡 + 青边 + 极淡阴影）—— */
+/* —— 卡片 / 标签 / 贴纸 —— */
 .card {
   background: var(--surface);
-  border: 1rpx solid var(--border);
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-2xl);
   padding: 32rpx;
   box-shadow: var(--shadow-card);
@@ -156,15 +176,32 @@ button::after { border: none; }
 
 .tag {
   display: inline-block;
-  padding: 8rpx 20rpx;
+  padding: 6rpx 20rpx;
   margin: 0 12rpx 12rpx 0;
-  background: var(--fill);
+  background: var(--surface);
+  border: var(--bw-thin) solid var(--ink);
   border-radius: var(--r-full);
   font-size: 24rpx;
-  color: var(--ink-2);
+  color: var(--ink);
 }
 
-/* —— 空态三层（图标圆底 + 标题 + 说明，可选 CTA）—— */
+/* 贴纸徽章：微旋转 + 描边胶囊（角色层/庆祝/状态点缀；一屏 ≤2 张） */
+.sticker {
+  display: inline-block;
+  padding: 4rpx 18rpx;
+  background: var(--pop-butter);
+  border: var(--bw-thin) solid var(--ink);
+  border-radius: var(--r-full);
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--pop-butter-ink);
+  transform: rotate(-4deg);
+  box-shadow: var(--shadow-hair);
+}
+.sticker-mint { background: var(--pop-mint); color: var(--pop-mint-ink); transform: rotate(3deg); }
+.sticker-coral { background: var(--pop-coral); color: var(--pop-coral-ink); transform: rotate(-3deg); }
+
+/* —— 空态三层（描边圆底图标 + 标题 + 说明 + 可选 CTA）—— */
 .empty-wrap {
   display: flex;
   flex-direction: column;
@@ -177,13 +214,16 @@ button::after { border: none; }
   height: 128rpx;
   border-radius: 50%;
   background: var(--accent-soft);
+  border: var(--bw) solid var(--ink);
+  box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 28rpx;
+  margin-bottom: 32rpx;
+  transform: rotate(-3deg);
 }
-.empty-ic .ic { font-size: 56rpx; color: var(--accent); }
-.empty-title { font-size: 32rpx; font-weight: 600; color: var(--ink); }
+.empty-ic .ic { font-size: 56rpx; color: var(--ink); }
+.empty-title { font-size: 32rpx; font-weight: 700; color: var(--ink); }
 .empty-sub { margin-top: 12rpx; font-size: 26rpx; color: var(--sub); line-height: 1.6; max-width: 480rpx; }
 .empty-cta {
   display: inline-flex;
@@ -193,14 +233,16 @@ button::after { border: none; }
   padding: 20rpx 48rpx;
   background: var(--ink);
   color: #fff;
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-full);
   font-size: 28rpx;
-  font-weight: 500;
-  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.empty-cta:active { transform: scale(0.97); opacity: 0.92; }
+.empty-cta:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
 
-/* —— 骨架屏（加载占位：雾青底 + 流光扫过）—— */
+/* —— 骨架屏（奶油底 + 流光；描边虚线暗示"还没盖章"）—— */
 .skel {
   position: relative;
   overflow: hidden;
@@ -217,8 +259,9 @@ button::after { border: none; }
 }
 @keyframes skelShine { 100% { transform: translateX(100%); } }
 
-/* —— 通用按压反馈 —— */
-.tap { transition: transform 0.16s var(--ease), opacity 0.16s var(--ease); }
-.tap:active { transform: scale(0.98); opacity: 0.9; }
-.card-press { transform: scale(0.985); }
+/* —— 通用按压（图章落下）—— */
+.tap { transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
+.tap:active { transform: translate(4rpx, 4rpx); box-shadow: none; }
 .hairline { border-bottom: 1rpx solid var(--line); }
+/* hover-class 用：卡片按压=位移+投影收没（放最后保证覆盖） */
+.card-press { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink) !important; }

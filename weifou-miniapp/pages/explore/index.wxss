@@ -1,52 +1,73 @@
-/* 学习市场 = 清新浅色 + 薄荷青，与首页同一套令牌（白卡 / 芯片 / pill / hairline）。 */
+/* 学习市场 = 新粗野（令牌真源见 app.wxss）：粗描边工具卡 + 奶油黄会员条。 */
 .mkt {
   min-height: 100vh;
   background: var(--bg);
-  padding: 0 36rpx calc(env(safe-area-inset-bottom) + 160rpx);
+  padding: 0 36rpx calc(env(safe-area-inset-bottom) + 180rpx);
 }
-.mkt-top { padding: 36rpx 6rpx 24rpx; }
-.mkt-h1 { font-size: 46rpx; font-weight: 600; color: var(--ink); letter-spacing: -1rpx; }
+.mkt-top { padding: 36rpx 6rpx 28rpx; }
+.mkt-h1 { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; }
 .mkt-sub { margin-top: 10rpx; font-size: 25rpx; color: var(--sub); }
 .mkt-state { text-align: center; padding: 80rpx 0; color: var(--faint); font-size: 26rpx; }
-.card-press { transform: scale(0.985); }
+.card-press { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink) !important; }
 
 /* 骨架屏：结构与工具卡一致，加载不跳版 */
 .skel-card {
   display: flex; align-items: center; gap: 24rpx;
-  padding: 26rpx 28rpx; border-radius: 28rpx; margin-bottom: 20rpx;
-  background: var(--surface); border: 1rpx solid var(--border);
+  padding: 26rpx 28rpx; border-radius: var(--r-xl); margin-bottom: 24rpx;
+  background: var(--surface); border: var(--bw-thin) dashed rgba(22, 36, 30, 0.25);
 }
-.skel-ic { width: 92rpx; height: 92rpx; border-radius: 26rpx; flex: 0 0 auto; }
+.skel-ic { width: 92rpx; height: 92rpx; border-radius: var(--r-lg); flex: 0 0 auto; }
 .skel-lines { flex: 1; }
 .skel-l1 { height: 30rpx; width: 40%; }
 .skel-l2 { height: 24rpx; width: 72%; margin-top: 14rpx; }
 
-/* 会员横幅 */
+/* 会员横幅：奶油黄贴条 */
 .mbr {
   display: flex; align-items: center; gap: 14rpx;
-  padding: 26rpx 28rpx; border-radius: var(--r-xl); margin-bottom: 28rpx;
-  background: var(--accent-soft); border: 1rpx solid rgba(24, 182, 144, 0.22);
+  padding: 24rpx 28rpx; border-radius: var(--r-lg); margin-bottom: 32rpx;
+  background: var(--pop-butter);
+  border: var(--bw) solid var(--ink);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.mbr-ic { font-size: 34rpx; color: var(--accent-deep); }
-.mbr-text { flex: 1; font-size: 27rpx; font-weight: 500; color: var(--accent-ink); }
-.mbr-go { font-size: 24rpx; color: var(--accent-strong); font-weight: 500; }
+.mbr-ic { font-size: 34rpx; color: var(--ink); }
+.mbr-text { flex: 1; font-size: 27rpx; font-weight: 600; color: var(--pop-butter-ink); }
+.mbr-go { font-size: 24rpx; color: var(--ink); font-weight: 600; }
+.mbr.on { background: var(--accent); }
+.mbr.on .mbr-ic, .mbr.on .mbr-text { color: var(--on-accent); }
 
 /* 工具卡 */
 .mcard {
   display: flex; align-items: center; gap: 24rpx;
-  padding: 26rpx 28rpx; border-radius: 28rpx; margin-bottom: 20rpx;
-  background: var(--surface); border: 1rpx solid var(--border); box-shadow: var(--shadow-card);
+  padding: 26rpx 28rpx; border-radius: var(--r-xl); margin-bottom: 24rpx;
+  background: var(--surface);
+  border: var(--bw) solid var(--ink);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.mcard-ic { flex: 0 0 auto; width: 92rpx; height: 92rpx; border-radius: 26rpx; display: flex; align-items: center; justify-content: center; font-size: 42rpx; background: var(--accent-soft); }
+.mcard-ic {
+  flex: 0 0 auto; width: 92rpx; height: 92rpx; border-radius: var(--r-lg);
+  display: flex; align-items: center; justify-content: center; font-size: 42rpx;
+  background: var(--pop-mint); border: var(--bw-thin) solid var(--ink);
+}
+.mcard:nth-child(3n) .mcard-ic { background: var(--pop-coral); }
+.mcard:nth-child(3n+1) .mcard-ic { background: var(--pop-lilac); }
 .mcard-meta { flex: 1; min-width: 0; }
-.mcard-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
-.mcard-tag { margin-top: 6rpx; font-size: 25rpx; color: var(--sub); line-height: 1.5; }
-.mcard-status { margin-top: 12rpx; font-size: 22rpx; }
+.mcard-name { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+.mcard-tag { margin-top: 6rpx; font-size: 25rpx; color: var(--ink-2); line-height: 1.5; }
+.mcard-status { margin-top: 12rpx; font-size: 22rpx; font-weight: 600; }
 .status-member { color: var(--accent-ink); }
 .status-trial { color: var(--accent-strong); }
 .status-used { color: #b3925a; }
 
 /* 添加到首页 */
-.pin { flex: 0 0 auto; align-self: center; font-size: 23rpx; padding: 12rpx 22rpx; border-radius: var(--r-full); color: var(--accent-strong); background: var(--accent-soft); transition: transform 0.16s var(--ease); }
-.pin:active { transform: scale(0.94); }
-.pin.on { color: var(--faint); background: var(--fill); }
+.pin {
+  flex: 0 0 auto; align-self: center; font-size: 23rpx; font-weight: 600;
+  padding: 10rpx 22rpx; border-radius: var(--r-full);
+  color: var(--on-accent); background: var(--accent);
+  border: var(--bw-thin) solid var(--ink);
+  box-shadow: var(--shadow-hair);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+.pin:active { transform: translate(2rpx, 2rpx); box-shadow: none; }
+.pin.on { color: var(--sub); background: var(--fill); border-color: rgba(22, 36, 30, 0.3); box-shadow: none; }

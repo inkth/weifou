@@ -16,7 +16,7 @@
   font-size: 26rpx;
   color: var(--ink-2);
   background: var(--surface);
-  border: 1rpx solid var(--border);
+  border: var(--bw-thin) solid var(--ink);
   border-radius: var(--r-full);
   transition: background 0.16s var(--ease), color 0.16s var(--ease);
 }
@@ -26,6 +26,7 @@
   border-color: var(--ink);
   color: #fff;
   font-weight: 600;
+  box-shadow: var(--shadow-hair);
 }
 
 .tip { font-size: 24rpx; margin-bottom: 20rpx; line-height: 1.5; }
@@ -36,15 +37,17 @@
 .es-btn {
   display: inline-block; margin-top: 32rpx;
   background: var(--ink); color: #fff;
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-full); font-size: 26rpx;
   padding: 0 44rpx; line-height: 78rpx;
-  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.es-btn:active { transform: scale(0.97); opacity: 0.92; }
+.es-btn:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
 
 .card {
   background: var(--surface);
-  border: 1rpx solid var(--border);
+  border: var(--bw) solid var(--ink);
   border-radius: var(--r-xl);
   padding: 28rpx;
   margin-bottom: 20rpx;
@@ -54,7 +57,7 @@
   text-align: center;
   color: var(--ink);
   font-weight: 600;
-  border: 2rpx dashed var(--border);
+  border: var(--bw-thin) dashed var(--ink);
   background: transparent;
   box-shadow: none;
 }
@@ -71,11 +74,12 @@
   padding: 12rpx 32rpx;
   font-size: 26rpx;
   border-radius: var(--r-full);
-  background: var(--fill);
-  color: var(--ink-2);
-  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw-thin) solid var(--ink);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.op:active { transform: scale(0.96); opacity: 0.85; }
+.op:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
 .op.primary { background: var(--ink); color: #fff; }
 .op.contact { margin-top: 20rpx; display: inline-block; word-break: break-all; }
 .ops .meta { margin-top: 0; flex: 1; }
@@ -83,16 +87,18 @@
 .lead-head { display: flex; justify-content: space-between; align-items: baseline; }
 .lead-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
 
-/* 主人召回：开启「新提问」微信订阅提醒（仅订阅模板已配时显示） */
+/* 主人召回：开启「新提问」微信订阅提醒（仅订阅模板已配时显示）——奶油黄贴条 */
 .notify-row {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
+  background: var(--pop-butter);
+  color: var(--pop-butter-ink);
+  border: var(--bw-thin) solid var(--ink);
   border-radius: var(--r-md);
   padding: 20rpx 24rpx;
   margin-bottom: 20rpx;
   font-size: 26rpx;
+  box-shadow: var(--shadow-hair);
 }
-.notify-ico { font-size: 30rpx; color: var(--accent); }
+.notify-ico { font-size: 30rpx; color: var(--pop-butter-ink); }

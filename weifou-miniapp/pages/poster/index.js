@@ -70,7 +70,7 @@ Page({
           tags.forEach((t) => {
             const tw = ctx.measureText(t).width + 20;
             if (tx + tw > cssW - 20) { tx = 20; ty += 28; }
-            ctx.fillStyle = '#eef2ef';
+            ctx.fillStyle = '#f4f1e4';
             this.roundRect(ctx, tx, ty - 14, tw, 22, 11);
             ctx.fill();
             ctx.fillStyle = '#4a5a53';

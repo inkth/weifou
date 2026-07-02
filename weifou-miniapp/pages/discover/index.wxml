@@ -2,11 +2,12 @@
 
   <view class="sq-top" style="padding-top:{{statusBarH}}px">
     <view class="sq-eyebrow">{{greeting}}</view>
-    <view class="sq-h1">想办成什么？</view>
+    <view class="sq-h1">想办成<text class="hl">什么？</text></view>
   </view>
 
   <!-- AI 名片大卡：头像 + 数据 dashboard -->
   <view class="hero" hover-class="card-press" hover-stay-time="0" bindtap="enterChief">
+    <view wx:if="{{chief.online}}" class="hero-sticker">● 在线</view>
     <view class="hero-top">
       <view class="hero-av">{{chief.initial}}<view wx:if="{{chief.online}}" class="hero-dot"></view></view>
       <view class="hero-id">

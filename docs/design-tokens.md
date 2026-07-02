@@ -5,7 +5,7 @@
 - 小程序：`weifou-miniapp/app.wxss` 顶部 `page { --* }`
 - App：`weifou-app/lib/core/theme/app_theme.dart` 的 `AppTheme` 常量
 
-设计原则：**清新浅色 + 薄荷青**。整套中性阶带一丝青温（绿相灰），墨青 `#16241E` 为主文字与主按钮；碧绿 `#18B690` 只做强调，绝不替换主色。卡片语言统一为「白卡 + 1rpx 青边（`--border`）+ 极淡绿调阴影」。成交关键区（支付 / 预约确认 / 主页资质）保持克制，不上卡通、不滥用强调色。
+设计原则（2026-07-02 用户拍板）：**新粗野 Neo-brutalist**。奶油纸底 `#FDFBF2` + 墨青粗描边（`--bw` 3rpx）+ 硬偏移投影（offset 无模糊）+ 薄荷 `#18B690` 点睛 + 糖果贴纸色点缀。一切"柔"的手段（渐变 / 模糊阴影 / 半透明浮层）在浅色底盘退场，深度只靠 offset 硬投影表达；按压反馈 = 图章按下去（translate 位移 + 投影收没）。红线不变：成交/支付/资质区克制——描边照用，但贴纸 / 旋转 / 糖果色不进；暗场沉浸皮肤（登录/创建/立绘对话/回放）是独立词汇，不参与粗野化。
 
 ---
 
@@ -15,14 +15,15 @@
 
 | 语义 | 令牌（小程序 / App） | 值 | 用途 |
 |---|---|---|---|
-| 主文字 | `--ink` / `ink` | `#16241E` | 标题、墨青主按钮、用户气泡 |
+| 主文字/描边/投影 | `--ink` / `ink` | `#16241E` | 标题、粗描边、硬投影、墨青主按钮 |
 | 次级文字 | `--ink-2` / `ink2` | `#4A5A53` | 副标题、正文辅助 |
 | 三级文字 | `--sub` / `sub` | `#8A9A93` | 说明、占位、非活跃 |
 | 四级文字 | `--faint` / `faint` | `#AAB4AF` | 时间戳、极弱信息 |
-| 发丝线 | `--line` / `line` | `#F0F2F0` | 分隔线、内部描边 |
-| 边框 | `--border` / `border` | `#ECEFEC` | 卡片/输入框边框 |
-| 中性填充 | `--fill` / `fill` | `#EEF2EF` | 标签底、头像回退底 |
-| 按下填充 | `--fill-pressed` / `fillPressed` | `#F4F7F5` | 单元格按下底 |
+| 纸感发丝线 | `--line` / `line` | `#EFEDE2` | 卡片内部弱分隔 |
+| 边框 | `--border` / `border` | `#16241E` | ⚠ 语义=墨青描边色；写法用 `var(--bw) solid var(--ink)` |
+| 描边宽 | `--bw` / `--bw-thin` | `3rpx` / `2rpx` | 卡片·按钮·输入框 / chip·徽章·头像框 |
+| 奶油填充 | `--fill` / `fill` | `#F4F1E4` | 标签底、头像回退底 |
+| 按下填充 | `--fill-pressed` / `fillPressed` | `#F7F5EA` | 单元格按下底 |
 
 > 旧版冷蓝灰阶（`#1F2330 / #8A8F9C / #B4B9C4 / #8a90a0 / #9aa0ad …`）已于 2026-07 整体收敛到本青温阶；新代码禁止再引入近似灰，一律取上表四级。
 
@@ -30,36 +31,41 @@
 
 | 语义 | 令牌（小程序 / App） | 值 | 用途 |
 |---|---|---|---|
-| 页面底色 | `--bg` / `bg` | `#FBFCFB` | scaffold 背景（近白带青） |
+| 页面底色 | `--bg` / `bg` | `#FDFBF2` | scaffold 背景（奶油纸） |
 | 卡片表面 | `--surface` / `surface` | `#FFFFFF` | 卡片/浮层 |
-| 凹陷面 | `--surface-sunken` / `surfaceSunken` | `#F3F6F4` | 内嵌区 / 输入底 |
-| **强调色（碧绿）** | `--accent` / `accent` | `#18B690` | **仅** CTA 高亮、活跃态、强调图标 |
-| 强调按下态 | `--accent-strong` / `accentStrong` | `#0E9C7A` | accent 元素 pressed / 渐变深端 / 浅底小字 |
+| 凹陷面 | `--surface-sunken` / `surfaceSunken` | `#F7F5EA` | 内嵌区 / 输入底 |
+| **强调色（薄荷）** | `--accent` / `accent` | `#18B690` | **仅** CTA 高亮、活跃态、强调图标 |
+| 强调按下态 | `--accent-strong` / `accentStrong` | `#0E9C7A` | accent 元素 pressed / 浅底小字 |
 | 强调深绿 | `--accent-deep` / `accentDeep` | `#0F766E` | accent-soft 底上的图标 / 强化小字 |
-| 浅绿底 | `--accent-soft` / `accentSoft` | `#E8F5EF` | 推荐位/强调标签背景、活跃指示胶囊 |
+| 浅薄荷底 | `--accent-soft` / `accentSoft` | `#E8F5EF` | 推荐位/数据片/强调标签背景 |
 | 绿底上文字 | `--accent-ink` / `accentInk` | `#0C5A48` | accent-soft 上的文字 |
-| 成功 / 警示 / 危险 | `--success` `--warn` `--danger` | `#16A34A` `#F59E0B` `#E0404B` | 状态（success 用草绿，与碧绿 accent 拉开） |
+| **accent 实底上墨字** | `--on-accent` / `onAccent` | `#06251C` | 薄荷实底配墨字，不配白字（粗野惯例） |
+| 马克笔高亮 | `--hl` / `hl` | `#7CE3C4` | 标题关键词底条（`.hl` 类） |
+| 糖果贴纸色 | `--pop-butter/coral/mint/lilac`（各配 `-ink` 文字色） | `#FFD666` `#FFC9B5` `#B7EBD9` `#D8CBF6` | **仅角色/学习/庆祝层**；成交区禁入 |
+| 成功 / 警示 / 危险 | `--success` `--warn` `--danger` | `#16A34A` `#F59E0B` `#E0404B` | 状态 |
 
-### 高度 / 阴影（分层、极淡、带青温 rgba(20,40,30,…)）
+### 高度 / 硬投影（offset 无模糊；层级=位移量）
 
-| 令牌（小程序 / App） | 用途 |
-|---|---|
-| `--shadow-hair` | 列表项/气泡的极轻接触阴影 |
-| `--shadow-card` / `cardShadow` | **默认卡片**：双层极淡，干净不脏 |
-| `--shadow-lift` | hero 级大卡（首页名片卡等），比 card 略浮起 |
-| `--shadow-soft` / `softShadow` | 绿柔阴影：推荐位 |
-| `--shadow-pop` | 浮层 / 弹层 |
-| `--shadow-accent` / `accentShadow` | accent CTA 光晕（绿） |
+| 令牌（小程序 / App） | 值 | 用途 |
+|---|---|---|
+| `--shadow-hair` | `2rpx 2rpx 0 ink` | chip / 气泡 / 小徽章 |
+| `--shadow-card` / `cardShadow` | `5rpx 5rpx 0 ink` | **默认卡片 / 按钮** |
+| `--shadow-lift` | `9rpx 9rpx 0 ink` | hero 级大卡 |
+| `--shadow-soft` / `softShadow` | `5rpx 5rpx 0 #CBE7DA` | 薄荷软投影（少用） |
+| `--shadow-pop` | `12rpx 12rpx 0 ink` | 浮层 / 弹层 |
+| `--shadow-accent` | `5rpx 5rpx 0 ink` | accent CTA（同吃墨投影） |
 
-**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键 / 活跃 tab / 选中分类）。底盘按钮、导航、普通卡片一律保持墨青+青温灰。碧绿阴影只跟随 accent 实体，普通卡片用 `--shadow-card`。
+**交互纪律**：按压 = 图章落下 —— `:active { transform: translate(4~5rpx, 4~5rpx); box-shadow: 0 0 0 var(--ink); }`（位移量=投影量，视觉上是"按进纸里"）。hover-class 场景用全局 `.card-press`。禁止带模糊的 box-shadow 和 linear-gradient 出现在浅色底盘（暗场沉浸皮肤除外）。
 
-> **会员页例外**：付费/会员相关界面（`membership` / `agents` 的会员 banner）用「翡翠玉绿」高级渐变（`--accent → --accent-strong`）+ 深绿文字 `--accent-ink`，是 accent 同族的加深变体，做付费层的高级感差异；不要回退成暖金。
+**强调色使用红线**：accent 是「点睛」不是「主调」，一屏 accent 实心块 ≤1 个。accent 实底必配 `--on-accent` 墨字 + 墨描边。贴纸 `.sticker`（微旋转描边胶囊）一屏 ≤2 张。
 
-### 空态 / 骨架屏原子（app.wxss 全局类）
+> **会员页**：付费场景描边+硬投影照用，但禁贴纸/旋转/糖果色；会员卡主视觉 = accent 实底（不渐变）+ 描边 + `--shadow-lift`。
 
-- 空态三层：`.empty-wrap`（容器）+ `.empty-ic`（薄荷圆底图标）+ `.empty-title` / `.empty-sub`（+ 可选 `.empty-cta` 墨青胶囊）。所有"暂无 XX"文案页逐步迁到这套结构。
-- 骨架屏：`.skel`（雾青底 + 流光扫过），加载态与真实卡片同构占位，不跳版。
-- 区段眉标：`.eyebrow`（24rpx / 3rpx 字距 / faint），列表小节分区用。
+### 空态 / 骨架屏 / 创意原子（app.wxss 全局类）
+
+- 空态三层：`.empty-wrap` + `.empty-ic`（描边圆底、微旋转）+ `.empty-title` / `.empty-sub`（+ 可选 `.empty-cta`）。
+- 骨架屏：`.skel`（奶油底 + 流光扫过），与真实卡片同构占位。
+- `.hl` 马克笔高亮包标题关键词；`.eyebrow` 区段眉标；`.cutline` / `dashed rgba(22,36,30,0.2)` 剪裁虚线做内部分隔；`.sticker`（-mint/-coral 变体）贴纸徽章。
 
 ---
 

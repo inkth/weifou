@@ -8,15 +8,15 @@ page { background: var(--bg); }
 .intro-sub { font-size: 26rpx; line-height: 1.6; margin-top: 14rpx; color: var(--sub); }
 
 .acts { display: flex; gap: 16rpx; margin-bottom: 28rpx; }
-.act { flex: 1; text-align: center; padding: 26rpx 0; font-size: 26rpx; font-weight: 500; border-radius: 18rpx; background: var(--accent-soft); color: var(--accent-ink); transition: transform 0.16s var(--ease), opacity 0.16s var(--ease); }
-.act-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow-accent); }
-.act-press { transform: scale(0.97); opacity: 0.85; }
+.act { flex: 1; text-align: center; padding: 26rpx 0; font-size: 26rpx; font-weight: 600; border-radius: 18rpx; background: var(--surface); color: var(--ink); border: var(--bw-thin) solid var(--ink); box-shadow: var(--shadow-hair); transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
+.act-primary { background: var(--accent); color: var(--on-accent); border: var(--bw-thin) solid var(--ink); box-shadow: var(--shadow-hair); }
+.act-press { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
 
 .empty { text-align: center; padding: 80rpx 0; font-size: 26rpx; line-height: 1.6; color: var(--faint); }
 
-.m-item { background: var(--surface); border: 1rpx solid var(--border); box-shadow: var(--shadow-card); border-radius: var(--r-xl); padding: 28rpx; margin-bottom: 18rpx; }
+.m-item { background: var(--surface); border: var(--bw) solid var(--ink); box-shadow: var(--shadow-card); border-radius: var(--r-xl); padding: 28rpx; margin-bottom: 18rpx; }
 .m-topic { font-size: 28rpx; font-weight: 600; color: var(--ink); margin-bottom: 10rpx; }
 .m-content { font-size: 28rpx; color: var(--ink-2); line-height: 1.65; }
-.m-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 20rpx; padding-top: 18rpx; border-top: 1rpx solid var(--line); }
+.m-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 20rpx; padding-top: 18rpx; border-top: var(--bw-thin) dashed rgba(22, 36, 30, 0.2); }
 .m-src { font-size: 22rpx; color: var(--faint); }
 .m-del { font-size: 24rpx; color: var(--danger); padding: 6rpx 14rpx; }

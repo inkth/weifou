@@ -21,7 +21,7 @@
   gap: 14rpx;
   padding: 28rpx 28rpx 20rpx;
   background: var(--surface);
-  border-bottom: 1rpx solid var(--border);
+  border-bottom: var(--bw-thin) solid var(--ink);
 }
 @media (max-height: 640px) {
   .stage { height: 320rpx; gap: 10rpx; padding: 16rpx 28rpx 12rpx; }
@@ -85,7 +85,7 @@
   background: var(--surface);
   color: var(--ink);
   border-bottom-left-radius: 8rpx;
-  border: 1rpx solid var(--line);
+  border: var(--bw-thin) solid var(--ink);
   box-shadow: var(--shadow-hair);
   animation: bubbleIn 0.28s ease both;
 }
@@ -99,7 +99,7 @@
 /* 对话内成交卡片 */
 .offer-card {
   background: var(--surface);
-  border: 1rpx solid var(--border);
+  border: var(--bw) solid var(--ink);
   border-radius: 24rpx;
   padding: 24rpx;
   margin: 0 0 24rpx;
@@ -123,7 +123,7 @@
   padding: 18rpx 22rpx;
   border-radius: var(--r-md);
   background: var(--fill);
-  border: 2rpx solid transparent;
+  border: var(--bw-thin) solid transparent;
   transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
 }
 .slot.sel {
@@ -138,10 +138,14 @@
   line-height: 80rpx;
   background: var(--ink);
   color: #fff;
+  border: var(--bw-thin) solid var(--ink);
   border-radius: 40rpx;
   font-size: 28rpx;
+  box-shadow: var(--shadow-hair);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.offer-btn[disabled] { opacity: 0.4; }
+.offer-btn:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
+.offer-btn[disabled] { opacity: 0.4; box-shadow: none; }
 
 .sys-link {
   align-self: flex-start;
@@ -157,16 +161,17 @@
   gap: 16rpx;
   padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
   background: var(--surface);
-  border-top: 1rpx solid var(--border);
+  border-top: var(--bw-thin) solid var(--ink);
 }
 .chip {
   padding: 16rpx 26rpx;
+  border: var(--bw-thin) solid var(--ink);
   border-radius: var(--r-full);
   font-size: 26rpx;
   line-height: 1.2;
-  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.chip:active { transform: scale(0.96); opacity: 0.85; }
+.chip:active { transform: translate(4rpx, 4rpx); box-shadow: none; }
 /* 引导问题 */
 .chip.q {
   background: var(--fill);
@@ -181,7 +186,6 @@
 .chip.ghost {
   background: var(--surface);
   color: var(--ink-2);
-  border: 1rpx solid var(--border);
 }
 
 .composer {
@@ -189,12 +193,13 @@
   gap: 16rpx;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   background: var(--surface);
-  border-top: 1rpx solid var(--border);
+  border-top: var(--bw-thin) solid var(--ink);
 }
 .composer .input {
   flex: 1;
   height: 72rpx;
   background: var(--surface-sunken);
+  border: var(--bw-thin) solid var(--ink);
   border-radius: 36rpx;
   padding: 0 28rpx;
   font-size: 28rpx;
@@ -205,10 +210,14 @@
   line-height: 72rpx;
   background: var(--ink);
   color: #fff;
+  border: var(--bw-thin) solid var(--ink);
   border-radius: 36rpx;
   font-size: 28rpx;
+  box-shadow: var(--shadow-hair);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.composer .send[disabled] { opacity: 0.4; }
+.composer .send:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
+.composer .send[disabled] { opacity: 0.4; box-shadow: none; }
 
 /* —— chat-first 开场体验 —— */
 .choices { opacity: 0; transform: translateY(12rpx); }
@@ -228,7 +237,7 @@
   margin: 16rpx 48rpx;
   padding: 28rpx;
   background: var(--surface);
-  border: 1rpx solid var(--border);
+  border: var(--bw) solid var(--ink);
   border-radius: 24rpx;
   box-shadow: var(--shadow-card);
   text-align: center;
@@ -238,12 +247,16 @@
 .own-cta-btn {
   background: var(--ink);
   color: #fff;
+  border: var(--bw-thin) solid var(--ink);
   border-radius: 36rpx;
   font-size: 28rpx;
   padding: 0 48rpx;
   display: inline-block;
   line-height: 72rpx;
+  box-shadow: var(--shadow-hair);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
+.own-cta-btn:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
 
 /* —— 页内浮层：毛玻璃底部抽屉（关于 / 打赏 / 约档期）—— */
 .mask { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.5); display: flex; align-items: flex-end; }
