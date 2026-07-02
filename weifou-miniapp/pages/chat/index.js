@@ -39,6 +39,10 @@ Page({
     stageEntered: false, // 开幕（curtain-up）触发；与拉取资料的等待重叠
     delight: false, // 一次性"欣喜"beat（开场 & 成交/留资后）
     liheSrc: '', // 全屏立绘图：avatar 为 image 类型时启用"星野式"全屏立绘模式
+    // —— 名片开场（无立绘时）：正面/翻面/收起三态 ——
+    cardFlipped: false, // 名片翻到背面（完整介绍）
+    cardCompact: false, // 开聊后名片收成顶部胶囊条
+    cardTags: [],       // 正面只放前 3 个标签，全量在背面
     // —— 访客页内浮层（不跳 profile）：关于 / 打赏 ——
     title: '', company: '', city: '', tags: [], fullIntro: '',
     aboutVisible: false,
@@ -92,19 +96,18 @@ Page({
         contactAvailable: !!p.contactVisible,
         title: p.title || '', company: p.company || '', city: p.city || '',
         tags: persona.tags || [], fullIntro: persona.fullIntro || '',
+        cardTags: (persona.tags || []).slice(0, 3),
         trustLine: buildTrustLine(p.trust, 'asked'),
       });
       this._applyStageTheme(); // 用最终 avatarStyle 推导氛围档 + 光晕色
-      // 打字机开场只惊艳一次：回访（含主人反复自测）直接显示全文，把效率还给第二次
+      // 打字机开场只惊艳一次：回访（含主人反复自测）直接显示全文，把效率还给第二次。
+      // oneLiner 不再作为第二条气泡复读——名片正面已常驻展示。
       const introKey = `weifou_intro_${profileId}`;
-      const introOneLiner = persona.greeting ? persona.oneLiner : '';
       if (wx.getStorageSync(introKey)) {
-        const msgs = [{ role: 'assistant', content: greeting }];
-        if (introOneLiner) msgs.push({ role: 'assistant', content: `“${introOneLiner}”` });
-        this.setData({ messages: msgs, introState: '', startersRevealed: true });
+        this.setData({ messages: [{ role: 'assistant', content: greeting }], introState: '', startersRevealed: true });
       } else {
         try { wx.setStorageSync(introKey, 1); } catch (e) {}
-        this._playIntro(greeting, introOneLiner);
+        this._playIntro(greeting, '');
       }
     } catch (e) {
       this.setData({ notFound: true, introState: '' });
@@ -278,7 +281,22 @@ Page({
 
   toggleInput() {
     this._abortIntro();
-    this.setData({ showInput: !this.data.showInput });
+    const next = !this.data.showInput;
+    // 打开输入=进入对话姿态：名片收起，屏幕还给消息流
+    this.setData({ showInput: next, ...(next ? { cardCompact: true } : {}) });
+  },
+
+  // —— 名片三态 ——
+  flipCard() {
+    this.setData({ cardFlipped: !this.data.cardFlipped });
+  },
+  expandCard() {
+    this.setData({ cardCompact: false, cardFlipped: false });
+  },
+  // "关于 TA" chip：立绘模式走原毛玻璃抽屉；名片模式展开并翻到背面
+  openAboutEntry() {
+    if (this.data.liheSrc) return this.openAbout();
+    this.setData({ cardCompact: false, cardFlipped: true });
   },
 
   onInput(e) {
@@ -304,7 +322,8 @@ Page({
     }
 
     const messages = this.data.messages.concat({ role: 'user', content });
-    this.setData({ messages, pending: true });
+    // 第三幕结束：一旦开聊，名片收成顶部胶囊条
+    this.setData({ messages, pending: true, cardCompact: true, cardFlipped: false });
 
     try {
       const data = await request({

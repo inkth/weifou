@@ -26,52 +26,125 @@
 @media (max-height: 640px) {
   .stage { height: 320rpx; gap: 10rpx; padding: 16rpx 28rpx 12rpx; }
 }
-.stage { transition: height 0.25s var(--ease), padding 0.25s var(--ease); }
-
-/* —— 画框形象：新粗野拱窗（描边+硬投影）。无专属立绘时这就是分身的"脸"。
-   frame-toon 的渐变属角色层词汇（同 stage.wxss 立绘卡纪律），不算底盘渐变。 —— */
-.stage-frame {
-  position: relative; z-index: 1;
-  width: 176rpx; height: 196rpx;
-  padding: 8rpx;
-  border-radius: 88rpx 88rpx 24rpx 24rpx;
-  border: var(--bw) solid var(--ink);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  transition: width 0.25s var(--ease), height 0.25s var(--ease), border-radius 0.25s var(--ease);
-}
+/* ==========================================================================
+   名片开场（无立绘）：三幕——递卡→开口→便签。
+   frame-toon 的渐变属角色层词汇（同 stage.wxss 立绘卡纪律），不算底盘渐变。
+   ========================================================================== */
 .frame-toon {
   width: 100%; height: 100%;
-  border-radius: 80rpx 80rpx 18rpx 18rpx;
   display: flex; align-items: center; justify-content: center;
-  font-size: 64rpx; font-weight: 700; color: #fff;
+  font-weight: 700; color: #fff;
   background: linear-gradient(135deg, var(--amb-a, #18b690), var(--amb-b, #14b8a6));
   animation: toonBreath 4.5s ease-in-out infinite;
 }
 @keyframes toonBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 /* 状态耦合：思考/说话时呼吸加快 */
 .stage-active .frame-toon { animation-duration: 1.8s; }
-@media (max-height: 640px) {
-  .stage-frame { width: 140rpx; height: 152rpx; }
-  .frame-toon { font-size: 52rpx; }
+
+/* —— 第一幕：名片盖章落下 —— */
+.ncard-wrap { flex: 0 0 auto; padding: 24rpx 28rpx 6rpx; opacity: 0; }
+.ncard-wrap.stage-in { animation: cardStamp 0.5s var(--ease-spring) both; }
+@keyframes cardStamp {
+  0% { opacity: 0; transform: scale(1.07) rotate(1.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-0.6deg); }
 }
 
-/* —— 输入态收起：画框缩成小圆脸一行，把屏幕还给消息流 —— */
-.stage.compact {
-  height: 156rpx;
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: 20rpx;
-  padding: 20rpx 28rpx;
+/* —— 翻面结构：正面定高度，背面绝对铺满 + 内滚 —— */
+.ncard { perspective: 1600rpx; }
+.ncard-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s var(--ease);
 }
-.stage.compact .stage-frame { width: 88rpx; height: 88rpx; padding: 4rpx; border-radius: 50%; box-shadow: var(--shadow-hair); }
-.stage.compact .frame-toon { border-radius: 50%; font-size: 40rpx; }
-.stage.compact .stage-meta { align-items: flex-start; }
-.stage.compact .stage-status { display: none; }
-.stage.compact .stage-indicator { display: none; }
-@media (max-height: 640px) {
-  .stage.compact { height: 132rpx; }
+.ncard.flipped .ncard-inner { transform: rotateY(180deg); }
+.ncard-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--surface);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lift);
+}
+.ncard-front { position: relative; padding: 34rpx 28rpx 18rpx; }
+.ncard-back {
+  position: absolute; inset: 0;
+  transform: rotateY(180deg);
+  padding: 24rpx 28rpx;
+  display: flex; flex-direction: column;
+}
+
+/* 正面：贴纸 + 画框 + 身份 + 一句话 + 标签 */
+.ncard-sticker {
+  position: absolute; top: -18rpx; right: 24rpx;
+  padding: 4rpx 18rpx;
+  background: var(--pop-butter); color: var(--pop-butter-ink);
+  border: var(--bw-thin) solid var(--ink); border-radius: var(--r-full);
+  font-size: 21rpx; font-weight: 600;
+  transform: rotate(-4deg);
+  box-shadow: var(--shadow-hair);
+}
+.ncard-row { display: flex; align-items: center; gap: 22rpx; }
+.ncard-frame {
+  flex: 0 0 auto; width: 116rpx; height: 130rpx;
+  border: var(--bw-thin) solid var(--ink);
+  border-radius: 58rpx 58rpx 16rpx 16rpx;
+  overflow: hidden;
+}
+.ncard-frame .frame-toon { font-size: 50rpx; }
+.ncard-id { flex: 1; min-width: 0; }
+.ncard-name { font-size: 36rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.ncard-title { margin-top: 4rpx; font-size: 24rpx; color: var(--ink-2); }
+.ncard-proof { margin-top: 4rpx; font-size: 22rpx; color: var(--sub); }
+.ncard-oneliner { margin-top: 20rpx; font-size: 28rpx; font-weight: 500; color: var(--ink); line-height: 1.55; }
+.ncard-tags { margin-top: 18rpx; display: flex; flex-wrap: wrap; gap: 10rpx; align-items: center; }
+.ncard-tag {
+  font-size: 21rpx; padding: 4rpx 16rpx;
+  border: var(--bw-thin) solid var(--ink); border-radius: var(--r-full);
+  color: var(--ink);
+}
+.ncard-flip {
+  font-size: 21rpx; padding: 4rpx 16rpx;
+  background: var(--accent-soft); color: var(--accent-ink);
+  border: var(--bw-thin) solid var(--ink); border-radius: var(--r-full);
+  font-weight: 600;
+}
+.ncard-dots { justify-content: center; margin-top: 4rpx; }
+.stage-indicator.ncard-dots.on { margin-top: 14rpx; }
+
+/* 背面：完整介绍（内滚） */
+.ncard-back-head { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; }
+.ncard-back-title { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+.ncard-back-scroll { flex: 1 1 auto; min-height: 0; margin-top: 14rpx; }
+.ncard-back-sub { font-size: 24rpx; color: var(--ink-2); }
+.ncard-back-tags { margin-top: 14rpx; display: flex; flex-wrap: wrap; gap: 10rpx; }
+.ncard-back-intro { margin-top: 16rpx; font-size: 26rpx; line-height: 1.7; color: var(--ink-2); white-space: pre-wrap; }
+.ncard-back-proof { margin: 16rpx 0 8rpx; font-size: 22rpx; color: var(--accent-deep); }
+
+/* —— 收起态：顶部胶囊条 —— */
+.ncard-bar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 14rpx;
+  margin: 16rpx 28rpx 6rpx;
+  padding: 8rpx 22rpx 8rpx 8rpx;
+  background: var(--surface);
+  border: var(--bw-thin) solid var(--ink);
+  border-radius: var(--r-full);
+  box-shadow: var(--shadow-hair);
+  animation: barIn 0.25s var(--ease) both;
+}
+@keyframes barIn { from { opacity: 0; transform: translateY(-8rpx); } to { opacity: 1; transform: translateY(0); } }
+.ncard-bar-ava {
+  flex: 0 0 auto; width: 64rpx; height: 64rpx;
+  border: var(--bw-thin) solid var(--ink); border-radius: 50%;
+  overflow: hidden;
+}
+.ncard-bar-ava .frame-toon { font-size: 30rpx; }
+.ncard-bar-name { flex: 1; min-width: 0; font-size: 27rpx; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ncard-bar-chip {
+  flex: 0 0 auto; font-size: 22rpx; font-weight: 600;
+  padding: 4rpx 18rpx;
+  background: var(--accent-soft); color: var(--accent-ink);
+  border: var(--bw-thin) solid var(--ink); border-radius: var(--r-full);
 }
 
 /* —— 全屏立绘模式（星野式：立绘铺底 + 气泡浮层）—— */
@@ -219,11 +292,23 @@
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .chip:active { transform: translate(4rpx, 4rpx); box-shadow: none; }
-/* 引导问题 */
+/* 第三幕：引导问题=手写便签——糖果浅底、微旋转、错落贴入（仅开场邀请，角色层词汇） */
 .chip.q {
-  background: var(--fill);
-  color: var(--ink);
+  flex: 1 1 100%;
+  text-align: left;
+  padding: 20rpx 26rpx;
+  border-radius: var(--r-md);
+  box-shadow: 4rpx 4rpx 0 var(--ink);
+  font-size: 27rpx;
+  line-height: 1.4;
 }
+.chip.q.note-0 { background: #fff3d1; color: #4a3502; transform: rotate(-1.2deg); animation: noteIn0 0.32s var(--ease-spring) 0.05s backwards; }
+.chip.q.note-1 { background: var(--accent-soft); color: var(--accent-ink); transform: rotate(0.9deg); animation: noteIn1 0.32s var(--ease-spring) 0.14s backwards; }
+.chip.q.note-2 { background: #fbeaf0; color: #72243e; transform: rotate(-0.7deg); animation: noteIn2 0.32s var(--ease-spring) 0.23s backwards; }
+@keyframes noteIn0 { from { opacity: 0; transform: translateY(14rpx) rotate(-1.2deg); } }
+@keyframes noteIn1 { from { opacity: 0; transform: translateY(14rpx) rotate(0.9deg); } }
+@keyframes noteIn2 { from { opacity: 0; transform: translateY(14rpx) rotate(-0.7deg); } }
+.chip.q:active { transform: translate(4rpx, 4rpx) rotate(0deg); box-shadow: 0 0 0 var(--ink); }
 /* 行动入口（转化）：深色强调 */
 .chip.act {
   background: var(--ink);

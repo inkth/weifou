@@ -12,10 +12,9 @@
   </view>
 
   <block wx:else>
-  <!-- 角色舞台：点击任意处进完整主页（预约/打赏/联系都在那）。
-       tier-* 切氛围档、ambStyle 注入头像同色系光晕、stageEntered 触发开幕、
-       (pending||introState) 让整台戏随思考/说话升温 -->
-  <view class="stage tier-{{stageTier}} {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}} {{showInput ? 'compact' : ''}}"
+  <!-- 立绘模式：角色舞台（点击进关于抽屉），沉浸皮肤保持原样 -->
+  <view wx:if="{{liheSrc}}"
+        class="stage tier-{{stageTier}} {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}}"
         style="{{ambStyle}}" bindtap="openAbout">
     <view class="amb-layer">
       <view class="amb-wash"></view>
@@ -23,22 +22,69 @@
       <view class="amb-blob amb-blob-1"></view>
       <view class="amb-blob amb-blob-2"></view>
     </view>
-
-    <!-- 画框形象（无专属立绘时的"脸"）：新粗野拱窗 + 首字 toon 呼吸 -->
-    <view wx:if="{{!liheSrc}}" class="stage-frame">
-      <view class="frame-toon">{{stageInitial}}</view>
-    </view>
-
     <view class="stage-meta">
       <view class="stage-name">{{realName ? realName + ' 的 AI 分身' : '正在连线…'}} <text class="stage-more">›</text></view>
-      <!-- 副标题优先 oneLiner：访客 3 秒内完成"这是谁、值不值得聊"的判断 -->
       <view class="stage-status muted">{{oneLiner || (pending ? '思考中…' : '分身随时答 · 点这里看 TA 的主页')}}</view>
     </view>
-
     <view class="stage-indicator {{(pending || introState === 'thinking') ? 'on' : ''}}">
       <view class="dot"></view><view class="dot"></view><view class="dot"></view>
     </view>
   </view>
+
+  <!-- 名片开场（无立绘）：三幕——递卡→开口→便签。开聊后收成顶部胶囊条。 -->
+  <block wx:if="{{!liheSrc}}">
+    <view wx:if="{{!cardCompact}}"
+          class="ncard-wrap {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}}"
+          style="{{ambStyle}}">
+      <view class="ncard {{cardFlipped ? 'flipped' : ''}}">
+        <view class="ncard-inner">
+          <!-- 正面：信任信息一次给足（点卡翻面） -->
+          <view class="ncard-face ncard-front" bindtap="flipCard">
+            <view class="ncard-sticker">AI 分身 · 随时在线</view>
+            <view class="ncard-row">
+              <view class="ncard-frame"><view class="frame-toon">{{stageInitial}}</view></view>
+              <view class="ncard-id">
+                <view class="ncard-name">{{realName || '正在连线…'}}</view>
+                <view class="ncard-title" wx:if="{{title || company}}">{{title}}{{title && company ? ' · ' : ''}}{{company}}</view>
+                <view class="ncard-proof" wx:if="{{trustLine}}">{{trustLine}}</view>
+                <view class="ncard-proof" wx:elif="{{city}}">{{city}}</view>
+              </view>
+            </view>
+            <view class="ncard-oneliner" wx:if="{{oneLiner}}">{{oneLiner}}</view>
+            <view class="ncard-tags">
+              <text class="ncard-tag" wx:for="{{cardTags}}" wx:key="*this">{{item}}</text>
+              <text class="ncard-flip">翻面看详情 ↻</text>
+            </view>
+            <view class="stage-indicator ncard-dots {{(pending || introState === 'thinking') ? 'on' : ''}}">
+              <view class="dot"></view><view class="dot"></view><view class="dot"></view>
+            </view>
+          </view>
+          <!-- 背面：完整介绍（只有"翻回"按钮可翻，内容可滚动） -->
+          <view class="ncard-face ncard-back">
+            <view class="ncard-back-head">
+              <view class="ncard-back-title">关于 {{realName}}</view>
+              <view class="ncard-flip" bindtap="flipCard">↻ 翻回</view>
+            </view>
+            <scroll-view class="ncard-back-scroll" scroll-y>
+              <view class="ncard-back-sub" wx:if="{{title || company || city}}">{{title}}{{title && (company || city) ? ' · ' : ''}}{{company}}{{company && city ? ' · ' : ''}}{{city}}</view>
+              <view class="ncard-back-tags" wx:if="{{tags.length}}">
+                <text class="ncard-tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
+              </view>
+              <view class="ncard-back-intro" wx:if="{{fullIntro}}">{{fullIntro}}</view>
+              <view class="ncard-back-proof" wx:if="{{trustLine}}">{{trustLine}}</view>
+            </scroll-view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 收起态：顶部胶囊条（点击重新展开名片） -->
+    <view wx:else class="ncard-bar" bindtap="expandCard">
+      <view class="ncard-bar-ava" style="{{ambStyle}}"><view class="frame-toon">{{stageInitial}}</view></view>
+      <view class="ncard-bar-name">{{realName}} 的 AI 分身</view>
+      <view class="ncard-bar-chip">名片</view>
+    </view>
+  </block>
 
   <scroll-view class="msg-list" scroll-y scroll-into-view="msg-{{messages.length-1}}" enhanced show-scrollbar="{{false}}">
     <block wx:for="{{messages}}" wx:key="index">
@@ -63,10 +109,10 @@
   <!-- 选项区：开场动画结束后引导问题淡入；行动入口在首轮回答后才出现，开场聚焦"开始聊" -->
   <view class="choices {{startersRevealed ? 'revealed' : ''}}" wx:if="{{!pending && startersRevealed}}">
     <view wx:if="{{starters.length && !answeredOnce}}" class="choices-hint muted">你可以这样开始 ↓</view>
-    <view class="chip q" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
+    <view class="chip q note-{{index % 3}}" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
 
     <block wx:if="{{answeredOnce && !isMine}}">
-      <view class="chip act" bindtap="openAbout">关于 TA</view>
+      <view class="chip act" bindtap="openAboutEntry">关于 TA</view>
       <view class="chip act" wx:if="{{contactAvailable}}" bindtap="onContact">联系本人</view>
       <view class="chip act" bindtap="openTip">打赏 TA</view>
       <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
