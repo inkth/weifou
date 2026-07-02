@@ -50,7 +50,8 @@
         </block>
         <text class="cp-all">· 共点亮 {{concept.lit}}/{{concept.total}}</text>
       </view>
-      <view class="cp-note">{{concept.note || '看概念地图 ›'}}</view>
+      <view wx:if="{{reviewDue > 0}}" class="cp-review" catchtap="startReview">🔁 复习 {{reviewDue}}</view>
+      <view wx:else class="cp-note">{{concept.note || '看概念地图 ›'}}</view>
     </view>
     <view class="cp-track"><view class="cp-fill" style="width: {{concept.curPct}}%;"></view></view>
   </view>

@@ -11,6 +11,7 @@ import (
 	"weifou-server/internal/membership"
 	"weifou-server/internal/middleware"
 	"weifou-server/internal/models"
+	"weifou-server/internal/toolagent"
 )
 
 type Handler struct {
@@ -107,8 +108,13 @@ func (h *Handler) toolCard(a *models.ToolAgent, userID string, member bool, idx 
 	if h.db.First(&ent, "user_id = ? AND agent_id = ?", userID, a.ID).Error == nil {
 		remaining = ent.Remaining
 	}
+	// L2 催课条：学过的 Agent 用动态学习状态替代静态 tagline（用户没点进来，主动性已发生）。
+	line, nudge := a.Tagline, false
+	if s, ok := toolagent.NudgeLine(h.db, a, userID); ok && s != "" {
+		line, nudge = s, true
+	}
 	return gin.H{
-		"key": a.Slug, "type": "tool", "name": a.Name, "line": a.Tagline,
+		"key": a.Slug, "type": "tool", "name": a.Name, "line": line, "nudge": nudge,
 		"initial": initial, "tier": toolTiers[idx%len(toolTiers)], "agentId": a.ID,
 		"member": member, "freeRemaining": remaining,
 	}

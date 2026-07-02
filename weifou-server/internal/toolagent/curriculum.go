@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -40,6 +41,143 @@ var curricula = map[string][]seedConcept{
 	"learn-science":    scienceConcepts,
 	"learn-aesthetics": aestheticsConcepts,
 	"learn-marketing":  marketingConcepts,
+}
+
+// hookCheck 人工精编内容（开课钩子 + 检验题）。与 seedConcept 分开存：
+// 只有旗舰课做精编，7 份未精编课程表的字面量不必全改；SeedConcepts 时按 slug 合并写入。
+type hookCheck struct{ Hook, Check string }
+
+// curatedContent：agent slug → concept slug → 精编内容。目前只有学心理（概念型旗舰课）。
+// 这是这条产品线的护城河：钩子制造好奇缺口、检验题考迁移应用——不是模型现编能稳定给出的品质。
+var curatedContent = map[string]map[string]hookCheck{
+	"learn-psychology": psychologyContent,
+}
+
+// ============================ 学心理 · 精编钩子与检验题 ============================
+// 钩子＝可直接开口的生活场景问题（制造好奇缺口，不剧透答案）；
+// 检验题＝应用/迁移型（换一个场景让学员自己用，答对才配得上「点亮」）。
+
+var psychologyContent = map[string]hookCheck{
+	"loss-aversion": {
+		Hook:  "丢 100 块的难受，和捡到 100 块的开心，哪个感觉更强烈？为什么几乎所有人都答前者？",
+		Check: "商家说「不买就亏了」和「买了就赚了」，哪句更戳人？用损失厌恶解释给我听。",
+	},
+	"confirmation-bias": {
+		Hook:  "有没有发现：越刷手机，越觉得自己原来的看法是对的？这不是巧合。",
+		Check: "如果你想验证「TA 是不是不喜欢我」，该怎么找证据才能避开确认偏误的坑？",
+	},
+	"anchoring": {
+		Hook:  "标价 999 划掉改 399，你会觉得捡了便宜——哪怕它本来就只值 300。为什么？",
+		Check: "谈工资时先开口报数字是吃亏还是占便宜？用锚定效应分析一下。",
+	},
+	"fundamental-attribution-error": {
+		Hook:  "同事迟到你觉得 TA 散漫，自己迟到你怪地铁——发现这个双标了吗？",
+		Check: "看到有人开车加塞，除了「素质差」，试着给出两个处境层面的解释。",
+	},
+	"cognitive-dissonance": {
+		Hook:  "为什么排了三小时队才吃上的餐厅，你更容易说它好吃——哪怕其实一般？",
+		Check: "一个天天熬夜的人说「睡太多反而伤身」——他心里发生了什么？他在化解什么？",
+	},
+	"emotional-regulation": {
+		Hook:  "情绪上头的时候，你是硬压下去、直接发出来，还是有第三条路？",
+		Check: "朋友气到想发飙，除了说「冷静点」，你能给出两个真正有用的调节动作吗？",
+	},
+	"cognitive-reappraisal": {
+		Hook:  "同一场大雨，有人觉得倒霉，有人觉得浪漫——差别不在雨，在哪？",
+		Check: "「演讲前心跳加速」可以怎么重新解读，让紧张变成助力而不是拖累？",
+	},
+	"maslow-hierarchy": {
+		Hook:  "为什么有人拿着高薪却觉得空虚，有人温饱刚够却干劲十足？",
+		Check: "一个不缺钱的人辞职去山区支教——用需求层次分析，TA 在满足哪一层？",
+	},
+	"growth-mindset": {
+		Hook:  "「我数学不行」和「我数学还没学明白」——这两句话会长出两种完全不同的人生。",
+		Check: "孩子考好了，夸「你真聪明」和夸「你方法用得好」，哪个长期更伤人？为什么？",
+	},
+	"attachment-styles": {
+		Hook:  "有人一恋爱就患得患失，有人一亲密就想逃——这套模式其实童年就写好了草稿。",
+		Check: "「对方三小时没回消息」——安全型、焦虑型、回避型各会怎么反应？",
+	},
+	"self-esteem": {
+		Hook:  "有人被批评一句就崩溃，有人却能笑着说「有道理」——底下垫着的东西不一样。",
+		Check: "高自尊和自恋有什么区别？举一个能把两者分辨开的场景。",
+	},
+	"defense-mechanisms": {
+		Hook:  "「我才没生气！」——说这话的人在干嘛？心理有一整套自我保护的花招。",
+		Check: "吃不到葡萄说葡萄酸，是哪种防御机制？再从你身边举一个别的例子。",
+	},
+	"sunk-cost": {
+		Hook:  "电影很难看，但票钱已经花了，你会看完吗？看完的那一刻，你其实亏了两次。",
+		Check: "「都谈了五年了，分了多可惜」——用沉没成本帮这位朋友算笔账。",
+	},
+	"dunning-kruger": {
+		Hook:  "为什么刚学会一点的人最敢说「这很简单」，真正的高手反而处处谨慎？",
+		Check: "一个人自信爆棚，能说明他很懂吗？怎么用这个效应判断该信谁？",
+	},
+	"availability-heuristic": {
+		Hook:  "坐飞机和坐汽车哪个更危险？大多数人的直觉都答错了——因为空难总上新闻。",
+		Check: "刷到几条裁员视频就觉得「经济要完」，这个思维捷径出了什么问题？",
+	},
+	"rumination": {
+		Hook:  "半夜回想白天说错的那句话，翻来覆去放了二十遍——这不是反思，是反刍。",
+		Check: "反思和反刍的分界线在哪？给一个能把反刍拉回反思的具体做法。",
+	},
+	"flow": {
+		Hook:  "有没有过一抬头三小时没了的体验？那种忘我状态，其实是可以被设计出来的。",
+		Check: "玩游戏容易忘我、写报告却很难——用「挑战×技能」解释，并给报告一个改造建议。",
+	},
+	"hedonic-adaptation": {
+		Hook:  "换新手机的快乐能撑几天？涨薪呢？为什么好事带来的快乐总是撑不久？",
+		Check: "既然快乐会被适应磨平，怎么花钱才能买到更持久的快乐？给两个符合原理的策略。",
+	},
+	"intrinsic-motivation": {
+		Hook:  "给爱画画的孩子发奖金，TA 反而不爱画了——奖励怎么会杀死热情？",
+		Check: "想让自己坚持跑步，怎么设计才能保护内在动机，而不是靠打卡奖励硬撑？",
+	},
+	"delayed-gratification": {
+		Hook:  "一颗现在就吃的糖，和两颗十五分钟后的糖——这个实验据说预测了孩子们的人生？",
+		Check: "延迟满足只是天生自控力强吗？环境可以怎么帮一个人「忍得住」？",
+	},
+	"self-efficacy": {
+		Hook:  "两个能力差不多的人，一个觉得「我能行」一个觉得「我不行」——结果真的会不一样。",
+		Check: "自我效能和盲目自信有什么区别？怎么帮一个总觉得自己不行的人真实地建立它？",
+	},
+	"anxious-attachment": {
+		Hook:  "消息三分钟没回就开始脑补分手大戏——这不是作，是有来处的。",
+		Check: "焦虑型的「反复求确认」为什么常把对方越推越远？这个循环怎么破？",
+	},
+	"avoidant-attachment": {
+		Hook:  "明明喜欢，却在关系升温时突然冷下来想逃——TA 到底在怕什么？",
+		Check: "和回避型的人相处，「追问你到底怎么了」为什么适得其反？换个什么做法更好？",
+	},
+	"social-proof": {
+		Hook:  "两家奶茶店，一家排长队一家空着，你会选哪家——哪怕根本不知道哪家好喝？",
+		Check: "直播间挂「已售 10 万单」在利用什么心理？什么时候跟着别人走反而危险？",
+	},
+	"conformity": {
+		Hook:  "一道明显答错的题，前面五个人都答错时，你还敢说出正确答案吗？实验里很多人不敢。",
+		Check: "从众和虚心听取意见的边界在哪？各举一个「该顶住」和「该听劝」的场景。",
+	},
+	"self-serving-bias": {
+		Hook:  "考好了是我聪明，考砸了是题太偏——这本账人人都在记。",
+		Check: "团队复盘时怎么设计流程，才能不让每个人的自利偏误把责任推来推去？",
+	},
+	"impostor-syndrome": {
+		Hook:  "「其实我没那么行，只是运气好还没被拆穿」——越优秀的人越容易这么想，为什么？",
+		Check: "朋友升职了却说「我配不上」——除了安慰，用这个概念帮 TA 看清发生了什么。",
+	},
+	"self-compassion": {
+		Hook:  "朋友搞砸了你会安慰，自己搞砸了你会骂自己——为什么双标的方向反了？",
+		Check: "自我关怀会不会让人放纵摆烂？说说它和「对自己没要求」的区别。",
+	},
+	"boundaries": {
+		Hook:  "「你怎么这么见外」——有没有发现，这句话总出现在你想拒绝的时候？",
+		Check: "同事总把活推给你，怎么立边界既守住自己又不撕破脸？给一句可以直接说出口的话。",
+	},
+	"gaslighting": {
+		Hook:  "「你太敏感了，我根本没那么说过」——这种话听多了，人真的会怀疑自己的记忆。",
+		Check: "煤气灯操纵和普通的记忆分歧怎么区分？给两个识别信号。",
+	},
 }
 
 // ============================ 学心理 · 30 概念 ============================
@@ -351,20 +489,24 @@ func SeedConcepts(db *gorm.DB) {
 		if db.Where("slug = ?", agentSlug).First(&agent).Error != nil {
 			continue // Agent 尚未 seed（理论上 Seed 先跑）
 		}
+		content := curatedContent[agentSlug] // 可能为 nil：未精编课程返回零值 hookCheck
 		slugs := make([]string, 0, len(list))
 		for i := range list {
 			sc := list[i]
+			hc := content[sc.Slug]
 			slugs = append(slugs, sc.Slug)
 			var existing models.AgentConcept
 			if db.Where("agent_id = ? AND slug = ?", agent.ID, sc.Slug).First(&existing).Error == gorm.ErrRecordNotFound {
 				db.Create(&models.AgentConcept{
 					ID: idgen.New(), AgentID: agent.ID, Slug: sc.Slug,
-					Theme: sc.Theme, Tier: sc.Tier, Name: sc.Name, Blurb: sc.Blurb, Sort: i,
+					Theme: sc.Theme, Tier: sc.Tier, Name: sc.Name, Blurb: sc.Blurb,
+					Hook: hc.Hook, Check: hc.Check, Sort: i,
 				})
 				continue
 			}
 			db.Model(&existing).Updates(map[string]interface{}{
-				"theme": sc.Theme, "tier": sc.Tier, "name": sc.Name, "blurb": sc.Blurb, "sort": i,
+				"theme": sc.Theme, "tier": sc.Tier, "name": sc.Name, "blurb": sc.Blurb,
+				"hook": hc.Hook, "check": hc.Check, "sort": i,
 			})
 		}
 		// 清除不在当前清单的旧概念（user_concepts 里的孤儿记录无害，进度视图只遍历现有概念）。
@@ -392,6 +534,94 @@ func buildConceptPrompt(head string, list []seedConcept) string {
 		b.WriteString(c.Name)
 	}
 	b.WriteString("\n== 概念地图结束 ==\n你只在这张地图的范围内教学；可主动提示「我们已经聊到 X，要不要顺着去 Y」，陪用户一步步把整张地图点亮。")
+	return b.String()
+}
+
+// ============================ 复习引擎（检索练习） ============================
+// 点亮≠记住：隔期抽查（retrieval practice）才是把概念钉进长期记忆的机制。
+// 到期窗口：已点亮(1) 3 天、已掌握(2) 7 天没再碰过 → 到期。
+// touches 每次命中都刷新 updated_at，所以「对话里又聊到」天然等于「复习过」。
+
+const (
+	reviewDueLitDays      = 3
+	reviewDueMasteredDays = 7
+)
+
+// reviewPick 挑该用户在该 Agent 下待复习的概念，最久未碰的在前。
+// onlyDue=true 只要过了到期窗口的；false 则不设窗口（用户主动要复习时，抽最生疏的也行）。
+// limit<=0 表示不限量（用于数徽章）。
+func reviewPick(db *gorm.DB, userID, agentID string, limit int, onlyDue bool) []models.AgentConcept {
+	var ucs []models.UserConcept
+	db.Where("user_id = ? AND agent_id = ? AND level >= 1", userID, agentID).
+		Order("updated_at asc").Find(&ucs)
+	if len(ucs) == 0 {
+		return nil
+	}
+	now := time.Now()
+	var ids []string
+	for i := range ucs {
+		if onlyDue {
+			days := reviewDueLitDays
+			if ucs[i].Level >= 2 {
+				days = reviewDueMasteredDays
+			}
+			if now.Sub(ucs[i].UpdatedAt) < time.Duration(days)*24*time.Hour {
+				continue
+			}
+		}
+		ids = append(ids, ucs[i].ConceptID)
+		if limit > 0 && len(ids) >= limit {
+			break
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	var cs []models.AgentConcept
+	db.Where("id IN ?", ids).Find(&cs)
+	byID := make(map[string]models.AgentConcept, len(cs))
+	for i := range cs {
+		byID[cs[i].ID] = cs[i]
+	}
+	out := make([]models.AgentConcept, 0, len(ids))
+	for _, id := range ids {
+		if c, ok := byID[id]; ok {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// dueCount 到期待复习的概念数（首页催课条 / 对话页复习徽章共用）。
+func dueCount(db *gorm.DB, userID, agentID string) int {
+	return len(reviewPick(db, userID, agentID, 0, true))
+}
+
+// reviewDirective 复习挑战的编排指令（chat mode=review 时追加为 system 段）。
+// 优先抽到期的；没有到期就抽最生疏的已点亮概念——学员主动要复习不该被拒之门外。
+// 一个可复习的概念都没有（还没点亮过任何东西）时返回 ""。
+func (h *Handler) reviewDirective(userID, agentID string) string {
+	picked := reviewPick(h.db, userID, agentID, 3, true)
+	if len(picked) == 0 {
+		picked = reviewPick(h.db, userID, agentID, 3, false)
+	}
+	if len(picked) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("== 复习挑战（快问快答，仅你可见；本指令优先于上面的开场编排）==\n")
+	b.WriteString("学员点了「复习挑战」。本轮起只做快问快答复习，不开新概念：一次只出一题，等学员回答后先判定——答对就一句确认加一个小延伸，答错或含糊就一句话纠正讲透——再出下一题。全部问完后用一两句总结战果（哪些保住了、哪个建议重学），语气轻快，别拖长。\n待复习概念（按生疏程度排）：\n")
+	for i := range picked {
+		c := picked[i]
+		b.WriteString(strconv.Itoa(i+1) + ". " + c.Name + "（" + c.Blurb + "）")
+		if c.Check != "" {
+			b.WriteString(" 检验题：" + c.Check)
+		} else {
+			b.WriteString(" 检验题：你自拟一道应用/迁移型的题（换个生活场景让学员自己用，不考背定义）。")
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("== 复习挑战结束 ==")
 	return b.String()
 }
 
@@ -639,8 +869,17 @@ func (h *Handler) conceptStateBrief(userID, agentID string, fresh bool) string {
 	}
 	if next != nil {
 		b.WriteString("建议下一个概念：" + next.Name + "（" + next.Theme + "｜" + next.Blurb + "）。\n")
+		if next.Hook != "" {
+			b.WriteString("　开课钩子（精编，用它开场，可贴学员语境微调措辞）：" + next.Hook + "\n")
+		}
+		if next.Check != "" {
+			b.WriteString("　检验题（精编，讲透后用它检验，学员答上来才算真点亮）：" + next.Check + "\n")
+		}
 	} else {
 		b.WriteString("整张地图已点亮：转入复习深化，挑「已点亮未掌握」的概念出检验，往掌握推。\n")
+	}
+	if n := dueCount(h.db, userID, agentID); n > 0 {
+		b.WriteString("待复习：有 " + strconv.Itoa(n) + " 个已点亮的概念好几天没碰了。若学员没带自己的问题来，可先提议花一分钟快问快答热个身，再开新课。\n")
 	}
 	if fresh {
 		if lit == 0 {
@@ -672,4 +911,74 @@ func (h *Handler) bumpConcept(userID, agentID, conceptID string, level int) {
 		updates["level"] = level
 	}
 	h.db.Model(&uc).Updates(updates)
+}
+
+// ============================ 首页催课条（L2 再入口主动） ============================
+
+// NudgeLine 给「钉在首页」的学习 Agent 一句动态状态，替代静态 tagline——
+// 用户还没点进来，主动性已经发生。返回 ("", false) 表示无状态可催（保持 tagline）。
+// 措辞纪律：不做「今天」类日期判断，句子本身永远可行动；没开始学的人不催（tagline 即邀请）。
+func NudgeLine(db *gorm.DB, a *models.ToolAgent, userID string) (string, bool) {
+	if db == nil || a == nil || userID == "" {
+		return "", false
+	}
+	if a.Concept {
+		var concepts []models.AgentConcept
+		db.Where("agent_id = ?", a.ID).Order("sort asc").Find(&concepts)
+		if len(concepts) == 0 {
+			return "", false
+		}
+		var ucs []models.UserConcept
+		db.Where("user_id = ? AND agent_id = ?", userID, a.ID).Find(&ucs)
+		levels := make(map[string]int, len(ucs))
+		for i := range ucs {
+			levels[ucs[i].ConceptID] = ucs[i].Level
+		}
+		lit, mastered := 0, 0
+		litByTier, totByTier := map[int]int{}, map[int]int{}
+		var next *models.AgentConcept
+		for i := range concepts {
+			c := &concepts[i]
+			totByTier[c.Tier]++
+			if levels[c.ID] >= 1 {
+				lit++
+				litByTier[c.Tier]++
+			} else if next == nil {
+				next = c
+			}
+			if levels[c.ID] >= 2 {
+				mastered++
+			}
+		}
+		if lit == 0 {
+			return "", false // 还没开始学：tagline 本身就是邀请，不催
+		}
+		if n := dueCount(db, userID, a.ID); n > 0 {
+			return "🔁 " + strconv.Itoa(n) + " 个概念好几天没碰了，快问快答保住它们", true
+		}
+		if next != nil {
+			return "下一个待点亮：『" + next.Name + "』 · " + tierLabels[next.Tier] + " " +
+				strconv.Itoa(litByTier[next.Tier]) + "/" + strconv.Itoa(totByTier[next.Tier]), true
+		}
+		if mastered < len(concepts) {
+			return "整张地图已点亮 · 还剩 " + strconv.Itoa(len(concepts)-mastered) + " 个概念待「掌握」", true
+		}
+		return "整张地图已通关 🎉 随时来聊聊新的困惑", true
+	}
+	if a.Assess {
+		var sk models.AgentSkill
+		if db.First(&sk, "user_id = ? AND agent_id = ?", userID, a.ID).Error != nil || sk.Assessed == 0 {
+			return "", false // 未定级：tagline 已是邀请
+		}
+		level := levelFromDims(sk.Fluency, sk.Accuracy, sk.Expression)
+		weak, min := "流利", sk.Fluency
+		if sk.Accuracy < min {
+			weak, min = "准确", sk.Accuracy
+		}
+		if sk.Expression < min {
+			weak = "表达"
+		}
+		return "Lv." + strconv.Itoa(level) + " " + tierName(level) + " · 弱项「" + weak + "」，今天练两句？", true
+	}
+	return "", false
 }

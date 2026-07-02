@@ -40,7 +40,7 @@
       <view class="acard-ic"><text>{{item.initial}}</text></view>
       <view class="acard-meta">
         <view class="acard-name">{{item.name}}</view>
-        <view class="acard-tag">{{item.line}}</view>
+        <view class="acard-tag {{item.nudge ? 'nudge' : ''}}">{{item.line}}</view>
       </view>
     </view>
     <view class="acard-foot">

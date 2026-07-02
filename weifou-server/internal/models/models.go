@@ -420,6 +420,8 @@ type AgentConcept struct {
 	Tier    int    `gorm:"default:1" json:"tier"`                                    // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
 	Name    string `gorm:"size:64" json:"name"`                                      // 概念名，如 "锚定效应"
 	Blurb   string `gorm:"size:255" json:"blurb"`                                    // 一句话点题（前端展示 + 给打点 LLM 锚定）
+	Hook    string `gorm:"size:255" json:"-"`                                        // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟
+	Check   string `gorm:"size:255" json:"-"`                                        // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
 	Sort    int    `gorm:"default:0" json:"sort"`
 }
 

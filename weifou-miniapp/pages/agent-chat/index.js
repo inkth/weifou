@@ -27,6 +27,7 @@ Page({
     historyVisible: false,
     skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
     concept: null,        // 概念型 Agent 的点亮进度（null/enabled=false 时不展示）
+    reviewDue: 0,         // 到期待复习的概念数（>0 时进度条上出现「复习挑战」徽章）
     conceptMapVisible: false, // 概念地图抽屉
     celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
 
@@ -88,6 +89,7 @@ Page({
         sessions: this._decorate(sessions || []),
         skill: sk && sk.enabled ? sk : null,
         concept: cp && cp.enabled ? this._concept(cp) : null,
+        reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
         novel: !!d.novel,
         music: !!d.music,
         loading: false,
@@ -138,17 +140,29 @@ Page({
     this.setData({ draft: e.detail.value });
   },
 
-  async send() {
+  send() {
     const content = (this.data.draft || '').trim();
+    if (!content) return;
+    this.setData({ draft: '' });
+    this._ask(content);
+  },
+
+  // 复习挑战：快问快答已点亮概念（检索练习，答对保住/升级档位）。
+  startReview() {
+    if (this.data.pending) return;
+    this.setData({ reviewDue: 0 }); // 先清徽章：防连点，真实到期数下次进页刷新
+    this._ask('开始复习挑战', 'review');
+  },
+
+  async _ask(content, mode) {
     if (!content || this.data.pending) return;
     this.setData({
-      draft: '',
       pending: true,
       messages: this.data.messages.concat({ role: 'user', content }),
     });
     this._scrollEnd();
     try {
-      const data = await chatAgent(this.data.id, content, this.data.currentSessionId);
+      const data = await chatAgent(this.data.id, content, this.data.currentSessionId, mode);
       const member = !!data.member;
       const remaining = member ? this.data.remaining : data.remaining;
       const patch = {

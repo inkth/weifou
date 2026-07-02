@@ -127,6 +127,7 @@ func (h *Handler) mine(c *gin.Context) error {
 type chatReq struct {
 	Content   string `json:"content" binding:"required"`
 	SessionID string `json:"sessionId"` // 续聊指定会话；空 = 新开一段
+	Mode      string `json:"mode"`      // "review" = 复习挑战（概念型专用：只快问快答已点亮概念，不开新课）
 }
 
 func (h *Handler) chat(c *gin.Context) error {
@@ -184,6 +185,12 @@ func (h *Handler) chat(c *gin.Context) error {
 	if a.Concept {
 		if brief := h.conceptStateBrief(auth.UserID, a.ID, !resume); brief != "" {
 			sysPrompt += "\n\n" + brief
+		}
+		// 复习挑战：追加快问快答编排（放进度简报之后，指令内已声明优先于开场编排）。
+		if req.Mode == "review" {
+			if d := h.reviewDirective(auth.UserID, a.ID); d != "" {
+				sysPrompt += "\n\n" + d
+			}
 		}
 	}
 	var recent []models.AgentMessage
@@ -271,6 +278,7 @@ func (h *Handler) concepts(c *gin.Context) error {
 	}
 	out := h.loadConceptProgress(auth.UserID, a.ID)
 	out["enabled"] = true
+	out["due"] = dueCount(h.db, auth.UserID, a.ID) // 到期待复习数（对话页复习徽章）
 	httpx.OK(c, out)
 	return nil
 }

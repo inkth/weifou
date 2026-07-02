@@ -73,7 +73,8 @@ Page({
     const specialists = cards.filter((c) => c !== primary).map((c) => {
       const fr = c.freeRemaining;
       const pill = c.member ? '会员畅用' : (typeof fr === 'number' && fr >= 0 ? `免费剩 ${fr} 次` : '');
-      return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, kind: c.type === 'dating' ? 'dating' : 'tool', pill };
+      // nudge=催课条：line 已是服务端算好的动态学习状态（下一个概念/待复习/段位弱项），高亮显示
+      return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, nudge: !!c.nudge, kind: c.type === 'dating' ? 'dating' : 'tool', pill };
     });
 
     this.setData({ chief, specialists, loading: false });
