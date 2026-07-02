@@ -10,7 +10,7 @@
   background: #fff;
   border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: 0 8rpx 32rpx rgba(31, 35, 48, 0.08);
+  box-shadow: 0 8rpx 32rpx rgba(20, 40, 30, 0.08);
 }
 
 .poster-canvas { display: block; }

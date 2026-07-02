@@ -40,7 +40,7 @@
   word-break: break-all;
 }
 /* 访客气泡白底、AI 气泡暗场玻璃（与对话立绘模式一致） */
-.bubble.user { background: rgba(255, 255, 255, 0.92); color: #1f2330; }
+.bubble.user { background: rgba(255, 255, 255, 0.92); color: var(--ink); }
 .bubble.assistant {
   background: rgba(18, 20, 28, 0.55);
   color: #fff;

@@ -1,13 +1,14 @@
+/* 设置页：令牌化表单（真源见 app.wxss）。 */
 .page { padding: 32rpx 32rpx 120rpx; }
 .card { margin-bottom: 24rpx; }
-.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 24rpx; }
+.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 24rpx; color: var(--ink); }
 
 .field { margin-bottom: 24rpx; }
-.label { font-size: 26rpx; color: #4a5070; margin-bottom: 12rpx; }
+.label { font-size: 26rpx; color: var(--ink-2); margin-bottom: 12rpx; }
 .input {
   height: 80rpx;
-  background: #f5f6fa;
-  border-radius: 16rpx;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
   padding: 0 24rpx;
   font-size: 30rpx;
 }
@@ -17,4 +18,4 @@
 
 .save { margin-top: 16rpx; }
 .regen { margin-top: 16rpx; }
-.danger { color: #b34040; }
+.danger { color: var(--danger); }

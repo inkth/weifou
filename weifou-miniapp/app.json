@@ -26,9 +26,9 @@
   ],
   "tabBar": {
     "custom": true,
-    "color": "#8a90a0",
+    "color": "#8a9a93",
     "selectedColor": "#18b690",
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "#fbfcfb",
     "list": [
       { "pagePath": "pages/discover/index", "text": "分身" },
       { "pagePath": "pages/explore/index", "text": "发现" },
@@ -37,10 +37,10 @@
   },
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#fbfcfb",
     "navigationBarTitleText": "微否",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f5f6fa"
+    "backgroundColor": "#fbfcfb"
   },
   "plugins": {
     "WechatSI": {

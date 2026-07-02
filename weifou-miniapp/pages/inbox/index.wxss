@@ -1,23 +1,29 @@
+/* 收件箱 = 主人后台：清新浅色令牌（真源见 app.wxss），横滑胶囊 Tab + 白卡列表。 */
 .page { padding: 24rpx 32rpx 60rpx; }
 
-.muted { color: #9a9da6; }
+.muted { color: var(--sub); }
 
+/* 横滑胶囊 Tab：五个分区不挤压，活跃态墨青实底 */
 .tabs {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
+  white-space: nowrap;
+  margin: 0 -32rpx 24rpx;
+  padding: 0 32rpx;
 }
 .tab {
-  flex: 1;
-  text-align: center;
-  padding: 16rpx 0;
+  display: inline-block;
+  padding: 14rpx 30rpx;
+  margin-right: 14rpx;
   font-size: 26rpx;
-  color: #6b6e78;
-  background: #fff;
-  border-radius: 999rpx;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1rpx solid var(--border);
+  border-radius: var(--r-full);
+  transition: background 0.16s var(--ease), color 0.16s var(--ease);
 }
+.tab:last-child { margin-right: 32rpx; }
 .tab.on {
-  background: #1f2330;
+  background: var(--ink);
+  border-color: var(--ink);
   color: #fff;
   font-weight: 600;
 }
@@ -25,50 +31,57 @@
 .tip { font-size: 24rpx; margin-bottom: 20rpx; line-height: 1.5; }
 .empty { text-align: center; padding-top: 120rpx; font-size: 28rpx; }
 
-/* 空收件箱破局：把"还没人来"变成可行动的分享下一步 */
-.empty-share { text-align: center; padding-top: 100rpx; }
-.es-text { font-size: 28rpx; }
+/* 空收件箱破局：把"还没人来"变成可行动的分享下一步（结构用 app.wxss 空态三层） */
+.empty-wrap { padding-top: 100rpx; }
 .es-btn {
-  display: inline-block; margin-top: 24rpx;
-  background: #1f2330; color: #fff;
-  border-radius: 999rpx; font-size: 26rpx;
+  display: inline-block; margin-top: 32rpx;
+  background: var(--ink); color: #fff;
+  border-radius: var(--r-full); font-size: 26rpx;
   padding: 0 44rpx; line-height: 78rpx;
+  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
 }
+.es-btn:active { transform: scale(0.97); opacity: 0.92; }
 
 .card {
-  background: #fff;
-  border-radius: 20rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--border);
+  border-radius: var(--r-xl);
   padding: 28rpx;
   margin-bottom: 20rpx;
+  box-shadow: var(--shadow-card);
 }
 .card.add {
   text-align: center;
-  color: #1f2330;
+  color: var(--ink);
   font-weight: 600;
-  border: 2rpx dashed #d4d6dd;
+  border: 2rpx dashed var(--border);
   background: transparent;
+  box-shadow: none;
 }
+.card.add:active { background: var(--fill-pressed); }
 .add-row { display: flex; gap: 16rpx; margin-bottom: 20rpx; }
 .add-row .card.add { flex: 1; margin-bottom: 0; padding: 24rpx 12rpx; font-size: 26rpx; }
 
-.q { font-size: 30rpx; font-weight: 600; color: #1f2330; line-height: 1.5; }
-.note { font-size: 28rpx; color: #2b2e38; line-height: 1.6; margin-top: 8rpx; word-break: break-all; }
+.q { font-size: 30rpx; font-weight: 600; color: var(--ink); line-height: 1.5; }
+.note { font-size: 28rpx; color: var(--ink-2); line-height: 1.6; margin-top: 8rpx; word-break: break-all; }
 .meta { font-size: 22rpx; margin-top: 12rpx; }
 
 .ops { display: flex; align-items: center; gap: 20rpx; margin-top: 24rpx; }
 .op {
   padding: 12rpx 32rpx;
   font-size: 26rpx;
-  border-radius: 999rpx;
-  background: #f5f6fa;
-  color: #2b2e38;
+  border-radius: var(--r-full);
+  background: var(--fill);
+  color: var(--ink-2);
+  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
 }
-.op.primary { background: #1f2330; color: #fff; }
+.op:active { transform: scale(0.96); opacity: 0.85; }
+.op.primary { background: var(--ink); color: #fff; }
 .op.contact { margin-top: 20rpx; display: inline-block; word-break: break-all; }
 .ops .meta { margin-top: 0; flex: 1; }
 
 .lead-head { display: flex; justify-content: space-between; align-items: baseline; }
-.lead-name { font-size: 28rpx; font-weight: 600; color: #1f2330; }
+.lead-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
 
 /* 主人召回：开启「新提问」微信订阅提醒（仅订阅模板已配时显示） */
 .notify-row {
@@ -77,9 +90,9 @@
   gap: 12rpx;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  border-radius: 16rpx;
+  border-radius: var(--r-md);
   padding: 20rpx 24rpx;
   margin-bottom: 20rpx;
   font-size: 26rpx;
 }
-.notify-ico { font-size: 30rpx; }
+.notify-ico { font-size: 30rpx; color: var(--accent); }

@@ -1,24 +1,25 @@
-page { background: #fbfcfb; }
+/* 谁看过我 = 清新浅色令牌（真源见 app.wxss）：白卡访客行。 */
+page { background: var(--bg); }
 .page { padding: 20rpx 28rpx calc(env(safe-area-inset-bottom) + 60rpx); }
-.muted { color: #8a9a93; }
-.empty { text-align: center; padding: 80rpx 0; color: #9aa8a1; }
+.muted { color: var(--sub); }
+.empty { text-align: center; padding: 80rpx 0; color: var(--faint); }
 
 .v-row {
   display: flex; align-items: center; gap: 24rpx;
-  background: #fff; border: 1rpx solid #ecefec; box-shadow: 0 2rpx 6rpx rgba(20, 40, 30, 0.03);
-  border-radius: 24rpx; padding: 26rpx; margin-bottom: 16rpx;
+  background: var(--surface); border: 1rpx solid var(--border); box-shadow: var(--shadow-card);
+  border-radius: var(--r-xl); padding: 26rpx; margin-bottom: 16rpx;
 }
 .v-ava { width: 88rpx; height: 88rpx; border-radius: 50%; flex-shrink: 0; }
 .v-ava-ph {
   display: flex; align-items: center; justify-content: center;
-  background: #e8f5ef; color: #0f766e; font-size: 36rpx; font-weight: 600;
+  background: var(--accent-soft); color: var(--accent-deep); font-size: 36rpx; font-weight: 600;
 }
 .v-meta { flex: 1; min-width: 0; }
-.v-name { font-size: 30rpx; font-weight: 600; color: #16241e; }
-.v-sub { font-size: 24rpx; margin-top: 6rpx; color: #8a9a93; }
-.v-go { font-size: 30rpx; color: #cfd6d2; }
-.v-noprofile { font-size: 22rpx; color: #aab4af; }
+.v-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.v-sub { font-size: 24rpx; margin-top: 6rpx; color: var(--sub); }
+.v-go { font-size: 30rpx; color: var(--faint); }
+.v-noprofile { font-size: 22rpx; color: var(--faint); }
 
 .v-empty { padding-top: 180rpx; text-align: center; }
-.v-empty-t { font-size: 34rpx; font-weight: 600; color: #16241e; margin-bottom: 16rpx; }
-.v-empty-s { font-size: 26rpx; color: #8a9a93; }
+.v-empty-t { font-size: 34rpx; font-weight: 600; color: var(--ink); margin-bottom: 16rpx; }
+.v-empty-s { font-size: 26rpx; color: var(--sub); }

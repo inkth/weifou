@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f6fa;
+  background: var(--bg);
 }
 
 /* —— 角色舞台（容器尺寸；氛围/开幕/状态/指示器/欣喜原子见 styles/stage.wxss）—— */
@@ -20,8 +20,8 @@
   justify-content: center;
   gap: 14rpx;
   padding: 28rpx 28rpx 20rpx;
-  background: #fff;
-  border-bottom: 2rpx solid var(--border);
+  background: var(--surface);
+  border-bottom: 1rpx solid var(--border);
 }
 @media (max-height: 640px) {
   .stage { height: 320rpx; gap: 10rpx; padding: 16rpx 28rpx 12rpx; }
@@ -34,7 +34,7 @@
 @keyframes liheBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 .lihe-scrim {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(245, 246, 250, 0) 30%, rgba(18, 20, 28, 0.12) 56%, rgba(18, 20, 28, 0.58) 100%);
+  background: linear-gradient(to bottom, rgba(251, 252, 251, 0) 30%, rgba(18, 20, 28, 0.12) 56%, rgba(18, 20, 28, 0.58) 100%);
 }
 .lihe.page { background: transparent; }
 /* 立绘即角色：隐藏氛围层/思考点，舞台只留名牌浮在立绘上 */
@@ -47,7 +47,7 @@
 /* 气泡浮层：AI 深色磨砂、用户碧绿，浮在立绘上更跳 */
 .lihe .msg-assistant .bubble { background: rgba(18, 20, 28, 0.5); color: #fff; border: none; box-shadow: none; backdrop-filter: blur(8rpx); }
 .lihe .msg-user .bubble { background: rgba(24, 182, 144, 0.92); color: #fff; }
-.lihe .choices, .lihe .composer { position: relative; z-index: 1; background: rgba(245, 246, 250, 0.72); border-top: none; backdrop-filter: blur(14rpx); }
+.lihe .choices, .lihe .composer { position: relative; z-index: 1; background: rgba(251, 252, 251, 0.72); border-top: none; backdrop-filter: blur(14rpx); }
 
 .msg-list {
   flex: 1 1 auto;
@@ -77,16 +77,16 @@
   white-space: pre-wrap;
 }
 .msg-user .bubble {
-  background: #1f2330;
+  background: var(--ink);
   color: #fff;
   border-bottom-right-radius: 8rpx;
 }
 .msg-assistant .bubble {
-  background: #fff;
-  color: #1f2330;
+  background: var(--surface);
+  color: var(--ink);
   border-bottom-left-radius: 8rpx;
-  border: 1rpx solid #f0f0f4;
-  box-shadow: 0 2rpx 12rpx rgba(31, 35, 48, 0.04);
+  border: 1rpx solid var(--line);
+  box-shadow: var(--shadow-hair);
   animation: bubbleIn 0.28s ease both;
 }
 /* 新气泡入场：路径 setData 不重建节点，故每条只播一次（不随打字机重放） */
@@ -94,20 +94,21 @@
   from { opacity: 0; transform: translateY(6rpx); }
   to { opacity: 1; transform: none; }
 }
-.bubble.dim { color: #8a8f9c; }
+.bubble.dim { color: var(--sub); }
 
 /* 对话内成交卡片 */
 .offer-card {
-  background: #fff;
-  border: 2rpx solid #e5e7ec;
+  background: var(--surface);
+  border: 1rpx solid var(--border);
   border-radius: 24rpx;
   padding: 24rpx;
   margin: 0 0 24rpx;
+  box-shadow: var(--shadow-card);
 }
 .offer-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1f2330;
+  color: var(--ink);
   margin-bottom: 18rpx;
 }
 .offer-slots {
@@ -120,21 +121,22 @@
   justify-content: space-between;
   align-items: center;
   padding: 18rpx 22rpx;
-  border-radius: 16rpx;
-  background: #f0f1f5;
+  border-radius: var(--r-md);
+  background: var(--fill);
   border: 2rpx solid transparent;
+  transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
 }
 .slot.sel {
-  background: #fff;
-  border-color: #1f2330;
+  background: var(--surface);
+  border-color: var(--ink);
 }
-.slot-time { font-size: 28rpx; color: #1f2330; }
-.slot-meta { font-size: 24rpx; color: #8a8f9c; }
+.slot-time { font-size: 28rpx; color: var(--ink); }
+.slot-meta { font-size: 24rpx; color: var(--sub); }
 .offer-btn {
   margin-top: 20rpx;
   height: 80rpx;
   line-height: 80rpx;
-  background: #1f2330;
+  background: var(--ink);
   color: #fff;
   border-radius: 40rpx;
   font-size: 28rpx;
@@ -145,7 +147,7 @@
   align-self: flex-start;
   margin: -8rpx 0 24rpx;
   font-size: 26rpx;
-  color: #1f2330;
+  color: var(--ink);
   text-decoration: underline;
 }
 
@@ -154,43 +156,45 @@
   flex-wrap: wrap;
   gap: 16rpx;
   padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  border-top: 2rpx solid #e5e7ec;
+  background: var(--surface);
+  border-top: 1rpx solid var(--border);
 }
 .chip {
   padding: 16rpx 26rpx;
-  border-radius: 100rpx;
+  border-radius: var(--r-full);
   font-size: 26rpx;
   line-height: 1.2;
+  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
 }
+.chip:active { transform: scale(0.96); opacity: 0.85; }
 /* 引导问题 */
 .chip.q {
-  background: #f0f1f5;
-  color: #1f2330;
+  background: var(--fill);
+  color: var(--ink);
 }
 /* 行动入口（转化）：深色强调 */
 .chip.act {
-  background: #1f2330;
+  background: var(--ink);
   color: #fff;
 }
 /* 自己问：描边 */
 .chip.ghost {
-  background: #fff;
-  color: #4a5070;
-  border: 2rpx solid #d6d9e0;
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1rpx solid var(--border);
 }
 
 .composer {
   display: flex;
   gap: 16rpx;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  border-top: 2rpx solid #e5e7ec;
+  background: var(--surface);
+  border-top: 1rpx solid var(--border);
 }
 .composer .input {
   flex: 1;
   height: 72rpx;
-  background: #f5f6fa;
+  background: var(--surface-sunken);
   border-radius: 36rpx;
   padding: 0 28rpx;
   font-size: 28rpx;
@@ -199,7 +203,7 @@
   width: 140rpx;
   height: 72rpx;
   line-height: 72rpx;
-  background: #1f2330;
+  background: var(--ink);
   color: #fff;
   border-radius: 36rpx;
   font-size: 28rpx;
@@ -214,24 +218,25 @@
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 .choices-hint { width: 100%; font-size: 24rpx; margin-bottom: 4rpx; }
-.trust-cap { width: 100%; font-size: 22rpx; color: #8a8f9c; margin-top: 2rpx; line-height: 1.5; }
+.trust-cap { width: 100%; font-size: 22rpx; color: var(--sub); margin-top: 2rpx; line-height: 1.5; }
 .empty { padding: 200rpx 48rpx; text-align: center; }
-.empty-title { font-size: 34rpx; font-weight: 600; color: #1f2330; margin-bottom: 16rpx; }
+.empty-title { font-size: 34rpx; font-weight: 600; color: var(--ink); margin-bottom: 16rpx; }
 
 /* —— 裂变钩子 —— */
-.own-hook { color: #9aa0ad; font-size: 24rpx; }
+.own-hook { color: var(--faint); font-size: 24rpx; }
 .own-cta {
   margin: 16rpx 48rpx;
   padding: 28rpx;
-  background: #fff;
+  background: var(--surface);
+  border: 1rpx solid var(--border);
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 24rpx rgba(31, 35, 48, 0.06);
+  box-shadow: var(--shadow-card);
   text-align: center;
 }
-.own-cta-title { font-size: 30rpx; font-weight: 600; color: #1f2330; }
-.own-cta-sub { font-size: 24rpx; color: #9aa0ad; margin: 8rpx 0 20rpx; }
+.own-cta-title { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.own-cta-sub { font-size: 24rpx; color: var(--sub); margin: 8rpx 0 20rpx; }
 .own-cta-btn {
-  background: #1f2330;
+  background: var(--ink);
   color: #fff;
   border-radius: 36rpx;
   font-size: 28rpx;
@@ -241,32 +246,32 @@
 }
 
 /* —— 页内浮层：毛玻璃底部抽屉（关于 / 打赏 / 约档期）—— */
-.mask { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; }
+.mask { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.5); display: flex; align-items: flex-end; }
 .sheet {
   width: 100%; box-sizing: border-box;
-  background: rgba(28,30,38,0.72);
-  backdrop-filter: blur(40rpx); -webkit-backdrop-filter: blur(40rpx);
+  background: rgba(28, 30, 38, 0.72);
+  backdrop-filter: var(--blur-glass); -webkit-backdrop-filter: var(--blur-glass);
   border-top-left-radius: 32rpx; border-top-right-radius: 32rpx;
-  border-top: 1rpx solid rgba(255,255,255,0.14);
+  border-top: 1rpx solid var(--glass-hair);
   padding: 16rpx 40rpx calc(env(safe-area-inset-bottom) + 40rpx);
   color: #fff;
 }
-.sheet-grab { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: rgba(255,255,255,0.28); margin: 6rpx auto 22rpx; }
+.sheet-grab { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: rgba(255, 255, 255, 0.28); margin: 6rpx auto 22rpx; }
 .sheet-title { font-size: 34rpx; font-weight: 600; color: #fff; }
-.sheet-sub { font-size: 24rpx; color: rgba(255,255,255,0.6); margin-top: 8rpx; }
+.sheet-sub { font-size: 24rpx; color: rgba(255, 255, 255, 0.6); margin-top: 8rpx; }
 .sheet-oneliner { font-size: 30rpx; font-weight: 500; color: #fff; margin-top: 22rpx; line-height: 1.5; }
 .sheet-tags { margin-top: 18rpx; display: flex; flex-wrap: wrap; gap: 12rpx; }
-.sheet-tag { font-size: 24rpx; color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.12); border: 1rpx solid rgba(255,255,255,0.2); border-radius: 100rpx; padding: 6rpx 20rpx; }
-.sheet-intro { font-size: 27rpx; line-height: 1.7; color: rgba(255,255,255,0.88); margin-top: 22rpx; white-space: pre-wrap; }
-.sheet-input { background: rgba(255,255,255,0.12); border: 1rpx solid rgba(255,255,255,0.2); border-radius: 16rpx; padding: 24rpx; font-size: 28rpx; color: #fff; margin: 28rpx 0; }
+.sheet-tag { font-size: 24rpx; color: rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.12); border: 1rpx solid rgba(255, 255, 255, 0.2); border-radius: 100rpx; padding: 6rpx 20rpx; }
+.sheet-intro { font-size: 27rpx; line-height: 1.7; color: rgba(255, 255, 255, 0.88); margin-top: 22rpx; white-space: pre-wrap; }
+.sheet-input { background: rgba(255, 255, 255, 0.12); border: 1rpx solid rgba(255, 255, 255, 0.2); border-radius: 16rpx; padding: 24rpx; font-size: 28rpx; color: #fff; margin: 28rpx 0; }
 .sheet-pay { margin-top: 8rpx; background: var(--accent); color: #fff; border-radius: 100rpx; padding: 24rpx 0; text-align: center; font-size: 30rpx; font-weight: 500; }
 .sheet-pay[disabled] { opacity: 0.45; }
 .tip-amounts { display: flex; gap: 18rpx; margin: 28rpx 0 4rpx; }
-.tip-amount { flex: 1; text-align: center; padding: 26rpx 0; background: rgba(255,255,255,0.1); border: 1rpx solid rgba(255,255,255,0.18); border-radius: 16rpx; font-size: 30rpx; font-weight: 600; color: #fff; }
-.tip-amount.on { background: rgba(24, 182, 144,0.34); border-color: rgba(24, 182, 144,0.6); }
+.tip-amount { flex: 1; text-align: center; padding: 26rpx 0; background: rgba(255, 255, 255, 0.1); border: 1rpx solid rgba(255, 255, 255, 0.18); border-radius: 16rpx; font-size: 30rpx; font-weight: 600; color: #fff; }
+.tip-amount.on { background: rgba(24, 182, 144, 0.34); border-color: rgba(24, 182, 144, 0.6); }
 .slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
-.sheet-empty { text-align: center; padding: 48rpx 0; color: rgba(255,255,255,0.55); font-size: 26rpx; }
-.slot-pick { padding: 24rpx; background: rgba(255,255,255,0.08); border: 1rpx solid rgba(255,255,255,0.16); border-radius: 16rpx; margin-bottom: 16rpx; }
-.slot-pick.on { background: rgba(24, 182, 144,0.22); border-color: rgba(24, 182, 144,0.55); }
+.sheet-empty { text-align: center; padding: 48rpx 0; color: rgba(255, 255, 255, 0.55); font-size: 26rpx; }
+.slot-pick { padding: 24rpx; background: rgba(255, 255, 255, 0.08); border: 1rpx solid rgba(255, 255, 255, 0.16); border-radius: 16rpx; margin-bottom: 16rpx; }
+.slot-pick.on { background: rgba(24, 182, 144, 0.22); border-color: rgba(24, 182, 144, 0.55); }
 .sp-time { font-size: 30rpx; font-weight: 500; color: #fff; }
-.sp-meta { font-size: 24rpx; color: rgba(255,255,255,0.7); margin-top: 6rpx; }
+.sp-meta { font-size: 24rpx; color: rgba(255, 255, 255, 0.7); margin-top: 6rpx; }

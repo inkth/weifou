@@ -45,7 +45,7 @@ Page({
           ctx.fillRect(0, 0, cssW, cssH);
 
           // 顶部色块
-          ctx.fillStyle = '#1f2330';
+          ctx.fillStyle = '#16241e';
           ctx.fillRect(0, 0, cssW, 100);
           ctx.fillStyle = '#ffffff';
           ctx.font = '14px sans-serif';
@@ -57,7 +57,7 @@ Page({
           this.drawAvatar(ctx, cssW - 50, 50, 28);
 
           // 一句话介绍
-          ctx.fillStyle = '#1f2330';
+          ctx.fillStyle = '#16241e';
           ctx.font = 'bold 18px sans-serif';
           const oneLiner = this.data.bundle.oneLiner || '';
           this.wrapText(ctx, oneLiner, 20, 150, cssW - 40, 26);
@@ -70,10 +70,10 @@ Page({
           tags.forEach((t) => {
             const tw = ctx.measureText(t).width + 20;
             if (tx + tw > cssW - 20) { tx = 20; ty += 28; }
-            ctx.fillStyle = '#f0f1f5';
+            ctx.fillStyle = '#eef2ef';
             this.roundRect(ctx, tx, ty - 14, tw, 22, 11);
             ctx.fill();
-            ctx.fillStyle = '#4a5070';
+            ctx.fillStyle = '#4a5a53';
             ctx.fillText(t, tx + 10, ty + 1);
             tx += tw + 8;
           });
@@ -93,7 +93,7 @@ Page({
             }
           }
 
-          ctx.fillStyle = '#8a8f9c';
+          ctx.fillStyle = '#8a9a93';
           ctx.font = '11px sans-serif';
           ctx.fillText('长按识别 · 和 TA 的 AI 聊聊', 20, cssH - 30);
 

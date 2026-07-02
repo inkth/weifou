@@ -23,9 +23,9 @@
 @keyframes ambDrift2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-20rpx, -16rpx); } }
 
 /* 温度档：只重着色 wash + 调 blob 透明度，绝不实心填充（守强调色红线） */
-.tier-cool .amb-wash { background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(245, 246, 250, 0)); }
+.tier-cool .amb-wash { background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(251, 252, 251, 0)); }
 .tier-cool .amb-blob { opacity: 0.10; }
-.tier-warm .amb-wash { background: linear-gradient(180deg, rgba(24, 182, 144, 0.07), rgba(245, 246, 250, 0)); }
+.tier-warm .amb-wash { background: linear-gradient(180deg, rgba(24, 182, 144, 0.07), rgba(251, 252, 251, 0)); }
 .tier-lively .amb-wash { background: linear-gradient(180deg, rgba(168, 85, 247, 0.07), rgba(34, 211, 238, 0.04)); }
 .tier-lively .amb-blob { opacity: 0.16; animation-duration: 9s; }
 
@@ -36,7 +36,7 @@
   opacity: 0; transform: translateY(8rpx);
 }
 .stage-name { font-size: 32rpx; font-weight: 600; color: var(--ink); }
-.stage-more { color: #9aa0ad; font-weight: 400; }
+.stage-more { color: var(--faint); font-weight: 400; }
 .stage-status {
   font-size: 24rpx; margin-top: 2rpx; max-width: 80vw; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

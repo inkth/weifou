@@ -1,11 +1,12 @@
-.empty { text-align: center; padding: 80rpx 0; }
+/* 问答详情：令牌化（真源见 app.wxss）。 */
+.empty { text-align: center; padding: 80rpx 0; color: var(--faint); }
 .qd-status { font-weight: 700; font-size: 30rpx; margin-bottom: 12rpx; }
-.qd-status.paid { color: #18b690; }
-.qd-status.answered { color: #16a34a; }
-.qd-status.refunded { color: #999; }
+.qd-status.paid { color: var(--accent-strong); }
+.qd-status.answered { color: var(--success); }
+.qd-status.refunded { color: var(--faint); }
 .qd-label { font-size: 24rpx; margin-bottom: 8rpx; }
-.qd-question { font-size: 32rpx; line-height: 1.6; margin-bottom: 12rpx; }
-.qd-answer { font-size: 30rpx; line-height: 1.7; margin-bottom: 12rpx; white-space: pre-wrap; }
+.qd-question { font-size: 32rpx; line-height: 1.6; margin-bottom: 12rpx; color: var(--ink); }
+.qd-answer { font-size: 30rpx; line-height: 1.7; margin-bottom: 12rpx; white-space: pre-wrap; color: var(--ink); }
 .qd-deadline, .qd-refunded { font-size: 26rpx; line-height: 1.5; }
 .qd-input { width: 100%; min-height: 240rpx; font-size: 30rpx; line-height: 1.6; margin-top: 8rpx; }
 .qd-submit { margin-top: 24rpx; }
@@ -19,7 +20,7 @@
 
 /* 录音条 */
 .rec-row { display: flex; align-items: center; gap: 20rpx; margin-top: 20rpx; }
-.rec-btn { display: flex; align-items: center; gap: 12rpx; padding: 18rpx 32rpx; border-radius: var(--r-full); border: 2rpx solid var(--border); color: var(--ink-2); font-size: 28rpx; }
+.rec-btn { display: flex; align-items: center; gap: 12rpx; padding: 18rpx 32rpx; border-radius: var(--r-full); border: 1rpx solid var(--border); color: var(--ink-2); font-size: 28rpx; }
 .rec-btn.on { background: var(--danger); border-color: var(--danger); color: #fff; }
 .rec-ic { font-size: 34rpx; }
 .rec-done { display: flex; align-items: center; gap: 12rpx; padding: 18rpx 32rpx; border-radius: var(--r-full); background: var(--accent-soft); color: var(--accent-ink); font-size: 28rpx; }

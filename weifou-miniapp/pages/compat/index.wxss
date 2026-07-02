@@ -1,7 +1,7 @@
 /* 复用择偶测试页的 intro / quiz / result / mask 样式，只补契合度特有的几个类 */
 @import "../dating/index.wxss";
 
-page { background: #fbfcfb; }
+page { background: var(--bg); }
 
 .res-headline {
   margin-top: 18rpx;
@@ -11,20 +11,20 @@ page { background: #fbfcfb; }
   text-align: center;
 }
 
-.cv-point { padding: 18rpx 0; border-bottom: 1rpx solid var(--hairline, #eceef2); }
+.cv-point { padding: 18rpx 0; border-bottom: 1rpx solid var(--line); }
 .cv-point:last-child { border-bottom: none; }
 .cv-point-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
-.cv-point-note { font-size: 26rpx; color: var(--ink-2, #6b7280); line-height: 1.6; margin-top: 6rpx; }
+.cv-point-note { font-size: 26rpx; color: var(--ink-2); line-height: 1.6; margin-top: 6rpx; }
 
 .cv-summary {
-  margin-top: 16rpx; padding-top: 18rpx; border-top: 1rpx solid var(--hairline, #eceef2);
-  font-size: 26rpx; color: var(--ink-2, #6b7280); line-height: 1.6;
+  margin-top: 16rpx; padding-top: 18rpx; border-top: 1rpx solid var(--line);
+  font-size: 26rpx; color: var(--ink-2); line-height: 1.6;
 }
 
 .cv-cta {
   margin-top: 32rpx; padding: 40rpx 32rpx; text-align: center;
-  background: var(--accent-soft, #e2f5ef); border-radius: var(--r-xl, 28rpx);
+  background: var(--accent-soft); border-radius: var(--r-xl);
 }
-.cv-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink, #0c5a48); }
-.cv-cta-sub { font-size: 26rpx; color: var(--ink-2, #6b7280); margin-top: 12rpx; line-height: 1.5; }
+.cv-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink); }
+.cv-cta-sub { font-size: 26rpx; color: var(--ink-2); margin-top: 12rpx; line-height: 1.5; }
 .cv-cta-btn { margin-top: 28rpx; }

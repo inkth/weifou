@@ -1,7 +1,7 @@
 {
-  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarBackgroundColor": "#fbfcfb",
   "navigationBarTextStyle": "black",
   "navigationBarTitleText": "择偶画像测试",
-  "backgroundColor": "#f5f6fa",
+  "backgroundColor": "#fbfcfb",
   "usingComponents": {}
 }

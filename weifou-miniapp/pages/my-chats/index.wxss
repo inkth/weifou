@@ -4,8 +4,9 @@
 .quick { display: flex; gap: 24rpx; margin-bottom: 40rpx; }
 .quick-item {
   flex: 1;
-  background: #fff;
-  border-radius: 24rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--border);
+  border-radius: var(--r-xl);
   padding: 30rpx 0;
   box-shadow: var(--shadow-soft);
   display: flex;

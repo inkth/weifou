@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="tabs">
+  <scroll-view class="tabs" scroll-x enhanced show-scrollbar="{{false}}">
     <view class="tab {{tab === 'gaps' ? 'on' : ''}}" bindtap="switchTab" data-tab="gaps">
       待回答{{gaps.length ? ' · ' + gaps.length : ''}}
     </view>
@@ -15,15 +15,17 @@
     <view class="tab {{tab === 'sessions' ? 'on' : ''}}" bindtap="switchTab" data-tab="sessions">
       对话{{sessions.length ? ' · ' + sessions.length : ''}}
     </view>
-  </view>
+  </scroll-view>
 
   <view wx:if="{{loading}}" class="muted empty">加载中…</view>
 
   <!-- 会话回放 -->
   <block wx:if="{{!loading && tab === 'sessions'}}">
     <view class="tip muted">你的 AI 分身替你接待的对话，点开可回看它说了什么。</view>
-    <view wx:if="{{!sessions.length}}" class="empty-share">
-      <view class="es-text muted">还没有访客和你的 AI 聊过</view>
+    <view wx:if="{{!sessions.length}}" class="empty-wrap">
+      <view class="empty-ic"><view class="ic ic-chat"></view></view>
+      <view class="empty-title">还没有访客聊过</view>
+      <view class="empty-sub">分身替你接待的每一段对话都会记录在这里</view>
       <button wx:if="{{profileId}}" class="es-btn" open-type="share">把你的 AI 分享出去 →</button>
     </view>
     <view class="card session-card" wx:for="{{sessions}}" wx:key="sessionId"
@@ -40,7 +42,11 @@
   <!-- 待回答缺口 -->
   <block wx:if="{{!loading && tab === 'gaps'}}">
     <view class="tip muted">访客问倒了 AI 的问题。回答一条，AI 之后就会自己答。</view>
-    <view wx:if="{{!gaps.length}}" class="empty muted">暂无待回答的问题 🎉</view>
+    <view wx:if="{{!gaps.length}}" class="empty-wrap">
+      <view class="empty-ic"><view class="ic ic-check"></view></view>
+      <view class="empty-title">全都答上了</view>
+      <view class="empty-sub">没有问倒 AI 的问题，分身状态很好</view>
+    </view>
     <view class="card" wx:for="{{gaps}}" wx:key="id">
       <view class="q">{{item.question}}</view>
       <view class="meta muted">被问 {{item.askedCount}} 次</view>
@@ -58,8 +64,10 @@
       <view class="ic ic-bell notify-ico"></view>
       <text>开启提醒：有访客留言时微信通知我 ›</text>
     </view>
-    <view wx:if="{{!leads.length}}" class="empty-share">
-      <view class="es-text muted">还没有访客留言</view>
+    <view wx:if="{{!leads.length}}" class="empty-wrap">
+      <view class="empty-ic"><view class="ic ic-inbox"></view></view>
+      <view class="empty-title">还没有访客留言</view>
+      <view class="empty-sub">访客在对话里留下的联系方式和话，都会汇总到这里</view>
       <button wx:if="{{profileId}}" class="es-btn" open-type="share">分享你的 AI，让更多人来访 →</button>
     </view>
     <view class="card" wx:for="{{leads}}" wx:key="id">
@@ -81,8 +89,10 @@
       <view class="ic ic-bell notify-ico"></view>
       <text>开启提醒：有人问你的问答箱时微信通知我 ›</text>
     </view>
-    <view wx:if="{{!questions.length}}" class="empty-share">
-      <view class="es-text muted">还没有人来问你的分身</view>
+    <view wx:if="{{!questions.length}}" class="empty-wrap">
+      <view class="empty-ic"><view class="ic ic-sparkle"></view></view>
+      <view class="empty-title">还没有人来问</view>
+      <view class="empty-sub">有人匿名提问后，分身会先替你答，你可以再补一句</view>
       <button wx:if="{{profileId}}" class="es-btn" open-type="share">分享你的问答箱，让人来问 →</button>
     </view>
     <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="goQuestion" data-id="{{item.id}}">

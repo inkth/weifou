@@ -5,53 +5,61 @@
 - 小程序：`weifou-miniapp/app.wxss` 顶部 `page { --* }`
 - App：`weifou-app/lib/core/theme/app_theme.dart` 的 `AppTheme` 常量
 
-设计原则：**冷热分区**。墨黑 `#1F2330` 仍是主色与底盘色调；碧绿 `#18B690` 只做强调，绝不替换主色。成交关键区（支付 / 预约确认 / 主页资质）保持克制，不上卡通、不滥用强调色。
+设计原则：**清新浅色 + 薄荷青**。整套中性阶带一丝青温（绿相灰），墨青 `#16241E` 为主文字与主按钮；碧绿 `#18B690` 只做强调，绝不替换主色。卡片语言统一为「白卡 + 1rpx 青边（`--border`）+ 极淡绿调阴影」。成交关键区（支付 / 预约确认 / 主页资质）保持克制，不上卡通、不滥用强调色。
 
 ---
 
 ## 颜色令牌
 
-### 中性色阶（同一冷蓝色相递进，文字四级 + 线/填充）
+### 中性色阶（青温灰：同一绿相递进，文字四级 + 线/填充）
 
 | 语义 | 令牌（小程序 / App） | 值 | 用途 |
 |---|---|---|---|
-| 主文字 | `--ink` / `ink` | `#1F2330` | 标题、墨黑主按钮、用户气泡 |
-| 次级文字 | `--ink-2` / `ink2` | `#4F5564` | 副标题、正文辅助 |
-| 三级文字 | `--sub` / `sub` | `#8A8F9C` | 说明、占位、非活跃 |
-| 四级文字 | `--faint` / `faint` | `#B4B9C4` | 时间戳、极弱信息 |
-| 发丝线 | `--line` / `line` | `#EEF0F4` | 分隔线、内部描边 |
-| 边框 | `--border` / `border` | `#E5E7EC` | 卡片/输入框边框 |
-| 中性填充 | `--fill` / `fill` | `#F0F1F5` | 标签底、头像回退底 |
-| 按下填充 | `--fill-pressed` / `fillPressed` | `#F6F7F9` | 单元格按下底 |
+| 主文字 | `--ink` / `ink` | `#16241E` | 标题、墨青主按钮、用户气泡 |
+| 次级文字 | `--ink-2` / `ink2` | `#4A5A53` | 副标题、正文辅助 |
+| 三级文字 | `--sub` / `sub` | `#8A9A93` | 说明、占位、非活跃 |
+| 四级文字 | `--faint` / `faint` | `#AAB4AF` | 时间戳、极弱信息 |
+| 发丝线 | `--line` / `line` | `#F0F2F0` | 分隔线、内部描边 |
+| 边框 | `--border` / `border` | `#ECEFEC` | 卡片/输入框边框 |
+| 中性填充 | `--fill` / `fill` | `#EEF2EF` | 标签底、头像回退底 |
+| 按下填充 | `--fill-pressed` / `fillPressed` | `#F4F7F5` | 单元格按下底 |
 
-> 旧版散落的 `#8a90a0 / #9aa0ad / #6b7180 / #b3b8c2 / #c4c9d4 …` 一律收敛到上表四级文字；新代码禁止再引入近似灰。
+> 旧版冷蓝灰阶（`#1F2330 / #8A8F9C / #B4B9C4 / #8a90a0 / #9aa0ad …`）已于 2026-07 整体收敛到本青温阶；新代码禁止再引入近似灰，一律取上表四级。
 
 ### 表面与强调
 
 | 语义 | 令牌（小程序 / App） | 值 | 用途 |
 |---|---|---|---|
-| 页面底色 | `--bg` / `bg` | `#F5F6FA` | scaffold 背景 |
+| 页面底色 | `--bg` / `bg` | `#FBFCFB` | scaffold 背景（近白带青） |
 | 卡片表面 | `--surface` / `surface` | `#FFFFFF` | 卡片/浮层 |
-| 凹陷面 | `--surface-sunken` / `surfaceSunken` | `#EEF0F5` | 内嵌区 |
+| 凹陷面 | `--surface-sunken` / `surfaceSunken` | `#F3F6F4` | 内嵌区 / 输入底 |
 | **强调色（碧绿）** | `--accent` / `accent` | `#18B690` | **仅** CTA 高亮、活跃态、强调图标 |
-| 强调按下态 | `--accent-strong` / `accentStrong` | `#0E9C7A` | accent 元素 pressed |
-| 浅绿底 | `--accent-soft` / `accentSoft` | `#E2F5EF` | 推荐位/强调标签背景、活跃指示胶囊 |
+| 强调按下态 | `--accent-strong` / `accentStrong` | `#0E9C7A` | accent 元素 pressed / 渐变深端 / 浅底小字 |
+| 强调深绿 | `--accent-deep` / `accentDeep` | `#0F766E` | accent-soft 底上的图标 / 强化小字 |
+| 浅绿底 | `--accent-soft` / `accentSoft` | `#E8F5EF` | 推荐位/强调标签背景、活跃指示胶囊 |
 | 绿底上文字 | `--accent-ink` / `accentInk` | `#0C5A48` | accent-soft 上的文字 |
 | 成功 / 警示 / 危险 | `--success` `--warn` `--danger` | `#16A34A` `#F59E0B` `#E0404B` | 状态（success 用草绿，与碧绿 accent 拉开） |
 
-### 高度 / 阴影（分层、极淡、按需微暖）
+### 高度 / 阴影（分层、极淡、带青温 rgba(20,40,30,…)）
 
 | 令牌（小程序 / App） | 用途 |
 |---|---|
-| `--shadow-hair` | 列表项的极轻接触阴影 |
-| `--shadow-card` / `cardShadow` | **默认卡片**：双层近中性，干净不脏 |
-| `--shadow-soft` / `softShadow` | 绿柔阴影：推荐位 / hero 卡 |
+| `--shadow-hair` | 列表项/气泡的极轻接触阴影 |
+| `--shadow-card` / `cardShadow` | **默认卡片**：双层极淡，干净不脏 |
+| `--shadow-lift` | hero 级大卡（首页名片卡等），比 card 略浮起 |
+| `--shadow-soft` / `softShadow` | 绿柔阴影：推荐位 |
 | `--shadow-pop` | 浮层 / 弹层 |
 | `--shadow-accent` / `accentShadow` | accent CTA 光晕（绿） |
 
-**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键 / 活跃 tab / 选中分类）。底盘按钮、导航、普通卡片一律保持墨黑+灰。碧绿阴影只跟随 accent 实体，普通卡片用近中性 `--shadow-card`。
+**强调色使用红线**：accent 是「点睛」不是「主调」。一屏中带 accent 的实心块通常 ≤1 个（主 CTA / 发送键 / 活跃 tab / 选中分类）。底盘按钮、导航、普通卡片一律保持墨青+青温灰。碧绿阴影只跟随 accent 实体，普通卡片用 `--shadow-card`。
 
-> **会员页例外**：付费/会员相关界面（`membership` / `agents` 的会员 banner）用「翡翠玉绿」高级渐变（`#2BC79E→#0E9C7A`）+ 深绿文字 `#0C5A48`，是 accent 同族的加深变体，做付费层的高级感差异；不要回退成暖金。
+> **会员页例外**：付费/会员相关界面（`membership` / `agents` 的会员 banner）用「翡翠玉绿」高级渐变（`--accent → --accent-strong`）+ 深绿文字 `--accent-ink`，是 accent 同族的加深变体，做付费层的高级感差异；不要回退成暖金。
+
+### 空态 / 骨架屏原子（app.wxss 全局类）
+
+- 空态三层：`.empty-wrap`（容器）+ `.empty-ic`（薄荷圆底图标）+ `.empty-title` / `.empty-sub`（+ 可选 `.empty-cta` 墨青胶囊）。所有"暂无 XX"文案页逐步迁到这套结构。
+- 骨架屏：`.skel`（雾青底 + 流光扫过），加载态与真实卡片同构占位，不跳版。
+- 区段眉标：`.eyebrow`（24rpx / 3rpx 字距 / faint），列表小节分区用。
 
 ---
 
@@ -68,6 +76,7 @@
 | `--r-lg` | 20 / 20 | 列表卡、通知卡 |
 | `--r-xl` | 24 / 24 | 标准卡片 |
 | `--r-2xl` | 32 / 32 | 大容器 |
+| `--r-3xl` | 36 / 36 | 首页 hero 大卡 |
 | `--r-full` | 999 | 胶囊按钮 / 头像 / chip |
 
 **字阶**（小程序辅助类）：`.t-display`(46/700, 负字距) · `.t-section`(32/700) · `.t-body`(28) · `.t-sub`(26, ink-2) · `.t-caption`(24, sub) · `.t-micro`(22, faint)。大号粗标题统一 `letter-spacing:-0.5rpx`，更紧凑高级。
