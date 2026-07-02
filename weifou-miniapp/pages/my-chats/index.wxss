@@ -5,7 +5,7 @@
 .quick-item {
   flex: 1;
   background: var(--surface);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--border);
   border-radius: var(--r-xl);
   padding: 30rpx 0;
   box-shadow: var(--shadow-card);
@@ -31,7 +31,7 @@
   justify-content: center;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  border: var(--bw-thin) solid var(--ink);
+  border: var(--bw-thin) solid var(--border);
   font-size: 36rpx;
   font-weight: 600;
 }

@@ -68,12 +68,13 @@ function myMusic(agentId) {
 
 // 对话。sessionId 续聊指定会话，空 = 新开一段；返回里带 sessionId（新建时回传新 id）。
 // mode='review' = 复习挑战（概念型专用：快问快答已点亮概念，不开新课）。
+// concept=<slug> = 从闯关地图点选指定关卡开课（概念型专用）。
 // 会员畅用;非会员扣免费体验,耗尽抛 { code: 'MEMBERSHIP_REQUIRED' }。
-function chatAgent(agentId, content, sessionId, mode) {
+function chatAgent(agentId, content, sessionId, mode, concept) {
   return request({
     url: `/agents/${agentId}/chat`,
     method: 'POST',
-    data: { content, sessionId: sessionId || undefined, mode: mode || undefined },
+    data: { content, sessionId: sessionId || undefined, mode: mode || undefined, concept: concept || undefined },
   });
 }
 

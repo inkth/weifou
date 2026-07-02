@@ -60,6 +60,9 @@ Page({
       this.setData({ loading: false });
       return;
     }
+    // 从闯关地图点关进来：记下目标关卡，数据就绪后自动开课
+    this._targetConcept = query.concept || '';
+    this._autoStart = query.auto === '1';
     this.setData({ id, name: query.name ? decodeURIComponent(query.name) : '' });
     try {
       await ensureLogin();
@@ -104,6 +107,15 @@ Page({
       if (d.novel) getWork(id).then((w) => this.setData({ work: this._work(w) })).catch(() => {});
       if (d.music) myMusic(id).then((list) => this.setData({ songs: this._decorateSongs(list) })).catch(() => {});
       this._scrollEnd();
+      // 指定关卡自动开课：新开一段会话，带 concept 参数让教练直接用这一关的钩子开场
+      if (this._autoStart && this._targetConcept) {
+        this._autoStart = false;
+        this.setData({
+          messages: this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [],
+          currentSessionId: '',
+        });
+        this._ask('开始这一关', undefined, this._targetConcept);
+      }
     } catch (e) {
       this.setData({ loading: false });
       wx.showToast({ title: e.message || '加载失败', icon: 'none' });
@@ -186,7 +198,7 @@ Page({
     }
   },
 
-  async _ask(content, mode) {
+  async _ask(content, mode, concept) {
     if (!content || this.data.pending) return;
     this.setData({
       pending: true,
@@ -194,7 +206,7 @@ Page({
     });
     this._scrollEnd();
     try {
-      const data = await chatAgent(this.data.id, content, this.data.currentSessionId, mode);
+      const data = await chatAgent(this.data.id, content, this.data.currentSessionId, mode, concept);
       const member = !!data.member;
       const remaining = member ? this.data.remaining : data.remaining;
       const patch = {
@@ -222,9 +234,9 @@ Page({
         if (cleared.length) {
           this._celebrate({ up: '打通一档！', name: `${cleared[0]}篇`, sub: `你已通关「${cleared[0]}」——继续下一档` });
         } else if (mastered.length) {
-          this._celebrate({ up: '掌握新概念', name: mastered[0], sub: mastered.length > 1 ? `等 ${mastered.length} 个概念你已能讲透` : '你已经能自己讲透它了' });
+          this._celebrate({ up: '掌握！', name: mastered[0], sub: mastered.length > 1 ? `x${mastered.length} 连击！${mastered.length} 个概念你已能讲透` : '你已经能自己讲透它了' });
         } else if (lit.length) {
-          this._celebrate({ up: '点亮新概念', name: lit[0], sub: lit.length > 1 ? `本轮点亮了 ${lit.length} 个概念` : '又一个概念被你打开了' });
+          this._celebrate({ up: '点亮！', name: lit[0], sub: lit.length > 1 ? `x${lit.length} 连击！本轮点亮 ${lit.length} 个` : '又一个被你打开了' });
         }
       }
       // 连续学习：里程碑庆祝 + 补签提示 + 今日首学时递上「明天叫我」的提醒承诺

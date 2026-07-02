@@ -1,10 +1,10 @@
-/* 名片对外页 = 新粗野·克制档（令牌真源见 app.wxss）：粗描边白卡，但不上贴纸/糖果色/旋转——
-   这是发给客户/HR 的脸，创意感只靠描边与排版表达，成交信任优先。付费弹层保持白底。 */
+/* 名片对外页 = 糖果风·克制档（令牌真源见 app.wxss）：浅灰边白卡 + 垂直底唇，不上糖果色——
+   这是发给客户/HR 的脸，成交信任优先。付费弹层保持白底。 */
 .page { padding: 36rpx 32rpx 120rpx; min-height: 100vh; box-sizing: border-box; background: var(--bg); }
 
 .card {
   background: var(--surface);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-card);
 }
@@ -14,7 +14,7 @@
 .hero { margin-bottom: 26rpx; padding: 36rpx 32rpx; box-shadow: var(--shadow-lift); }
 .hero .amb-layer { display: none; }
 .hero-row { display: flex; align-items: center; gap: 24rpx; }
-.hero-ava { flex: 0 0 auto; width: 120rpx; height: 120rpx; border-radius: 28rpx; background: var(--accent-soft); border: var(--bw-thin) solid var(--ink); }
+.hero-ava { flex: 0 0 auto; width: 120rpx; height: 120rpx; border-radius: 28rpx; background: var(--accent-soft); border: var(--bw-thin) solid var(--border); }
 .hero-ava-ph { display: flex; align-items: center; justify-content: center; }
 .hero-ava-ph .ic { font-size: 56rpx; color: var(--ink); }
 /* 首字 toon 回退：主人形象同色系渐变（角色层词汇），与对话页画框同脸 */
@@ -32,7 +32,7 @@
 .tags { margin-top: 20rpx; display: flex; flex-wrap: wrap; gap: 14rpx; }
 .tag {
   background: var(--accent-soft); color: var(--accent-ink);
-  border: var(--bw-thin) solid var(--ink);
+  border: none;
   font-size: 24rpx; padding: 6rpx 20rpx; border-radius: var(--r-full); margin: 0;
 }
 
@@ -42,7 +42,7 @@
 
 .stats { display: flex; padding: 28rpx 0; }
 .stat { flex: 1; text-align: center; position: relative; }
-.stat::after { content: ''; position: absolute; right: 0; top: 10rpx; bottom: 10rpx; border-right: var(--bw-thin) dashed rgba(22, 36, 30, 0.2); }
+.stat::after { content: ''; position: absolute; right: 0; top: 10rpx; bottom: 10rpx; border-right: var(--bw-thin) dashed var(--border); }
 .stat:last-child::after { display: none; }
 .stat-num { font-size: 44rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
 .stat-label { font-size: 22rpx; margin-top: 6rpx; color: var(--sub); }
@@ -56,33 +56,33 @@
 .actions { display: flex; flex-direction: column; gap: 22rpx; margin-top: 36rpx; }
 .btn-accent {
   background: var(--accent); color: var(--on-accent);
-  border: var(--bw) solid var(--ink);
+  border: none;
   border-radius: var(--r-full); font-size: 30rpx; font-weight: 700; padding: 24rpx 0;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-accent);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .btn-accent::after { border: none; }
-.btn-accent:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
+.btn-accent:active { transform: translateY(8rpx); box-shadow: none; }
 .btn-ghost {
   background: var(--surface); color: var(--ink);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--border);
   border-radius: var(--r-full); font-size: 29rpx; font-weight: 500; padding: 24rpx 0;
   box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .btn-ghost::after { border: none; }
-.btn-ghost:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); background: var(--fill-pressed); }
+.btn-ghost:active { transform: translateY(5rpx); box-shadow: none; background: var(--fill-pressed); }
 
 .empty { text-align: center; padding-top: 240rpx; color: var(--faint); }
 .brand-foot { text-align: center; font-size: 24rpx; padding: 32rpx 0 16rpx; color: var(--sub); }
 .trust-badge { font-size: 24rpx; color: var(--accent-deep); margin: -6rpx 0 16rpx; }
 
-/* fresh 庆祝卡：庆祝时刻允许贴纸能量 */
+/* fresh 庆祝卡：庆祝时刻允许糖果能量 */
 .fresh-card {
   padding: 32rpx; text-align: center;
   background: var(--pop-mint);
-  border: var(--bw) solid var(--ink); border-radius: var(--r-xl);
-  box-shadow: var(--shadow-card);
+  border: none; border-radius: var(--r-xl);
+  box-shadow: var(--shadow-soft);
   margin-bottom: 26rpx;
 }
 .fresh-title { font-size: 36rpx; font-weight: 700; color: var(--pop-mint-ink); }
@@ -94,7 +94,7 @@
 .fresh-notify {
   margin-top: 20rpx; padding: 16rpx 24rpx; border-radius: var(--r-md); text-align: center;
   font-size: 24rpx; font-weight: 600; color: var(--pop-butter-ink);
-  background: var(--pop-butter); border: var(--bw-thin) solid var(--ink);
+  background: var(--pop-butter); border: none;
 }
 .fresh-notify.done { color: var(--accent-ink); background: var(--accent-soft); }
 
@@ -102,7 +102,7 @@
 .mask { position: fixed; inset: 0; background: rgba(12, 18, 14, 0.5); z-index: 100; display: flex; align-items: flex-end; }
 .tip-sheet {
   width: 100%; background: var(--surface);
-  border: var(--bw) solid var(--ink); border-bottom: none;
+  border: var(--bw) solid var(--border); border-bottom: none;
   border-radius: 32rpx 32rpx 0 0;
   padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
 }
@@ -111,11 +111,11 @@
 .tip-amounts { display: flex; gap: 20rpx; margin: 32rpx 0; }
 .tip-amount {
   flex: 1; text-align: center; padding: 26rpx 0;
-  background: var(--surface-sunken); border: var(--bw-thin) solid rgba(22, 36, 30, 0.3);
+  background: var(--surface-sunken); border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-md); font-size: 32rpx; font-weight: 700; color: var(--ink);
   transition: border-color 0.12s var(--ease), background 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.tip-amount.active { border: var(--bw-thin) solid var(--ink); background: var(--accent-soft); box-shadow: var(--shadow-hair); }
-.tip-msg { background: var(--surface-sunken); border: var(--bw-thin) solid rgba(22, 36, 30, 0.3); border-radius: var(--r-md); padding: 24rpx; font-size: 28rpx; margin-bottom: 32rpx; color: var(--ink); }
+.tip-amount.active { border: var(--bw-thin) solid var(--accent); background: var(--accent-soft); box-shadow: var(--shadow-hair); }
+.tip-msg { background: var(--surface-sunken); border: var(--bw-thin) solid var(--border); border-radius: var(--r-md); padding: 24rpx; font-size: 28rpx; margin-bottom: 32rpx; color: var(--ink); }
 .tip-pay { margin-top: 8rpx; }
 .tip-pay::after { border: none; }

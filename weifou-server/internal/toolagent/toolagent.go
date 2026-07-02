@@ -130,6 +130,7 @@ type chatReq struct {
 	Content   string `json:"content" binding:"required"`
 	SessionID string `json:"sessionId"` // 续聊指定会话；空 = 新开一段
 	Mode      string `json:"mode"`      // "review" = 复习挑战（概念型专用：只快问快答已点亮概念，不开新课）
+	Concept   string `json:"concept"`   // 概念/关卡 slug：学员从闯关地图点选指定关进来（概念型专用）
 }
 
 func (h *Handler) chat(c *gin.Context) error {
@@ -194,6 +195,12 @@ func (h *Handler) chat(c *gin.Context) error {
 				sysPrompt += "\n\n" + d
 			}
 		}
+		// 指定关卡：学员从闯关地图点选了某关，追加定向开课指令（slug 无效则静默忽略）。
+		if req.Concept != "" {
+			if d := h.conceptDirective(a.ID, req.Concept); d != "" {
+				sysPrompt += "\n\n" + d
+			}
+		}
 	}
 	var recent []models.AgentMessage
 	h.db.Where("session_id = ?", session.ID).Order("created_at desc").Limit(20).Find(&recent)
@@ -241,7 +248,7 @@ func (h *Handler) chat(c *gin.Context) error {
 
 	// 概念型 Agent（学心理/学经济/学哲学）：判定本轮点亮/掌握的概念，更新进度，给「点亮/打通一档」的反馈。
 	if a.Concept {
-		view, newlyLit, newlyMastered, tierCleared := h.assessConcepts(auth.UserID, a.ID, content, answer)
+		view, newlyLit, newlyMastered, tierCleared := h.assessConcepts(&a, auth.UserID, content, answer)
 		if view != nil {
 			resp["concept"] = view
 			resp["newlyLit"] = newlyLit
@@ -414,12 +421,13 @@ func Seed(db *gorm.DB) {
 	presets := []models.ToolAgent{
 		{
 			Slug: "spoken-english", Name: "英语陪练",
-			Tagline:     "随时开口的 AI 英语口语教练",
-			Description: "用中文也能学：纠音、造句、模拟对话，按日常 / 旅行 / 商务 / 面试场景陪你开口，循序渐进。",
+			Tagline:     "带你闯真实场景的 AI 英语口语教练",
+			Description: "用中文也能学：从咖啡馆点单到全英面试，28 个真实场景一关关闯。开口完成任务才算通关，AI 陪你测流利度 / 准确度 / 表达力，一段段往上升级。",
 			Category:    models.AgentCatEducation, Icon: "🗣️", Accent: "#FB923C",
-			Greeting:     "Hi！我是你的英语陪练。想练点什么？日常对话、面试还是旅行场景都行——直接用中文告诉我也可以。多用英文开口，我会帮你测出流利度 / 准确度 / 表达力，陪你一段段往上升级。",
-			SystemPrompt: spokenEnglishPrompt,
+			Greeting:     "Hi！我是你的英语陪练。咱们不背课文，直接闯真实场景——点咖啡、过海关、见客户、答面试。从地图挑一关，或者直接告诉我你最近哪个场合要用英语，我把你丢进情境里练。",
+			SystemPrompt: buildConceptPrompt(spokenEnglishPrompt, englishScenarios),
 			Assess:       true,
+			Concept:      true,
 			FreeTrial:    5, Sort: 1,
 		},
 		{
@@ -567,7 +575,8 @@ func Seed(db *gorm.DB) {
 const spokenEnglishPrompt = `你是「英语陪练」，一个专注英语口语与表达训练的 AI 教练。你只负责帮助用户学习英语；遇到与英语学习无关的请求（写代码、查资料、闲聊八卦等），礼貌地把话题带回英语练习。
 
 带课方式（每节课都有形状，你主动带、不等着被问）：
-- 主动带练：按注入的「学员段位」编排。新的一节课：先一句话接续（段位或上次亮点），然后直接给出今天的场景任务开练——从 点餐/问路/旅行/面试/开会/闲聊/购物 中选一个具体到画面的场景做角色扮演（如「你在咖啡店，店员问你要什么」）。不要问「今天想练什么」这类开放题；学员点名要练什么则优先跟随。
+- 主动带练：按注入的「学员段位」与「学员进度」编排。新的一节课：先一句话接续（段位或上次亮点），然后直接给出今天的场景任务开练——从下方场景地图里挑学员还没点亮的一关做角色扮演，把 TA 直接丢进情境（如「你在咖啡店，店员问你要什么」）。不要问「今天想练什么」这类开放题；学员点名要练什么则优先跟随。
+- 场景即关卡：一关的目标是让学员用英语真的把这个场合的核心任务办成。学员开口完成任务（哪怕磕巴）＝点亮；用上目标句式、还接得住你的变体追问（换说法/突发状况）＝掌握。多设计「你来说」的回合，少替学员说。
 - 小步多轮：一次只推进一小步（一句提问 / 一个情境），让学员多开口；每轮必以一个要学员用英语回应的问题或任务收尾。
 - 即时纠错：学员说英语后，先肯定一个具体亮点，再只挑「一个」最值得升级的点给对照说法，不贪多不打击。
 - 弱项优先：三维（流利/准确/表达）里哪维最低，练习就多往哪维设计。

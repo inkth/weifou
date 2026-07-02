@@ -1,6 +1,6 @@
 @import "../../styles/stage.wxss";
 
-/* 创建页 = 全屏暗场沉浸：助理在场 + 对话/输入全毛玻璃半透明，与首页同款 */
+/* 创建页 = 全屏糖果亮场沉浸：助理在场 + 对话/输入全白玻璃半透明，与首页同款 */
 .ob {
   display: flex;
   flex-direction: column;
@@ -8,13 +8,13 @@
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(165deg, #36303a 0%, #20232e 58%, #15171f 100%);
+  background: linear-gradient(165deg, #d8f6ff 0%, #e9fbf2 45%, #ffffff 100%);
 }
-/* 与首页/build 统一：立绘铺底 + 暗场，内容浮其上 */
+/* 与首页/build 统一：立绘铺底 + 轻白雾，内容浮其上 */
 .bg-lihe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
 .bg-scrim {
   position: fixed; inset: 0; z-index: 1;
-  background: linear-gradient(to bottom, rgba(16,18,26,0.5) 0%, rgba(16,18,26,0.06) 26%, rgba(16,18,26,0.34) 62%, rgba(16,18,26,0.88) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.55) 100%);
 }
 .ob-hero, .ob-msgs, .ob-foot { position: relative; z-index: 2; }
 
@@ -26,8 +26,8 @@
   background: transparent;
 }
 .ob-helper { display: flex; align-items: center; gap: 14rpx; }
-.ob-hero-title { font-size: 30rpx; font-weight: 600; color: #fff; text-shadow: 0 1rpx 10rpx rgba(0,0,0,0.5); }
-.ob-hero-sub { font-size: 24rpx; margin-top: 8rpx; color: rgba(255,255,255,0.7); }
+.ob-hero-title { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.ob-hero-sub { font-size: 24rpx; margin-top: 8rpx; color: var(--ink-2); }
 
 .ob-msgs {
   flex: 1;
@@ -51,15 +51,15 @@
   border-radius: 24rpx;
 }
 .ob-bubble.ai {
-  background: rgba(18,20,28,0.5);
+  background: rgba(255,255,255,0.72);
   backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
-  border: 1rpx solid rgba(255,255,255,0.18);
-  color: #fff;
+  border: 1rpx solid var(--border);
+  color: var(--ink);
   border-bottom-left-radius: 8rpx;
 }
 .ob-bubble.me {
   background: rgba(24, 182, 144,0.9);
-  color: #fff;
+  color: #ffffff;
   border-bottom-right-radius: 8rpx;
 }
 
@@ -74,31 +74,31 @@
 .ob-chip {
   padding: 12rpx 28rpx;
   font-size: 26rpx;
-  color: #fff;
-  background: rgba(18,20,28,0.42);
+  color: var(--ink);
+  background: rgba(255,255,255,0.72);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.3);
+  border: 1rpx solid var(--border);
   border-radius: 100rpx;
 }
 .ob-chip.strong {
-  color: #fff;
-  background: rgba(24, 182, 144,0.34);
-  border-color: rgba(24, 182, 144,0.6);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
   font-weight: 500;
 }
 
-/* 快捷选项（承自原 5 步点选）：暗色毛玻璃气泡，点按高亮碧绿 */
+/* 快捷选项（承自原 5 步点选）：白玻璃气泡，点按高亮碧绿 */
 .ob-opts { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }
 .ob-opt {
   padding: 16rpx 26rpx;
   font-size: 26rpx;
-  color: #fff;
-  background: rgba(18,20,28,0.42);
+  color: var(--ink);
+  background: rgba(255,255,255,0.72);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.28);
+  border: 1rpx solid var(--border);
   border-radius: 100rpx;
 }
-.ob-opt:active { background: rgba(24, 182, 144,0.5); border-color: rgba(24, 182, 144,0.78); }
+.ob-opt:active { background: var(--accent-soft); border-color: var(--accent); }
 .ob-opt.col {
   display: flex;
   flex-direction: column;
@@ -108,10 +108,10 @@
   border-radius: 20rpx;
 }
 .ob-opt-l { font-size: 28rpx; font-weight: 600; }
-.ob-opt-d { font-size: 22rpx; color: rgba(255,255,255,0.65); }
+.ob-opt-d { font-size: 22rpx; color: var(--sub); }
 
 .ob-typing { display: inline-flex; align-items: center; gap: 10rpx; padding: 24rpx 26rpx; }
-.ob-typing .dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: rgba(255,255,255,0.6); animation: obBlink 1.2s infinite ease-in-out; }
+.ob-typing .dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--sub); animation: obBlink 1.2s infinite ease-in-out; }
 .ob-typing .dot:nth-child(2) { animation-delay: 0.2s; }
 .ob-typing .dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes obBlink { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
@@ -120,35 +120,35 @@
 
 .ob-mic {
   width: 80rpx; height: 80rpx; flex-shrink: 0; border-radius: 50%;
-  background: rgba(18,20,28,0.42);
+  background: rgba(255,255,255,0.72);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.3);
+  border: 1rpx solid var(--border);
   display: flex; align-items: center; justify-content: center;
 }
-.ob-mic.on { background: rgba(24, 182, 144,0.34); border-color: rgba(24, 182, 144,0.6); }
-.ob-mic-i { position: relative; width: 22rpx; height: 34rpx; border-radius: 100rpx; background: rgba(255,255,255,0.85); }
-.ob-mic.on .ob-mic-i { background: #fff; }
+.ob-mic.on { background: var(--accent-soft); border-color: var(--accent); }
+.ob-mic-i { position: relative; width: 22rpx; height: 34rpx; border-radius: 100rpx; background: var(--ink-2); }
+.ob-mic.on .ob-mic-i { background: var(--accent); }
 .ob-mic-i::after {
   content: ''; position: absolute; left: 50%; bottom: -16rpx; transform: translateX(-50%);
   width: 30rpx; height: 16rpx; border: 3rpx solid currentColor; border-top: none;
-  border-radius: 0 0 30rpx 30rpx; color: rgba(255,255,255,0.85);
+  border-radius: 0 0 30rpx 30rpx; color: var(--ink-2);
 }
-.ob-mic.on .ob-mic-i::after { color: #fff; }
+.ob-mic.on .ob-mic-i::after { color: var(--accent); }
 /* 恢复毛玻璃（ob-input 已是固定高度+横向内距，无重影问题）*/
 .ob-input {
   flex: 1; height: 80rpx; padding: 0 28rpx;
-  background: rgba(18,20,28,0.42);
+  background: rgba(255,255,255,0.72);
   backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255,255,255,0.3);
-  border-radius: 100rpx; font-size: 28rpx; color: #fff;
+  border: 1rpx solid var(--border);
+  border-radius: 100rpx; font-size: 28rpx; color: var(--ink);
 }
 .ob-send {
   width: 80rpx; height: 80rpx; border-radius: 50%;
   background: var(--accent);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6rpx 16rpx rgba(24, 182, 144, 0.4);
+  box-shadow: 0 6rpx 0 var(--accent-strong);
 }
-.ob-send.off { background: rgba(255,255,255,0.18); box-shadow: none; }
+.ob-send.off { background: var(--border); box-shadow: none; }
 .ob-send-i { width: 0; height: 0; border-left: 14rpx solid transparent; border-right: 14rpx solid transparent; border-bottom: 20rpx solid #fff; margin-top: -2rpx; }
 
-.ob-form-link { text-align: center; font-size: 24rpx; margin-top: 18rpx; color: rgba(255,255,255,0.6); }
+.ob-form-link { text-align: center; font-size: 24rpx; margin-top: 18rpx; color: var(--sub); }

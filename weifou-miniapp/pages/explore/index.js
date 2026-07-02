@@ -58,9 +58,14 @@ Page({
     }
   },
 
-  // 点卡片主体 → 进 Agent 对话（试用）。
+  // 点卡片主体：概念型（学心理/英语陪练…）→ 闯关地图；其余 → 直进对话（试用）。
   open(e) {
     const { id, name } = e.currentTarget.dataset;
+    const a = (this.data.agents || []).find((x) => x.id === id);
+    if (a && a.concept) {
+      wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(a.accent || '')}` });
+      return;
+    }
     wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
   },
 

@@ -1,0 +1,224 @@
+/* 闯关地图:多邻国式蜿蜒路径。每个节点都是一颗 3D 糖果按钮。 */
+.map {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* —— 顶部固定条 —— */
+.map-top {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
+  background: var(--surface);
+  border-bottom: var(--bw-thin) solid var(--border);
+}
+.mt-streak {
+  padding: 8rpx 22rpx;
+  background: var(--pop-coral);
+  color: #ffffff;
+  border-radius: var(--r-full);
+  font-size: 26rpx;
+  font-weight: 800;
+  box-shadow: 0 4rpx 0 #d97e00;
+}
+.mt-skill {
+  padding: 8rpx 22rpx;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: var(--r-full);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+.mt-spacer { flex: 1; }
+.mt-prog {
+  padding: 8rpx 22rpx;
+  background: var(--gold);
+  color: #7a5c00;
+  border-radius: var(--r-full);
+  font-size: 26rpx;
+  font-weight: 800;
+  box-shadow: 0 4rpx 0 var(--gold-strong);
+}
+
+/* —— 骨架 —— */
+.map-loading { padding: 40rpx 48rpx; }
+.skel-banner { height: 96rpx; border-radius: var(--r-lg); margin-bottom: 48rpx; }
+.skel-node { width: 120rpx; height: 120rpx; border-radius: 50%; margin: 0 auto 56rpx; }
+.skel-node-r { transform: translateX(120rpx); }
+
+/* —— 地图滚动区 —— */
+.map-scroll { flex: 1; min-height: 0; }
+.map-pad { height: 200rpx; }
+
+/* checkpoint 横幅:糖果色横带 */
+.cp-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 32rpx 44rpx;
+  padding: 24rpx 32rpx;
+  border-radius: var(--r-lg);
+  font-weight: 800;
+}
+.cp-banner .cpb-name { font-size: 30rpx; }
+.cp-banner .cpb-prog { font-size: 26rpx; opacity: 0.85; }
+.tone-butter { background: var(--pop-butter); color: var(--pop-butter-ink); box-shadow: 0 6rpx 0 #d9a900; }
+.tone-sky    { background: var(--pop-sky); color: var(--pop-sky-ink); box-shadow: 0 6rpx 0 #b7e3f8; }
+.tone-mint   { background: var(--pop-mint); color: var(--pop-mint-ink); box-shadow: 0 6rpx 0 #83d9b9; }
+.tone-lilac  { background: var(--pop-lilac); color: var(--pop-lilac-ink); box-shadow: 0 6rpx 0 #cbaaf0; }
+
+/* —— 蜿蜒节点行:JS 注入 translateX 相位 —— */
+.node-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+/* 节点 = 3D 糖果按钮(120rpx 圆) */
+.node {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
+}
+.node-face { font-size: 52rpx; line-height: 1; }
+
+.node.locked {
+  background: var(--fill);
+  box-shadow: 0 10rpx 0 var(--border);
+}
+.node.locked .node-face { opacity: 0.55; font-size: 44rpx; }
+.node.available {
+  background: var(--surface);
+  border: 4rpx solid var(--accent);
+  box-shadow: 0 10rpx 0 var(--border);
+}
+.node.current {
+  background: var(--accent);
+  box-shadow: 0 10rpx 0 var(--accent-strong);
+  transform: scale(1.15);
+}
+.node.current:active { transform: scale(1.15) translateY(10rpx); }
+.node.lit {
+  background: var(--accent);
+  box-shadow: 0 10rpx 0 var(--accent-strong);
+}
+.node.mastered {
+  background: var(--gold);
+  box-shadow: 0 10rpx 0 var(--gold-strong);
+}
+.node:active { transform: translateY(10rpx); box-shadow: none; }
+
+/* 当前关外圈脉冲 */
+.node-pulse {
+  position: absolute;
+  inset: -18rpx;
+  border-radius: 50%;
+  border: 6rpx solid var(--accent);
+  opacity: 0.5;
+  animation: nodePulse 1.6s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes nodePulse {
+  0% { transform: scale(0.9); opacity: 0.55; }
+  70% { transform: scale(1.12); opacity: 0; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+
+.node-name {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--ink);
+  max-width: 220rpx;
+  text-align: center;
+}
+.node-name.dim { color: var(--faint); font-weight: 600; }
+
+/* 节点间路径感:3 个渐隐小圆点 */
+.dotlead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rpx;
+  margin-top: 8rpx;
+  line-height: 0.9;
+}
+.dotlead text { color: var(--border-strong); font-size: 34rpx; font-weight: 800; }
+.dotlead text:nth-child(2) { opacity: 0.66; }
+.dotlead text:nth-child(3) { opacity: 0.33; }
+.node-row:last-child .dotlead { visibility: hidden; }
+
+/* —— 底部固定 CTA —— */
+.map-cta-wrap {
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 24rpx);
+  z-index: 20;
+}
+.map-cta {
+  font-size: 32rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+}
+
+/* —— 关卡卡片抽屉 —— */
+.drawer-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(75, 75, 75, 0.35);
+  display: flex;
+  align-items: flex-end;
+}
+.lc-drawer {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--r-3xl) var(--r-3xl) 0 0;
+  padding: 20rpx 40rpx calc(env(safe-area-inset-bottom) + 40rpx);
+  box-shadow: var(--shadow-pop);
+  animation: lcUp 0.26s var(--ease-out);
+}
+@keyframes lcUp { from { transform: translateY(40%); opacity: 0.4; } to { transform: translateY(0); opacity: 1; } }
+.lc-grip {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: var(--r-full);
+  background: var(--border);
+  margin: 0 auto 28rpx;
+}
+.lc-state {
+  display: inline-block;
+  padding: 6rpx 20rpx;
+  border-radius: var(--r-full);
+  font-size: 22rpx;
+  font-weight: 800;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.lc-state.mastered { background: var(--gold); color: #7a5c00; }
+.lc-state.locked { background: var(--fill); color: var(--sub); }
+.lc-name { margin-top: 16rpx; font-size: 44rpx; font-weight: 800; color: var(--ink); }
+.lc-blurb { margin-top: 8rpx; font-size: 28rpx; color: var(--ink-2); }
+.lc-hook {
+  margin-top: 24rpx;
+  padding: 24rpx 28rpx;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+  font-size: 26rpx;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+.lc-go { margin-top: 32rpx; }

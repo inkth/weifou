@@ -2,7 +2,7 @@
   "navigationBarTitleText": "AI 主页",
   "navigationBarBackgroundColor": "#1a1c24",
   "navigationBarTextStyle": "white",
-  "backgroundColor": "#15171f",
+  "backgroundColor": "#ffffff",
   "enableShareAppMessage": true,
   "enableShareTimeline": true,
   "usingComponents": {}

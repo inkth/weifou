@@ -8,7 +8,7 @@
 
 .canvas-wrap {
   background: #fff;
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--border);
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: var(--shadow-card);

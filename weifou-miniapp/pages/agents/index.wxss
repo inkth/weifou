@@ -6,9 +6,9 @@ page { background: var(--bg); }
 
 .state { padding: 80rpx 0; text-align: center; color: var(--sub); font-size: 28rpx; line-height: 1.6; }
 
-.mbr-banner { display: flex; align-items: center; margin-bottom: 22rpx; padding: 24rpx 28rpx; border-radius: var(--r-lg); background: var(--pop-butter); border: var(--bw) solid var(--ink); box-shadow: var(--shadow-card); }
-.mbr-banner.on { background: var(--accent); }
-.mbr-banner:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
+.mbr-banner { display: flex; align-items: center; margin-bottom: 22rpx; padding: 24rpx 28rpx; border-radius: var(--r-lg); background: var(--pop-butter); border: none; box-shadow: 0 5rpx 0 var(--gold-strong); }
+.mbr-banner.on { background: var(--accent); box-shadow: 0 5rpx 0 var(--accent-strong); }
+.mbr-banner:active { transform: translateY(5rpx); box-shadow: none; }
 .mb-crown { font-size: 40rpx; color: var(--pop-butter-ink); }
 .mbr-banner.on .mb-crown { color: var(--on-accent); }
 .mb-text { flex: 1; margin-left: 14rpx; font-size: 28rpx; font-weight: 700; color: var(--pop-butter-ink); }
@@ -17,9 +17,9 @@ page { background: var(--bg); }
 .mbr-banner.on .mb-arrow { color: var(--on-accent); }
 
 .list { display: flex; flex-direction: column; gap: 20rpx; }
-.card { display: flex; align-items: center; background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-xl); padding: 28rpx 24rpx; box-shadow: var(--shadow-card); }
-.card:active { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink); }
-.aic { width: 92rpx; height: 92rpx; border-radius: var(--r-md); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48rpx; border: var(--bw-thin) solid var(--ink); }
+.card { display: flex; align-items: center; background: var(--surface); border: var(--bw) solid var(--border); border-radius: var(--r-xl); padding: 28rpx 24rpx; box-shadow: var(--shadow-card); }
+.card:active { transform: translateY(5rpx); box-shadow: none; }
+.aic { width: 92rpx; height: 92rpx; border-radius: var(--r-md); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48rpx; border: var(--bw-thin) solid var(--border); }
 .body { flex: 1 1 auto; min-width: 0; margin-left: 24rpx; }
 .name { font-size: 32rpx; font-weight: 600; color: var(--ink); }
 .tagline { margin-top: 6rpx; font-size: 25rpx; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

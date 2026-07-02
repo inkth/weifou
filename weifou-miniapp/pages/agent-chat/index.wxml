@@ -119,8 +119,14 @@
     <button class="cp-send" bindtap="send" disabled="{{pending || !draft}}">发送</button>
   </view>
 
-  <!-- 庆祝浮层：升级 / 点亮 / 掌握共用 -->
+  <!-- 庆祝浮层：升级 / 点亮 / 掌握共用（全屏彩带 + 大字弹簧） -->
   <view wx:if="{{celebrate}}" class="celebrate" style="--accent: {{accent}};">
+    <view class="confetti">
+      <view class="cf cf-1"></view><view class="cf cf-2"></view><view class="cf cf-3"></view>
+      <view class="cf cf-4"></view><view class="cf cf-5"></view><view class="cf cf-6"></view>
+      <view class="cf cf-7"></view><view class="cf cf-8"></view><view class="cf cf-9"></view>
+      <view class="cf cf-10"></view><view class="cf cf-11"></view><view class="cf cf-12"></view>
+    </view>
     <view class="celeb-card">
       <view class="celeb-spark">🎉</view>
       <view class="celeb-up">{{celebrate.up}}</view>

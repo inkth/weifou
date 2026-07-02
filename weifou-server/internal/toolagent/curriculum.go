@@ -32,6 +32,7 @@ var tierLabels = map[int]string{1: "入门", 2: "进阶"}
 var tierOrder = []int{1, 2}
 
 // curricula：agent slug → 该领域核心概念。SeedConcepts 据此幂等写入 agent_concepts。
+// spoken-english 的「概念」是真实场景关卡：点亮 = 用英语开口把这个场合的核心任务办成。
 var curricula = map[string][]seedConcept{
 	"learn-psychology": psychologyConcepts,
 	"learn-economics":  economicsConcepts,
@@ -41,16 +42,86 @@ var curricula = map[string][]seedConcept{
 	"learn-science":    scienceConcepts,
 	"learn-aesthetics": aestheticsConcepts,
 	"learn-marketing":  marketingConcepts,
+	"spoken-english":   englishScenarios,
 }
 
 // hookCheck 人工精编内容（开课钩子 + 检验题）。与 seedConcept 分开存：
 // 只有旗舰课做精编，7 份未精编课程表的字面量不必全改；SeedConcepts 时按 slug 合并写入。
 type hookCheck struct{ Hook, Check string }
 
-// curatedContent：agent slug → concept slug → 精编内容。目前只有学心理（概念型旗舰课）。
+// curatedContent：agent slug → concept slug → 精编内容。学心理 + 英语陪练（两门旗舰课）。
 // 这是这条产品线的护城河：钩子制造好奇缺口、检验题考迁移应用——不是模型现编能稳定给出的品质。
 var curatedContent = map[string]map[string]hookCheck{
 	"learn-psychology": psychologyContent,
+	"spoken-english":   englishContent,
+}
+
+// ============================ 英语陪练 · 场景关卡课程表 ============================
+// 「概念」在这门课里 = 真实场合：点亮 = 用英语开口把这个场合的核心任务办成（哪怕磕巴）；
+// 掌握 = 用上目标句式，且导师抛出变体/突发状况时仍能用英语接住。
+// Tier1 生活/旅行（先能活下来），Tier2 职场/面试（再谈得成事）。
+
+var englishScenarios = []seedConcept{
+	// —— 生活（Tier 1）——
+	{Slug: "cafe-order", Theme: "生活", Tier: 1, Name: "咖啡馆点单", Blurb: "定制一杯咖啡并买单"},
+	{Slug: "restaurant-order", Theme: "生活", Tier: 1, Name: "餐厅点餐", Blurb: "问推荐、说忌口、结账"},
+	{Slug: "first-smalltalk", Theme: "生活", Tier: 1, Name: "初次寒暄", Blurb: "自我介绍与破冰三句"},
+	{Slug: "shopping-clothes", Theme: "生活", Tier: 1, Name: "买衣服", Blurb: "问尺码、试穿与退换"},
+	{Slug: "ask-directions", Theme: "生活", Tier: 1, Name: "问路指路", Blurb: "问清路线并听懂指引"},
+	{Slug: "phone-booking", Theme: "生活", Tier: 1, Name: "电话预约", Blurb: "电话订位与确认信息"},
+	{Slug: "see-doctor", Theme: "生活", Tier: 1, Name: "看医生", Blurb: "描述症状、听懂医嘱"},
+	// —— 旅行（Tier 1）——
+	{Slug: "flight-checkin", Theme: "旅行", Tier: 1, Name: "机场值机", Blurb: "值机托运、选个好座位"},
+	{Slug: "customs-qa", Theme: "旅行", Tier: 1, Name: "过关问答", Blurb: "从容答上海关三连问"},
+	{Slug: "hotel-checkin", Theme: "旅行", Tier: 1, Name: "酒店入住", Blurb: "办理入住、提出换房要求"},
+	{Slug: "taxi-ride", Theme: "旅行", Tier: 1, Name: "打车出行", Blurb: "说清目的地与路线偏好"},
+	{Slug: "attraction-tickets", Theme: "旅行", Tier: 1, Name: "景点购票", Blurb: "问票价、时间与优惠"},
+	{Slug: "lost-luggage", Theme: "旅行", Tier: 1, Name: "行李丢失", Blurb: "挂失并描述你的行李"},
+	{Slug: "travel-help", Theme: "旅行", Tier: 1, Name: "旅途求助", Blurb: "丢了护照怎么开口求助"},
+	// —— 职场（Tier 2）——
+	{Slug: "work-self-intro", Theme: "职场", Tier: 2, Name: "同事初见", Blurb: "新团队里的自我介绍"},
+	{Slug: "meeting-opinion", Theme: "职场", Tier: 2, Name: "会议表态", Blurb: "赞成、反对与补充意见"},
+	{Slug: "task-handover", Theme: "职场", Tier: 2, Name: "任务交代", Blurb: "口头布置任务并确认理解"},
+	{Slug: "project-present", Theme: "职场", Tier: 2, Name: "项目汇报", Blurb: "开场、过渡与收尾句式"},
+	{Slug: "price-negotiation", Theme: "职场", Tier: 2, Name: "谈判议价", Blurb: "跟供应商体面地砍价"},
+	{Slug: "pantry-smalltalk", Theme: "职场", Tier: 2, Name: "茶水间闲聊", Blurb: "周末、天气与项目近况"},
+	{Slug: "video-call-clarify", Theme: "职场", Tier: 2, Name: "跨国视频会", Blurb: "听不清时优雅地追问"},
+	// —— 面试（Tier 2）——
+	{Slug: "interview-self-intro", Theme: "面试", Tier: 2, Name: "面试自我介绍", Blurb: "答好 Tell me about yourself"},
+	{Slug: "strengths-weaknesses", Theme: "面试", Tier: 2, Name: "优缺点问答", Blurb: "把弱点讲成成长故事"},
+	{Slug: "star-story", Theme: "面试", Tier: 2, Name: "讲一个经历", Blurb: "用 STAR 结构讲成就"},
+	{Slug: "why-us", Theme: "面试", Tier: 2, Name: "为什么选我们", Blurb: "动机题答得真诚不谄媚"},
+	{Slug: "salary-talk", Theme: "面试", Tier: 2, Name: "谈薪资", Blurb: "不吃亏也不失礼地谈钱"},
+	{Slug: "ask-interviewer", Theme: "面试", Tier: 2, Name: "反问面试官", Blurb: "问出水平的三个问题"},
+	{Slug: "mock-full-interview", Theme: "面试", Tier: 2, Name: "全英模拟面", Blurb: "把前面学的串成一整场"},
+}
+
+// englishContent：英语陪练精编 Hook/Check。先精编 6 个代表关；其余留空走兜底（模型现拟场景任务），逐步补齐。
+var englishContent = map[string]hookCheck{
+	"cafe-order": {
+		Hook:  "你在纽约一家咖啡馆，店员冲你一笑：\"Hi! What can I get started for you?\"——你想要一杯少糖的燕麦拿铁。别用中文，开口试试？",
+		Check: "换个情况：店员把你的单做错了（拿铁做成了美式）。用英语礼貌地指出问题并要求重做。",
+	},
+	"flight-checkin": {
+		Hook:  "值机柜台前，地勤问你：\"Any bags to check?\"——你有一个托运箱、想要靠窗座位，用英语把这两件事都办成。",
+		Check: "现在航班超售，地勤问你愿不愿意改签下一班换 200 美元代金券。听懂并用英语讨价还价一句。",
+	},
+	"first-smalltalk": {
+		Hook:  "朋友聚会上，一个外国朋友伸出手：\"Hey, I don't think we've met.\"——用三句话完成自我介绍，并把话题抛回给对方。",
+		Check: "对方说 \"I'm from Melbourne.\"——不冷场，用一个跟进问题让对话继续下去。",
+	},
+	"meeting-opinion": {
+		Hook:  "例会上老板问：\"Any thoughts on the new plan?\"——你部分同意、但担心排期，用英语先肯定再提出顾虑。",
+		Check: "同事的方案你完全不同意。用英语不伤和气地反对，并给出你的替代建议。",
+	},
+	"interview-self-intro": {
+		Hook:  "面试官微笑着说：\"So, tell me about yourself.\"——你有 60 秒，用『现在-过去-未来』结构讲一版英文自我介绍。",
+		Check: "同一个开场，面试官追问：\"Why are you leaving your current job?\"——不抱怨前司，用英语给出得体版本。",
+	},
+	"salary-talk": {
+		Hook:  "HR 问：\"What are your salary expectations?\"——直接报数容易吃亏，用英语先反问薪资范围，再给一个带弹性的回答。",
+		Check: "对方开的数低于你的预期。用英语礼貌地往上谈，至少用一个 \"Based on my experience…\" 式的理由。",
+	},
 }
 
 // ============================ 学心理 · 精编钩子与检验题 ============================
@@ -625,6 +696,30 @@ func (h *Handler) reviewDirective(userID, agentID string) string {
 	return b.String()
 }
 
+// conceptDirective 「指定关卡」编排指令（学员从闯关地图点选某关进来时追加为 system 段）。
+// slug 不在课程表里返回 ""（容错：地图数据过期/参数被篡改都不该打断对话）。
+func (h *Handler) conceptDirective(agentID, slug string) string {
+	var c models.AgentConcept
+	if h.db.First(&c, "agent_id = ? AND slug = ?", agentID, slug).Error != nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("== 指定关卡（仅你可见；本指令优先于上面的开场编排）==\n")
+	b.WriteString("学员从闯关地图点选了『" + c.Name + "』（" + c.Blurb + "）。本轮直接以它开课：\n")
+	if c.Hook != "" {
+		b.WriteString("开场用这个精编钩子（可贴学员语境微调措辞）：" + c.Hook + "\n")
+	} else {
+		b.WriteString("开场你自拟一个具体到画面的场景任务（把学员直接丢进情境，不要问「想学什么」）。\n")
+	}
+	if c.Check != "" {
+		b.WriteString("讲透后用精编检验题检验：" + c.Check + "\n")
+	} else {
+		b.WriteString("讲透后你自拟一道应用/迁移型检验（换个场景让学员自己用），学员过了才算真点亮。\n")
+	}
+	b.WriteString("通关后问一句：回地图挑下一关，还是顺路继续？\n== 指定关卡结束 ==")
+	return b.String()
+}
+
 // ============================ 点亮引擎 ============================
 
 // conceptList 取该 Agent 的课程表（按 sort）。
@@ -674,7 +769,7 @@ func conceptProgressView(concepts []models.AgentConcept, levels map[string]int) 
 		if lv >= 2 {
 			a.mastered++
 		}
-		a.items = append(a.items, gin.H{"name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme})
+		a.items = append(a.items, gin.H{"slug": c.Slug, "name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme, "hook": c.Hook})
 	}
 	tiers := make([]gin.H, 0, len(tierOrder))
 	for _, t := range tierOrder {
@@ -728,9 +823,24 @@ const conceptAssessPrompt = `你是「概念掌握判定器」。下面给你一
 - 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。
 只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>"}`
 
+// englishAssessPrompt：英语陪练的判定语义——「概念」是场景关卡，点亮的标准是真开口。
+const englishAssessPrompt = `你是「口语场景通关判定器」。下面给你一份英语口语场景关卡清单（每行格式 slug|场景名），以及学员与教练的一轮对话。判断这一轮里学员在清单中哪些场景上**真的用英语开口完成了核心任务**，以及是否**达到掌握水平**。
+规则：
+- touched（=点亮）：学员本轮**用英语**（至少 2 句有意义的英文，不是蹦单词）实质推进了该场景的核心任务——点了单、答了海关、做了自我介绍等，哪怕有语法错误或磕巴。全程说中文、只跟读教练给的句子、或只回答了「好/OK」的，**不算**。只放清单里确实存在的 slug，没有就给空数组。
+- mastered（=掌握）：学员不仅完成任务，还用上了该场景的目标句式，且在教练抛出变体或突发状况（换个说法、单被做错、被追问）时仍能用英语接住（必须也在 touched 里）。把握不准就别放。
+- 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。
+只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>"}`
+
+// conceptAssessPrompts：按 agent slug 覆盖判定 prompt；未列出的走默认 conceptAssessPrompt。
+var conceptAssessPrompts = map[string]string{
+	"spoken-english": englishAssessPrompt,
+}
+
 // assessConcepts 对本轮一问一答判定点亮/掌握，按「只升不降」更新 user_concepts。
+// 判定 prompt 按 agent slug 分派（英语=真开口语义，其余=概念理解语义）。
 // 返回（进度视图, 新点亮概念名, 新掌握概念名, 本轮打通的档位名）。失败时返回当前进度、无新增（不拖累主对话）。
-func (h *Handler) assessConcepts(userID, agentID, userMsg, assistantMsg string) (gin.H, []string, []string, []string) {
+func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistantMsg string) (gin.H, []string, []string, []string) {
+	agentID := a.ID
 	concepts := h.conceptList(agentID)
 	if len(concepts) == 0 {
 		return nil, nil, nil, nil
@@ -747,10 +857,14 @@ func (h *Handler) assessConcepts(userID, agentID, userMsg, assistantMsg string) 
 	}
 	levels := h.userConceptLevels(userID, agentID)
 
+	assessPrompt := conceptAssessPrompt
+	if p, ok := conceptAssessPrompts[a.Slug]; ok {
+		assessPrompt = p
+	}
 	userContent := "概念清单：\n" + lines.String() + "\n本轮对话：\n用户：" + userMsg + "\n导师：" + assistantMsg
 	raw, err := h.ds.Chat(
 		[]deepseek.Message{
-			{Role: "system", Content: conceptAssessPrompt},
+			{Role: "system", Content: assessPrompt},
 			{Role: "user", Content: userContent},
 		},
 		deepseek.ChatOptions{Temperature: 0, MaxTokens: 200, ResponseFormat: "json_object"},

@@ -1,50 +1,54 @@
 @import "./styles/icons.wxss";
 
 /* ============================================================================
-   微否设计系统 · 新粗野（Neo-brutalist）· 双端真源见 docs/design-tokens.md
-   语言：奶油纸底 + 墨青粗描边(3rpx) + 硬偏移投影(无模糊) + 薄荷点睛 + 糖果贴纸。
-   一切"柔"的手段（渐变/模糊阴影/半透明浮层）退场，深度只靠 offset 硬投影表达；
-   按压反馈 = 图章按下去：translate 位移 + 投影收没。
-   红线不变：成交/支付/资质区克制——描边照用，但贴纸/旋转/糖果色不进。
+   微否设计系统 · 糖果（Candy / Duolingo-like）· 双端真源见 docs/design-tokens.md
+   语言：纯白底 + 浅灰细边 + 垂直 3D 底唇(box-shadow 0 X 0) + 品牌碧绿主色 + 明亮糖果色。
+   深度只靠"底唇"表达：按压反馈 = 糖果按下去：translateY 下沉 + 底唇收没。
+   旧令牌名全部保留、只换值——历史页面零改动焕肤。
+   红线不变：成交/支付/资质区克制——糖果色不进，白卡灰边即可。
    本文件是小程序端令牌真源；改色先改 docs。
    ========================================================================== */
 page {
-  /* —— 中性色阶（青温灰递进，与旧版一致）—— */
-  --ink: #16241e;        /* 主文字 / 描边 / 硬投影 / 墨青主按钮 */
-  --ink-2: #4a5a53;      /* 次级文字 */
-  --sub: #8a9a93;        /* 三级文字：说明、占位 */
-  --faint: #aab4af;      /* 四级文字：时间戳、极弱信息 */
-  --line: #efede2;       /* 纸感发丝线：卡片内部分隔 */
-  --border: #16241e;     /* ⚠ 语义已变：边框=墨青。粗野卡用 var(--bw) solid var(--border) */
-  --fill: #f4f1e4;       /* 奶油填充：标签底、头像回退底 */
-  --fill-pressed: #f7f5ea; /* 单元格按下底 */
+  /* —— 中性色阶（多邻国灰阶）—— */
+  --ink: #4b4b4b;        /* 主文字；不再兼任边框/投影色 */
+  --ink-2: #6f6f6f;      /* 次级文字 */
+  --sub: #999999;        /* 三级文字：说明、占位 */
+  --faint: #bcbcbc;      /* 四级文字：时间戳、极弱信息 */
+  --line: #f0f0f0;       /* 内部发丝分隔 */
+  --border: #e5e5e5;     /* 边框=浅灰。卡片/输入统一用它 */
+  --border-strong: #d8d8d8; /* 卡片 3D 底唇 / 按压态边 */
+  --fill: #f7f7f7;       /* 灰填充：标签底、头像回退底 */
+  --fill-pressed: #efefef; /* 单元格按下底 */
 
   /* —— 表面与底色 —— */
-  --bg: #fdfbf2;         /* 页面底色：奶油纸 */
+  --bg: #ffffff;         /* 页面底色：纯白 */
   --surface: #ffffff;    /* 卡片表面 */
-  --surface-sunken: #f7f5ea; /* 内嵌凹陷区 / 输入底 */
+  --surface-sunken: #f7f7f7; /* 内嵌凹陷区 / 输入底 */
 
-  /* —— 强调色（薄荷点睛）—— */
+  /* —— 强调色（品牌碧绿保留）—— */
   --accent: #18b690;     /* CTA / 活跃态 / 强调图标 */
-  --accent-strong: #0e9c7a; /* accent 按下 / 深端 */
+  --accent-strong: #0e9c7a; /* accent 按下 / 绿按钮 3D 底唇 */
   --accent-deep: #0f766e;   /* soft 底上的图标 / 强化小字 */
-  --accent-soft: #e8f5ef;   /* 浅薄荷底 */
+  --accent-soft: #dcf6ec;   /* 浅薄荷底 */
   --accent-ink: #0c5a48;    /* accent-soft 上文字 */
-  --on-accent: #06251c;     /* 薄荷实底上的墨字（粗野风：亮底配墨字不配白字） */
-  --hl: #7ce3c4;            /* 马克笔高亮条（标题关键词底） */
+  --on-accent: #ffffff;     /* 绿实底上的白粗字（糖果风） */
+  --hl: #a9f0d8;            /* 马克笔高亮条（标题关键词底） */
 
-  /* —— 糖果贴纸色（仅角色层/学习层：agent 卡、徽章、庆祝；成交区禁入）—— */
-  --pop-butter: #ffd666;  --pop-butter-ink: #4a3502;
-  --pop-coral: #ffc9b5;   --pop-coral-ink: #4a1b0c;
-  --pop-mint: #b7ebd9;    --pop-mint-ink: #04342c;
-  --pop-lilac: #d8cbf6;   --pop-lilac-ink: #26215c;
+  /* —— 糖果色（多邻国饱和度；角色层/学习层：agent 卡、徽章、庆祝；成交区禁入）—— */
+  --pop-butter: #ffc800;  --pop-butter-ink: #7a5c00;
+  --pop-coral: #ff9600;   --pop-coral-ink: #7a4200;
+  --pop-mint: #a8f0d4;    --pop-mint-ink: #0b5c43;
+  --pop-lilac: #e6ccff;   --pop-lilac-ink: #6b2fa8;
+  --pop-sky: #ddf4ff;     --pop-sky-ink: #1899d6;
+  --cand-blue: #1cb0f6;   --cand-blue-strong: #1899d6; /* 次级 CTA 蓝 */
+  --gold: #ffd335;        --gold-strong: #e6a817;      /* 金冠 / 已掌握 */
 
   /* —— 功能色 —— */
-  --success: #16a34a;
-  --warn: #f59e0b;
-  --danger: #e0404b;
+  --success: #58cc02; --success-strong: #46a302;
+  --warn: #ffc800;
+  --danger: #ff4b4b; --danger-strong: #ea2b2b;
 
-  /* —— 描边宽度阶（粗野的骨头）—— */
+  /* —— 描边宽度阶 —— */
   --bw: 3rpx;            /* 标准卡片/按钮/输入框描边 */
   --bw-thin: 2rpx;       /* 小件：chip / 徽章 / 头像框 */
 
@@ -52,29 +56,31 @@ page {
   --sp-1: 8rpx; --sp-2: 16rpx; --sp-3: 24rpx; --sp-4: 32rpx;
   --sp-5: 40rpx; --sp-6: 56rpx; --sp-7: 72rpx;
 
-  /* —— 圆角阶 —— */
-  --r-sm: 12rpx; --r-md: 16rpx; --r-lg: 20rpx; --r-xl: 24rpx;
-  --r-2xl: 32rpx; --r-3xl: 36rpx; --r-full: 999rpx;
+  /* —— 圆角阶（糖果圆润，全面加大）—— */
+  --r-sm: 16rpx; --r-md: 24rpx; --r-lg: 28rpx; --r-xl: 32rpx;
+  --r-2xl: 40rpx; --r-3xl: 48rpx; --r-full: 999rpx;
 
-  /* —— 硬投影（offset 无模糊 = 扁平深度；层级靠位移量表达）—— */
-  --shadow-hair: 2rpx 2rpx 0 var(--ink);   /* 小件：chip / 气泡 */
-  --shadow-card: 5rpx 5rpx 0 var(--ink);   /* 默认卡片 */
-  --shadow-lift: 9rpx 9rpx 0 var(--ink);   /* hero 级大卡 */
-  --shadow-soft: 5rpx 5rpx 0 #cbe7da;      /* 薄荷软投影：推荐位（不抢墨） */
-  --shadow-pop: 12rpx 12rpx 0 var(--ink);  /* 浮层 / 弹层 */
-  --shadow-accent: 5rpx 5rpx 0 var(--ink); /* accent CTA 同样吃墨投影 */
+  /* —— 3D 底唇（垂直 offset 无模糊；名字沿用旧 shadow 阶）—— */
+  --lip: 6rpx;                                   /* 标准下沉距离 */
+  --lip-lg: 8rpx;                                /* 大按钮下沉距离 */
+  --shadow-hair: 0 3rpx 0 var(--border);         /* 小件底唇 */
+  --shadow-card: 0 5rpx 0 var(--border);         /* 默认卡片底唇 */
+  --shadow-lift: 0 8rpx 0 var(--border-strong);  /* hero 级大卡 */
+  --shadow-soft: 0 5rpx 0 #cdeee2;               /* 薄荷软唇：推荐位 */
+  --shadow-pop: 0 16rpx 48rpx rgba(0, 0, 0, 0.14); /* 浮层：糖果风允许软阴影 */
+  --shadow-accent: 0 var(--lip-lg) 0 var(--accent-strong); /* 绿 CTA 底唇 */
 
   /* —— 动效 —— */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* —— 沉浸件（暗场角色层专用，不参与粗野底盘）—— */
-  --glass-light: rgba(253, 251, 242, 0.82);
-  --glass-dark: rgba(18, 22, 28, 0.42);
-  --glass-hair: rgba(255, 255, 255, 0.16);
-  --blur-glass: blur(28rpx) saturate(180%);
-  --shadow-lihe: 5rpx 5rpx 0 rgba(22, 36, 30, 0.16);
+  /* —— 沉浸件（亮场玻璃；名保留、值已反转为白玻璃）—— */
+  --glass-light: rgba(255, 255, 255, 0.86);
+  --glass-dark: rgba(255, 255, 255, 0.72);
+  --glass-hair: rgba(75, 75, 75, 0.10);
+  --blur-glass: blur(28rpx) saturate(160%);
+  --shadow-lihe: 0 6rpx 24rpx rgba(24, 182, 144, 0.18);
 }
 
 page {
@@ -95,80 +101,96 @@ button {
 }
 button::after { border: none; }
 
-/* —— 文字阶 —— */
-.t-hero { font-size: 52rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.25; }
-.t-display { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.25; }
-.t-section { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+/* —— 文字阶（糖果风：标题上 800 大字重、不收字距）—— */
+.t-hero { font-size: 56rpx; font-weight: 800; color: var(--ink); line-height: 1.25; }
+.t-display { font-size: 46rpx; font-weight: 800; color: var(--ink); line-height: 1.25; }
+.t-section { font-size: 32rpx; font-weight: 800; color: var(--ink); }
 .t-body { font-size: 28rpx; color: var(--ink); }
 .t-sub { font-size: 26rpx; color: var(--ink-2); }
 .t-caption { font-size: 24rpx; color: var(--sub); }
 .t-micro { font-size: 22rpx; color: var(--faint); }
 
-.title { font-size: 36rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.title { font-size: 36rpx; font-weight: 800; color: var(--ink); }
 .subtitle { font-size: 28rpx; color: var(--ink-2); }
 .muted { color: var(--sub); }
 
 /* 马克笔高亮：包住标题关键词 <text class="hl">什么？</text> */
-.hl { background: var(--hl); padding: 0 8rpx; color: var(--ink); }
+.hl { background: var(--hl); padding: 0 8rpx; border-radius: 8rpx; color: var(--ink); }
 
-/* 区段眉标 + 裁切线（衣角小创意：像从纸上剪下来的分区） */
-.eyebrow { font-size: 24rpx; letter-spacing: 3rpx; color: var(--sub); font-weight: 600; }
-.cutline { border-top: var(--bw-thin) dashed rgba(22, 36, 30, 0.25); }
+/* 区段眉标 + 裁切线 */
+.eyebrow { font-size: 24rpx; letter-spacing: 3rpx; color: var(--sub); font-weight: 700; }
+.cutline { border-top: var(--bw-thin) dashed var(--border); }
 
-/* —— 按钮三类（描边 + 硬投影 + 图章按压）—— */
+/* —— 按钮三类（3D 底唇 + 下沉按压）—— */
 .btn-primary {
-  background: var(--ink);
-  color: #fff;
-  border: var(--bw) solid var(--ink);
-  border-radius: var(--r-full);
-  padding: 22rpx 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--r-md);
+  padding: 24rpx 0;
   text-align: center;
   font-size: 30rpx;
-  font-weight: 600;
-  letter-spacing: 0.5rpx;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+  font-weight: 800;
+  letter-spacing: 1rpx;
+  box-shadow: var(--shadow-accent);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
-.btn-primary:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
+.btn-primary:active { transform: translateY(var(--lip-lg)); box-shadow: none; }
 .btn-primary[disabled] { opacity: 0.4; box-shadow: none; }
 
 .btn-ghost {
   background: var(--surface);
-  color: var(--ink);
-  border: var(--bw) solid var(--ink);
-  border-radius: var(--r-full);
-  padding: 22rpx 0;
-  text-align: center;
-  font-size: 30rpx;
-  font-weight: 500;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
-}
-.btn-ghost:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); background: var(--fill-pressed); }
-
-/* 薄荷强调主按钮：亮底墨字（仅关键转化点） */
-.btn-accent {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: var(--bw) solid var(--ink);
-  border-radius: var(--r-full);
-  padding: 22rpx 0;
+  color: var(--accent-deep);
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-md);
+  padding: 24rpx 0;
   text-align: center;
   font-size: 30rpx;
   font-weight: 700;
-  letter-spacing: 0.5rpx;
-  box-shadow: var(--shadow-accent);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+  box-shadow: 0 var(--lip) 0 var(--border);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
-.btn-accent:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
+.btn-ghost:active { transform: translateY(var(--lip)); box-shadow: none; background: var(--fill-pressed); }
+
+/* 绿主 CTA（与 btn-primary 同形态，保留类名兼容） */
+.btn-accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--r-md);
+  padding: 24rpx 0;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
+  box-shadow: var(--shadow-accent);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
+}
+.btn-accent:active { transform: translateY(var(--lip-lg)); box-shadow: none; }
 .btn-accent[disabled] { opacity: 0.4; box-shadow: none; }
 
 .accent-soft { background: var(--accent-soft); color: var(--accent-ink); }
 
+/* —— 通用 3D 按压封装（新增：地图节点/庆祝等复用）—— */
+.press-3d { transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }
+.press-3d:active { transform: translateY(var(--lip)); box-shadow: none !important; }
+
+/* 金冠胶囊（已掌握态） */
+.pill-gold {
+  display: inline-block;
+  padding: 6rpx 20rpx;
+  background: var(--gold);
+  color: #7a5c00;
+  border-radius: var(--r-full);
+  font-size: 22rpx;
+  font-weight: 800;
+  box-shadow: 0 4rpx 0 var(--gold-strong);
+}
+
 /* —— 卡片 / 标签 / 贴纸 —— */
 .card {
   background: var(--surface);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-2xl);
   padding: 32rpx;
   box-shadow: var(--shadow-card);
@@ -178,30 +200,30 @@ button::after { border: none; }
   display: inline-block;
   padding: 6rpx 20rpx;
   margin: 0 12rpx 12rpx 0;
-  background: var(--surface);
-  border: var(--bw-thin) solid var(--ink);
+  background: var(--fill);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-full);
   font-size: 24rpx;
-  color: var(--ink);
+  color: var(--ink-2);
+  font-weight: 600;
 }
 
-/* 贴纸徽章：微旋转 + 描边胶囊（角色层/庆祝/状态点缀；一屏 ≤2 张） */
+/* 贴纸徽章：糖果胶囊（不旋转、无描边、浅底唇；一屏 ≤2 张） */
 .sticker {
   display: inline-block;
   padding: 4rpx 18rpx;
   background: var(--pop-butter);
-  border: var(--bw-thin) solid var(--ink);
+  border: none;
   border-radius: var(--r-full);
   font-size: 22rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--pop-butter-ink);
-  transform: rotate(-4deg);
   box-shadow: var(--shadow-hair);
 }
-.sticker-mint { background: var(--pop-mint); color: var(--pop-mint-ink); transform: rotate(3deg); }
-.sticker-coral { background: var(--pop-coral); color: var(--pop-coral-ink); transform: rotate(-3deg); }
+.sticker-mint { background: var(--pop-mint); color: var(--pop-mint-ink); }
+.sticker-coral { background: var(--pop-coral); color: #ffffff; }
 
-/* —— 空态三层（描边圆底图标 + 标题 + 说明 + 可选 CTA）—— */
+/* —— 空态三层 —— */
 .empty-wrap {
   display: flex;
   flex-direction: column;
@@ -214,16 +236,15 @@ button::after { border: none; }
   height: 128rpx;
   border-radius: 50%;
   background: var(--accent-soft);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw-thin) solid var(--border);
   box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
-  transform: rotate(-3deg);
 }
-.empty-ic .ic { font-size: 56rpx; color: var(--ink); }
-.empty-title { font-size: 32rpx; font-weight: 700; color: var(--ink); }
+.empty-ic .ic { font-size: 56rpx; color: var(--accent-deep); }
+.empty-title { font-size: 32rpx; font-weight: 800; color: var(--ink); }
 .empty-sub { margin-top: 12rpx; font-size: 26rpx; color: var(--sub); line-height: 1.6; max-width: 480rpx; }
 .empty-cta {
   display: inline-flex;
@@ -231,18 +252,18 @@ button::after { border: none; }
   gap: 8rpx;
   margin-top: 36rpx;
   padding: 20rpx 48rpx;
-  background: var(--ink);
-  color: #fff;
-  border: var(--bw) solid var(--ink);
-  border-radius: var(--r-full);
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--r-md);
   font-size: 28rpx;
-  font-weight: 600;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+  font-weight: 800;
+  box-shadow: var(--shadow-accent);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
-.empty-cta:active { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink); }
+.empty-cta:active { transform: translateY(var(--lip-lg)); box-shadow: none; }
 
-/* —— 骨架屏（奶油底 + 流光；描边虚线暗示"还没盖章"）—— */
+/* —— 骨架屏 —— */
 .skel {
   position: relative;
   overflow: hidden;
@@ -259,9 +280,9 @@ button::after { border: none; }
 }
 @keyframes skelShine { 100% { transform: translateX(100%); } }
 
-/* —— 通用按压（图章落下）—— */
-.tap { transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
-.tap:active { transform: translate(4rpx, 4rpx); box-shadow: none; }
+/* —— 通用按压（糖果下沉）—— */
+.tap { transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }
+.tap:active { transform: translateY(4rpx); box-shadow: none; }
 .hairline { border-bottom: 1rpx solid var(--line); }
-/* hover-class 用：卡片按压=位移+投影收没（放最后保证覆盖） */
-.card-press { transform: translate(5rpx, 5rpx); box-shadow: 0 0 0 var(--ink) !important; }
+/* hover-class 用：卡片按压=下沉+底唇收没（放最后保证覆盖） */
+.card-press { transform: translateY(5rpx); box-shadow: none !important; }

@@ -1,0 +1,61 @@
+<view class="map" style="--accent: {{accent}};">
+  <!-- 顶部固定条:streak 火焰 + 总进度 + (技能型)段位 -->
+  <view class="map-top">
+    <view wx:if="{{streak}}" class="mt-streak">🔥 {{streak.days}}</view>
+    <view wx:if="{{skill}}" class="mt-skill">Lv.{{skill.level}} {{skill.levelName}}</view>
+    <view class="mt-spacer"></view>
+    <view class="mt-prog">⭐ {{lit}}/{{total}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="map-loading">
+    <view class="skel skel-banner"></view>
+    <view class="skel skel-node"></view>
+    <view class="skel skel-node skel-node-r"></view>
+    <view class="skel skel-node"></view>
+  </view>
+
+  <scroll-view wx:else scroll-y class="map-scroll" scroll-into-view="{{currentAnchor}}" scroll-with-animation>
+    <block wx:for="{{sections}}" wx:key="key" wx:for-item="sec">
+      <!-- 主题 checkpoint 横幅(糖果色轮换) -->
+      <view class="cp-banner tone-{{sec.tone}}">
+        <view class="cpb-name">{{sec.tier}} · {{sec.theme}}</view>
+        <view class="cpb-prog">{{sec.lit}}/{{sec.total}}</view>
+      </view>
+      <view
+        wx:for="{{sec.nodes}}"
+        wx:key="slug"
+        wx:for-item="n"
+        id="node-{{n.slug}}"
+        class="node-row"
+        style="transform: translateX({{n.x}}rpx);"
+      >
+        <view class="node {{n.state}}" bindtap="openCard" data-slug="{{n.slug}}">
+          <view wx:if="{{n.state === 'current'}}" class="node-pulse"></view>
+          <text class="node-face">{{n.emoji}}</text>
+        </view>
+        <view class="node-name {{n.state === 'locked' ? 'dim' : ''}}">{{n.name}}</view>
+        <view class="dotlead"><text>·</text><text>·</text><text>·</text></view>
+      </view>
+    </block>
+    <view class="map-pad"></view>
+  </scroll-view>
+
+  <!-- 底部固定 CTA -->
+  <view wx:if="{{!loading}}" class="map-cta-wrap">
+    <view class="map-cta btn-accent" bindtap="startCurrent">
+      {{current ? '继续学习 · ' + current.name : '全图点亮 · 去冲掌握'}}
+    </view>
+  </view>
+
+  <!-- 关卡卡片(底部抽屉) -->
+  <view class="drawer-mask" wx:if="{{card}}" bindtap="closeCard">
+    <view class="lc-drawer" catchtap="noop">
+      <view class="lc-grip"></view>
+      <view class="lc-state {{card.state}}">{{card.stateText}}</view>
+      <view class="lc-name">{{card.name}}</view>
+      <view class="lc-blurb">{{card.blurb}}</view>
+      <view wx:if="{{card.hook}}" class="lc-hook">「{{card.hook}}」</view>
+      <view class="lc-go btn-accent" bindtap="startNode">{{card.cta}}</view>
+    </view>
+  </view>
+</view>

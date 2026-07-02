@@ -117,6 +117,7 @@ func (h *Handler) toolCard(a *models.ToolAgent, userID string, member bool, idx 
 		"key": a.Slug, "type": "tool", "name": a.Name, "line": line, "nudge": nudge,
 		"initial": initial, "tier": toolTiers[idx%len(toolTiers)], "agentId": a.ID,
 		"member": member, "freeRemaining": remaining,
+		"concept": a.Concept, "accent": a.Accent, // 概念型 → 首页卡点开进闯关地图
 	}
 }
 

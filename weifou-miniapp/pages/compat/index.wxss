@@ -23,7 +23,7 @@ page { background: var(--bg); }
 
 .cv-cta {
   margin-top: 32rpx; padding: 40rpx 32rpx; text-align: center;
-  background: var(--accent-soft); border: var(--bw) solid var(--ink);
+  background: var(--accent-soft); border: var(--bw) solid var(--border);
   border-radius: var(--r-xl); box-shadow: var(--shadow-card);
 }
 .cv-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink); }

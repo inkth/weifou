@@ -20,6 +20,7 @@
     "pages/memory/index",
     "pages/agents/index",
     "pages/agent-chat/index",
+    "pages/learn-map/index",
     "pages/membership/index",
     "pages/dating/index",
     "pages/compat/index"
@@ -28,7 +29,7 @@
     "custom": true,
     "color": "#8a9a93",
     "selectedColor": "#18b690",
-    "backgroundColor": "#fdfbf2",
+    "backgroundColor": "#ffffff",
     "list": [
       { "pagePath": "pages/discover/index", "text": "分身" },
       { "pagePath": "pages/explore/index", "text": "发现" },
@@ -37,10 +38,10 @@
   },
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#fdfbf2",
+    "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTitleText": "微否",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#fdfbf2"
+    "backgroundColor": "#ffffff"
   },
   "plugins": {
     "WechatSI": {

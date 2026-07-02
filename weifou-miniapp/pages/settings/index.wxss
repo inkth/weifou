@@ -8,7 +8,7 @@
 .input {
   height: 80rpx;
   background: var(--surface-sunken);
-  border: var(--bw-thin) solid var(--ink);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-md);
   padding: 0 24rpx;
   font-size: 30rpx;

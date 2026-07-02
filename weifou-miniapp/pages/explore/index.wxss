@@ -1,4 +1,4 @@
-/* 学习市场 = 新粗野（令牌真源见 app.wxss）：粗描边工具卡 + 奶油黄会员条。 */
+/* 学习市场 = 糖果风（令牌真源见 app.wxss）：浅灰边工具卡 + 糖果黄会员条 + 垂直底唇。 */
 .mkt {
   min-height: 100vh;
   background: var(--bg);
@@ -13,20 +13,19 @@
   margin-top: 14rpx;
   padding: 6rpx 20rpx;
   background: var(--pop-butter); color: var(--pop-butter-ink);
-  border: var(--bw-thin) solid var(--ink);
+  border: none;
   border-radius: var(--r-full);
   font-size: 23rpx; font-weight: 600;
   box-shadow: var(--shadow-hair);
-  transform: rotate(-1deg);
 }
 .mkt-state { text-align: center; padding: 80rpx 0; color: var(--faint); font-size: 26rpx; }
-.card-press { transform: translate(4rpx, 4rpx); box-shadow: 0 0 0 var(--ink) !important; }
+.card-press { transform: translateY(4rpx); box-shadow: none !important; }
 
 /* 骨架屏：结构与工具卡一致，加载不跳版 */
 .skel-card {
   display: flex; align-items: center; gap: 24rpx;
   padding: 26rpx 28rpx; border-radius: var(--r-xl); margin-bottom: 24rpx;
-  background: var(--surface); border: var(--bw-thin) dashed rgba(22, 36, 30, 0.25);
+  background: var(--surface); border: var(--bw-thin) dashed var(--border-strong);
 }
 .skel-ic { width: 92rpx; height: 92rpx; border-radius: var(--r-lg); flex: 0 0 auto; }
 .skel-lines { flex: 1; }
@@ -38,14 +37,15 @@
   display: flex; align-items: center; gap: 14rpx;
   padding: 24rpx 28rpx; border-radius: var(--r-lg); margin-bottom: 32rpx;
   background: var(--pop-butter);
-  border: var(--bw) solid var(--ink);
-  box-shadow: var(--shadow-card);
+  border: none;
+  box-shadow: 0 5rpx 0 var(--gold-strong);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.mbr-ic { font-size: 34rpx; color: var(--ink); }
+.mbr-ic { font-size: 34rpx; color: var(--pop-butter-ink); }
 .mbr-text { flex: 1; font-size: 27rpx; font-weight: 600; color: var(--pop-butter-ink); }
-.mbr-go { font-size: 24rpx; color: var(--ink); font-weight: 600; }
-.mbr.on { background: var(--accent); }
+.mbr-go { font-size: 24rpx; color: var(--pop-butter-ink); font-weight: 600; }
+.mbr.on { background: var(--accent); box-shadow: 0 5rpx 0 var(--accent-strong); }
+.mbr.on .mbr-go { color: var(--on-accent); }
 .mbr.on .mbr-ic, .mbr.on .mbr-text { color: var(--on-accent); }
 
 /* 工具卡 */
@@ -53,14 +53,14 @@
   display: flex; align-items: center; gap: 24rpx;
   padding: 26rpx 28rpx; border-radius: var(--r-xl); margin-bottom: 24rpx;
   background: var(--surface);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--border);
   box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .mcard-ic {
   flex: 0 0 auto; width: 92rpx; height: 92rpx; border-radius: var(--r-lg);
   display: flex; align-items: center; justify-content: center; font-size: 42rpx;
-  background: var(--pop-mint); border: var(--bw-thin) solid var(--ink);
+  background: var(--pop-mint); border: none;
 }
 .mcard:nth-child(3n) .mcard-ic { background: var(--pop-coral); }
 .mcard:nth-child(3n+1) .mcard-ic { background: var(--pop-lilac); }
@@ -77,9 +77,9 @@
   flex: 0 0 auto; align-self: center; font-size: 23rpx; font-weight: 600;
   padding: 10rpx 22rpx; border-radius: var(--r-full);
   color: var(--on-accent); background: var(--accent);
-  border: var(--bw-thin) solid var(--ink);
-  box-shadow: var(--shadow-hair);
+  border: var(--bw-thin) solid transparent;
+  box-shadow: 0 3rpx 0 var(--accent-strong);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.pin:active { transform: translate(2rpx, 2rpx); box-shadow: none; }
-.pin.on { color: var(--sub); background: var(--fill); border-color: rgba(22, 36, 30, 0.3); box-shadow: none; }
+.pin:active { transform: translateY(3rpx); box-shadow: none; }
+.pin.on { color: var(--sub); background: var(--fill); border-color: var(--border); box-shadow: none; }
