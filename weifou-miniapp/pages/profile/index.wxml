@@ -24,6 +24,7 @@
     </view>
     <view class="hero-row">
       <image class="hero-ava" src="{{liheSrc}}" mode="aspectFill" wx:if="{{liheSrc}}"/>
+      <view class="hero-ava hero-ava-toon" wx:elif="{{heroInitial}}">{{heroInitial}}</view>
       <view class="hero-ava hero-ava-ph" wx:else><view class="ic ic-user"></view></view>
       <view class="hero-meta">
         <view class="name">{{profile.realName}}</view>

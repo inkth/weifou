@@ -15,13 +15,18 @@
   <!-- 角色舞台：点击任意处进完整主页（预约/打赏/联系都在那）。
        tier-* 切氛围档、ambStyle 注入头像同色系光晕、stageEntered 触发开幕、
        (pending||introState) 让整台戏随思考/说话升温 -->
-  <view class="stage tier-{{stageTier}} {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}}"
+  <view class="stage tier-{{stageTier}} {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}} {{showInput ? 'compact' : ''}}"
         style="{{ambStyle}}" bindtap="openAbout">
     <view class="amb-layer">
       <view class="amb-wash"></view>
       <view class="amb-glow"></view>
       <view class="amb-blob amb-blob-1"></view>
       <view class="amb-blob amb-blob-2"></view>
+    </view>
+
+    <!-- 画框形象（无专属立绘时的"脸"）：新粗野拱窗 + 首字 toon 呼吸 -->
+    <view wx:if="{{!liheSrc}}" class="stage-frame">
+      <view class="frame-toon">{{stageInitial}}</view>
     </view>
 
     <view class="stage-meta">

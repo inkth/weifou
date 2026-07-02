@@ -17,6 +17,12 @@
 .hero-ava { flex: 0 0 auto; width: 120rpx; height: 120rpx; border-radius: 28rpx; background: var(--accent-soft); border: var(--bw-thin) solid var(--ink); }
 .hero-ava-ph { display: flex; align-items: center; justify-content: center; }
 .hero-ava-ph .ic { font-size: 56rpx; color: var(--ink); }
+/* 首字 toon 回退：主人形象同色系渐变（角色层词汇），与对话页画框同脸 */
+.hero-ava-toon {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52rpx; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--amb-a, #18b690), var(--amb-b, #14b8a6));
+}
 .hero-meta { flex: 1; min-width: 0; }
 .name { font-size: 38rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
 .title-text { font-size: 26rpx; margin-top: 8rpx; color: var(--sub); }

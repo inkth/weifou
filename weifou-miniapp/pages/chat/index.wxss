@@ -26,6 +26,53 @@
 @media (max-height: 640px) {
   .stage { height: 320rpx; gap: 10rpx; padding: 16rpx 28rpx 12rpx; }
 }
+.stage { transition: height 0.25s var(--ease), padding 0.25s var(--ease); }
+
+/* —— 画框形象：新粗野拱窗（描边+硬投影）。无专属立绘时这就是分身的"脸"。
+   frame-toon 的渐变属角色层词汇（同 stage.wxss 立绘卡纪律），不算底盘渐变。 —— */
+.stage-frame {
+  position: relative; z-index: 1;
+  width: 176rpx; height: 196rpx;
+  padding: 8rpx;
+  border-radius: 88rpx 88rpx 24rpx 24rpx;
+  border: var(--bw) solid var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: width 0.25s var(--ease), height 0.25s var(--ease), border-radius 0.25s var(--ease);
+}
+.frame-toon {
+  width: 100%; height: 100%;
+  border-radius: 80rpx 80rpx 18rpx 18rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64rpx; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--amb-a, #18b690), var(--amb-b, #14b8a6));
+  animation: toonBreath 4.5s ease-in-out infinite;
+}
+@keyframes toonBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+/* 状态耦合：思考/说话时呼吸加快 */
+.stage-active .frame-toon { animation-duration: 1.8s; }
+@media (max-height: 640px) {
+  .stage-frame { width: 140rpx; height: 152rpx; }
+  .frame-toon { font-size: 52rpx; }
+}
+
+/* —— 输入态收起：画框缩成小圆脸一行，把屏幕还给消息流 —— */
+.stage.compact {
+  height: 156rpx;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 20rpx;
+  padding: 20rpx 28rpx;
+}
+.stage.compact .stage-frame { width: 88rpx; height: 88rpx; padding: 4rpx; border-radius: 50%; box-shadow: var(--shadow-hair); }
+.stage.compact .frame-toon { border-radius: 50%; font-size: 40rpx; }
+.stage.compact .stage-meta { align-items: flex-start; }
+.stage.compact .stage-status { display: none; }
+.stage.compact .stage-indicator { display: none; }
+@media (max-height: 640px) {
+  .stage.compact { height: 132rpx; }
+}
 
 /* —— 全屏立绘模式（星野式：立绘铺底 + 气泡浮层）—— */
 .lihe-bg { position: fixed; inset: 0; z-index: 0; }

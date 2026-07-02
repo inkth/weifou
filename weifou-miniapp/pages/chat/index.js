@@ -2,7 +2,7 @@ const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
-const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
+const { tierForPreset, getPreset, initial } = require('../../utils/avatars');
 const { buildTrustLine } = require('../../utils/trust');
 
 // 从小程序码 scene（URL-encoded 的 "id=xxx"）解析 profileId
@@ -153,9 +153,15 @@ Page({
     const p = getPreset(id, this.data.profileId);
     const c0 = (p.colors && p.colors[0]) || '#18b690';
     const c1 = (p.colors && p.colors[1]) || c0;
-    // 所有场景统一全屏立绘：有专属 image 形象用专属，否则全员回退默认立绘 DEFAULT_LIHE
-    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : DEFAULT_LIHE;
-    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};`, liheSrc });
+    // 立绘只给有专属 image 形象的人；没有就走"画框舞台"（首字 toon 呼吸形象）——
+    // 不再全员回退共用默认立绘：张三和李四的分身不该是同一张脸。
+    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : '';
+    this.setData({
+      stageTier: tier.id,
+      ambStyle: `--amb-a:${c0}; --amb-b:${c1};`,
+      liheSrc,
+      stageInitial: initial(this.data.realName || ''),
+    });
   },
 
   // —— 开场：台上沉思一拍 → greeting 打字机 → 一句话介绍 → starters 淡入 ——

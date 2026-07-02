@@ -67,6 +67,14 @@
   </view>
 
   <scroll-view class="msgs" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
+    <!-- 角色画框：新粗野拱窗 + 贴纸名牌，在消息流顶部，随对话自然滚走 -->
+    <view wx:if="{{!loading}}" class="astage">
+      <view class="astage-frame {{pending ? 'busy' : ''}}" style="background: {{accent}}22;">
+        <text class="astage-emoji">{{icon}}</text>
+      </view>
+      <view class="astage-tag">{{name}}</view>
+    </view>
+
     <view wx:for="{{messages}}" wx:key="index" id="m{{index}}" class="row row-{{item.role}}">
       <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
       <view wx:if="{{novel && item.role === 'assistant'}}" class="bub-acts">

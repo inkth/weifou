@@ -3,7 +3,7 @@ const { ensureLogin } = require('../../utils/auth');
 const { fenToYuan } = require('../../utils/pay');
 const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
-const { tierForPreset, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
+const { tierForPreset, getPreset, initial } = require('../../utils/avatars');
 const { requestNewQuestionNotify, requestLeadNotify } = require('../../utils/subscribe');
 const { buildTrustLine } = require('../../utils/trust');
 
@@ -102,9 +102,15 @@ Page({
     const p = getPreset(id, seed);
     const c0 = (p.colors && p.colors[0]) || '#18b690';
     const c1 = (p.colors && p.colors[1]) || c0;
-    // 所有场景统一全屏立绘：有专属 image 形象用专属，否则回退默认立绘
-    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : DEFAULT_LIHE;
-    this.setData({ stageTier: tier.id, ambStyle: `--amb-a:${c0}; --amb-b:${c1};`, liheSrc });
+    // 立绘只给有专属 image 形象的人；否则回退首字 toon 占位——
+    // 名片是对外信任场景，绝不能是别人共用的脸。
+    const liheSrc = (p.type === 'image' && p.images && p.images.idle) ? p.images.idle : '';
+    this.setData({
+      stageTier: tier.id,
+      ambStyle: `--amb-a:${c0}; --amb-b:${c1};`,
+      liheSrc,
+      heroInitial: initial((this.data.profile && this.data.profile.realName) || ''),
+    });
   },
 
   goChat() {

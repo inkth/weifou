@@ -28,6 +28,31 @@ page { background: var(--bg); height: 100%; }
 .di-time { font-size: 22rpx; color: var(--faint); margin-top: 6rpx; }
 
 .msgs { flex: 1 1 auto; min-height: 0; padding: 24rpx 28rpx 0; box-sizing: border-box; }
+
+/* —— 角色画框（消息流顶部，随对话滚走）：新粗野拱窗 + 贴纸名牌 —— */
+.astage { display: flex; flex-direction: column; align-items: center; padding: 24rpx 0 30rpx; }
+.astage-frame {
+  width: 168rpx; height: 188rpx;
+  border-radius: 84rpx 84rpx 24rpx 24rpx;
+  border: var(--bw) solid var(--ink);
+  box-shadow: var(--shadow-card);
+  display: flex; align-items: center; justify-content: center;
+  animation: aBreath 4.5s ease-in-out infinite;
+}
+.astage-emoji { font-size: 84rpx; line-height: 1; }
+@keyframes aBreath { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.03) rotate(1deg); } }
+.astage-frame.busy { animation-duration: 1.6s; }
+.astage-tag {
+  margin-top: -16rpx;
+  padding: 6rpx 24rpx;
+  background: var(--pop-butter); color: var(--pop-butter-ink);
+  border: var(--bw-thin) solid var(--ink);
+  border-radius: var(--r-full);
+  font-size: 24rpx; font-weight: 700;
+  transform: rotate(-3deg);
+  box-shadow: var(--shadow-hair);
+}
+
 .row { display: flex; margin-bottom: 22rpx; }
 .row-user { justify-content: flex-end; }
 .row-assistant { justify-content: flex-start; }
