@@ -1,9 +1,10 @@
-/* 闯关地图:多邻国式蜿蜒路径。每个节点都是一颗 3D 糖果按钮。 */
+/* 闯关地图:多邻国式蜿蜒路径。每个节点都是一颗 3D 糖果按钮。
+   页面级皮肤:暖纸底 --paper(学习区限定,"翻开冒险手账"),控件层令牌不动。 */
 .map {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--paper);
 }
 
 /* —— 顶部固定条 —— */
@@ -157,12 +158,14 @@
 .dotlead text:nth-child(3) { opacity: 0.33; }
 .node-row:last-child .dotlead { visibility: hidden; }
 
-/* —— 底部固定 CTA —— */
+/* —— 底部固定 CTA(纸色渐变垫:节点滚到按钮下方时不穿帮) —— */
 .map-cta-wrap {
   position: fixed;
-  left: 32rpx;
-  right: 32rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 24rpx);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 48rpx 32rpx calc(env(safe-area-inset-bottom) + 24rpx);
+  background: linear-gradient(180deg, rgba(255, 251, 240, 0) 0%, var(--paper) 56%);
   z-index: 20;
 }
 .map-cta {
@@ -184,6 +187,7 @@
   align-items: flex-end;
 }
 .lc-drawer {
+  position: relative;
   width: 100%;
   background: var(--surface);
   border-radius: var(--r-3xl) var(--r-3xl) 0 0;
@@ -210,6 +214,22 @@
 }
 .lc-state.mastered { background: var(--gold); color: #7a5c00; }
 .lc-state.locked { background: var(--fill); color: var(--sub); }
+
+/* 角落风味角标(借挂机游戏事件卡"小吉"位置感,文案只正向/中性) */
+.lc-flavor {
+  position: absolute;
+  top: 56rpx;
+  right: 40rpx;
+  padding: 6rpx 20rpx;
+  border-radius: var(--r-full);
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.lc-flavor.current { background: var(--pop-butter); color: var(--pop-butter-ink); }
+.lc-flavor.available { background: var(--pop-sky); color: var(--pop-sky-ink); }
+.lc-flavor.lit { background: var(--pop-mint); color: var(--pop-mint-ink); }
+.lc-flavor.mastered { background: var(--gold); color: #7a5c00; }
+.lc-flavor.locked { background: var(--fill); color: var(--sub); }
 .lc-name { margin-top: 16rpx; font-size: 44rpx; font-weight: 800; color: var(--ink); }
 .lc-blurb { margin-top: 8rpx; font-size: 28rpx; color: var(--ink-2); }
 .lc-hook {

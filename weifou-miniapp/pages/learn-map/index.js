@@ -138,7 +138,15 @@ Page({
       available: '开始这一关',
       locked: '提前解锁这一关',
     }[node.state];
-    this.setData({ card: { ...node, stateText, cta } });
+    // 角落风味角标:只正向/中性,不做"运气不佳"式负面
+    const flavor = {
+      mastered: '传说达成',
+      lit: '可再战',
+      current: '今日主线',
+      available: '新篇章',
+      locked: '前方迷雾',
+    }[node.state];
+    this.setData({ card: { ...node, stateText, cta, flavor } });
   },
   closeCard() { this.setData({ card: null }); },
   noop() {},

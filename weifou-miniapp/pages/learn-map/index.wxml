@@ -52,6 +52,7 @@
     <view class="lc-drawer" catchtap="noop">
       <view class="lc-grip"></view>
       <view class="lc-state {{card.state}}">{{card.stateText}}</view>
+      <view class="lc-flavor {{card.state}}">{{card.flavor}}</view>
       <view class="lc-name">{{card.name}}</view>
       <view class="lc-blurb">{{card.blurb}}</view>
       <view wx:if="{{card.hook}}" class="lc-hook">「{{card.hook}}」</view>

@@ -42,6 +42,7 @@ page {
   --pop-sky: #ddf4ff;     --pop-sky-ink: #1899d6;
   --cand-blue: #1cb0f6;   --cand-blue-strong: #1899d6; /* 次级 CTA 蓝 */
   --gold: #ffd335;        --gold-strong: #e6a817;      /* 金冠 / 已掌握 */
+  --paper: #fffbf0;       /* 暖纸底：学习区页面皮肤专用(learn-map/学习日记)；控件与成交区禁入 */
 
   /* —— 功能色 —— */
   --success: #58cc02; --success-strong: #46a302;
