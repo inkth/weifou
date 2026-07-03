@@ -81,12 +81,18 @@ async function download(url) {
 const HAS_CWEBP = (() => { try { execFileSync('cwebp', ['-version'], { stdio: 'ignore' }); return true; } catch (e) { return false; } })();
 const EXT = HAS_CWEBP ? 'webp' : 'png';
 
+// 图标实际显示 ≤60rpx(≈30px@3x=90px),160px 足够;webp 3-8KB 不压主包
+const ICON_SIZE = process.env.ICON_SIZE || '160';
+
 async function saveImg(buf, id) {
   const png = join(OUT_DIR, `${id}.png`);
   await writeFile(png, buf);
   if (!HAS_CWEBP) return png;
+  const small = join(OUT_DIR, `${id}.${ICON_SIZE}.png`);
+  execFileSync('sips', ['-Z', ICON_SIZE, png, '--out', small], { stdio: 'ignore' });
   const webp = join(OUT_DIR, `${id}.webp`);
-  execFileSync('cwebp', ['-q', '82', '-alpha_q', '100', png, '-o', webp], { stdio: 'ignore' });
+  execFileSync('cwebp', ['-q', '82', '-alpha_q', '100', small, '-o', webp], { stdio: 'ignore' });
+  execFileSync('rm', [small]);
   await mkdir(RAW_DIR, { recursive: true });
   await rename(png, join(RAW_DIR, `${id}.png`));
   return webp;

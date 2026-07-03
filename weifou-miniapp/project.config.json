@@ -1,7 +1,10 @@
 {
   "description": "微否 — AI 主页小程序",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      { "type": "folder", "value": "assets/icons/learn/raw" },
+      { "type": "folder", "value": "assets/avatars/raw" }
+    ],
     "include": []
   },
   "setting": {

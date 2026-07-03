@@ -8,6 +8,9 @@ const { agentConcepts, agentSkill, learnStreak } = require('../../utils/agent');
 const SNAKE = [0, 88, 140, 88, 0, -88, -140, -88];
 // checkpoint 横幅糖果色轮换
 const TONES = ['butter', 'sky', 'mint', 'lilac'];
+// 贴纸图标(scripts/gen-learn-icons.mjs 产物);icon 缺失时 wxml 回退 emoji
+const ICON_BASE = '/assets/icons/learn/';
+const STATE_ICONS = { mastered: 'crown', lit: 'star', current: 'star', available: 'sparkle', locked: 'lock' };
 
 Page({
   data: {
@@ -107,7 +110,7 @@ Page({
         else { state = 'locked'; emoji = '🔒'; }
         const node = {
           slug: c.slug, name: c.name, blurb: c.blurb, hook: c.hook || '',
-          state, emoji, x: SNAKE[gi % SNAKE.length],
+          state, emoji, icon: ICON_BASE + STATE_ICONS[state] + '.webp', x: SNAKE[gi % SNAKE.length],
         };
         if (state === 'current') cur = node;
         sec.nodes.push(node);

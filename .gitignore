@@ -26,3 +26,6 @@ weifou-app/android/.gradle/
 weifou-server/bin/
 weifou-server/tmp/
 weifou-server/server
+
+# 生图 png 母版留本地不进仓库(webp 才进包)
+weifou-miniapp/assets/**/raw/
