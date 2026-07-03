@@ -103,7 +103,7 @@ function listVisitors() {
 
 module.exports = {
   listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts,
-  chatAgent, pinAgent, unpinAgent, listVisitors,
+  chatAgent, learnStreak, remindLearn, pinAgent, unpinAgent, listVisitors,
   getWork, updateWork, addChapter, updateChapter, deleteChapter,
   genMusic, musicStatus, myMusic,
 };
