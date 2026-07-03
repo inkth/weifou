@@ -15,10 +15,12 @@ Page({
     name: '',
     accent: '#18b690',
     loading: true,
-    streak: null,       // { days } 连续 ≥2 天才展示
-    skill: null,        // 技能型叠加(英语):Lv 段位条
+    skill: null,        // 技能型(英语):四格=段位/流利/准确/表达
+    streakDays: 0,      // 概念型四格:连学/点亮/掌握/复习
     lit: 0,
     total: 0,
+    mastered: 0,
+    due: 0,
     sections: [],       // [{ key, tier, theme, tone, lit, total, nodes: [{slug,name,blurb,hook,state,emoji,x}] }]
     current: null,      // 当前关(第一个 level=0)
     currentAnchor: '',  // scroll-into-view 锚点
@@ -59,10 +61,12 @@ Page({
       const view = this._build(cp);
       this.setData({
         loading: false,
-        streak: st && st.days >= 2 ? st : null,
+        streakDays: (st && st.days) || 0,
         skill: sk && sk.enabled && sk.assessed > 0 ? sk : null,
         lit: cp.lit || 0,
         total: cp.total || 0,
+        mastered: cp.mastered || 0,
+        due: cp.due || 0,
         sections: view.sections,
         current: view.current,
         currentAnchor: view.current ? 'node-' + view.current.slug : '',

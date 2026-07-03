@@ -1,10 +1,18 @@
 <view class="map" style="--accent: {{accent}};">
-  <!-- 顶部固定条:streak 火焰 + 总进度 + (技能型)段位 -->
-  <view class="map-top">
-    <view wx:if="{{streak}}" class="mt-streak">🔥 {{streak.days}}</view>
-    <view wx:if="{{skill}}" class="mt-skill">Lv.{{skill.level}} {{skill.levelName}}</view>
-    <view class="mt-spacer"></view>
-    <view class="mt-prog">⭐ {{lit}}/{{total}}</view>
+  <!-- 顶部角色面板:四格属性条(借挂机游戏 EXP/生命/攻击/防御 的紧凑编排,皮肤用自己的) -->
+  <view class="map-top" wx:if="{{!loading}}">
+    <block wx:if="{{skill}}">
+      <view class="st-cell"><view class="st-val">Lv.{{skill.level}}</view><view class="st-lab">🏅 {{skill.levelName}}</view></view>
+      <view class="st-cell"><view class="st-val">{{skill.fluency}}</view><view class="st-lab">🗣 流利</view></view>
+      <view class="st-cell"><view class="st-val">{{skill.accuracy}}</view><view class="st-lab">🎯 准确</view></view>
+      <view class="st-cell"><view class="st-val">{{skill.expression}}</view><view class="st-lab">💬 表达</view></view>
+    </block>
+    <block wx:else>
+      <view class="st-cell"><view class="st-val">{{streakDays}}</view><view class="st-lab">🔥 连学</view></view>
+      <view class="st-cell"><view class="st-val">{{lit}}/{{total}}</view><view class="st-lab">⭐ 点亮</view></view>
+      <view class="st-cell"><view class="st-val">{{mastered}}</view><view class="st-lab">👑 掌握</view></view>
+      <view class="st-cell"><view class="st-val">{{due}}</view><view class="st-lab">🔁 复习</view></view>
+    </block>
   </view>
 
   <view wx:if="{{loading}}" class="map-loading">

@@ -7,41 +7,38 @@
   background: var(--paper);
 }
 
-/* —— 顶部固定条 —— */
+/* —— 顶部角色面板:四格属性条(白卡上四等分格,发丝线分隔) —— */
 .map-top {
   display: flex;
-  align-items: center;
-  gap: 16rpx;
-  padding: 20rpx 32rpx;
+  align-items: stretch;
+  padding: 14rpx 16rpx;
   background: var(--surface);
   border-bottom: var(--bw-thin) solid var(--border);
 }
-.mt-streak {
-  padding: 8rpx 22rpx;
-  background: var(--pop-coral);
-  color: #ffffff;
-  border-radius: var(--r-full);
-  font-size: 26rpx;
-  font-weight: 800;
-  box-shadow: 0 4rpx 0 #d97e00;
+.st-cell {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding: 6rpx 4rpx;
 }
-.mt-skill {
-  padding: 8rpx 22rpx;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  border-radius: var(--r-full);
-  font-size: 24rpx;
-  font-weight: 700;
-}
-.mt-spacer { flex: 1; }
-.mt-prog {
-  padding: 8rpx 22rpx;
-  background: var(--gold);
-  color: #7a5c00;
-  border-radius: var(--r-full);
-  font-size: 26rpx;
+.st-cell + .st-cell { border-left: 2rpx solid var(--line); }
+.st-val {
+  font-size: 34rpx;
   font-weight: 800;
-  box-shadow: 0 4rpx 0 var(--gold-strong);
+  color: var(--ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-lab {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* —— 骨架 —— */
