@@ -436,6 +436,7 @@ type UserConcept struct {
 	AgentID   string    `gorm:"size:32;index:idx_uc_user_agent" json:"agentId"` // 冗余，便于按 Agent 聚合 X/100
 	Level     int       `json:"level"`                                          // 0/1/2
 	Touches   int       `json:"touches"`                                        // 命中次数
+	Note      string    `gorm:"size:120" json:"note"`                           // 本课战报：判定器一句话（≤20字），latest-wins；空轮不覆盖
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

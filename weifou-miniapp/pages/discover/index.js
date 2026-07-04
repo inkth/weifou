@@ -99,7 +99,8 @@ Page({
       const sp = (this.data.specialists || []).find((s) => s.id === id);
       if (sp && sp.concept) {
         // 概念型学习 Agent → 闯关地图
-        wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(sp.accent || '')}` });
+        // initial 即 ToolAgent.Icon(emoji),透传给卡流的吉祥物舞台占位
+        wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(sp.accent || '')}&icon=${encodeURIComponent(sp.initial || '')}` });
         return;
       }
       wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });

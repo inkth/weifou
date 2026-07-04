@@ -1,6 +1,7 @@
-/* 闯关地图:多邻国式蜿蜒路径。每个节点都是一颗 3D 糖果按钮。
+/* 学习区主页:双视图(第N课卡片流 + 闯关地图)。每个节点/课卡都是一颗 3D 糖果控件。
    页面级皮肤:暖纸底 --paper(学习区限定,"翻开冒险手账"),控件层令牌不动。 */
 .map {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -238,6 +239,16 @@
 .lc-flavor.locked { background: var(--fill); color: var(--sub); }
 .lc-name { margin-top: 16rpx; font-size: 44rpx; font-weight: 800; color: var(--ink); }
 .lc-blurb { margin-top: 8rpx; font-size: 28rpx; color: var(--ink-2); }
+.lc-report {
+  margin-top: 16rpx;
+  display: inline-block;
+  padding: 8rpx 20rpx;
+  border-radius: var(--r-full);
+  background: var(--pop-mint);
+  color: var(--pop-mint-ink);
+  font-size: 24rpx;
+  font-weight: 700;
+}
 .lc-hook {
   margin-top: 24rpx;
   padding: 24rpx 28rpx;
@@ -248,3 +259,123 @@
   line-height: 1.7;
 }
 .lc-go { margin-top: 32rpx; }
+
+/* ============ 视图一:第N课卡片流 ============ */
+.stream-scroll { flex: 1; min-height: 0; }
+
+/* 视图切换 chip(糖果小丸,浮在滚动区右上) */
+.view-toggle {
+  position: absolute;
+  top: 128rpx;
+  right: 24rpx;
+  z-index: 30;
+  padding: 12rpx 24rpx;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 24rpx;
+  font-weight: 800;
+  color: var(--ink);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
+}
+.view-toggle:active { transform: translateY(6rpx); box-shadow: none; }
+
+/* 吉祥物舞台:emoji 占位 + 台面(真立绘后续替换 stage-face) */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 36rpx 32rpx 4rpx;
+}
+.stage-face {
+  font-size: 104rpx;
+  line-height: 1.15;
+  filter: drop-shadow(0 8rpx 0 rgba(0, 0, 0, 0.08));
+}
+.stage-deck {
+  width: 300rpx;
+  height: 24rpx;
+  margin-top: -2rpx;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* 课卡基形:白卡 + 3D 底唇 + 按压下沉 */
+.lsn {
+  margin: 0 32rpx 24rpx;
+  padding: 26rpx 30rpx;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
+}
+.lsn:active { transform: translateY(5rpx); box-shadow: none; }
+.lsn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lsn-num { font-size: 22rpx; font-weight: 800; color: var(--sub); }
+.lsn-flavor {
+  padding: 4rpx 18rpx;
+  border-radius: var(--r-full);
+  font-size: 20rpx;
+  font-weight: 800;
+}
+.lsn-flavor.current { background: var(--pop-butter); color: var(--pop-butter-ink); }
+.lsn-flavor.lit { background: var(--pop-mint); color: var(--pop-mint-ink); }
+.lsn-flavor.mastered { background: var(--gold); color: #7a5c00; }
+.lsn-name { margin-top: 8rpx; font-size: 32rpx; font-weight: 800; color: var(--ink); }
+.lsn-report {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.lsn-ic {
+  display: inline-block;
+  width: 26rpx;
+  height: 26rpx;
+  vertical-align: -4rpx;
+  margin-right: 6rpx;
+}
+.lsn-note { color: var(--sub); font-weight: 600; }
+
+/* 当前课:悬念卡(描边高亮 + Hook 全文 + 内嵌大按钮) */
+.lsn.current {
+  border: 4rpx solid var(--accent);
+  box-shadow: 0 10rpx 0 var(--accent-strong);
+}
+.lsn-hook {
+  margin-top: 16rpx;
+  padding: 22rpx 26rpx;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+  font-size: 26rpx;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+.lsn-go {
+  margin-top: 22rpx;
+  font-size: 30rpx;
+}
+
+/* 未来课:蒙雾卡(只有课号+名,软锁可点) */
+.lsn.available,
+.lsn.locked {
+  padding: 20rpx 30rpx;
+  background: var(--fill);
+  box-shadow: 0 6rpx 0 var(--border);
+}
+.lsn.available .lsn-name,
+.lsn.locked .lsn-name { color: var(--faint); font-weight: 700; font-size: 28rpx; }
+.lsn.available .lsn-num,
+.lsn.locked .lsn-num { color: var(--faint); }
+
+/* Boss 关(章末综合关):金卡(蒙雾中的 Boss 也保留金边预告分量;普通掌握卡不加金边,守住 Boss 稀缺感) */
+.lsn.boss {
+  border: 4rpx solid var(--gold);
+  box-shadow: 0 10rpx 0 var(--gold-strong);
+}
+.lsn.boss.current { border-color: var(--gold); }

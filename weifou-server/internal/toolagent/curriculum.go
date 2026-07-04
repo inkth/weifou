@@ -1809,19 +1809,24 @@ func (h *Handler) conceptList(agentID string) []models.AgentConcept {
 	return cs
 }
 
-// userConceptLevels 取用户在该 Agent 各概念上的档位 map[conceptID]level。
-func (h *Handler) userConceptLevels(userID, agentID string) map[string]int {
+// userConceptLevels 取用户在该 Agent 各概念上的档位 map[conceptID]level 与战报 map[conceptID]note（只装非空）。
+func (h *Handler) userConceptLevels(userID, agentID string) (map[string]int, map[string]string) {
 	var ucs []models.UserConcept
 	h.db.Where("user_id = ? AND agent_id = ?", userID, agentID).Find(&ucs)
 	m := make(map[string]int, len(ucs))
+	notes := make(map[string]string, len(ucs))
 	for i := range ucs {
 		m[ucs[i].ConceptID] = ucs[i].Level
+		if ucs[i].Note != "" {
+			notes[ucs[i].ConceptID] = ucs[i].Note
+		}
 	}
-	return m
+	return m, notes
 }
 
 // conceptProgressView 序列化进度给前端：总 total/lit/mastered + 按档（默认三档或逻辑六幕）分组的概念与各档进度。
-func conceptProgressView(agentSlug string, concepts []models.AgentConcept, levels map[string]int) gin.H {
+// notes 为 conceptID→本课战报（nil 安全），随 item 下发给卡片流。
+func conceptProgressView(agentSlug string, concepts []models.AgentConcept, levels map[string]int, notes map[string]string) gin.H {
 	labels, order := tiersFor(agentSlug)
 	lit, mastered := 0, 0
 	type agg struct {
@@ -1850,7 +1855,7 @@ func conceptProgressView(agentSlug string, concepts []models.AgentConcept, level
 		if lv >= 2 {
 			a.mastered++
 		}
-		a.items = append(a.items, gin.H{"slug": c.Slug, "name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme, "hook": c.Hook})
+		a.items = append(a.items, gin.H{"slug": c.Slug, "name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme, "hook": c.Hook, "note": notes[c.ID]})
 	}
 	tiers := make([]gin.H, 0, len(order))
 	for _, t := range order {
@@ -1868,7 +1873,8 @@ func conceptProgressView(agentSlug string, concepts []models.AgentConcept, level
 
 // loadConceptProgress 给 GET /agents/concepts/:id 用：当前进度视图。
 func (h *Handler) loadConceptProgress(userID string, a *models.ToolAgent) gin.H {
-	return conceptProgressView(a.Slug, h.conceptList(a.ID), h.userConceptLevels(userID, a.ID))
+	levels, notes := h.userConceptLevels(userID, a.ID)
+	return conceptProgressView(a.Slug, h.conceptList(a.ID), levels, notes)
 }
 
 // tierClearedSet 返回「已点满（lit==total）」的档位集合，用于检测本轮新打通了哪档。
@@ -1954,7 +1960,7 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		lines.WriteString(c.Name)
 		lines.WriteString("\n")
 	}
-	levels := h.userConceptLevels(userID, agentID)
+	levels, notes := h.userConceptLevels(userID, agentID)
 
 	assessPrompt := conceptAssessPrompt
 	if p, ok := conceptAssessPrompts[a.Slug]; ok {
@@ -1969,11 +1975,11 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		deepseek.ChatOptions{Temperature: 0, MaxTokens: 200, ResponseFormat: "json_object"},
 	)
 	if err != nil {
-		return conceptProgressView(a.Slug, concepts, levels), nil, nil, nil
+		return conceptProgressView(a.Slug, concepts, levels, notes), nil, nil, nil
 	}
 	var r conceptAssessResult
 	if jerr := json.Unmarshal([]byte(strings.TrimSpace(raw)), &r); jerr != nil {
-		return conceptProgressView(a.Slug, concepts, levels), nil, nil, nil
+		return conceptProgressView(a.Slug, concepts, levels, notes), nil, nil, nil
 	}
 
 	preCleared := tierClearedSet(concepts, levels) // 更新前已打通的档
@@ -1990,6 +1996,14 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		touched[s] = true // mastered 必含于 touched
 	}
 
+	// 第一遍：解析有效命中，算档位变化（战报要写给谁取决于全局：先看完再写）。
+	type hit struct {
+		c      *models.AgentConcept
+		target int
+		up     bool
+	}
+	var hits []hit
+	upCount := 0
 	var newlyLit, newlyMastered []string
 	for slug := range touched {
 		c := bySlug[slug]
@@ -2006,9 +2020,24 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		} else if target >= 1 && old < 1 {
 			newlyLit = append(newlyLit, c.Name)
 		}
-		h.bumpConcept(userID, agentID, c.ID, target) // 命中即 +touches；档位只升不降
-		if target > old {
-			levels[c.ID] = target
+		up := target > old
+		if up {
+			upCount++
+		}
+		hits = append(hits, hit{c: c, target: target, up: up})
+	}
+	// 战报归属：判定器的 note 是轮级的一句话——写给本轮升档的概念；无升档且只命中一个则写它；
+	// 多命中无升档不写（同一句话盖到多行反而失真）。空轮永不覆盖旧战报（bumpConcept 内守护）。
+	roundNote := clipText(strings.TrimSpace(r.Note), 80)
+	for _, ht := range hits {
+		note := ""
+		if roundNote != "" && (ht.up || (upCount == 0 && len(hits) == 1)) {
+			note = roundNote
+			notes[ht.c.ID] = roundNote // 返回视图即时新鲜
+		}
+		h.bumpConcept(userID, agentID, ht.c.ID, ht.target, note) // 命中即 +touches；档位只升不降
+		if ht.target > levels[ht.c.ID] {
+			levels[ht.c.ID] = ht.target
 		}
 	}
 
@@ -2022,9 +2051,9 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		}
 	}
 
-	view := conceptProgressView(a.Slug, concepts, levels)
-	if note := strings.TrimSpace(r.Note); note != "" {
-		view["note"] = clipText(note, 80)
+	view := conceptProgressView(a.Slug, concepts, levels, notes)
+	if roundNote != "" {
+		view["note"] = roundNote
 	}
 	return view, newlyLit, newlyMastered, tierCleared
 }
@@ -2038,7 +2067,7 @@ func (h *Handler) conceptStateBrief(userID string, a *models.ToolAgent, fresh bo
 	if len(concepts) == 0 {
 		return ""
 	}
-	levels := h.userConceptLevels(userID, agentID)
+	levels, _ := h.userConceptLevels(userID, agentID)
 
 	litByTier, totByTier := map[int]int{}, map[int]int{}
 	lit, mastered := 0, 0
@@ -2110,12 +2139,13 @@ func (h *Handler) conceptStateBrief(userID string, a *models.ToolAgent, fresh bo
 }
 
 // bumpConcept 命中某概念：touches+1，档位 level 只升不降（upsert）。
-func (h *Handler) bumpConcept(userID, agentID, conceptID string, level int) {
+// note 非空时写入战报（latest-wins）；空 note 不覆盖旧战报。
+func (h *Handler) bumpConcept(userID, agentID, conceptID string, level int, note string) {
 	var uc models.UserConcept
 	if err := h.db.First(&uc, "user_id = ? AND concept_id = ?", userID, conceptID).Error; err == gorm.ErrRecordNotFound {
 		uc = models.UserConcept{
 			ID: idgen.New(), UserID: userID, AgentID: agentID, ConceptID: conceptID,
-			Level: level, Touches: 1,
+			Level: level, Touches: 1, Note: note,
 		}
 		if cerr := h.db.Create(&uc).Error; cerr == nil {
 			return
@@ -2125,6 +2155,9 @@ func (h *Handler) bumpConcept(userID, agentID, conceptID string, level int) {
 	updates := map[string]interface{}{"touches": gorm.Expr("touches + 1")}
 	if level > uc.Level {
 		updates["level"] = level
+	}
+	if note != "" {
+		updates["note"] = note
 	}
 	h.db.Model(&uc).Updates(updates)
 }

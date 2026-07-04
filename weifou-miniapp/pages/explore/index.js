@@ -63,7 +63,7 @@ Page({
     const { id, name } = e.currentTarget.dataset;
     const a = (this.data.agents || []).find((x) => x.id === id);
     if (a && a.concept) {
-      wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(a.accent || '')}` });
+      wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(a.accent || '')}&icon=${encodeURIComponent(a.icon || '')}` });
       return;
     }
     wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });

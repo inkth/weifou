@@ -32,8 +32,9 @@ function agentSkill(agentId) {
   return request({ url: `/agents/skill/${agentId}` });
 }
 
-// 我在某「概念型」学习 Agent（如学心理/学经济/学哲学）的点亮进度。
-// 非概念型返回 { enabled: false }；概念型返回 { enabled, total, lit, mastered, themes:[{theme, concepts:[{name, blurb, level}]}] }。
+// 我在某「概念型」学习 Agent（如学心理/会说话）的点亮进度。
+// 非概念型返回 { enabled: false }；概念型返回 { enabled, total, lit, mastered, due,
+// tiers:[{tier, lit, total, concepts:[{slug, name, blurb, hook, note, level, theme}]}] }（note=本课战报）。
 function agentConcepts(agentId) {
   return request({ url: `/agents/concepts/${agentId}` });
 }

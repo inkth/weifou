@@ -15,6 +15,9 @@
     </block>
   </view>
 
+  <!-- 视图切换:卡片流 ⇄ 地图 -->
+  <view wx:if="{{!loading}}" class="view-toggle" bindtap="toggleView">{{viewMode === 'stream' ? '🗺️ 地图' : '📜 课程'}}</view>
+
   <view wx:if="{{loading}}" class="map-loading">
     <view class="skel skel-banner"></view>
     <view class="skel skel-node"></view>
@@ -22,6 +25,47 @@
     <view class="skel skel-node"></view>
   </view>
 
+  <!-- 视图一:第N课卡片流(默认)。成果卡=战报,当前卡=Hook悬念+大按钮,未来卡=蒙雾(软锁可点) -->
+  <scroll-view wx:elif="{{viewMode === 'stream'}}" scroll-y class="stream-scroll" scroll-into-view="{{streamAnchor}}" scroll-with-animation>
+    <!-- 吉祥物舞台:课程 emoji 占位,真立绘后续补 -->
+    <view class="stage">
+      <view class="stage-face">{{icon}}</view>
+      <view class="stage-deck"></view>
+    </view>
+    <block wx:for="{{sections}}" wx:key="key" wx:for-item="sec">
+      <view class="cp-banner tone-{{sec.tone}}">
+        <view class="cpb-name">{{sec.tier}} · {{sec.theme}}</view>
+        <view class="cpb-prog">{{sec.lit}}/{{sec.total}}</view>
+      </view>
+      <view
+        wx:for="{{sec.nodes}}"
+        wx:key="slug"
+        wx:for-item="n"
+        id="card-{{n.slug}}"
+        class="lsn {{n.state}} {{n.boss ? 'boss' : ''}}"
+        bindtap="openCard"
+        data-slug="{{n.slug}}"
+      >
+        <view class="lsn-top">
+          <text class="lsn-num">{{n.boss ? '👑 ' : ''}}第{{n.num}}课</text>
+          <text wx:if="{{n.state === 'mastered' || n.state === 'lit' || n.state === 'current'}}" class="lsn-flavor {{n.state}}">{{n.flavor}}</text>
+        </view>
+        <view class="lsn-name">{{n.name}}</view>
+        <view wx:if="{{n.state === 'mastered' || n.state === 'lit'}}" class="lsn-report">
+          <image class="lsn-ic" src="{{n.icon}}" mode="aspectFit" />
+          <text>{{n.state === 'mastered' ? '已掌握' : '已点亮'}}</text>
+          <text wx:if="{{n.note}}" class="lsn-note"> · {{n.note}}</text>
+        </view>
+        <block wx:if="{{n.state === 'current'}}">
+          <view class="lsn-hook">{{n.hook || n.blurb}}</view>
+          <view class="lsn-go btn-accent" catchtap="startFromCard" data-slug="{{n.slug}}">上这一课</view>
+        </block>
+      </view>
+    </block>
+    <view class="map-pad"></view>
+  </scroll-view>
+
+  <!-- 视图二:闯关地图(蜿蜒路径,自由跳关) -->
   <scroll-view wx:else scroll-y class="map-scroll" scroll-into-view="{{currentAnchor}}" scroll-with-animation>
     <block wx:for="{{sections}}" wx:key="key" wx:for-item="sec">
       <!-- 主题 checkpoint 横幅(糖果色轮换) -->
@@ -64,6 +108,7 @@
       <view class="lc-flavor {{card.state}}">{{card.flavor}}</view>
       <view class="lc-name">{{card.name}}</view>
       <view class="lc-blurb">{{card.blurb}}</view>
+      <view wx:if="{{card.note}}" class="lc-report">上次战报 · {{card.note}}</view>
       <view wx:if="{{card.hook}}" class="lc-hook">「{{card.hook}}」</view>
       <view class="lc-go btn-accent" bindtap="startNode">{{card.cta}}</view>
     </view>
