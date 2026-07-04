@@ -2,7 +2,7 @@ package toolagent
 
 import "testing"
 
-// 四门完备课的护城河检查：每个概念都必须有精编 Hook+Check，且精编条目不得指向不存在的概念（防 slug 手误）。
+// 五门完备课的护城河检查：每个概念都必须有精编 Hook+Check，且精编条目不得指向不存在的概念（防 slug 手误）。
 func TestCuratedContentComplete(t *testing.T) {
 	for agentSlug, list := range curricula {
 		content, ok := curatedContent[agentSlug]
