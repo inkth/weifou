@@ -3,7 +3,7 @@ const { ensureLogin } = require('../../utils/auth');
 const { myQuestions } = require('../../utils/asyncq');
 
 Page({
-  data: { list: [], loading: true },
+  data: { list: [], loading: true, loadError: false },
 
   async onShow() {
     try { await ensureLogin(); } catch (e) {}
@@ -11,6 +11,7 @@ Page({
   },
 
   async load() {
+    this.setData({ loading: true, loadError: false });
     try {
       const list = await myQuestions();
       this.setData({
@@ -24,10 +25,13 @@ Page({
         loading: false,
       });
     } catch (e) {
-      this.setData({ loading: false });
+      // 标记错误态：避免把网络失败显示成"你还没有提问"
+      this.setData({ loading: false, loadError: true });
       wx.showToast({ title: e.message || '加载失败', icon: 'none' });
     }
   },
+
+  retry() { this.load(); },
 
   goDetail(e) {
     const id = e.currentTarget.dataset.id;

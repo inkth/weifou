@@ -1,6 +1,12 @@
 <view class="page">
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
 
+  <view wx:elif="{{loadError}}" class="empty-wrap">
+    <view class="empty-title">加载失败</view>
+    <view class="empty-sub">网络不太稳,点下面重试</view>
+    <view class="empty-cta" bindtap="retry">重试</view>
+  </view>
+
   <block wx:elif="{{visitors.length}}">
     <view class="v-row" wx:for="{{visitors}}" wx:key="index" data-id="{{item.profileId}}" bindtap="openVisitor">
       <image class="v-ava" src="{{item.avatar}}" wx:if="{{item.avatar}}" />

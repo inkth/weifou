@@ -18,10 +18,15 @@ function fmtTime(iso) {
 }
 
 Page({
-  data: { loading: true, visitors: [] },
+  data: { loading: true, loadError: false, visitors: [] },
 
   async onLoad() {
     try { await ensureLogin(); } catch (e) {}
+    this.load();
+  },
+
+  async load() {
+    this.setData({ loading: true, loadError: false });
     try {
       const list = await listVisitors();
       this.setData({
@@ -33,9 +38,14 @@ Page({
         loading: false,
       });
     } catch (e) {
-      this.setData({ loading: false }); // 没名片/无访客 → 空态
+      // 只有真失败(断网/5xx)才标错误态；没名片/无访客仍走空态
+      const failed = e.code === 'NETWORK_ERROR' || /^HTTP_5/.test(e.code || '');
+      this.setData({ loading: false, loadError: failed });
+      if (failed) wx.showToast({ title: e.message || '加载失败', icon: 'none' });
     }
   },
+
+  retry() { this.load(); },
 
   openVisitor(e) {
     const { id } = e.currentTarget.dataset;

@@ -10,6 +10,11 @@
   </view>
 
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
+  <view wx:elif="{{loadError}}" class="empty-wrap">
+    <view class="empty-title">加载失败</view>
+    <view class="empty-sub">网络不太稳,点下面重试</view>
+    <view class="empty-cta" bindtap="retry">重试</view>
+  </view>
   <view wx:elif="{{!items.length}}" class="empty muted">还没有记忆。粘贴一段你的资料，分身就开始懂你了。</view>
 
   <view class="m-item" wx:for="{{items}}" wx:key="id">

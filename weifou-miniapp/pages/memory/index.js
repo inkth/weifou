@@ -4,20 +4,25 @@ const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 
 Page({
-  data: { loading: true, items: [] },
+  data: { loading: true, loadError: false, items: [] },
 
   onShow() { this.load(); },
 
   async load() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, loadError: false });
     try { await ensureLogin(); } catch (e) {}
     try {
       const list = await request({ url: '/profile/knowledge' });
       this.setData({ items: list || [], loading: false });
     } catch (e) {
-      this.setData({ items: [], loading: false }); // 没名片/无记忆 → 空态
+      // 只有真失败(断网/5xx)才标错误态；没名片/无记忆仍走空态
+      const failed = e.code === 'NETWORK_ERROR' || /^HTTP_5/.test(e.code || '');
+      this.setData({ items: [], loading: false, loadError: failed });
+      if (failed) wx.showToast({ title: e.message || '加载失败', icon: 'none' });
     }
   },
+
+  retry() { this.load(); },
 
   // 粘贴一段长文本，AI 拆成多条记忆。
   ingestMemory() {

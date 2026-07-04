@@ -2,9 +2,10 @@
   <view class="sec-title">最近聊过</view>
 
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
-  <view wx:elif="{{loadError}}" class="empty muted">
-    <view>加载失败</view>
-    <view class="empty-sub" bindtap="retry" style="color:#18b690">点此重试</view>
+  <view wx:elif="{{loadError}}" class="empty-wrap">
+    <view class="empty-title">加载失败</view>
+    <view class="empty-sub">网络不太稳,点下面重试</view>
+    <view class="empty-cta" bindtap="retry">重试</view>
   </view>
   <block wx:else>
     <view wx:if="{{!list.length}}" class="empty muted">
