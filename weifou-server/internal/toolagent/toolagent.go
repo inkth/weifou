@@ -493,10 +493,10 @@ func Seed(db *gorm.DB) {
 		},
 		{
 			Slug: "learn-psychology", Name: "学心理",
-			Tagline:     "用核心概念看懂人心的 AI 导师",
-			Description: "从认知偏误、情绪调节到依恋与人格，「知心」陪你用心理学真正理解自己和他人。聊得越深，点亮的概念越多。",
+			Tagline:     "情绪和关系不再内耗的 AI 心理导师",
+			Description: "看清自己、经营关系、看穿套路——「知心」带你走一趟三幕心理学之旅：情绪不内耗、关系不拧巴、决策不被套路。聊得越深，点亮的关卡越多。",
 			Category:    models.AgentCatEducation, Icon: "🧠", Accent: "#EC4899",
-			Greeting:     "嗨，我是知心。最近心里在琢磨什么？人际、情绪、还是想更懂自己——讲讲你的具体处境，我用心理学陪你照亮它。我们会一个个把这个领域的核心概念点亮。",
+			Greeting:     "嗨，我是知心。最近心里在琢磨什么？人际、情绪、还是想更懂自己——讲讲你的具体处境，我用心理学陪你照亮它。我们会从「看清自己」出发，一关关把整张地图点亮。",
 			SystemPrompt: buildConceptPrompt(psychologyPersona+"\n\n"+conceptTeachingMethod, psychologyConcepts),
 			Concept:      true,
 			FreeTrial:    5, Sort: 4,
