@@ -20,6 +20,7 @@ Page({
     avatarStyle: '',
     oneLiner: '',
     starters: [], // AI 生成的引导问题（点了即移除，避免重复）
+    followups: [], // 每轮回答后分身给出的追问选项（点选即发，代替打字）
     startersRevealed: false, // 开场动画结束后才淡入引导问题
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
     contactAvailable: false,
@@ -279,6 +280,12 @@ Page({
     this.ask(q);
   },
 
+  // 点追问选项 → 作为问题发送（点选为主、输入兜底；ask 开头会清空整组避免重复）
+  pickFollowup(e) {
+    const q = e.currentTarget.dataset.q;
+    if (q) this.ask(q);
+  },
+
   toggleInput() {
     this._abortIntro();
     const next = !this.data.showInput;
@@ -322,8 +329,8 @@ Page({
     }
 
     const messages = this.data.messages.concat({ role: 'user', content });
-    // 第三幕结束：一旦开聊，名片收成顶部胶囊条
-    this.setData({ messages, pending: true, cardCompact: true, cardFlipped: false });
+    // 第三幕结束：一旦开聊，名片收成顶部胶囊条；上一轮追问选项作废
+    this.setData({ messages, pending: true, cardCompact: true, cardFlipped: false, followups: [] });
 
     try {
       const data = await request({
@@ -337,7 +344,8 @@ Page({
       const idx = msgs.length - 1;
       this.setData({ messages: msgs, pending: false, answeredOnce: true, introState: 'speaking' });
       await this._typeAnswer(idx, data.answer || '');
-      this.setData({ introState: '' });
+      // 回答落定后亮出追问选项：访客不打字也能一路聊下去
+      this.setData({ introState: '', followups: data.suggestions || [] });
       // 轻线索：访客被第 2 个回答"种草"后，给一条不抢戏的"我也要一个"入口（仅一次）
       this._answerCount = (this._answerCount || 0) + 1;
       if (this._answerCount === 2) this._showOwnHook('light');

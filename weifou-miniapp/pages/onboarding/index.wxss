@@ -109,6 +109,9 @@
 }
 .ob-opt-l { font-size: 28rpx; font-weight: 600; }
 .ob-opt-d { font-size: 22rpx; color: var(--sub); }
+/* 卖点动态候选：整句成行 + 「换一批/生成中」灰态 */
+.ob-opt.full { width: 100%; box-sizing: border-box; border-radius: 20rpx; line-height: 1.5; }
+.ob-opt.ghost { color: var(--sub); background: rgba(255,255,255,0.45); }
 
 .ob-typing { display: inline-flex; align-items: center; gap: 10rpx; padding: 24rpx 26rpx; }
 .ob-typing .dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--sub); animation: obBlink 1.2s infinite ease-in-out; }

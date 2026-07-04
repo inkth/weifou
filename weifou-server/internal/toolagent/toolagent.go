@@ -4,6 +4,7 @@
 package toolagent
 
 import (
+	"regexp"
 	"strings"
 	"time"
 
@@ -179,7 +180,8 @@ func (h *Handler) chat(c *gin.Context) error {
 
 	// 最近 20 条历史 + 平台自编 system prompt + 学习状态注入。
 	// L1 主动教学：把学员进度/段位和本轮编排指令喂给模型，让它带着课来，而不是等着被问。
-	sysPrompt := a.SystemPrompt
+	// 点选优先（全局交互范式）：回复末尾带选项行，服务端剥离后作为可点气泡下发。
+	sysPrompt := a.SystemPrompt + "\n\n" + optionsDirective
 	var sk *models.AgentSkill
 	if a.Assess {
 		sk = h.loadSkill(auth.UserID, a.ID)
@@ -218,19 +220,21 @@ func (h *Handler) chat(c *gin.Context) error {
 		}
 		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
-	answer := strings.TrimSpace(raw)
+	answer, options := splitOptions(strings.TrimSpace(raw))
 	safe := models.SafePass
-	if !h.security.CheckText(answer, auth.Openid) {
+	if !h.security.CheckText(answer+"\n"+strings.Join(options, "\n"), auth.Openid) {
 		safe = models.SafeReject
 		answer = "抱歉，这部分内容不方便回答，我们换个话题继续吧。"
+		options = nil
 	}
+	// 入库存剥离选项后的正文：历史回放干净，模型看到的上下文也不带标记行。
 	h.db.Create(&models.AgentMessage{
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
 		Content: answer, SafeCheckStatus: safe,
 	})
 	h.db.Model(&session).Update("updated_at", time.Now())
 
-	resp := gin.H{"sessionId": session.ID, "answer": answer, "member": member, "remaining": remaining}
+	resp := gin.H{"sessionId": session.ID, "answer": answer, "options": options, "member": member, "remaining": remaining}
 
 	// 连续学习天数：学习型（技能/概念）对话记一天；newDay 时前端做里程碑庆祝/提醒承诺邀请。
 	if a.Assess || a.Concept {
@@ -345,6 +349,45 @@ func (h *Handler) sessionList(c *gin.Context) error {
 	}
 	httpx.OK(c, out)
 	return nil
+}
+
+// ---------- 点选优先：选项行协议 ----------
+// 全局交互范式「点选为主、输入兜底」：Agent 每次回复末尾按 optionsDirective 附一行候选，
+// 服务端剥离该行、拆成 options 数组随回复下发，前端渲染成可点气泡；模型没给就没有，输入框兜底。
+
+const optionsDirective = `交互规则（点选优先，务必遵守）：
+用户在手机上更愿意点选而不是打字。你的每次回复，若结尾的提问 / 推进选择存在可枚举的典型回答，必须在回复的最后单独输出一行（前面空一行）：
+【选项】选项1｜选项2｜选项3
+- 2~4 个，每个不超过 16 字；用户点选后该文字会原样作为 TA 的回答发给你，所以选项要以用户口吻写、可直接当回答用，彼此差异明显。
+- 检验理解时优先设计成可点选的判断题 / 选择题：把正确项混在似是而非的干扰项里，让点选本身就是思考。
+- 例外：当你要求对方自由表达才算数时（如用英语开口说出一句话、自己举一个例子、用自己的话复述），不要输出选项行，让 TA 真正开口。
+- 选项行必须是整个回复的最后一行，除此之外不要出现「【选项】」字样。`
+
+// optsLineRe 匹配回复中的选项行（容忍模型偶发把它放在中间）。
+var optsLineRe = regexp.MustCompile(`(?m)^\s*【选项】\s*(.+?)\s*$`)
+
+// splitOptions 从模型回复中剥离选项行：返回干净正文 + 选项数组（无选项行则原样返回）。
+func splitOptions(answer string) (string, []string) {
+	m := optsLineRe.FindStringSubmatch(answer)
+	if m == nil {
+		return answer, nil
+	}
+	body := strings.TrimSpace(optsLineRe.ReplaceAllString(answer, ""))
+	opts := make([]string, 0, 4)
+	for _, p := range strings.FieldsFunc(m[1], func(r rune) bool { return r == '｜' || r == '|' }) {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		opts = append(opts, clipText(p, 30))
+		if len(opts) >= 4 {
+			break
+		}
+	}
+	if len(opts) == 0 {
+		return body, nil
+	}
+	return body, opts
 }
 
 // clipText 截断到最多 n 个字符（rune 安全）。

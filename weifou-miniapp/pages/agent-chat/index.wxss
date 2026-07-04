@@ -211,6 +211,16 @@ page { background: var(--bg); height: 100%; }
 .song-play { flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30rpx; color: var(--on-accent); background: var(--accent); border: none; box-shadow: 0 4rpx 0 var(--accent-strong); }
 .song-play.on { background: var(--fill); color: var(--ink); box-shadow: 0 4rpx 0 var(--border); }
 
+/* 本轮可点选项：糖果风白底气泡 + 3D 底唇，点选即答（点选为主、输入兜底） */
+.opts { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 14rpx; padding: 14rpx 24rpx 6rpx; background: var(--surface); }
+.opt-chip {
+  padding: 14rpx 26rpx; font-size: 27rpx; color: var(--ink);
+  background: var(--surface); border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-full); box-shadow: 0 4rpx 0 var(--border);
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
+}
+.opt-chip:active { transform: translateY(4rpx); box-shadow: none; border-color: var(--accent); color: var(--accent); }
+
 .composer { flex: 0 0 auto; display: flex; align-items: center; gap: 16rpx; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); background: var(--surface); border-top: var(--bw-thin) solid var(--border); }
 .cp-input { flex: 1 1 auto; min-width: 0; background: var(--surface-sunken); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full); padding: 18rpx 28rpx; font-size: 29rpx; }
 .cp-send { flex: 0 0 auto; background: var(--accent); color: var(--on-accent); font-size: 28rpx; font-weight: 800; border: none; border-radius: var(--r-full); padding: 0 36rpx; height: 72rpx; line-height: 72rpx; box-shadow: 0 5rpx 0 var(--accent-strong); transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }

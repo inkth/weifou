@@ -277,9 +277,11 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	safe := models.SafePass
 	finalAnswer := result.Answer
-	if !h.security.CheckText(finalAnswer, auth.Openid) {
+	suggestions := result.Suggestions
+	if !h.security.CheckText(finalAnswer+"\n"+strings.Join(suggestions, "\n"), auth.Openid) {
 		safe = models.SafeReject
 		finalAnswer = "抱歉，这个问题不方便由 AI 直接回答，建议联系本人沟通。"
+		suggestions = nil
 	}
 	h.db.Create(&models.ChatMessage{
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
@@ -291,7 +293,8 @@ func (h *Handler) ask(c *gin.Context) error {
 		h.recordGap(profileID, content)
 	}
 
-	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer})
+	// suggestions：分身生成的追问候选（点选优先——访客点一下即发出，代替打字）
+	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer, "suggestions": suggestions})
 	return nil
 }
 

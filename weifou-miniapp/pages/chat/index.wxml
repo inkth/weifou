@@ -109,7 +109,13 @@
   <!-- 选项区：开场动画结束后引导问题淡入；行动入口在首轮回答后才出现，开场聚焦"开始聊" -->
   <view class="choices {{startersRevealed ? 'revealed' : ''}}" wx:if="{{!pending && startersRevealed}}">
     <view wx:if="{{starters.length && !answeredOnce}}" class="choices-hint muted">你可以这样开始 ↓</view>
-    <view class="chip q note-{{index % 3}}" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
+    <!-- 开场引导问题：有了本轮追问选项后让位（追问更贴上下文），下一轮无追问时回归 -->
+    <block wx:if="{{!followups.length}}">
+      <view class="chip q note-{{index % 3}}" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
+    </block>
+
+    <!-- 追问选项：每轮回答后分身给的下一问，点选即发（点选为主、输入兜底） -->
+    <view class="chip q note-{{index % 3}}" wx:for="{{followups}}" wx:key="*this" bindtap="pickFollowup" data-q="{{item}}">{{item}}</view>
 
     <block wx:if="{{answeredOnce && !isMine}}">
       <view class="chip act" bindtap="openAboutEntry">关于 TA</view>

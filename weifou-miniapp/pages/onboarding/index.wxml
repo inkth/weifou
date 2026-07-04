@@ -38,6 +38,12 @@
           <text class="ob-opt-d">{{item.desc}}</text>
         </view>
       </block>
+      <block wx:elif="{{chipKind === 'strengths'}}">
+        <view class="ob-opt full" wx:for="{{strengthOpts}}" wx:key="*this"
+              data-field="strengths" data-value="{{item}}" data-label="{{item}}" bindtap="pickChip">{{item}}</view>
+        <view class="ob-opt ghost" wx:if="{{optsLoading}}">正在替你想几个…</view>
+        <view class="ob-opt ghost" wx:elif="{{strengthOpts.length}}" bindtap="moreStrengthOpts">🔄 换一批</view>
+      </block>
     </view>
 
     <view class="ob-quick" wx:if="{{canFinish}}">

@@ -323,6 +323,64 @@ func (s *Service) ExtractProfileFields(openid, dialogue string) (*ExtractedProfi
 	return &r, nil
 }
 
+const suggestSystemPrompt = `你是一位个人品牌顾问。用户正在创建自己的 AI 分身主页，已提供部分信息，
+现在轮到「你最能帮别人解决的一件事（卖点）」这一步。请生成候选答案供用户点选，代替 TA 打字。
+你的输出必须是合法 JSON（不要任何额外文字或代码块标记），结构如下：
+{"options": ["候选1", "候选2", "候选3", "候选4"]}
+要求：
+- 恰好 4 条，每条 10-24 字，第一人称素材（直接说事，不带"我最擅长"前缀），具体、有画面感。
+- 紧贴用户的职业与接待对象，4 条从不同角度切入（方法论 / 结果 / 人群 / 场景），彼此不雷同。
+- 禁止空泛套话（如"提供优质服务""解决各种问题"）。
+- 若给出了「已出现过的候选」，新候选不得与其重复或高度相似。`
+
+// SuggestStrengths 依据已收集的职业/受众信息，生成 4 条「最能解决的一件事」候选供点选；
+// exclude 为已展示过的候选（换一批时传入），要求模型避开。
+func (s *Service) SuggestStrengths(openid, title, audience string, exclude []string) ([]string, error) {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("职业/领域：%s\n", clampRunes(title, 60)))
+	if strings.TrimSpace(audience) != "" {
+		b.WriteString(fmt.Sprintf("主要接待：%s\n", clampRunes(audience, 60)))
+	}
+	if len(exclude) > 0 {
+		b.WriteString("已出现过的候选（避开）：\n")
+		for i, e := range exclude {
+			if i >= 12 {
+				break
+			}
+			b.WriteString("- " + clampRunes(e, 40) + "\n")
+		}
+	}
+	raw, err := s.ds.Chat([]deepseek.Message{
+		{Role: "system", Content: suggestSystemPrompt},
+		{Role: "user", Content: b.String()},
+	}, deepseek.ChatOptions{Temperature: 0.9, MaxTokens: 300, ResponseFormat: "json_object"})
+	if err != nil {
+		return nil, httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
+	}
+	cleaned := strings.TrimSpace(raw)
+	if m := fenceRe.FindStringSubmatch(cleaned); m != nil {
+		cleaned = strings.TrimSpace(m[1])
+	}
+	var parsed struct {
+		Options []string `json:"options"`
+	}
+	if jerr := json.Unmarshal([]byte(cleaned), &parsed); jerr != nil {
+		return nil, httpx.BadRequest("AI_PARSE_ERROR", "生成失败，请重试")
+	}
+	out := make([]string, 0, 4)
+	for _, o := range parsed.Options {
+		o = clampRunes(o, 40)
+		if o == "" || !s.security.CheckText(o, openid) {
+			continue
+		}
+		out = append(out, o)
+		if len(out) >= 4 {
+			break
+		}
+	}
+	return out, nil
+}
+
 // GenerateForProfile 生成并 upsert PersonaAI。
 func (s *Service) GenerateForProfile(profileID, openid string) (*Result, error) {
 	var profile models.Profile

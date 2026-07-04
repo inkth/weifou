@@ -30,6 +30,7 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
 	rg.POST("/profile", auth, httpx.Handle(h.createOrUpdate))
 	rg.POST("/profile/extract", auth, httpx.Handle(h.extract))
+	rg.POST("/profile/suggest", auth, httpx.Handle(h.suggest))
 	rg.POST("/profile/regenerate", auth, httpx.Handle(h.regenerate))
 	rg.GET("/profile/mine", auth, httpx.Handle(h.mine))
 	rg.PATCH("/profile/contact", auth, httpx.Handle(h.updateContact))
@@ -179,6 +180,27 @@ func (h *Handler) extract(c *gin.Context) error {
 		return err
 	}
 	httpx.OK(c, res)
+	return nil
+}
+
+type suggestReq struct {
+	Title    string   `json:"title" binding:"required"` // 已选/已说的职业或领域
+	Audience string   `json:"audience"`                 // 主要接待谁（选填）
+	Exclude  []string `json:"exclude"`                  // 已展示过的候选（换一批时传入）
+}
+
+// suggest 对话式创建「卖点」一步的点选候选：按职业+受众生成 4 条供点选，换一批带 exclude。
+func (h *Handler) suggest(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var req suggestReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("INVALID_PARAMS", "参数有误")
+	}
+	opts, err := h.persona.SuggestStrengths(auth.Openid, req.Title, req.Audience, req.Exclude)
+	if err != nil {
+		return err
+	}
+	httpx.OK(c, gin.H{"options": opts})
 	return nil
 }
 

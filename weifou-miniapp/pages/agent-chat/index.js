@@ -24,6 +24,7 @@ Page({
     quotaText: '',
     messages: [],
     draft: '',
+    options: [],          // 本轮可点选项（服务端从回复剥离下发；点选即发送，输入框兜底）
     pending: false,
     loading: true,
     scrollTo: '',
@@ -198,10 +199,17 @@ Page({
     }
   },
 
+  // 点选选项 = 原样作为回答发送（点选为主、输入兜底）
+  pickOption(e) {
+    const t = e.currentTarget.dataset.t;
+    if (t) this._ask(t);
+  },
+
   async _ask(content, mode, concept) {
     if (!content || this.data.pending) return;
     this.setData({
       pending: true,
+      options: [],
       messages: this.data.messages.concat({ role: 'user', content }),
     });
     this._scrollEnd();
@@ -216,6 +224,7 @@ Page({
         quotaText: this._quota(member, remaining),
         // 新开一段时服务端回传新建会话 id，记下来后续消息续到同一段
         currentSessionId: data.sessionId || this.data.currentSessionId,
+        options: data.options || [],
         pending: false,
       };
       // 学习型 Agent：更新三维段位，升级时弹庆祝浮层
@@ -278,7 +287,7 @@ Page({
   // 新开一段：清回开场白、清空 currentSessionId，下一条消息会创建新会话
   newSession() {
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
-    this.setData({ messages, currentSessionId: '', historyVisible: false });
+    this.setData({ messages, currentSessionId: '', historyVisible: false, options: [] });
     this._scrollEnd();
   },
 
@@ -309,6 +318,7 @@ Page({
       this.setData({
         messages: (msgs || []).map((m) => ({ role: m.role, content: m.content })),
         currentSessionId: sid,
+        options: [],
       });
       this._scrollEnd();
     } catch (err) {

@@ -29,7 +29,8 @@ const STAGES = [
   { key: 'domain', field: 'title', required: true, ask: '你主要是做什么的？挑一个最接近的，或直接说～', chips: 'domain' },
   { key: 'audience', field: 'howToKnow', required: false, ask: '主要想接待谁？', chips: 'audience' },
   { key: 'style', field: 'style', required: false, ask: '希望你的 AI 什么气质、说话调？', chips: 'style' },
-  { key: 'substance', field: 'strengths', required: true, ask: '最后——你最能帮别人解决的一件事是什么？越具体它越懂你（也可写个代表作）。', chips: null },
+  // strengths 走 AI 动态候选（/profile/suggest 按职业+受众现生成，可换一批）；打字/语音仍是兜底
+  { key: 'substance', field: 'strengths', required: true, ask: '最后——你最能帮别人解决的一件事是什么？我按你的方向想了几个，点一个就行，说你自己的更好。', chips: 'strengths' },
 ];
 
 function filled(form, field) {
@@ -46,7 +47,9 @@ Page({
     canFinish: false,    // realName+title+strengths 已齐
     confirmed: false,    // 已发过"了解你了"的确认语，避免重复
     toLast: '',
-    chipKind: null,      // 当前展示的快捷选项：domain | audience | style | null
+    chipKind: null,      // 当前展示的快捷选项：domain | audience | style | strengths | null
+    strengthOpts: [],    // 卖点动态候选（AI 现生成）
+    optsLoading: false,  // 候选生成中
     editMode: false,     // 已有主页 = 编辑态：预填资料、不逐项追问、改完即更新
     DOMAINS, AUDIENCES, STYLES,
     form: { realName: '', title: '', strengths: '', recentWork: '', howToKnow: '', style: '', company: '', city: '' },
@@ -212,6 +215,31 @@ Page({
     this._asked[next.key] = true;
     this._pushAi(next.ask);
     this.setData({ chipKind: next.chips || null });
+    if (next.chips === 'strengths') this._loadStrengthOpts();
+  },
+
+  // —— 卖点动态候选：按已选职业+受众现生成 4 条供点选；换一批带 exclude 防重复 ——
+  async _loadStrengthOpts() {
+    const f = this.data.form;
+    if (!filled(f, 'title')) return; // 没有职业信息生成不出好候选，留打字/语音兜底
+    this._shownOpts = this._shownOpts || [];
+    this.setData({ optsLoading: true, strengthOpts: [] });
+    try {
+      const res = await request({
+        url: '/profile/suggest', method: 'POST',
+        data: { title: f.title, audience: f.howToKnow || '', exclude: this._shownOpts },
+      });
+      const opts = (res && res.options) || [];
+      this._shownOpts = this._shownOpts.concat(opts).slice(-24);
+      // 仍停在卖点一步才展示（防慢返回覆盖已推进的界面）
+      this.setData({ optsLoading: false, strengthOpts: this.data.chipKind === 'strengths' ? opts : [] });
+    } catch (e) {
+      this.setData({ optsLoading: false }); // 静默降级：只剩输入兜底，不打断流程
+    }
+  },
+
+  moreStrengthOpts() {
+    if (!this.data.optsLoading) this._loadStrengthOpts();
   },
 
   onFinishNow() {

@@ -29,8 +29,9 @@ func NewEngine(db *gorm.DB, ds *deepseek.Client) *Engine {
 
 // Result 是模型按要求返回的 JSON 结构。
 type Result struct {
-	Answer string `json:"answer"`
-	Gap    bool   `json:"gap"`
+	Answer      string   `json:"answer"`
+	Gap         bool     `json:"gap"`
+	Suggestions []string `json:"suggestions"` // 访客可能想接着问的追问（点选优先：前端渲染成可点气泡）
 }
 
 // Parse 解析模型 JSON 输出；失败则降级为纯文本。
@@ -39,6 +40,21 @@ func Parse(raw string) Result {
 	if err := json.Unmarshal([]byte(raw), &r); err != nil || strings.TrimSpace(r.Answer) == "" {
 		return Result{Answer: strings.TrimSpace(raw)}
 	}
+	cleaned := make([]string, 0, 3)
+	for _, s := range r.Suggestions {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		if rr := []rune(s); len(rr) > 20 {
+			s = string(rr[:20])
+		}
+		cleaned = append(cleaned, s)
+		if len(cleaned) >= 3 {
+			break
+		}
+	}
+	r.Suggestions = cleaned
 	return r
 }
 
@@ -140,8 +156,9 @@ func BuildSystemPrompt(p *models.Profile, oneLiner, fullIntro string, tags []str
 
 == 输出格式 ==
 只输出一个 JSON 对象，不要任何额外文字或代码块：
-{"answer": "给访客的回答", "gap": true 或 false}
+{"answer": "给访客的回答", "gap": true 或 false, "suggestions": ["追问1", "追问2"]}
 answer：中文回答，规则同上，不超过 200 字。
-gap：当且仅当访客问的是一个具体、合理、但现有资料无法回答的问题（你只能含糊带过或建议联系本人）时设为 true，用于提醒本人补充资料；闲聊、寒暄、与专业方向无关或资料已能回答的问题一律为 false。`,
+gap：当且仅当访客问的是一个具体、合理、但现有资料无法回答的问题（你只能含糊带过或建议联系本人）时设为 true，用于提醒本人补充资料；闲聊、寒暄、与专业方向无关或资料已能回答的问题一律为 false。
+suggestions：顺着本轮回答，访客最可能想接着问的 2-3 个追问，第二人称、每个不超过 14 字、具体不空泛（如"你们怎么收费？"）；访客点一下就会发出，用来代替打字。与已聊过的问题不要重复；实在没有可追问的给空数组。`,
 		p.RealName, p.RealName, p.Title, company, oneLiner, fullIntro, strings.Join(tags, "、"), toneRule, knowledgeRule)
 }
