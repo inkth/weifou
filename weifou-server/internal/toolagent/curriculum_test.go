@@ -28,3 +28,15 @@ func TestCuratedContentComplete(t *testing.T) {
 		}
 	}
 }
+
+// 档位守护：每个概念的 Tier 必须在该课程的档位表里有标签（防 tier 手误 / 新增幕漏配幕名）。
+func TestTiersLabeled(t *testing.T) {
+	for agentSlug, list := range curricula {
+		labels, _ := tiersFor(agentSlug)
+		for _, c := range list {
+			if labels[c.Tier] == "" {
+				t.Errorf("%s/%s 的 Tier %d 没有档位标签", agentSlug, c.Slug, c.Tier)
+			}
+		}
+	}
+}

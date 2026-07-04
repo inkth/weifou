@@ -1,8 +1,9 @@
 // Package toolagent — curriculum.go：概念型学习 Agent 的「核心概念」课程表与点亮引擎。
 //
-// 四门完备课（英语/心理/营销/逻辑）各装载一份 curated 的 ~30 个核心概念/关卡，
+// 四门完备课（英语 28 关、心理/营销各 30 概念、逻辑六幕 64 关）各装载一份 curated 课程表，
 // 且全部人工精编 Hook+Check（人工策展骨架，不让模型现编 = 这条线的护城河，由 TestCuratedContentComplete 守护）。
-// 分「入门 / 进阶」两档：成就感按档给（完成一档就庆祝），避免一条 X/100 的大分母进度条把人劝退。
+// 分档给成就感（完成一档就庆祝），避免一条 X/100 的大分母进度条把人劝退：
+// 心理/营销/英语走「入门/进阶」两档，逻辑走六幕能力阶梯（档位标签按课程覆盖，见 tiersFor）。
 // 用户在对话中「点亮」概念：每轮一问一答交给 DeepSeek 判定本轮真实涉及了哪些概念、是否已展现真正理解，
 // 把概念档位往上推（0 未触及 / 1 已点亮 / 2 已掌握，只升不降）。整体照搬 skill.go 的范式。
 // 砍下来的其余概念留作将来的「进阶层」，不进当前完成分母。
@@ -22,15 +23,31 @@ import (
 	"weifou-server/internal/models"
 )
 
-// seedConcept 是课程表的一行（seed 用）。Slug 在单个 Agent 内稳定唯一。Tier：1 入门 / 2 进阶。
+// seedConcept 是课程表的一行（seed 用）。Slug 在单个 Agent 内稳定唯一。Tier=档位/幕（标签见 tiersFor）。
 type seedConcept struct {
 	Slug, Theme, Name, Blurb string
 	Tier                     int
 }
 
-// 档位标签与展示顺序。
+// 档位标签与展示顺序（默认两档；档位=闯关地图的「幕/章」，打通一档庆祝一次）。
 var tierLabels = map[int]string{1: "入门", 2: "进阶"}
 var tierOrder = []int{1, 2}
+
+// 学逻辑六幕（能力阶梯：解剖→识谬上→识谬下→读数→断因→立论），每幕结尾一个 Boss 综合找茬关。
+// 64 关不设总进度大分母，分母永远是本幕的 10 上下，靠幕级庆祝保节奏。
+var logicTierLabels = map[int]string{
+	1: "第一幕·解剖台", 2: "第二幕·对人与诉诸", 3: "第三幕·陷阱与耍赖",
+	4: "第四幕·数字侦探", 5: "第五幕·因果与概率", 6: "第六幕·立论与风度",
+}
+var logicTierOrder = []int{1, 2, 3, 4, 5, 6}
+
+// tiersFor 取某课程的档位标签与顺序：learn-logic 六幕，其余课程默认入门/进阶。
+func tiersFor(agentSlug string) (map[int]string, []int) {
+	if agentSlug == "learn-logic" {
+		return logicTierLabels, logicTierOrder
+	}
+	return tierLabels, tierOrder
+}
 
 // curricula：agent slug → 该领域核心概念。SeedConcepts 据此幂等写入 agent_concepts。
 // spoken-english 的「概念」是真实场景关卡：点亮 = 用英语开口把这个场合的核心任务办成。
@@ -380,17 +397,22 @@ var psychologyConcepts = []seedConcept{
 }
 
 // ============================ 学逻辑 · 精编钩子与检验题 ============================
+// 2026-07-04 重构为六幕能力阶梯（解剖→识谬→读数→断因→算准→立论），共 64 关：
+// 58 个概念关 + 每幕结尾 1 个「Boss 综合找茬关」（钩子即一段埋好犯规的语料，点出 N 处才通关）。
 // 钩子＝拿一个「听起来很有道理」的说法当靶子（制造找茬的快感）；
-// 检验题＝多为找茬/判断型（天然适合点选作答），或让学员当场完成一次小推理。
+// 检验题＝找茬/判断型（天然适合点选作答），或让学员当场完成一次小推理。
+// 点亮判定沿用通用 LLM 语义判定——「点中语料里的犯规」天然算「实质参与」，无需引擎分支。
+// 毕业观刻意收在「谬误谬误」：整门课教你抓犯规，最后一关教你抓到犯规≠赢——防止把学员练成杠精。
 
 var logicContent = map[string]hookCheck{
+	// —— 第一幕 · 解剖台 ——
 	"argument-structure": {
 		Hook:  "「他说得好有道理」——可你说得出 TA 的结论靠哪几根柱子撑着吗？撑不住的道理，再顺耳也是空中楼阁。",
 		Check: "「游戏有害，因为我表弟玩游戏后成绩下降了。」这个论证的前提和结论各是什么？这根柱子撑得住吗？",
 	},
-	"premise-conclusion": {
-		Hook:  "吵架最常见的错位：你在反驳 TA 的结论，TA 却觉得你没听懂理由。先学会拆——哪句是主张，哪句是理由。",
-		Check: "「加班多的公司发展都快，所以我们该多加班」——这句话里藏了几个前提？哪个最可疑？",
+	"hidden-premise": {
+		Hook:  "「他都 30 了，该结婚了」——这句话最强硬的部分根本没说出口：「30 岁就该结婚」。一个论证里最可疑的，往往是那句没说的。",
+		Check: "「TA 是名校毕业的，这事交给 TA 准没错」——补全这句话藏着的前提。补全之后，你还同意吗？",
 	},
 	"deductive-inductive": {
 		Hook:  "「天鹅都是白的」和「单身汉都未婚」——两句话的可靠程度天差地别，差就差在推理方式上。",
@@ -404,37 +426,47 @@ var logicContent = map[string]hookCheck{
 		Hook:  "结构对≠结论真。「所有猫都会飞，加菲是猫，所以加菲会飞」——推理完美，结论荒谬，问题出在哪？",
 		Check: "拿到一个结构有效的论证，你还要检查什么才敢信它的结论？举个例子说明。",
 	},
-	"correlation-causation": {
-		Hook:  "冰淇淋销量涨，溺水人数也涨——所以冰淇淋导致溺水？几乎所有「研究表明」的坑都埋在这里。",
-		Check: "「常喝红酒的人更长寿」——除了「红酒延寿」，你能给出两种别的解释吗？",
+	"necessary-sufficient-logic": {
+		Hook:  "「努力就能成功」和「成功都需要努力」——一字之差，逻辑上是两个世界。",
+		Check: "「有驾照」对「合法开车」是必要条件还是充分条件？再举一个生活里两者被混淆的例子。",
 	},
+	"conditional-reasoning": {
+		Hook:  "「有实力就能拿到 offer」——那没拿到 offer 就是没实力？拿到了就一定有实力？同一个「如果」，四种推法，两种是犯规。",
+		Check: "规则：会员才能进场。①小王进场了，所以他是会员；②小李是会员，所以他进场了——逐条判断：哪条推得住，哪条犯规？",
+	},
+	"quantifier-logic": {
+		Hook:  "「不是所有努力都有回报」和「所有努力都没回报」——差着十万八千里，可吵起架来，人们总把对方的前一句听成后一句。",
+		Check: "反驳「所有天鹅都是白的」，你需要「所有天鹅都不白」还是「一只黑天鹅」？「有些人不靠谱」的反面又是什么？",
+	},
+	"define-terms": {
+		Hook:  "「躺平可耻」能吵三天三夜——直到有人问一句：你俩说的「躺平」是一个意思吗？一个说的是「不内卷」，一个听成了「不工作」。很多争论不是观点之争，是词典之争。",
+		Check: "「现在的年轻人吃不了苦」——这句话里哪个词最需要先定义？给出两种不同定义，看结论怎么随定义翻转。",
+	},
+	"counterexample": {
+		Hook:  "「成功人士都早起」——推翻这句话不需要写论文，只需要一个人。",
+		Check: "「压力都是坏事」——给出一个反例。一个反例能推翻什么样的命题、推不翻什么样的？",
+	},
+	"boss-argument-autopsy": {
+		Hook:  "Boss 关！一条 10 万赞的热帖：「大厂都在裁员，说明打工没前途。有点追求的人都该去创业——毕竟打工的天花板一眼就看得到。」上解剖台：它的结论是什么？说出口的前提有哪些？没说出口的前提是哪句？哪根柱子最先塌？",
+		Check: "变体加试：「读研的人越来越多，说明本科学历已经没用了」——同样解剖一遍：结论、前提、隐含前提，以及最脆的那一根。",
+	},
+
+	// —— 第二幕 · 对人与诉诸 ——
 	"ad-hominem": {
 		Hook:  "「你一个单身狗也配谈婚姻？」——注意，这句话攻击的是人。可对方的观点被驳倒了吗？",
 		Check: "「他自己都做不到，凭什么劝别人」——这算人身攻击谬误吗？什么时候「看这个人」反而是合理的？",
+	},
+	"tu-quoque": {
+		Hook:  "「你自己还熬夜呢，凭什么说熬夜伤身？」——医生抽烟，不代表吸烟无害。指出对方虚伪，永远驳不倒对方的观点。",
+		Check: "「环保人士也坐飞机，所以环保是伪命题」——犯规在哪？「你也一样」能质疑对方的什么、不能质疑什么？",
 	},
 	"straw-man": {
 		Hook:  "你说「想少熬夜」，对方回「你是想躺平吗？」——你被立了个稻草人，打倒它可不算赢了你。",
 		Check: "「我觉得该控制刷短视频的时间。」「你就是觉得娱乐有罪！」——稻草人在哪？原观点被歪成了什么？",
 	},
-	"false-dilemma": {
-		Hook:  "「你不支持我，就是反对我。」——当世界被硬切成两半时，通常是有人不想让你看到第三条路。",
-		Check: "「要么拼命加班，要么回家躺平」——说出至少两个被这句话藏起来的选项。",
-	},
-	"slippery-slope": {
-		Hook:  "「今天迟到一次，明天就敢旷工，后天公司就完了」——从第一级台阶直接滑进深渊，中间的刹车全被拆了。",
-		Check: "「放开游戏时间，孩子就会沉迷，然后辍学」——这个滑坡缺了什么？什么时候担心连锁反应又是合理的？",
-	},
-	"burden-of-proof": {
-		Hook:  "「你倒是证明鬼不存在啊！」——等等，该举证的是谁？「谁主张谁举证」这条规则一翻转，骗子就赢了。",
-		Check: "朋友说「这保健品有奇效，不信你证明它没用」——举证责任在谁？你该怎么回这句话？",
-	},
-	"occams-razor-logic": {
-		Hook:  "钥匙不见了：是被平行宇宙的自己拿走了，还是忘在外套兜里？两个解释都「说得通」，选哪个？",
-		Check: "网站打不开：是全球黑客攻击，还是你家 Wi-Fi 断了？用剃刀给排查顺序排个序，并说出理由。",
-	},
-	"circular-reasoning": {
-		Hook:  "「这本书说的都是真的，因为书里写着『本书句句属实』。」——绕了一圈，证据就是结论本身。",
-		Check: "「他值得信任，因为他是个可信的人」——问题在哪？再从广告语里找一个类似的例子。",
+	"red-herring": {
+		Hook:  "你问「这笔钱花哪了」，对方答「你怎么总盯着钱，你还爱不爱我」——一条红鲱鱼甩过来，原问题就再也没人记得了。",
+		Check: "记者问「产品质量问题怎么解释」，发言人答「我们解决了上万人就业」——话题被从什么挪到了什么？给一句能把它拉回来的话。",
 	},
 	"appeal-to-authority": {
 		Hook:  "「诺贝尔奖得主都说了……」——且慢，TA 得的是物理奖，谈的却是育儿。权威也有边界。",
@@ -444,103 +476,277 @@ var logicContent = map[string]hookCheck{
 		Hook:  "「想想孩子们！」——眼眶一热，脑子就让位了。煽情不是论证，是绕过论证。",
 		Check: "一则募捐广告全是催泪画面、没有任何数据——它在诉诸什么？怎么在被打动的同时保住判断力？",
 	},
-	"hasty-generalization": {
-		Hook:  "「我遇到的两个那儿的人都很小气」——两个人，就给几千万人定了性。你的样本呢？",
-		Check: "「我们店 5 个顾客 4 个好评」——这能说明什么、不能说明什么？多大的样本才配下结论？",
+	"appeal-to-ignorance": {
+		Hook:  "「你又不能证明外星人没来过，所以他们来过」——证明不了它假，不等于它就是真的。黑暗里没看见东西，不代表那儿站着鬼。",
+		Check: "「没有研究证明这种添加剂有害，所以它安全」——这句犯规了吗？它和「大量研究找过害处都没找到」有什么区别？",
 	},
-	"survivorship-bias": {
-		Hook:  "「读书无用，你看盖茨退学都成首富了」——你看到的是活下来的那一个，沉底的一万个没机会开口。",
-		Check: "「这些百年老店都不做广告，所以广告没用」——用幸存者偏差拆一下：这个观察漏掉了谁？",
+	"appeal-to-nature": {
+		Hook:  "「纯天然无添加」「老祖宗传下来的」——天然的毒蘑菇也是毒蘑菇，传了千年的裹小脚也是裹小脚。「自然」和「古老」都不是「对」的理由。",
+		Check: "「这个偏方传了五代人，肯定有效」——「传得久」能证明什么、不能证明什么？要证明有效，真正需要的是什么？",
 	},
-	"base-rate-fallacy": {
-		Hook:  "检测准确率 99%，你被测出阳性——你真的有 99% 的概率患病吗？大多数人都算错了这道题。",
-		Check: "发病率万分之一的病，检测准确率 99%，测出阳性后真患病的概率是高是低？说说直觉为什么错。",
+	"appeal-to-consequences": {
+		Hook:  "「要是连老板都信不过，日子还怎么过？所以老板是可信的」——一个结论让人舒服还是难受，改变不了它的真假。",
+		Check: "「如果房价会跌，那么多买了房的人怎么办？所以房价不会跌」——犯规在哪？「后果严重」在什么讨论里才是合法理由（提示：判断真假 vs 做决策）？",
+	},
+	"boss-comment-brawl": {
+		Hook:  "Boss 关！某明星发了条环保倡议，评论区前排四连：「①你坐私人飞机也配谈环保？②环保主义者就是想让穷人连肉都吃不起。③专家早说了气候变暖是炒作。④你行你上，不行别哔哔。」——至少三处犯规，逐条点名。",
+		Check: "加试：你发帖说「熬夜有害」，收到三连击：「你头像不还是凌晨发的？」「你是医生吗就敢科普？」「照你这么说人干脆别活了」——三句各犯了什么规？各回一句不失风度的话。",
+	},
+
+	// —— 第三幕 · 陷阱与耍赖 ——
+	"false-dilemma": {
+		Hook:  "「你不支持我，就是反对我。」——当世界被硬切成两半时，通常是有人不想让你看到第三条路。",
+		Check: "「要么拼命加班，要么回家躺平」——说出至少两个被这句话藏起来的选项。",
+	},
+	"slippery-slope": {
+		Hook:  "「今天迟到一次，明天就敢旷工，后天公司就完了」——从第一级台阶直接滑进深渊，中间的刹车全被拆了。",
+		Check: "「放开游戏时间，孩子就会沉迷，然后辍学」——这个滑坡缺了什么？什么时候担心连锁反应又是合理的？",
+	},
+	"circular-reasoning": {
+		Hook:  "「这本书说的都是真的，因为书里写着『本书句句属实』。」——绕了一圈，证据就是结论本身。",
+		Check: "「他值得信任，因为他是个可信的人」——问题在哪？再从广告语里找一个类似的例子。",
 	},
 	"equivocation": {
 		Hook:  "「法律面前人人平等，所以票价对富人穷人一个价才平等」——同一个「平等」，中途被悄悄换了含义。",
 		Check: "「自由就是想做什么就做什么，所以红绿灯限制了自由」——哪个词被偷换了？它的两个含义各是什么？",
 	},
-	"begging-the-question": {
-		Hook:  "「为什么他是对的？因为他从不犯错。」——看起来在论证，其实把要证明的东西当成了起点。",
-		Check: "「灵魂不朽，因为灵魂是不会消亡的」——预设藏在哪？它和循环论证是什么关系？",
+	"loaded-question": {
+		Hook:  "「你是不是不再啃老了？」——答「是」，认了曾经啃老；答「不是」，当场坐实。有些问题不是在问，是在下套。",
+		Check: "记者问明星：「你为什么耍大牌？」——这个问题预设了什么？给出一句先拆掉预设再回答的话。",
 	},
-	"necessary-sufficient-logic": {
-		Hook:  "「努力就能成功」和「成功都需要努力」——一字之差，逻辑上是两个世界。",
-		Check: "「有驾照」对「合法开车」是必要条件还是充分条件？再举一个生活里两者被混淆的例子。",
+	"no-true-scotsman": {
+		Hook:  "「粉丝不会做这种事」「可他做了」「那他就不是真粉丝」——反例一出现就开除籍贯，这个说法从此立于不败之地，也从此没有了任何内容。",
+		Check: "「真正努力的人都会成功」——演示一下它怎么用「真正的」躲过所有反例。躲过之后，这句话还剩多少信息量？",
 	},
-	"counterexample": {
-		Hook:  "「成功人士都早起」——推翻这句话不需要写论文，只需要一个人。",
-		Check: "「压力都是坏事」——给出一个反例。一个反例能推翻什么样的命题、推不翻什么样的？",
+	"special-pleading": {
+		Hook:  "「我迟到是因为堵车，你迟到是因为散漫」——同一件事，两套标准：规则永远用来要求别人，例外永远留给自己。",
+		Check: "「别人炒股亏了是赌徒，我炒股亏了是行情不好」——双重标准在哪？什么时候「区别对待」反而合理（提示：两件事真有相关差异时）？",
 	},
-	"reductio": {
-		Hook:  "想驳倒一个观点，最优雅的方式有时是先假装同意它——然后陪它一路走到荒谬的终点。",
-		Check: "「越贵的东西越好」——顺着这句话推出一个荒谬结论，完成一次归谬。",
-	},
-	"bayesian-thinking": {
-		Hook:  "朋友迟到了，你的第一反应是「TA 不重视我」——但下结论前该先问一句：TA 平时迟到吗？",
-		Check: "你本来觉得某产品不错（八成把握），现在刷到一条差评——信念该更新多少？由什么决定更新幅度？",
-	},
-	"falsifiability-logic": {
-		Hook:  "「水逆导致你倒霉」——倒霉了算它对，顺利了就说「化解了」。永远不会错的理论，恰恰最有问题。",
-		Check: "「这股票要么涨要么跌」和「明天收盘涨 2% 以上」——哪句可证伪？哪句更有信息量？",
-	},
-	"steelman": {
-		Hook:  "想真正赢一场争论？先替对方把论证修到最强再反驳——打倒最强版本，才算真的赢。",
-		Check: "挑一个你反对的观点，先用两句话把它讲到最有说服力，再指出它最要害的弱点。",
-	},
-	"analogy-argument": {
-		Hook:  "「治国如烹小鲜」——类比让人秒懂，也最容易把人带偏：相似的地方成立，不相似的地方呢？",
-		Check: "「公司就像球队，所以表现不行就该换人」——这个类比哪里贴切、哪里瘸腿？",
-	},
-	"gambler-fallacy": {
-		Hook:  "连开五把大，下一把「该」开小了吧？——硬币没有记忆，可惜赌徒有。",
-		Check: "「面试连挂三家，下一家肯定稳了」——哪里犯了赌徒谬误？什么情况下「连败后概率变高」又是真的？",
+	"golden-mean-fallacy": {
+		Hook:  "一个人说 2+2=4，另一个说 2+2=6，所以答案是 5？——「各退一步」是谈判智慧，不是求真方法。真相没有义务站在中间。",
+		Check: "「小王说项目要 2 周，小李说要 10 周，那就折中定 6 周」——排期该折中还是该看依据？什么场合取中间值反而合理？",
 	},
 	"moving-goalposts": {
 		Hook:  "你拿出证据，对方说「这不算，你得有 XX」；你拿出 XX，对方说「那也不算」——球门一直在跑，球永远进不了。",
 		Check: "怎么识别对话里的移动球门？给出一句能提前把标准钉死的话术。",
 	},
+	"boss-groupchat-debate": {
+		Hook:  "Boss 关！群里讨论「该不该给小学生留作业」，杠精四连：「①不留作业？那以后考试也取消、学校也别办了？②你到底站孩子还是站老师，总得选一边。③教育的本质就是吃苦，不留作业就是不让吃苦，所以必须留。④国外那些不留作业的——真正的好学校都留。」——四句话四种犯规，逐一点名。",
+		Check: "加试：对方又补两句：「你是不是早就看老师不顺眼了？」「支持留作业的研究才叫严谨研究。」——两处犯规各是什么？各给一句拆招的话。",
+	},
+
+	// —— 第四幕 · 数字侦探 ——
+	"hasty-generalization": {
+		Hook:  "「我遇到的两个那儿的人都很小气」——两个人，就给几千万人定了性。你的样本呢？",
+		Check: "「我们店 5 个顾客 4 个好评」——这能说明什么、不能说明什么？多大的样本才配下结论？",
+	},
+	"sampling-bias": {
+		Hook:  "「问卷显示 98% 的用户爱我们」——问卷发在哪？官方粉丝群。你问谁，就会得到谁的答案。",
+		Check: "想知道「大家怎么看加班」，凌晨在写字楼门口做街访——样本偏在哪？设计一个偏差更小的问法。",
+	},
+	"survivorship-bias": {
+		Hook:  "「读书无用，你看盖茨退学都成首富了」——你看到的是活下来的那一个，沉底的一万个没机会开口。",
+		Check: "「这些百年老店都不做广告，所以广告没用」——用幸存者偏差拆一下：这个观察漏掉了谁？",
+	},
 	"cherry-picking": {
 		Hook:  "广告说「93% 用户表示有效」——没说的是：问卷只发给了复购用户。被挑出来的樱桃，都很甜。",
 		Check: "用数据说谎不需要造假，只需要筛选。举一个「只报喜不报忧」的常见套路，并给出你的反问。",
 	},
+	"law-of-small-numbers": {
+		Hook:  "新店连来 3 个差评就慌了，连来 3 个好评就飘了——3 个样本里看出来的「规律」，多半是噪音在跳舞。",
+		Check: "「这位基金经理连续两年跑赢大盘，是真高手」——两年够下结论吗？直觉为什么总把小样本当成大样本用？",
+	},
+	"mean-vs-median": {
+		Hook:  "「我司人均年薪 50 万」——老板 500 万，你 5 万。人均没骗你，骗你的是「平均」这两个字。",
+		Check: "「人均年薪 50 万」和「年薪中位数 8 万」怎么同时为真？找工作时你该问哪个数、为什么？",
+	},
+	"relative-absolute-risk": {
+		Hook:  "「每天吃培根，患某病风险提高 18%」——听着吓人。可基础风险是 5% 还是十万分之五，标题永远不告诉你。",
+		Check: "一种药把发病风险「降低 50%」——其实是从万分之二降到万分之一。写两句话：一句让它听起来是神药，一句说出它的真实分量。",
+	},
+	"texas-sharpshooter": {
+		Hook:  "朝谷仓乱开一枪，再围着弹孔画个靶心——百发百中。「大师三年前就预言了这次大跌」，可他那三年里发过多少条没应验的预言？",
+		Check: "「某县十年出了 8 个状元，风水真好」——靶子是什么时候画的？要验证「风水说」，正确顺序是先做什么、再看什么？",
+	},
+	"regression-to-mean": {
+		Hook:  "骂完孩子成绩就回升，夸完反而退步——所以骂比夸管用？考砸后的反弹和考神后的回落，本来就会发生，不管你骂不骂。",
+		Check: "「上季度垫底的门店，被约谈后业绩都回升了」——除了「约谈有效」，回归均值怎么解释？怎么设计才能分清两者？",
+	},
+	"simpsons-paradox": {
+		Hook:  "A 医院每一科的治愈率都比 B 高，总治愈率却比 B 低——数据没错，结论全反。分开看和合起来看，可能是两个世界。",
+		Check: "「男生女生的录取率都涨了，总录取率却降了」——这可能吗？想想是什么在背后挪动（提示：各组人数的占比）。",
+	},
+	"boss-family-rumor": {
+		Hook:  "Boss 关！家族群深夜转发《震惊！这种菜千万别再吃了》：「研究表明它让患病风险提高 40%！隔壁陈叔吃了一辈子腌菜，上月查出问题！群友投票 92% 表示再不敢吃！十个病人九个都吃过它！」——至少四处数字犯规，全部揪出来，再决定这条辟谣怎么回。",
+		Check: "加试：带货页写着「10 万+ 五星好评，复购率 98%」——这两个数字可能是怎么「做」出来的？你会追问哪两个问题？",
+	},
+
+	// —— 第五幕 · 因果与概率 ——
+	"correlation-causation": {
+		Hook:  "冰淇淋销量涨，溺水人数也涨——所以冰淇淋导致溺水？几乎所有「研究表明」的坑都埋在这里。",
+		Check: "「常喝红酒的人更长寿」——除了「红酒延寿」，你能给出两种别的解释吗？",
+	},
+	"confounding-variable": {
+		Hook:  "兜里带打火机的人，肺癌率显著更高——打火机致癌实锤了？别急，想想什么人兜里常年装着打火机。",
+		Check: "「常去健身房的人更长寿」——除了「健身延寿」，说出至少两个躲在背后的第三变量，以及你会怎么排除它们。",
+	},
+	"reverse-causation": {
+		Hook:  "「成功人士都爱读书，所以多读书就能成功」——也可能是成功了才有钱有闲读书。箭头一画反，药方就全错了。",
+		Check: "「警察越多的街区犯罪率越高，所以警察导致犯罪」——箭头该怎么画？再从生活里找一句「因果可能倒过来」的流行说法。",
+	},
+	"post-hoc": {
+		Hook:  "吃了感冒药一周就好了——可不吃药，感冒七天也会好。「吃完就好了」是人类最古老、也最容易上当的推理。",
+		Check: "「换了新 logo 之后销量涨了 30%」——「之后」能推出「因为」吗？同一时段还有什么可能在起作用？列出三个。",
+	},
+	"single-cause": {
+		Hook:  "「孩子成绩差就是因为手机」「生意不好全怪平台抽成」——把一整张原因之网剪成一根线，是最省事也最误事的想法。",
+		Check: "「那家店倒闭是因为老板不会营销」——给这件事补上至少三种共同起作用的原因，并排出你心里的权重。",
+	},
+	"control-group": {
+		Hook:  "「用了这面膜，皮肤真的变好了」——不用它会不会也变好？没有对照组，「有效」两个字就是裸奔。",
+		Check: "朋友说「孩子上了这个班成绩提高了」——不上会不会也提高（长了一岁、换了老师）？设计一个最朴素的对照检验；真做不了对照时，退而求其次还能看什么？",
+	},
+	"base-rate-fallacy": {
+		Hook:  "检测准确率 99%，你被测出阳性——你真的有 99% 的概率患病吗？大多数人都算错了这道题。",
+		Check: "发病率万分之一的病，检测准确率 99%，测出阳性后真患病的概率是高是低？说说直觉为什么错。",
+	},
+	"probability-direction": {
+		Hook:  "「吸毒的人 90% 小时候都玩过游戏」——所以玩游戏的孩子会吸毒？两个方向的概率，差着一个天文数字。",
+		Check: "「中大奖的人 100% 都买过彩票」能推出「买彩票就容易中大奖」吗？两个概率各是什么？再从新闻里找一个方向被调包的例子。",
+	},
+	"gambler-fallacy": {
+		Hook:  "连开五把大，下一把「该」开小了吧？——硬币没有记忆，可惜赌徒有。",
+		Check: "「面试连挂三家，下一家肯定稳了」——哪里犯了赌徒谬误？什么情况下「连败后概率变高」又是真的？",
+	},
+	"expected-value": {
+		Hook:  "花 2 块钱博 500 万，怎么算都「值得一试」？——把「万一呢」换成「平均下来呢」，很多诱惑当场现形。",
+		Check: "抽奖：1% 的概率中 100 元，票价 2 元——算期望值，该买吗？什么时候期望值为负也值得买（提示：保险买的是什么）？",
+	},
+	"inevitable-coincidence": {
+		Hook:  "「我刚想到他，他电话就来了，太神了」——你一天想起多少人？其中多少人没来电话？基数够大，奇迹天天发生。",
+		Check: "「全国总有人梦到地震后真的地震了」——用「基数够大，巧合必然」解释它。什么样的「神预言」才值得你真正惊讶？",
+	},
+	"boss-research-claims": {
+		Hook:  "Boss 关！一篇软文的论证链：「研究表明喝红酒的人心脏病发病率低 30%；王总每天一杯，55 岁体检全优；科学家还从红酒里发现了抗氧化成分——所以想健康长寿，每天一杯红酒。」——这条因果链至少断了三节：指出每个断点，再说说什么样的研究才能真正支撑这个结论。",
+		Check: "加试：「用了学习机的孩子平均分高 15 分」——给出三种非因果的解释，再设计一个能分辨真伪的最小实验。",
+	},
+
+	// —— 第六幕 · 立论与风度 ——
+	"burden-of-proof": {
+		Hook:  "「你倒是证明鬼不存在啊！」——等等，该举证的是谁？「谁主张谁举证」这条规则一翻转，骗子就赢了。",
+		Check: "朋友说「这保健品有奇效，不信你证明它没用」——举证责任在谁？你该怎么回这句话？",
+	},
+	"occams-razor-logic": {
+		Hook:  "钥匙不见了：是被平行宇宙的自己拿走了，还是忘在外套兜里？两个解释都「说得通」，选哪个？",
+		Check: "网站打不开：是全球黑客攻击，还是你家 Wi-Fi 断了？用剃刀给排查顺序排个序，并说出理由。",
+	},
+	"falsifiability-logic": {
+		Hook:  "「水逆导致你倒霉」——倒霉了算它对，顺利了就说「化解了」。永远不会错的理论，恰恰最有问题。",
+		Check: "「这股票要么涨要么跌」和「明天收盘涨 2% 以上」——哪句可证伪？哪句更有信息量？",
+	},
+	"reductio": {
+		Hook:  "想驳倒一个观点，最优雅的方式有时是先假装同意它——然后陪它一路走到荒谬的终点。",
+		Check: "「越贵的东西越好」——顺着这句话推出一个荒谬结论，完成一次归谬。",
+	},
+	"analogy-argument": {
+		Hook:  "「治国如烹小鲜」——类比让人秒懂，也最容易把人带偏：相似的地方成立，不相似的地方呢？",
+		Check: "「公司就像球队，所以表现不行就该换人」——这个类比哪里贴切、哪里瘸腿？",
+	},
+	"steelman": {
+		Hook:  "想真正赢一场争论？先替对方把论证修到最强再反驳——打倒最强版本，才算真的赢。",
+		Check: "挑一个你反对的观点，先用两句话把它讲到最有说服力，再指出它最要害的弱点。",
+	},
+	"bayesian-thinking": {
+		Hook:  "朋友迟到了，你的第一反应是「TA 不重视我」——但下结论前该先问一句：TA 平时迟到吗？",
+		Check: "你本来觉得某产品不错（八成把握），现在刷到一条差评——信念该更新多少？由什么决定更新幅度？",
+	},
+	"find-the-crux": {
+		Hook:  "吵了两小时才发现：你们对「该不该让孩子玩游戏」根本没分歧，分歧在「玩多久算沉迷」——找不到真分歧的争论，全是空转。",
+		Check: "「该不该裸辞」——两个人吵翻了。设计一个问题，测出他们的分歧到底在事实（辞了多久能找到下家）还是在价值（稳定和自由哪个重）。",
+	},
+	"fallacy-fallacy": {
+		Hook:  "学完这门课最大的坑：从此见人就喊「稻草人！」「滑坡！」——对方论证烂，不代表对方结论错；抓到犯规，只说明这一球不算。",
+		Check: "「支持早睡的人举的理由全是伪科学，所以早睡无益」——犯规在哪？一个论证被驳倒后，它的结论处于什么状态：被证伪了，还是回到待定？",
+	},
+	"boss-final-debate": {
+		Hook:  "毕业 Boss！辩题：「大学该不该取消挂科制度」。规则三条：①先把对方立场钢铁人到你自己都心动；②找出你们的真分歧是事实还是价值；③给出你这边最强的论证，全程零犯规。我当对手兼裁判，随时鸣哨。",
+		Check: "终极加试：我刚才的反驳里故意埋了一个谬误——找出它。但注意：找到之后，我的结论就错了吗？给出你的最终裁决和理由。",
+	},
 }
 
-// ============================ 学逻辑 · 30 概念 ============================
+// ============================ 学逻辑 · 六幕 64 关 ============================
 
 var logicConcepts = []seedConcept{
-	// —— 入门 12 ——
-	{"argument-structure", "论证基础", "论证结构", "前提如何撑起结论", 1},
-	{"premise-conclusion", "论证基础", "前提与结论", "分清主张与理由", 1},
-	{"deductive-inductive", "论证基础", "演绎与归纳", "必然 vs 或然", 1},
-	{"validity", "论证基础", "有效性", "结构对不对", 1},
-	{"soundness", "论证基础", "可靠性", "结构对且前提真", 1},
-	{"correlation-causation", "因果思辨", "相关不等于因果", "同时出现≠谁导致谁", 1},
-	{"ad-hominem", "常见谬误", "人身攻击", "攻击人而非观点", 1},
-	{"straw-man", "常见谬误", "稻草人", "歪曲对方再打", 1},
-	{"false-dilemma", "常见谬误", "非黑即白", "硬塞成只有两选", 1},
-	{"slippery-slope", "常见谬误", "滑坡谬误", "一步就滑到极端", 1},
-	{"burden-of-proof", "论证基础", "举证责任", "谁主张谁举证", 1},
-	{"occams-razor-logic", "思维工具", "奥卡姆剃刀", "如无必要勿增假设", 1},
-	// —— 进阶 18 ——
-	{"circular-reasoning", "常见谬误", "循环论证", "用结论证明结论", 2},
-	{"appeal-to-authority", "常见谬误", "诉诸权威", "他说的所以对", 2},
-	{"appeal-to-emotion", "常见谬误", "诉诸情感", "煽情代替讲理", 2},
-	{"hasty-generalization", "常见谬误", "以偏概全", "少数例子推全体", 2},
-	{"survivorship-bias", "统计陷阱", "幸存者偏差", "只看到活下来的", 2},
-	{"base-rate-fallacy", "统计陷阱", "基率谬误", "忽略了背景概率", 2},
-	{"equivocation", "常见谬误", "偷换概念", "同一词悄悄换义", 2},
-	{"begging-the-question", "常见谬误", "预设结论", "把待证的当已知", 2},
-	{"necessary-sufficient-logic", "思维工具", "必要与充分", "缺它不行 vs 有它就行", 2},
-	{"counterexample", "思维工具", "反例法", "一个反例即可推翻", 2},
-	{"reductio", "思维工具", "归谬法", "顺着推到荒谬", 2},
-	{"bayesian-thinking", "概率思维", "贝叶斯思维", "用新证据更新信念", 2},
-	{"falsifiability-logic", "思维工具", "可证伪", "不能被证伪就没内容", 2},
-	{"steelman", "论证素养", "钢铁人", "先把对方论证做到最强", 2},
-	{"analogy-argument", "论证素养", "类比论证", "相似处能推多远", 2},
-	{"gambler-fallacy", "概率思维", "赌徒谬误", "以为该轮到我了", 2},
-	{"moving-goalposts", "常见谬误", "移动球门", "被驳倒就改标准", 2},
-	{"cherry-picking", "常见谬误", "选择性举证", "只挑对自己有利的", 2},
+	// —— 第一幕 · 解剖台（Tier 1）——
+	{"argument-structure", "拆论证", "论证结构", "结论靠哪几根柱子撑", 1},
+	{"hidden-premise", "拆论证", "隐含前提", "没说出口的最可疑", 1},
+	{"deductive-inductive", "拆论证", "演绎与归纳", "必然 vs 或然", 1},
+	{"validity", "拆论证", "有效性", "结构对不对", 1},
+	{"soundness", "拆论证", "可靠性", "结构对且前提真", 1},
+	{"necessary-sufficient-logic", "推理工具", "必要与充分", "缺它不行 vs 有它就行", 1},
+	{"conditional-reasoning", "推理工具", "条件推理", "「如果」的四种推法两种犯规", 1},
+	{"quantifier-logic", "推理工具", "所有与有些", "「都」的反面是「有一个不」", 1},
+	{"define-terms", "推理工具", "定义先行", "先对齐词义再开吵", 1},
+	{"counterexample", "推理工具", "反例法", "一个反例即可推翻", 1},
+	{"boss-argument-autopsy", "综合挑战", "Boss·热帖解剖", "上台拆一条十万赞热帖", 1},
+	// —— 第二幕 · 对人与诉诸（Tier 2）——
+	{"ad-hominem", "对人不对事", "人身攻击", "攻击人而非观点", 2},
+	{"tu-quoque", "对人不对事", "你也一样", "指出虚伪驳不倒观点", 2},
+	{"straw-man", "对人不对事", "稻草人", "歪曲对方再打", 2},
+	{"red-herring", "对人不对事", "转移话题", "一条红鲱鱼带偏全场", 2},
+	{"appeal-to-authority", "诉诸大法", "诉诸权威", "他说的所以对", 2},
+	{"appeal-to-emotion", "诉诸大法", "诉诸情感", "煽情代替讲理", 2},
+	{"appeal-to-ignorance", "诉诸大法", "诉诸无知", "证明不了假就当真", 2},
+	{"appeal-to-nature", "诉诸大法", "诉诸自然与传统", "天然的·祖传的≠对的", 2},
+	{"appeal-to-consequences", "诉诸大法", "诉诸后果", "后果可怕所以是假的", 2},
+	{"boss-comment-brawl", "综合挑战", "Boss·评论区大乱斗", "四条热评逐条点名犯规", 2},
+	// —— 第三幕 · 陷阱与耍赖（Tier 3）——
+	{"false-dilemma", "偷渡与陷阱", "非黑即白", "硬塞成只有两选", 3},
+	{"slippery-slope", "偷渡与陷阱", "滑坡谬误", "一步就滑到极端", 3},
+	{"circular-reasoning", "偷渡与陷阱", "循环论证", "用结论证明结论", 3},
+	{"equivocation", "偷渡与陷阱", "偷换概念", "同一词悄悄换义", 3},
+	{"loaded-question", "偷渡与陷阱", "复合问题", "问题里藏着下好的套", 3},
+	{"no-true-scotsman", "耍赖手法", "真正的XX", "反例一来就开除籍贯", 3},
+	{"special-pleading", "耍赖手法", "双重标准", "规则只约束别人", 3},
+	{"golden-mean-fallacy", "耍赖手法", "折中谬误", "真相没义务在中间", 3},
+	{"moving-goalposts", "耍赖手法", "移动球门", "被驳倒就改标准", 3},
+	{"boss-groupchat-debate", "综合挑战", "Boss·杠精对线", "群聊四连击一一拆招", 3},
+	// —— 第四幕 · 数字侦探（Tier 4）——
+	{"hasty-generalization", "样本的坑", "以偏概全", "少数例子推全体", 4},
+	{"sampling-bias", "样本的坑", "样本偏差", "问谁决定了答案", 4},
+	{"survivorship-bias", "样本的坑", "幸存者偏差", "只看到活下来的", 4},
+	{"cherry-picking", "样本的坑", "选择性举证", "只挑对自己有利的", 4},
+	{"law-of-small-numbers", "样本的坑", "小数定律", "三个样本的规律是噪音", 4},
+	{"mean-vs-median", "数字的骗术", "被平均", "平均数藏起老板的年薪", 4},
+	{"relative-absolute-risk", "数字的骗术", "相对与绝对风险", "涨50%可能只是万分之一", 4},
+	{"texas-sharpshooter", "数字的骗术", "先射箭后画靶", "围着弹孔画靶心", 4},
+	{"regression-to-mean", "数字的骗术", "回归均值", "极端之后自然回落", 4},
+	{"simpsons-paradox", "数字的骗术", "辛普森悖论", "分开看合起来看两个世界", 4},
+	{"boss-family-rumor", "综合挑战", "Boss·家族群辟谣", "养生爆文四处数字犯规", 4},
+	// —— 第五幕 · 因果与概率（Tier 5）——
+	{"correlation-causation", "因果侦探", "相关不等于因果", "同时出现≠谁导致谁", 5},
+	{"confounding-variable", "因果侦探", "第三变量", "背后站着同一个它", 5},
+	{"reverse-causation", "因果侦探", "因果倒置", "箭头画反药方全错", 5},
+	{"post-hoc", "因果侦探", "前后不等于因果", "「之后」推不出「因为」", 5},
+	{"single-cause", "因果侦探", "单因谬误", "原因是张网不是根线", 5},
+	{"control-group", "因果侦探", "对照思想", "没有对照的有效是裸奔", 5},
+	{"base-rate-fallacy", "概率直觉", "基率谬误", "忽略了背景概率", 5},
+	{"probability-direction", "概率直觉", "条件概率的方向", "此概率非彼概率", 5},
+	{"gambler-fallacy", "概率直觉", "赌徒谬误", "以为该轮到我了", 5},
+	{"expected-value", "概率直觉", "期望值", "把「万一」换成「平均下来」", 5},
+	{"inevitable-coincidence", "概率直觉", "巧合的必然", "基数够大奇迹天天有", 5},
+	{"boss-research-claims", "综合挑战", "Boss·研究表明", "拆断一条软文因果链", 5},
+	// —— 第六幕 · 立论与风度（Tier 6）——
+	{"burden-of-proof", "立得住", "举证责任", "谁主张谁举证", 6},
+	{"occams-razor-logic", "立得住", "奥卡姆剃刀", "如无必要勿增假设", 6},
+	{"falsifiability-logic", "立得住", "可证伪", "不能被证伪就没内容", 6},
+	{"reductio", "立得住", "归谬法", "顺着推到荒谬", 6},
+	{"analogy-argument", "立得住", "类比论证", "相似处能推多远", 6},
+	{"steelman", "辩得体面", "钢铁人", "先把对方论证做到最强", 6},
+	{"bayesian-thinking", "辩得体面", "贝叶斯思维", "用新证据更新信念", 6},
+	{"find-the-crux", "辩得体面", "找到真分歧", "分歧在事实还是价值", 6},
+	{"fallacy-fallacy", "辩得体面", "谬误谬误", "论证烂不代表结论错", 6},
+	{"boss-final-debate", "综合挑战", "Boss·体面地赢一场", "全程零犯规打完一场辩论", 6},
 }
 
 // ============================ 学营销 · 精编钩子与检验题 ============================
@@ -900,14 +1106,15 @@ func (h *Handler) userConceptLevels(userID, agentID string) map[string]int {
 	return m
 }
 
-// conceptProgressView 序列化进度给前端：总 total/lit/mastered + 按档（入门/进阶）分组的概念与各档进度。
-func conceptProgressView(concepts []models.AgentConcept, levels map[string]int) gin.H {
+// conceptProgressView 序列化进度给前端：总 total/lit/mastered + 按档（入门/进阶或六幕）分组的概念与各档进度。
+func conceptProgressView(agentSlug string, concepts []models.AgentConcept, levels map[string]int) gin.H {
+	labels, order := tiersFor(agentSlug)
 	lit, mastered := 0, 0
 	type agg struct {
 		total, lit, mastered int
 		items                []gin.H
 	}
-	byTier := make(map[int]*agg, len(tierOrder))
+	byTier := make(map[int]*agg, len(order))
 	for i := range concepts {
 		c := concepts[i]
 		lv := levels[c.ID]
@@ -931,14 +1138,14 @@ func conceptProgressView(concepts []models.AgentConcept, levels map[string]int) 
 		}
 		a.items = append(a.items, gin.H{"slug": c.Slug, "name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme, "hook": c.Hook})
 	}
-	tiers := make([]gin.H, 0, len(tierOrder))
-	for _, t := range tierOrder {
+	tiers := make([]gin.H, 0, len(order))
+	for _, t := range order {
 		a := byTier[t]
 		if a == nil {
 			continue
 		}
 		tiers = append(tiers, gin.H{
-			"tier": tierLabels[t], "total": a.total, "lit": a.lit, "mastered": a.mastered,
+			"tier": labels[t], "total": a.total, "lit": a.lit, "mastered": a.mastered,
 			"concepts": a.items,
 		})
 	}
@@ -946,8 +1153,8 @@ func conceptProgressView(concepts []models.AgentConcept, levels map[string]int) 
 }
 
 // loadConceptProgress 给 GET /agents/concepts/:id 用：当前进度视图。
-func (h *Handler) loadConceptProgress(userID, agentID string) gin.H {
-	return conceptProgressView(h.conceptList(agentID), h.userConceptLevels(userID, agentID))
+func (h *Handler) loadConceptProgress(userID string, a *models.ToolAgent) gin.H {
+	return conceptProgressView(a.Slug, h.conceptList(a.ID), h.userConceptLevels(userID, a.ID))
 }
 
 // tierClearedSet 返回「已点满（lit==total）」的档位集合，用于检测本轮新打通了哪档。
@@ -1030,11 +1237,11 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		deepseek.ChatOptions{Temperature: 0, MaxTokens: 200, ResponseFormat: "json_object"},
 	)
 	if err != nil {
-		return conceptProgressView(concepts, levels), nil, nil, nil
+		return conceptProgressView(a.Slug, concepts, levels), nil, nil, nil
 	}
 	var r conceptAssessResult
 	if jerr := json.Unmarshal([]byte(strings.TrimSpace(raw)), &r); jerr != nil {
-		return conceptProgressView(concepts, levels), nil, nil, nil
+		return conceptProgressView(a.Slug, concepts, levels), nil, nil, nil
 	}
 
 	preCleared := tierClearedSet(concepts, levels) // 更新前已打通的档
@@ -1073,16 +1280,17 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 		}
 	}
 
-	// 本轮新打通的档（入门/进阶）。
+	// 本轮新打通的档（入门/进阶或某一幕）。
+	tLabels, tOrder := tiersFor(a.Slug)
 	postCleared := tierClearedSet(concepts, levels)
 	var tierCleared []string
-	for _, t := range tierOrder {
+	for _, t := range tOrder {
 		if postCleared[t] && !preCleared[t] {
-			tierCleared = append(tierCleared, tierLabels[t])
+			tierCleared = append(tierCleared, tLabels[t])
 		}
 	}
 
-	view := conceptProgressView(concepts, levels)
+	view := conceptProgressView(a.Slug, concepts, levels)
 	if note := strings.TrimSpace(r.Note); note != "" {
 		view["note"] = clipText(note, 80)
 	}
@@ -1092,7 +1300,8 @@ func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistant
 // conceptStateBrief 拼「学员进度」system 注入段（L1 主动教学的燃料）：分档进度、最近点亮、
 // 建议下一个概念（按课程表顺序取第一个未点亮，天然入门优先）+ 本轮编排指令。
 // fresh=true 表示新会话（要做开场编排：接续 + 场景钩子开课）。只给模型看，绝不直接展示给用户。
-func (h *Handler) conceptStateBrief(userID, agentID string, fresh bool) string {
+func (h *Handler) conceptStateBrief(userID string, a *models.ToolAgent, fresh bool) string {
+	agentID := a.ID
 	concepts := h.conceptList(agentID)
 	if len(concepts) == 0 {
 		return ""
@@ -1129,13 +1338,14 @@ func (h *Handler) conceptStateBrief(userID, agentID string, fresh bool) string {
 		}
 	}
 
+	tLabels, tOrder := tiersFor(a.Slug)
 	var b strings.Builder
 	b.WriteString("== 学员进度（仅你可见，据此编排本轮；绝不把这段原样复述给学员）==\n进度：")
-	for _, t := range tierOrder {
+	for _, t := range tOrder {
 		if totByTier[t] == 0 {
 			continue
 		}
-		b.WriteString(tierLabels[t] + " " + strconv.Itoa(litByTier[t]) + "/" + strconv.Itoa(totByTier[t]) + "　")
+		b.WriteString(tLabels[t] + " " + strconv.Itoa(litByTier[t]) + "/" + strconv.Itoa(totByTier[t]) + "　")
 	}
 	b.WriteString("已点亮；已掌握 " + strconv.Itoa(mastered) + " 个。\n")
 	if len(recentNames) > 0 {
@@ -1236,7 +1446,8 @@ func NudgeLine(db *gorm.DB, a *models.ToolAgent, userID string) (string, bool) {
 			return "🔁 " + strconv.Itoa(n) + " 个概念好几天没碰了，快问快答保住它们", true
 		}
 		if next != nil {
-			return prefix + "下一个待点亮：『" + next.Name + "』 · " + tierLabels[next.Tier] + " " +
+			nLabels, _ := tiersFor(a.Slug)
+			return prefix + "下一个待点亮：『" + next.Name + "』 · " + nLabels[next.Tier] + " " +
 				strconv.Itoa(litByTier[next.Tier]) + "/" + strconv.Itoa(totByTier[next.Tier]), true
 		}
 		if mastered < len(concepts) {

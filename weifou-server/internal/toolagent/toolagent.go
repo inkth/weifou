@@ -188,7 +188,7 @@ func (h *Handler) chat(c *gin.Context) error {
 		sysPrompt += "\n\n" + skillStateBrief(sk, !resume)
 	}
 	if a.Concept {
-		if brief := h.conceptStateBrief(auth.UserID, a.ID, !resume); brief != "" {
+		if brief := h.conceptStateBrief(auth.UserID, &a, !resume); brief != "" {
 			sysPrompt += "\n\n" + brief
 		}
 		// 复习挑战：追加快问快答编排（放进度简报之后，指令内已声明优先于开场编排）。
@@ -295,7 +295,7 @@ func (h *Handler) concepts(c *gin.Context) error {
 		httpx.OK(c, gin.H{"enabled": false})
 		return nil
 	}
-	out := h.loadConceptProgress(auth.UserID, a.ID)
+	out := h.loadConceptProgress(auth.UserID, &a)
 	out["enabled"] = true
 	out["due"] = dueCount(h.db, auth.UserID, a.ID) // 到期待复习数（对话页复习徽章）
 	httpx.OK(c, out)
@@ -504,7 +504,7 @@ func Seed(db *gorm.DB) {
 		{
 			Slug: "learn-logic", Name: "学逻辑",
 			Tagline:     "用核心概念学会清晰思考的 AI 导师",
-			Description: "论证、谬误、因果、概率思维——「明辨」帮你把话想清楚、把理讲明白、一眼识破套路。聊得越深，点亮的概念越多。",
+			Description: "从拆论证、识谬误到读数字、断因果——「明辨」带你六幕闯关学会清晰思考，每幕结尾一场 Boss 找茬战。聊得越深，点亮的关卡越多。",
 			Category:    models.AgentCatEducation, Icon: "🧩", Accent: "#0EA5E9",
 			Greeting:     "我是明辨。抛个你觉得有道理、或觉得哪里不对劲的说法给我——我们一起拆：它的前提是什么、推得住吗、有没有藏着谬误。练几轮，你看谁说话都能一眼看穿逻辑。",
 			SystemPrompt: buildConceptPrompt(logicPersona+"\n\n"+conceptTeachingMethod, logicConcepts),
@@ -618,7 +618,9 @@ const conceptTeachingMethod = `教学法（每一节课都有形状：接续 →
 
 const psychologyPersona = `你是「知心」，「学心理」领域的 AI 学习导师，性格温柔、共情、善于倾听。你帮用户用心理学真正理解自己和他人——先接住情绪、问清 TA 的真实处境，再用恰当的心理学概念把困惑照亮，而不是急着下结论或贴标签。`
 
-const logicPersona = `你是「明辨」，「学逻辑」领域的 AI 学习导师，冷静、精确、爱抓漏洞。你帮用户学会清晰地想、有力地论证、识破谬误——常拿用户自己的话或身边的例子当靶子，当场演示一个推理哪里站得住、哪里塌了，但对人始终友善、只对逻辑较真。`
+const logicPersona = `你是「明辨」，「学逻辑」领域的 AI 学习导师，冷静、精确、爱抓漏洞。你帮用户学会清晰地想、有力地论证、识破谬误——常拿用户自己的话或身边的例子当靶子，当场演示一个推理哪里站得住、哪里塌了，但对人始终友善、只对逻辑较真。
+课程分六幕（解剖论证→识破谬误→读穿数字→判断因果→立论辩护），每幕结尾有一个「Boss 综合找茬关」：钩子里就是一整段埋好犯规的语料，你扮演出题人兼裁判——先把语料完整呈现给学员，等学员逐处点名犯规后逐一核对（点中几处、漏了哪处、错抓了哪处），点中大半才算通关；学员漏抓时给方位提示（在哪一句），不直接报答案。
+全课的毕业观是「谬误谬误」：教学员抓犯规，也时时提醒——对方论证烂不代表对方结论错，识破谬误是为了想得更清楚，不是为了抬杠。`
 
 const marketingPersona = `你是「破圈」，「学营销」领域的 AI 学习导师，务实、接地气、爱举真实案例。你帮用户学会怎么把东西卖出去——从定位、差异化到漏斗、增长、说服心理，常拿用户手上正卖的东西当例子，把每个概念用到 TA 的真实生意上，只讲能落地的，不掉书袋。`
 
