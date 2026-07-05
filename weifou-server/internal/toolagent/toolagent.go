@@ -558,19 +558,9 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "daodejing", Name: "道德经",
-			Tagline:     "会员隐藏课·陪你把《道德经》读进日子里",
-			Description: "一门送给会员的隐藏课：不背经、不玄谈，跟着向导「知常」用老子的眼睛看自己正过的坎——看开得失、学会不争、懂得知止。六幕四十四关，一章一句一件事，点亮的是你真过明白的那些坎。",
-			Category:    models.AgentCatEducation, Icon: "📜", Accent: "#0D9488",
-			Greeting:     "我是知常。《道德经》五千字，说的其实都是怎么把日子过顺。我不带你背经、也不跟你玄谈——只用老子的眼睛，陪你看自己正过的坎。先说说，你最近有没有一件放不下、或者正较着劲的事？我们就从它开始，一章一句地照过去。",
-			SystemPrompt: buildConceptPrompt(daodejingPrompt, daodejingConcepts),
-			Concept:      true,
-			FreeTrial:    3, Sort: 9, // 会员隐藏课/赠品：FreeTrial=3 给非会员试读几轮即锁（MEMBERSHIP_REQUIRED），做转化钩子
-		},
-		{
 			Slug: "daodejing-full", Name: "道德经·帛书完整版",
 			Tagline:     "会员完整课·帛书本逐章读完整部《老子》",
-			Description: "在精选课之外，陪你用【马王堆帛书本】逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章，每章都给完整原文（帛书用字），每幕末一个「综合关」。仍不背经、不玄谈——一章一句，都拉到你正过的日子上用，落地才点亮。",
+			Description: "跟着向导「知常」用【马王堆帛书本】逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章，每章都给完整原文（帛书用字），每幕末一个「综合关」。不背经、不玄谈——一章一句，都拉到你正过的日子上用，落地才点亮。",
 			Category:    models.AgentCatEducation, Icon: "📜", Accent: "#0F766E",
 			Greeting:     "我是知常。这门是《老子》帛书完整版——按帛书本的原貌，德经在前、道经在后，八十一章我们一章一章读过去，每章都先看完整原文，从「上德不德」直到「道法自然」。还是老规矩：不带你背经、不跟你玄谈，只用老子的每一句，照你自己正过的坎。先说说，你最近有没有一件放不下、或正较着劲的事？我们就从德经第一章开始。",
 			SystemPrompt: buildConceptPrompt(daodejingFullPrompt, daodejingFullConcepts),
@@ -598,10 +588,12 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    3, Sort: 12,
 		},
 	}
-	// 已退役课程（2026-07-04 收缩课程线：只留英语/心理/营销/逻辑四门完备课）：
-	// seed 不再包含，且显式下架已入库的旧记录——enabled=false 后列表/详情/对话全部不可见，
+	// 已退役课程：seed 不再包含，且显式下架已入库的旧记录——enabled=false 后列表/详情/对话全部不可见，
 	// 用户历史会话与进度数据保留不动。
-	retired := []string{"learn-economics", "learn-philosophy", "learn-ideas", "learn-science", "learn-aesthetics"}
+	// - 2026-07-04：经济/哲学/思想/科学/审美（收缩课程线）。
+	// - 2026-07-05：道德经（44关精选·通行本）——由「道德经·帛书完整版」daodejing-full 取代（全81章·帛书本·带原文）。
+	//   注：daodejing 的概念/精编/判定代码保留在 curriculum.go（curricula 仍含其条目），以保全历史进度映射，只是 agent 下架不可见。
+	retired := []string{"learn-economics", "learn-philosophy", "learn-ideas", "learn-science", "learn-aesthetics", "daodejing"}
 	db.Model(&models.ToolAgent{}).Where("slug IN ?", retired).Update("enabled", false)
 
 	for i := range presets {
