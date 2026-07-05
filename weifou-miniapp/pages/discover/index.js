@@ -87,7 +87,7 @@ Page({
       const fr = c.freeRemaining;
       const pill = c.member ? '会员畅用' : (typeof fr === 'number' && fr >= 0 ? `免费剩 ${fr} 次` : '');
       // nudge=催课条：line 已是服务端算好的动态学习状态（下一个概念/待复习/段位弱项），高亮显示
-      return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, nudge: !!c.nudge, kind: c.type === 'dating' ? 'dating' : 'tool', pill, concept: !!c.concept, accent: c.accent || '' };
+      return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, nudge: !!c.nudge, kind: 'tool', pill, concept: !!c.concept, accent: c.accent || '' };
     });
 
     this.setData({ chief, specialists, loading: false, loaded: true });
@@ -103,23 +103,17 @@ Page({
     }
   },
 
-  goVisitors() { wx.navigateTo({ url: '/pages/visitors/index' }); },
-
   enterSpecialist(e) {
-    const { id, name, kind } = e.currentTarget.dataset;
-    if (kind === 'dating') {
-      wx.navigateTo({ url: '/pages/dating/index' });
-    } else if (kind === 'tool') {
-      if (!id) { wx.showToast({ title: '正在上线，稍后再来', icon: 'none' }); return; }
-      const sp = (this.data.specialists || []).find((s) => s.id === id);
-      if (sp && sp.concept) {
-        // 概念型学习 Agent → 闯关地图
-        // initial 即 ToolAgent.Icon(emoji),透传给卡流的吉祥物舞台占位
-        wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(sp.accent || '')}&icon=${encodeURIComponent(sp.initial || '')}` });
-        return;
-      }
-      wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
+    const { id, name } = e.currentTarget.dataset;
+    if (!id) { wx.showToast({ title: '正在上线，稍后再来', icon: 'none' }); return; }
+    const sp = (this.data.specialists || []).find((s) => s.id === id);
+    if (sp && sp.concept) {
+      // 概念型学习 Agent → 闯关地图
+      // initial 即 ToolAgent.Icon(emoji),透传给卡流的吉祥物舞台占位
+      wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(sp.accent || '')}&icon=${encodeURIComponent(sp.initial || '')}` });
+      return;
     }
+    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
   },
 
   removeSpecialist(e) {

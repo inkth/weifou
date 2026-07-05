@@ -134,10 +134,6 @@ Page({
     wx.showToast({ title: '已开启来访通知', icon: 'success' });
   },
 
-  goMyQuestions() {
-    wx.navigateTo({ url: '/pages/my-questions/index' });
-  },
-
   // 裂变：访客页脚 → 对话式创建自己的助理（带来源归因；已有主页会自动进入编辑态）
   goCreateOwn() {
     track('own_hook_click', this.data.profileId, 'profile');

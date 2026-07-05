@@ -75,21 +75,6 @@
 .hstat-n { font-size: 40rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
 .hstat-l { margin-top: 2rpx; font-size: 22rpx; color: var(--accent-ink); }
 
-/* 谁看过我：奶油黄贴条 */
-.seen {
-  display: flex; align-items: center; gap: 12rpx;
-  padding: 24rpx 30rpx; border-radius: var(--r-lg); margin-bottom: 36rpx;
-  background: var(--pop-butter);
-  border: none;
-  box-shadow: 0 5rpx 0 var(--gold-strong);
-  font-size: 27rpx; font-weight: 600; color: var(--pop-butter-ink);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
-}
-.seen-press { transform: translateY(5rpx); box-shadow: none; }
-.seen-ic { font-size: 32rpx; color: var(--ink); }
-.seen text { flex: 1; }
-.seen-go { font-size: 30rpx; color: var(--ink); }
-
 /* 区段标：剪裁线 */
 .sec-label {
   display: flex; align-items: center; gap: 16rpx;

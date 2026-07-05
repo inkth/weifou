@@ -30,9 +30,6 @@ Page({
         memberEntry: entryVisible('membership', true),
         loading: false,
       });
-      // 鉴权加载完成 → 强刷底栏「我的」红点，保证与真实待办一致（绕开冷启缓存的过期 0）。
-      const tb = typeof this.getTabBar === 'function' && this.getTabBar();
-      if (tb && me.profileId) tb.refreshBadge(true);
     } catch (e) {
       this.setData({ loading: false });
     }
@@ -44,9 +41,7 @@ Page({
   },
   // 创建与编辑统一走对话式 onboarding（已无表单页）
   goOnboarding() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
-  goInbox() { wx.navigateTo({ url: '/pages/inbox/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
-  goQuestions() { wx.navigateTo({ url: '/pages/my-questions/index' }); },
   // 记忆管理 = 分身记住的关于你的资料（KnowledgeItem），对外回答时会用上
   goMemory() { wx.navigateTo({ url: '/pages/memory/index' }); },
 

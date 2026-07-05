@@ -10,20 +10,12 @@
     "pages/chat/index",
     "pages/poster/index",
     "pages/settings/index",
-    "pages/inbox/index",
-    "pages/replay/index",
     "pages/qabox/index",
-    "pages/question-detail/index",
-    "pages/my-questions/index",
-    "pages/my-chats/index",
-    "pages/visitors/index",
     "pages/memory/index",
     "pages/agents/index",
     "pages/agent-chat/index",
     "pages/learn-map/index",
-    "pages/membership/index",
-    "pages/dating/index",
-    "pages/compat/index"
+    "pages/membership/index"
   ],
   "tabBar": {
     "custom": true,

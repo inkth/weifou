@@ -40,10 +40,6 @@
     </view>
   </view>
 
-  <view wx:if="{{chief.hasProfile}}" class="seen" hover-class="seen-press" hover-stay-time="0" bindtap="goVisitors">
-    <view class="ic ic-user seen-ic"></view><text>谁看过你的名片</text><view class="ic ic-chevron seen-go"></view>
-  </view>
-
   <view wx:if="{{specialists.length}}" class="sec-label">我的 Agent</view>
 
   <!-- Agent 大卡 -->

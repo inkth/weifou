@@ -12,7 +12,6 @@
       <view class="ic ic-chevron clone-arrow"></view>
     </view>
     <view class="clone-acts">
-      <view class="clone-act" catchtap="goInbox"><view class="ic ic-inbox ca-ic"></view><text>收件箱</text></view>
       <view class="clone-act" catchtap="goOnboarding"><view class="ic ic-edit ca-ic"></view><text>编辑</text></view>
       <view class="clone-act" catchtap="goMyProfile"><view class="ic ic-stats ca-ic"></view><text>数据</text></view>
     </view>

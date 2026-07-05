@@ -31,7 +31,6 @@
   transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-pill {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -45,18 +44,6 @@
   font-size: 40rpx;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-/* 红点：待办信号 */
-.tab-dot {
-  position: absolute;
-  top: 6rpx;
-  right: 18rpx;
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-  background: var(--danger, #ff4b4b);
-  border: 2rpx solid var(--surface, #ffffff);
-}
-.tab.active .tab-dot { border-color: var(--accent, #18b690); }
 .tab-label {
   font-size: 22rpx;
   color: var(--sub, #999999);

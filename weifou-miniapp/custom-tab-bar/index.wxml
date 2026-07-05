@@ -8,7 +8,6 @@
   >
     <view class="tab-pill">
       <view class="ic ic-{{item.icon}} tab-ic"></view>
-      <view wx:if="{{index === 2 && dotUser}}" class="tab-dot"></view>
     </view>
     <view class="tab-label">{{item.text}}</view>
   </view>
