@@ -82,6 +82,15 @@ page {
   --glass-hair: rgba(75, 75, 75, 0.10);
   --blur-glass: blur(28rpx) saturate(160%);
   --shadow-lihe: 0 6rpx 24rpx rgba(24, 182, 144, 0.18);
+
+  /* —— 遮罩底（弹层/抽屉；换肤时统一改这两个）—— */
+  --scrim: rgba(0, 0, 0, 0.5);          /* 模态弹层黑底 */
+  --scrim-soft: rgba(75, 75, 75, 0.35); /* 抽屉/温和遮罩 */
+
+  /* —— 沉浸天空渐变（新用户 demo / onboarding / 学习舞台背景；改天空皮就改这里）—— */
+  --sky-1: #d8f6ff;   /* 天蓝起 */
+  --sky-2: #e9fbf2;   /* 薄荷收 */
+  --grad-sky: linear-gradient(165deg, var(--sky-1) 0%, var(--sky-2) 45%, var(--surface) 100%);
 }
 
 page {

@@ -8,7 +8,7 @@
   padding: calc(env(safe-area-inset-top) + 72rpx) 48rpx calc(env(safe-area-inset-bottom) + 44rpx);
   overflow: hidden;
   /* 全背景基底：糖果亮渐变（立绘叠其上；无立绘的老用户态也有沉浸底） */
-  background: linear-gradient(165deg, #d8f6ff 0%, #e9fbf2 45%, #ffffff 100%);
+  background: var(--grad-sky);
 }
 
 /* 全屏立绘（固定，不随内容滚） */
@@ -40,7 +40,7 @@
 @keyframes presencePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); } 50% { box-shadow: 0 0 0 8rpx rgba(52,211,153,0); } }
 .float-on { font-size: 22rpx; color: var(--ink-2); }
 .float-bubble {
-  background: rgba(255,255,255,0.72);
+  background: var(--glass-dark);
   backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
   border: 1rpx solid var(--border);
   color: var(--ink); font-size: 27rpx; line-height: 1.6;
@@ -90,10 +90,10 @@
   box-sizing: border-box;
   border-radius: 100rpx;
   background: var(--danger);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 24rpx;
   font-weight: 600;
   line-height: 38rpx;
   text-align: center;
-  box-shadow: 0 4rpx 12rpx rgba(255, 75, 75, 0.4);
+  box-shadow: 0 4rpx 12rpx rgba(255, 75, 75, 0.4); /* 红点外发光：alpha 烘死，随皮不换 */
 }

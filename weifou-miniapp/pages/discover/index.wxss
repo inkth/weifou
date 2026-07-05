@@ -9,7 +9,24 @@
 .sq-eyebrow { font-size: 26rpx; color: var(--ink-2); font-weight: 500; }
 .sq-h1 { margin-top: 10rpx; font-size: 52rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.3; }
 
-.card-press { transform: translateY(5rpx); box-shadow: none !important; }
+/* 按压=下沉+底唇收没：复用 app.wxss 全局 .card-press，本页不再另立 */
+
+/* 首屏骨架（.skel 微光见 app.wxss） */
+.sk-hero { height: 220rpx; border-radius: var(--r-2xl); margin-bottom: 28rpx; }
+.sk-acard { height: 180rpx; border-radius: var(--r-xl); margin-bottom: 26rpx; }
+
+/* 网络失败重试条：克制描边（非糖果色，成交外的功能提示） */
+.retry {
+  display: flex; align-items: center; justify-content: center; gap: 12rpx;
+  padding: 20rpx 28rpx; border-radius: var(--r-lg); margin-bottom: 24rpx;
+  background: var(--surface);
+  border: var(--bw-thin) solid var(--border);
+  box-shadow: 0 5rpx 0 var(--border);
+  font-size: 26rpx; font-weight: 600; color: var(--ink-2);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+.retry-press { transform: translateY(5rpx); box-shadow: none; }
+.retry-ic { font-size: 32rpx; color: var(--accent-strong); }
 
 /* ===== AI 名片大卡 ===== */
 .hero {

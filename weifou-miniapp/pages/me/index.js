@@ -30,6 +30,9 @@ Page({
         memberEntry: entryVisible('membership', true),
         loading: false,
       });
+      // 鉴权加载完成 → 强刷底栏「我的」红点，保证与真实待办一致（绕开冷启缓存的过期 0）。
+      const tb = typeof this.getTabBar === 'function' && this.getTabBar();
+      if (tb && me.profileId) tb.refreshBadge(true);
     } catch (e) {
       this.setData({ loading: false });
     }

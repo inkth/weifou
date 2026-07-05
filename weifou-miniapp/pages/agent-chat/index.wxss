@@ -12,7 +12,7 @@ page { background: var(--bg); height: 100%; }
 .tb-act:active { transform: translateY(4rpx); box-shadow: none; }
 
 /* 历史会话抽屉 */
-.drawer-mask { position: fixed; inset: 0; background: rgba(75, 75, 75, 0.35); z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; }
+.drawer-mask { position: fixed; inset: 0; background: var(--scrim-soft); z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; }
 .drawer { background: var(--surface); border-radius: var(--r-3xl) var(--r-3xl) 0 0; max-height: 76vh; display: flex; flex-direction: column; padding: 0 28rpx calc(24rpx + env(safe-area-inset-bottom)); box-shadow: var(--shadow-pop); }
 .drawer-grip { width: 64rpx; height: 8rpx; border-radius: 8rpx; background: var(--border); margin: 16rpx auto 8rpx; }
 .drawer-title { font-size: 30rpx; font-weight: 700; color: var(--ink); text-align: center; padding: 8rpx 0 16rpx; }
@@ -34,8 +34,8 @@ page { background: var(--bg); height: 100%; }
 .astage-frame {
   width: 168rpx; height: 188rpx;
   border-radius: 84rpx 84rpx 24rpx 24rpx;
-  border: 6rpx solid #ffffff;
-  background: linear-gradient(160deg, #d8f6ff, #e9fbf2);
+  border: 6rpx solid var(--surface);
+  background: linear-gradient(160deg, var(--sky-1), var(--sky-2));
   box-shadow: var(--shadow-card);
   display: flex; align-items: center; justify-content: center;
   animation: aBreath 4.5s ease-in-out infinite;
@@ -93,7 +93,7 @@ page { background: var(--bg); height: 100%; }
   padding: 4rpx 18rpx;
   background: var(--pop-butter); color: var(--pop-butter-ink);
   border: none; border-radius: var(--r-full);
-  box-shadow: 0 4rpx 0 #d9a900;
+  box-shadow: 0 4rpx 0 var(--gold-strong);
   transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
 .cp-review:active { transform: translateY(4rpx); box-shadow: none; }
@@ -108,7 +108,7 @@ page { background: var(--bg); height: 100%; }
   border: none;
   border-radius: var(--r-md);
   font-size: 26rpx; font-weight: 700;
-  box-shadow: 0 5rpx 0 #d9a900;
+  box-shadow: 0 5rpx 0 var(--gold-strong);
   animation: barIn 0.25s var(--ease) both;
   transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
@@ -135,7 +135,7 @@ page { background: var(--bg); height: 100%; }
 .cm-chip.lv2 { color: #7a5c00; border-color: transparent; background: var(--gold); font-weight: 800; box-shadow: 0 3rpx 0 var(--gold-strong); }
 
 /* 庆祝浮层：多邻国式全屏彩带 + 大字弹簧 */
-.celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.86); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
+.celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
 .celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
 .celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }
 .celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #7a5c00; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: 0 3rpx 0 var(--gold-strong); }

@@ -5,6 +5,21 @@
     <view class="sq-h1">想办成<text class="hl">什么？</text></view>
   </view>
 
+  <!-- 首屏加载骨架：避免 FALLBACK → 真数据的闪跳 -->
+  <block wx:if="{{loading && !loaded}}">
+    <view class="skel sk-hero"></view>
+    <view class="skel sk-acard"></view>
+    <view class="skel sk-acard"></view>
+  </block>
+
+  <block wx:else>
+
+  <!-- 网络失败可重试条（区别于「新用户空态」的 demo 卡） -->
+  <view wx:if="{{errored}}" class="retry" hover-class="retry-press" hover-stay-time="0" bindtap="retry">
+    <text class="retry-ic">↻</text>
+    <text class="retry-txt">没能连上，点这里重试</text>
+  </view>
+
   <!-- AI 名片大卡：头像 + 数据 dashboard -->
   <view class="hero" hover-class="card-press" hover-stay-time="0" bindtap="enterChief">
     <view wx:if="{{chief.online}}" class="hero-sticker">● 在线</view>
@@ -48,5 +63,7 @@
       <view class="acard-cta">去学习<view class="ic ic-arrow acard-cta-ic"></view></view>
     </view>
   </view>
+
+  </block>
 
 </view>

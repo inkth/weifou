@@ -1,5 +1,6 @@
 /* 组件默认 styleIsolation:isolated，app.wxss 的 .ic 不会下传，需自行 import 图标真源。
-   色值与 app.wxss 糖果令牌对齐（组件隔离故落成字面量）。 */
+   CSS 自定义属性可沿 DOM 继承进组件，故色值用 var(--令牌, 字面量)：能读到 page 令牌就随皮换，
+   读不到（老基础库）则回退字面量、绝不掉色。字面量与 app.wxss 糖果令牌一一对齐。 */
 @import "../styles/icons.wxss";
 
 /* 糖果悬浮 dock：白底胶囊 + 浅灰细边 + 垂直底唇，悬浮于白底之上。
@@ -13,10 +14,10 @@
   display: flex;
   align-items: center;
   padding: 10rpx 12rpx;
-  background: #ffffff;
-  border: 2rpx solid #e5e5e5;
+  background: var(--surface, #ffffff);
+  border: 2rpx solid var(--border, #e5e5e5);
   border-radius: 999rpx;
-  box-shadow: 0 6rpx 0 #e5e5e5;
+  box-shadow: 0 6rpx 0 var(--border, #e5e5e5);
 }
 .tab {
   flex: 1;
@@ -25,11 +26,12 @@
   align-items: center;
   gap: 2rpx;
   padding: 6rpx 0;
-  color: #999999; /* = currentColor → 驱动图标颜色 */
+  color: var(--sub, #999999); /* = currentColor → 驱动图标颜色 */
   border-radius: 999rpx;
   transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-pill {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,25 +45,37 @@
   font-size: 40rpx;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* 红点：待办信号 */
+.tab-dot {
+  position: absolute;
+  top: 6rpx;
+  right: 18rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--danger, #ff4b4b);
+  border: 2rpx solid var(--surface, #ffffff);
+}
+.tab.active .tab-dot { border-color: var(--accent, #18b690); }
 .tab-label {
   font-size: 22rpx;
-  color: #999999;
+  color: var(--sub, #999999);
   letter-spacing: 0.5rpx;
   transition: color 0.15s ease;
 }
 .tab.active {
-  color: #ffffff;
+  color: var(--on-accent, #ffffff);
 }
 .tab.active .tab-pill {
-  background: #18b690;
+  background: var(--accent, #18b690);
   border-color: transparent;
-  box-shadow: 0 4rpx 0 #0e9c7a;
+  box-shadow: 0 4rpx 0 var(--accent-strong, #0e9c7a);
 }
 .tab.active .tab-ic {
   transform: scale(1.04);
 }
 .tab.active .tab-label {
-  color: #18b690;
+  color: var(--accent, #18b690);
   font-weight: 800;
 }
 .tab:active .tab-pill {

@@ -21,7 +21,7 @@ function greet() {
 }
 
 Page({
-  data: { statusBarH: 20, greeting: '你好', chief: FALLBACK.chief, specialists: [], loading: true },
+  data: { statusBarH: 20, greeting: '你好', chief: FALLBACK.chief, specialists: [], loading: true, loaded: false, errored: false },
 
   onLoad() {
     try {
@@ -39,12 +39,25 @@ Page({
   },
 
   async load() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, errored: false });
     try { await ensureLogin(); } catch (e) { /* 未登录也照常铺卡 */ }
 
-    const cards = await request({ url: '/home/agents' }).catch(() => null);
+    // 区分「真网络失败」与「空/新用户」：失败 → 顶部可重试条（保留现有内容，首屏兜底铺 demo）；
+    // 空结果 → 新用户 demo 卡（原逻辑）。两者过去都静默铺 FALLBACK，主人分不清是挂了还是本该空。
+    let cards = null;
+    let failed = false;
+    try { cards = await request({ url: '/home/agents' }); }
+    catch (e) { failed = true; }
+
+    if (failed) {
+      const patch = { loading: false, loaded: true, errored: true };
+      if (!this.data.loaded) { patch.chief = FALLBACK.chief; patch.specialists = FALLBACK.specialists; }
+      this.setData(patch);
+      return;
+    }
+
     if (!cards || !cards.length) {
-      this.setData({ chief: FALLBACK.chief, specialists: FALLBACK.specialists, loading: false });
+      this.setData({ chief: FALLBACK.chief, specialists: FALLBACK.specialists, loading: false, loaded: true });
       return;
     }
 
@@ -77,8 +90,10 @@ Page({
       return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, nudge: !!c.nudge, kind: c.type === 'dating' ? 'dating' : 'tool', pill, concept: !!c.concept, accent: c.accent || '' };
     });
 
-    this.setData({ chief, specialists, loading: false });
+    this.setData({ chief, specialists, loading: false, loaded: true });
   },
+
+  retry() { this.load(); },
 
   enterChief() {
     if (this.data.chief.hasProfile) {
