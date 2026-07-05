@@ -109,7 +109,11 @@ Page({
     let afterCur = false;    // 当前关之后的第一个未点亮 = available
     let gi = 0;              // 全局序号:蜿蜒相位 + 第N课编号
     let sec = null;
+    // 会员锁:非会员 + 概念课启用了幕门控(freeTier>0)时,Tier>freeTier 的整幕标会员锁。
+    const gate = !cp.isMember && (cp.freeTier || 0) > 0;
+    const freeTier = cp.freeTier || 0;
     (cp.tiers || []).forEach((t) => {
+      const tierLocked = gate && (t.tierNum || 1) > freeTier;
       (t.concepts || []).forEach((c) => {
         if (!sec || sec.theme !== c.theme) {
           sec = {
@@ -132,7 +136,7 @@ Page({
         const node = {
           slug: c.slug, name: c.name, blurb: c.blurb, hook: c.hook || '', note: c.note || '',
           state, emoji, icon: ICON_BASE + STATE_ICONS[state] + '.webp', x: SNAKE[gi % SNAKE.length],
-          num: gi + 1, boss: isBoss(c), flavor: FLAVOR[state],
+          num: gi + 1, boss: isBoss(c), flavor: FLAVOR[state], memberLocked: tierLocked,
         };
         if (state === 'current') cur = node;
         sec.nodes.push(node);
@@ -163,31 +167,54 @@ Page({
   // 点节点/课卡 → 关卡卡片(软锁:锁定关也能点开,CTA 变「提前解锁」)
   openCard(e) {
     const { slug } = e.currentTarget.dataset;
+    const node = this._find(slug);
+    if (!node) return;
+    const locked = !!node.memberLocked;
+    this.setData({ card: {
+      ...node,
+      stateText: locked ? '🔐 会员解锁' : STATE_TEXT[node.state],
+      cta: locked ? '开通会员 · 解锁第二幕' : STATE_CTA[node.state],
+    } });
+  },
+  closeCard() { this.setData({ card: null }); },
+  noop() {},
+
+  _find(slug) {
     let node = null;
     this.data.sections.some((s) => {
       node = s.nodes.find((n) => n.slug === slug) || null;
       return !!node;
     });
-    if (!node) return;
-    this.setData({ card: { ...node, stateText: STATE_TEXT[node.state], cta: STATE_CTA[node.state] } });
+    return node;
   },
-  closeCard() { this.setData({ card: null }); },
-  noop() {},
+  // 会员锁的关 → 直接去会员页(而非进对话撞墙);返回 true 表示已拦截。
+  _lockGo(node) {
+    if (node && node.memberLocked) {
+      wx.navigateTo({ url: '/pages/membership/index' });
+      return true;
+    }
+    return false;
+  },
 
   // 卡片 CTA / 底部「继续学习」/ 卡流内嵌「上这一课」→ 对话页自动开课
   startNode() {
     const c = this.data.card;
     if (!c) return;
     this.setData({ card: null });
+    if (this._lockGo(c)) return;
     this._go(c.slug);
   },
   startFromCard(e) {
     const { slug } = e.currentTarget.dataset;
-    if (slug) this._go(slug);
+    if (!slug) return;
+    if (this._lockGo(this._find(slug))) return;
+    this._go(slug);
   },
   startCurrent() {
-    if (this.data.current) this._go(this.data.current.slug);
-    else this._go(''); // 全部点亮:直接进对话(复习/冲掌握)
+    if (this.data.current) {
+      if (this._lockGo(this.data.current)) return;
+      this._go(this.data.current.slug);
+    } else this._go(''); // 全部点亮:直接进对话(复习/冲掌握)
   },
   _go(slug) {
     const q = `id=${this.data.id}&name=${encodeURIComponent(this.data.name)}`;

@@ -2644,7 +2644,7 @@ func conceptProgressView(agentSlug string, concepts []models.AgentConcept, level
 			continue
 		}
 		tiers = append(tiers, gin.H{
-			"tier": labels[t], "total": a.total, "lit": a.lit, "mastered": a.mastered,
+			"tier": labels[t], "tierNum": t, "total": a.total, "lit": a.lit, "mastered": a.mastered,
 			"concepts": a.items,
 		})
 	}

@@ -311,6 +311,8 @@ func (h *Handler) concepts(c *gin.Context) error {
 	out := h.loadConceptProgress(auth.UserID, &a)
 	out["enabled"] = true
 	out["due"] = dueCount(h.db, auth.UserID, a.ID) // 到期待复习数（对话页复习徽章）
+	out["freeTier"] = a.FreeTier                   // 免费幕阈值（learn-map 据此对 Tier>FreeTier 的关标会员锁）
+	out["isMember"] = membership.IsActive(h.db, auth.UserID)
 	httpx.OK(c, out)
 	return nil
 }

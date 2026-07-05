@@ -379,3 +379,8 @@
   box-shadow: 0 10rpx 0 var(--gold-strong);
 }
 .lsn.boss.current { border-color: var(--gold); }
+
+/* 会员锁(第二幕起):克制金色提示 + 引导去会员页;不进成交区糖果色 */
+.lsn-lock { font-size: 20rpx; font-weight: 700; color: var(--gold-strong); background: #fff7e0; padding: 2rpx 14rpx; border-radius: var(--r-full); }
+.node.mlock .node-img, .node.mlock .node-face { opacity: 0.5; filter: grayscale(0.35); }
+.node-lock { position: absolute; right: -8rpx; bottom: -8rpx; font-size: 30rpx; line-height: 1; filter: drop-shadow(0 1rpx 2rpx rgba(0,0,0,0.25)); }

@@ -48,7 +48,8 @@
       >
         <view class="lsn-top">
           <text class="lsn-num">{{n.boss ? '👑 ' : ''}}第{{n.num}}课</text>
-          <text wx:if="{{n.state === 'mastered' || n.state === 'lit' || n.state === 'current'}}" class="lsn-flavor {{n.state}}">{{n.flavor}}</text>
+          <text wx:if="{{n.memberLocked}}" class="lsn-lock">🔐 会员</text>
+          <text wx:elif="{{n.state === 'mastered' || n.state === 'lit' || n.state === 'current'}}" class="lsn-flavor {{n.state}}">{{n.flavor}}</text>
         </view>
         <view class="lsn-name">{{n.name}}</view>
         <view wx:if="{{n.state === 'mastered' || n.state === 'lit'}}" class="lsn-report">
@@ -58,7 +59,7 @@
         </view>
         <block wx:if="{{n.state === 'current'}}">
           <view class="lsn-hook">{{n.hook || n.blurb}}</view>
-          <view class="lsn-go btn-accent" catchtap="startFromCard" data-slug="{{n.slug}}">上这一课</view>
+          <view class="lsn-go btn-accent" catchtap="startFromCard" data-slug="{{n.slug}}">{{n.memberLocked ? '🔓 开通会员解锁' : '上这一课'}}</view>
         </block>
       </view>
     </block>
@@ -81,12 +82,13 @@
         class="node-row"
         style="transform: translateX({{n.x}}rpx);"
       >
-        <view class="node {{n.state}}" bindtap="openCard" data-slug="{{n.slug}}">
+        <view class="node {{n.state}} {{n.memberLocked ? 'mlock' : ''}}" bindtap="openCard" data-slug="{{n.slug}}">
           <view wx:if="{{n.state === 'current'}}" class="node-pulse"></view>
           <image wx:if="{{n.icon}}" class="node-img" src="{{n.icon}}" mode="aspectFit" />
           <text wx:else class="node-face">{{n.emoji}}</text>
+          <view wx:if="{{n.memberLocked}}" class="node-lock">🔐</view>
         </view>
-        <view class="node-name {{n.state === 'locked' ? 'dim' : ''}}">{{n.name}}</view>
+        <view class="node-name {{n.state === 'locked' || n.memberLocked ? 'dim' : ''}}">{{n.name}}</view>
         <view class="dotlead"><text>·</text><text>·</text><text>·</text></view>
       </view>
     </block>
@@ -96,7 +98,7 @@
   <!-- 底部固定 CTA -->
   <view wx:if="{{!loading}}" class="map-cta-wrap">
     <view class="map-cta btn-accent" bindtap="startCurrent">
-      {{current ? '继续学习 · ' + current.name : '全图点亮 · 去冲掌握'}}
+      {{current ? (current.memberLocked ? '开通会员 · 解锁 ' + current.name : '继续学习 · ' + current.name) : '全图点亮 · 去冲掌握'}}
     </view>
   </view>
 
