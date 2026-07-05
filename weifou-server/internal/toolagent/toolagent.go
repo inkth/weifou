@@ -558,14 +558,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "daodejing-full", Name: "道德经·帛书完整版",
-			Tagline:     "会员完整课·帛书本逐章读完整部《老子》",
+			Slug: "daodejing-full", Name: "道德经",
+			Tagline:     "帛书全本·逐章读完整部《老子》",
 			Description: "跟着向导「知常」用【马王堆帛书本】逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章，每章都给完整原文（帛书用字），每幕末一个「综合关」。不背经、不玄谈——一章一句，都拉到你正过的日子上用，落地才点亮。",
 			Category:    models.AgentCatEducation, Icon: "📜", Accent: "#0F766E",
-			Greeting:     "我是知常。这门是《老子》帛书完整版——按帛书本的原貌，德经在前、道经在后，八十一章我们一章一章读过去，每章都先看完整原文，从「上德不德」直到「道法自然」。还是老规矩：不带你背经、不跟你玄谈，只用老子的每一句，照你自己正过的坎。先说说，你最近有没有一件放不下、或正较着劲的事？我们就从德经第一章开始。",
+			Greeting:     "我是知常。这门是《老子》帛书全本——按帛书本的原貌，德经在前、道经在后，八十一章我们一章一章读过去，每章都先看完整原文，从「上德不德」直到「道法自然」。还是老规矩：不带你背经、不跟你玄谈，只用老子的每一句，照你自己正过的坎。先说说，你最近有没有一件放不下、或正较着劲的事？我们就从德经第一章开始。",
 			SystemPrompt: buildConceptPrompt(daodejingFullPrompt, daodejingFullConcepts),
 			Concept:      true,
-			FreeTrial:    3, Sort: 10, // 会员完整课：同 daodejing 的转化钩子，FreeTrial=3 试读几轮即锁
+			// 刻意不采用「第一幕免费」(FreeTier) 模型，沿用 FreeTrial=3 试读几轮即锁（会员转化钩子），
+			// 与六门完备课的第一幕免费区分开——这门是通读经典的深度课。
+			FreeTrial: 3, Sort: 10,
 		},
 		{
 			Slug: "create-novel", Name: "写小说",
