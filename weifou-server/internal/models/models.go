@@ -333,7 +333,8 @@ type ToolAgent struct {
 	Music        bool      `gorm:"default:false" json:"music"`   // 是否为「做音乐」创作型 Agent：产出 Song(带人声完整歌)
 	Price        int       `json:"price"`                       // 一次购买价格（分）
 	QuotaPerPack int       `json:"quotaPerPack"`                // 每次购买发放的对话条数
-	FreeTrial    int       `json:"freeTrial"`                   // 首次免费体验条数
+	FreeTrial    int       `json:"freeTrial"`                   // 首次免费体验条数（非概念课/道德经试读用；概念课改用 FreeTier 幕门控）
+	FreeTier     int       `json:"freeTier"`                    // 概念课免费幕阈值：非会员可免费畅用 Tier≤FreeTier 的关；更高幕需会员。0=不启用（走 FreeTrial 计次）
 	Enabled      bool      `gorm:"default:true;index" json:"enabled"`
 	Sort         int       `gorm:"default:0" json:"sort"`
 	CreatedAt    time.Time `json:"createdAt"`

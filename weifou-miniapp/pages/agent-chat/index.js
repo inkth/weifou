@@ -21,6 +21,7 @@ Page({
     greeting: '',
     member: false,
     remaining: 0,
+    freeTier: 0,          // >0：概念课「第一幕免费」模型（配额文案改为「第一幕免费」，不显示剩N次）
     quotaText: '',
     messages: [],
     draft: '',
@@ -93,7 +94,8 @@ Page({
         greeting: d.greeting || '',
         member,
         remaining: d.freeTrialRemaining,
-        quotaText: this._quota(member, d.freeTrialRemaining),
+        freeTier: d.freeTier || 0,
+        quotaText: this._quota(member, d.freeTrialRemaining, d.freeTier || 0),
         messages,
         currentSessionId,
         sessions: this._decorate(sessions || []),
@@ -123,8 +125,10 @@ Page({
     }
   },
 
-  _quota(member, remaining) {
-    return member ? '会员 · 畅用' : `免费体验剩 ${remaining} 次`;
+  _quota(member, remaining, freeTier) {
+    if (member) return '会员 · 畅用';
+    if (freeTier > 0) return '第一幕免费 · 会员畅用全部';
+    return `免费体验剩 ${remaining} 次`;
   },
 
   // 庆祝浮层：升级 / 点亮 / 掌握共用，2.4s 后自动收起。payload = { up, name, sub }
@@ -221,7 +225,7 @@ Page({
         messages: this.data.messages.concat({ role: 'assistant', content: data.answer }),
         member,
         remaining,
-        quotaText: this._quota(member, remaining),
+        quotaText: this._quota(member, remaining, this.data.freeTier),
         // 新开一段时服务端回传新建会话 id，记下来后续消息续到同一段
         currentSessionId: data.sessionId || this.data.currentSessionId,
         options: data.options || [],
@@ -266,8 +270,8 @@ Page({
       this.setData({ pending: false });
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
-          title: '免费体验已用完',
-          content: '开通会员即可畅用全部 AI 助手，不限次数。',
+          title: this.data.freeTier > 0 ? '第一幕已学完' : '免费体验已用完',
+          content: e.message || '开通会员即可畅用全部 AI 助手，不限次数。',
           confirmText: '去开通',
           cancelText: '再看看',
           success: (r) => {

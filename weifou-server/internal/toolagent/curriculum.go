@@ -2545,6 +2545,19 @@ func (h *Handler) reviewDirective(userID, agentID string) string {
 
 // conceptDirective 「指定关卡」编排指令（学员从闯关地图点选某关进来时追加为 system 段）。
 // slug 不在课程表里返回 ""（容错：地图数据过期/参数被篡改都不该打断对话）。
+// conceptTier 返回某关(slug)所属的幕(Tier)，供「第一幕免费」门控用。
+// 空/未知 slug → 1：不拦自由练习（无 slug 的泛聊按第一幕放行），只锁地图上明确点进的更高幕关卡。
+func (h *Handler) conceptTier(agentID, slug string) int {
+	if slug == "" {
+		return 1
+	}
+	var c models.AgentConcept
+	if h.db.Select("tier").First(&c, "agent_id = ? AND slug = ?", agentID, slug).Error != nil || c.Tier <= 0 {
+		return 1
+	}
+	return c.Tier
+}
+
 func (h *Handler) conceptDirective(agentID, slug string) string {
 	var c models.AgentConcept
 	if h.db.First(&c, "agent_id = ? AND slug = ?", agentID, slug).Error != nil {

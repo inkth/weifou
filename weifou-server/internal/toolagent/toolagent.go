@@ -155,10 +155,23 @@ func (h *Handler) chat(c *gin.Context) error {
 		return httpx.BadRequest("CONTENT_UNSAFE", "内容包含不当信息")
 	}
 
-	// 准入：会员畅用；非会员原子扣减免费体验，耗尽 → MEMBERSHIP_REQUIRED。
-	member, remaining, aerr := h.checkAccess(auth.UserID, &a)
-	if aerr != nil {
-		return aerr
+	// 准入：会员畅用。概念课按「幕」门控——第一幕(Tier≤FreeTier)免费无限、更高幕需会员；
+	// 其余(工具 / 道德经试读)沿用「免费体验次数」计。
+	var member bool
+	remaining := -1
+	trialGated := false // 是否走了扣次模型（决定 AI 失败时是否退还免费次数）
+	if a.Concept && a.FreeTier > 0 {
+		member = membership.IsActive(h.db, auth.UserID)
+		if !member && h.conceptTier(a.ID, req.Concept) > a.FreeTier {
+			return httpx.BadRequest("MEMBERSHIP_REQUIRED", "第一幕已学完 · 第二幕起开通会员畅用全部")
+		}
+	} else {
+		var aerr error
+		member, remaining, aerr = h.checkAccess(auth.UserID, &a)
+		if aerr != nil {
+			return aerr
+		}
+		trialGated = !member
 	}
 
 	// 取/建会话：传了 sessionId 且属于本人本 Agent → 续聊；否则新开一段（一人一 Agent 支持多会话）。
@@ -212,8 +225,8 @@ func (h *Handler) chat(c *gin.Context) error {
 	}
 	raw, derr := h.ds.Chat(msgs, deepseek.ChatOptions{Temperature: 0.7, MaxTokens: 800})
 	if derr != nil {
-		if !member {
-			// 非会员扣了免费体验但 AI 失败 → 退还 1 次。
+		if trialGated {
+			// 非会员扣了免费体验但 AI 失败 → 退还 1 次（幕门控的免费幕不计次，无需退）。
 			h.db.Model(&models.AgentEntitlement{}).
 				Where("user_id = ? AND agent_id = ?", auth.UserID, a.ID).
 				UpdateColumn("remaining", gorm.Expr("remaining + 1"))
@@ -452,6 +465,7 @@ func (h *Handler) card(a *models.ToolAgent, ent *models.AgentEntitlement) gin.H 
 		"assess": a.Assess, "concept": a.Concept,
 		"novel": a.Novel, "music": a.Music,
 		"freeTrial": a.FreeTrial, "freeTrialRemaining": remaining,
+		"freeTier": a.FreeTier, // >0：概念课「第一幕免费」模型（前端据此换配额文案，不显示剩N次）
 	}
 }
 
@@ -471,7 +485,7 @@ func Seed(db *gorm.DB) {
 			SystemPrompt: buildConceptPrompt(spokenEnglishPrompt, englishScenarios),
 			Assess:       true,
 			Concept:      true,
-			FreeTrial:    5, Sort: 1,
+			FreeTrial:    5, FreeTier: 1, Sort: 1, // 第一幕(生活+旅行)免费无限，职场/面试起会员
 		},
 		{
 			Slug: "interview-coach", Name: "面试教练",
@@ -499,7 +513,7 @@ func Seed(db *gorm.DB) {
 			Greeting:     "嗨，我是知心。最近心里在琢磨什么？人际、情绪、还是想更懂自己——讲讲你的具体处境，我用心理学陪你照亮它。我们会从「看清自己」出发，一关关把整张地图点亮。",
 			SystemPrompt: buildConceptPrompt(psychologyPersona+"\n\n"+conceptTeachingMethod, psychologyConcepts),
 			Concept:      true,
-			FreeTrial:    5, Sort: 4,
+			FreeTrial:    5, FreeTier: 1, Sort: 4, // 第一幕免费无限，第二幕起会员
 		},
 		{
 			Slug: "learn-logic", Name: "学逻辑",
@@ -509,7 +523,7 @@ func Seed(db *gorm.DB) {
 			Greeting:     "我是明辨。抛个你觉得有道理、或觉得哪里不对劲的说法给我——我们一起拆：它的前提是什么、推得住吗、有没有藏着谬误。练几轮，你看谁说话都能一眼看穿逻辑。",
 			SystemPrompt: buildConceptPrompt(logicPersona+"\n\n"+conceptTeachingMethod, logicConcepts),
 			Concept:      true,
-			FreeTrial:    5, Sort: 5,
+			FreeTrial:    5, FreeTier: 1, Sort: 5, // 第一幕免费无限，第二幕起会员
 		},
 		{
 			Slug: "learn-marketing", Name: "学营销",
@@ -519,7 +533,7 @@ func Seed(db *gorm.DB) {
 			Greeting:     "我是破圈。你在卖什么、想让谁买？不管是产品、门店还是你自己——说说你的具体情况，我用真实案例帮你拆：怎么定位、怎么让人看见、怎么让人下单。核心概念咱们一个个点亮。",
 			SystemPrompt: buildConceptPrompt(marketingPersona+"\n\n"+conceptTeachingMethod, marketingConcepts),
 			Concept:      true,
-			FreeTrial:    5, Sort: 6,
+			FreeTrial:    5, FreeTier: 1, Sort: 6, // 第一幕免费无限，第二幕起会员
 		},
 		{
 			Slug: "learn-ai", Name: "会用AI",
@@ -529,7 +543,7 @@ func Seed(db *gorm.DB) {
 			Greeting:     "我是驭手。别人教你认识 AI，我只教一件事：把它使唤明白。从「说清目标」到「揪出它一本正经的胡说」，28 关全是实操——你来下指令，我当陪练，办成了才算过关。正好我自己就是个 AI，拿我练手最合适。现在就开第一关？",
 			SystemPrompt: buildConceptPrompt(learnAIPrompt, aiConcepts),
 			Concept:      true,
-			FreeTrial:    5, Sort: 7,
+			FreeTrial:    5, FreeTier: 1, Sort: 7, // 第一幕免费无限，第二幕起会员
 		},
 		{
 			Slug: "learn-speaking", Name: "会说话",
@@ -539,7 +553,7 @@ func Seed(db *gorm.DB) {
 			Greeting:     "我是言值。人一生吃的亏，一半是话没说到位：不会拒、不敢要、道歉变辩解、饭局把天聊死。我这儿 28 个场面，全是你躲不掉的——我演对方，你说原话，说到位才算过关。先从哪件难开口的事来？",
 			SystemPrompt: buildConceptPrompt(learnSpeakingPrompt, speakingConcepts),
 			Concept:      true,
-			FreeTrial:    5, Sort: 8,
+			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
 		},
 		{
 			Slug: "daodejing", Name: "道德经",
@@ -606,7 +620,7 @@ func Seed(db *gorm.DB) {
 			"concept":    p.Concept,
 			"novel":      p.Novel,
 			"music":      p.Music,
-			"free_trial": p.FreeTrial, "sort": p.Sort,
+			"free_trial": p.FreeTrial, "free_tier": p.FreeTier, "sort": p.Sort,
 		})
 	}
 }
