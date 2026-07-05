@@ -331,10 +331,10 @@ type ToolAgent struct {
 	Concept      bool      `gorm:"default:false" json:"concept"` // 是否为「概念型」学习 Agent：对话中点亮该领域核心概念、可视化 X/100（如学心理/学经济/学哲学）
 	Novel        bool      `gorm:"default:false" json:"novel"`   // 是否为「写小说」创作型 Agent：产出 Work(作品)+Chapter(章节)
 	Music        bool      `gorm:"default:false" json:"music"`   // 是否为「做音乐」创作型 Agent：产出 Song(带人声完整歌)
-	Price        int       `json:"price"`                       // 一次购买价格（分）
-	QuotaPerPack int       `json:"quotaPerPack"`                // 每次购买发放的对话条数
-	FreeTrial    int       `json:"freeTrial"`                   // 首次免费体验条数（非概念课/道德经试读用；概念课改用 FreeTier 幕门控）
-	FreeTier     int       `json:"freeTier"`                    // 概念课免费幕阈值：非会员可免费畅用 Tier≤FreeTier 的关；更高幕需会员。0=不启用（走 FreeTrial 计次）
+	Price        int       `json:"price"`                        // 一次购买价格（分）
+	QuotaPerPack int       `json:"quotaPerPack"`                 // 每次购买发放的对话条数
+	FreeTrial    int       `json:"freeTrial"`                    // 首次免费体验条数（非概念课/道德经试读用；概念课改用 FreeTier 幕门控）
+	FreeTier     int       `json:"freeTier"`                     // 概念课免费幕阈值：非会员可免费畅用 Tier≤FreeTier 的关；更高幕需会员。0=不启用（走 FreeTrial 计次）
 	Enabled      bool      `gorm:"default:true;index" json:"enabled"`
 	Sort         int       `gorm:"default:0" json:"sort"`
 	CreatedAt    time.Time `json:"createdAt"`
@@ -417,12 +417,12 @@ type AgentConcept struct {
 	ID      string `gorm:"primaryKey;size:32" json:"id"`
 	AgentID string `gorm:"size:32;uniqueIndex:idx_concept_agent_slug" json:"agentId"` // FK ToolAgent
 	Slug    string `gorm:"size:64;uniqueIndex:idx_concept_agent_slug" json:"slug"`    // Agent 内稳定 id，如 "anchoring"
-	Theme   string `gorm:"size:48;index" json:"theme"`                               // 主题分组，如 "认知偏误"
-	Tier    int    `gorm:"default:1" json:"tier"`                                    // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
-	Name    string `gorm:"size:64" json:"name"`                                      // 概念名，如 "锚定效应"
-	Blurb   string `gorm:"size:255" json:"blurb"`                                    // 一句话点题（前端展示 + 给打点 LLM 锚定）
-	Hook    string `gorm:"size:255" json:"-"`                                        // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟
-	Check   string `gorm:"size:255" json:"-"`                                        // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
+	Theme   string `gorm:"size:48;index" json:"theme"`                                // 主题分组，如 "认知偏误"
+	Tier    int    `gorm:"default:1" json:"tier"`                                     // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
+	Name    string `gorm:"size:64" json:"name"`                                       // 概念名，如 "锚定效应"
+	Blurb   string `gorm:"size:255" json:"blurb"`                                     // 一句话点题（前端展示 + 给打点 LLM 锚定）
+	Hook    string `gorm:"size:255" json:"-"`                                         // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟
+	Check   string `gorm:"size:255" json:"-"`                                         // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
 	Sort    int    `gorm:"default:0" json:"sort"`
 }
 
@@ -449,10 +449,10 @@ func (UserConcept) TableName() string { return "user_concepts" }
 type LearnStreak struct {
 	ID          string    `gorm:"primaryKey;size:32" json:"id"`
 	UserID      string    `gorm:"size:32;uniqueIndex" json:"userId"`
-	Current     int       `json:"current"`                    // 当前连续天数
-	Best        int       `json:"best"`                       // 历史最佳
-	LastDay     string    `gorm:"size:10" json:"lastDay"`     // 最近学习日 YYYY-MM-DD（东八区）
-	FreezeMonth string    `gorm:"size:7" json:"freezeMonth"`  // 最近一次自动补签的月份 YYYY-MM（每月限 1 次）
+	Current     int       `json:"current"`                   // 当前连续天数
+	Best        int       `json:"best"`                      // 历史最佳
+	LastDay     string    `gorm:"size:10" json:"lastDay"`    // 最近学习日 YYYY-MM-DD（东八区）
+	FreezeMonth string    `gorm:"size:7" json:"freezeMonth"` // 最近一次自动补签的月份 YYYY-MM（每月限 1 次）
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -571,63 +571,6 @@ type MembershipLead struct {
 
 func (MembershipLead) TableName() string { return "membership_leads" }
 
-// ========== 找对象 · 择偶测试（B 形态：我 × 平台预设原型 → 匹配度 + 择偶画像） ==========
-//
-// AI 动态出题、LLM 直接打分；题目与结果均存库以便复盘。匹配对象是平台预设的「原型」
-// （非真人），故落「自测/知识付费」叙事，不连接真人、避开婚恋交友红线。
-// 产出的「择偶画像」回写为 KnowledgeItem 喂养主人的分身（成为对话记忆）。
-
-const (
-	DatingQuizOpen = "open" // 已出题，待作答
-	DatingQuizDone = "done" // 已提交并出结果
-)
-
-// DatingQuiz 一次测试的题目（AI 动态生成，存库以便复盘 / 提交时按 id 还原题面）。
-type DatingQuiz struct {
-	ID              string         `gorm:"primaryKey;size:32" json:"id"`
-	UserID          string         `gorm:"size:32;index:idx_dquiz_user_time" json:"userId"`
-	TargetProfileID string         `gorm:"size:32;index" json:"targetProfileId"` // 空=自测；非空=对外契合测试（被测的主人 A）
-	Questions       datatypes.JSON `gorm:"type:jsonb" json:"questions"`          // [{id,text,options:[{key,label}]}]
-	Status          string         `gorm:"size:16;default:open" json:"status"`
-	Model           string         `gorm:"size:64" json:"-"`
-	CreatedAt       time.Time      `gorm:"index:idx_dquiz_user_time" json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
-}
-
-func (DatingQuiz) TableName() string { return "dating_quizzes" }
-
-// DatingResult 一次测试的结果：择偶画像 + 与各原型的匹配度（LLM 直接打分）。
-type DatingResult struct {
-	ID        string         `gorm:"primaryKey;size:32" json:"id"`
-	UserID    string         `gorm:"size:32;index:idx_dres_user_time" json:"userId"`
-	QuizID    string         `gorm:"size:32;index" json:"quizId"`
-	Answers   datatypes.JSON `gorm:"type:jsonb" json:"answers"`  // [{questionId,key}]
-	Profile   string         `gorm:"type:text" json:"profile"`   // 择偶画像（自然语言）
-	Headline  datatypes.JSON `gorm:"type:jsonb" json:"headline"` // 头条：最契合原型 + 3 维拆解 {archetype,total,dimensions,summary}
-	Matches   datatypes.JSON `gorm:"type:jsonb" json:"matches"`  // [{archetype,score,reason}]，按 score 降序
-	Model     string         `gorm:"size:64" json:"-"`
-	CreatedAt time.Time      `gorm:"index:idx_dres_user_time" json:"createdAt"`
-}
-
-func (DatingResult) TableName() string { return "dating_results" }
-
-// CompatResult 对外「趣味契合度测试」结果：访客 B 与某主人 A 的契合度报告。
-// 纯娱乐测评——不撮合、不下发任何一方联系方式（NGL 匿名靠展示层保证）。
-type CompatResult struct {
-	ID              string         `gorm:"primaryKey;size:32" json:"id"`
-	TargetProfileID string         `gorm:"size:32;index:idx_compat_target" json:"targetProfileId"` // 被测的主人 A
-	AskerUserID     *string        `gorm:"size:32" json:"askerUserId,omitempty"`
-	AskerOpenid     string         `gorm:"size:64;index" json:"-"`
-	QuizID          string         `gorm:"size:32;index" json:"quizId"`
-	Answers         datatypes.JSON `gorm:"type:jsonb" json:"answers"`
-	Score           int            `json:"score"`                    // 契合度 0-100
-	Report          datatypes.JSON `gorm:"type:jsonb" json:"report"` // {headline, points:[{name,note}], summary}
-	Model           string         `gorm:"size:64" json:"-"`
-	CreatedAt       time.Time      `gorm:"index:idx_compat_target" json:"createdAt"`
-}
-
-func (CompatResult) TableName() string { return "compat_results" }
-
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -641,6 +584,5 @@ func AllModels() []interface{} {
 		&AgentConcept{}, &UserConcept{}, &LearnStreak{}, &LearnReminder{},
 		&Work{}, &Chapter{}, &Song{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
-		&DatingQuiz{}, &DatingResult{}, &CompatResult{},
 	}
 }

@@ -11,7 +11,6 @@ import (
 	"weifou-server/internal/chat"
 	"weifou-server/internal/clientcfg"
 	"weifou-server/internal/config"
-	"weifou-server/internal/dating"
 	"weifou-server/internal/deepseek"
 	"weifou-server/internal/home"
 	"weifou-server/internal/membership"
@@ -47,7 +46,6 @@ type App struct {
 	asyncqH     *asyncq.Handler
 	plazaH      *plaza.Handler
 	toolagentH  *toolagent.Handler
-	datingH     *dating.Handler
 	homeH       *home.Handler
 	membershipH *membership.Handler
 	mpH         *mp.Handler
@@ -110,7 +108,6 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		asyncqH:     asyncq.NewHandler(db, ansEngine, security, subscribe, cfg.JWTSecret),
 		plazaH:      plaza.NewHandler(db),
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret, musicProvider, uploadStore, publicHost+"/api/uploads"),
-		datingH:     dating.NewHandler(db, ds, security, cfg.JWTSecret),
 		homeH:       home.NewHandler(db, cfg.JWTSecret),
 		membershipH: mbrH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
@@ -134,7 +131,6 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.asyncqH.Register(api)
 	a.plazaH.Register(api)
 	a.toolagentH.Register(api)
-	a.datingH.Register(api)
 	a.homeH.Register(api)
 	a.membershipH.Register(api)
 	a.mpH.Register(api)
