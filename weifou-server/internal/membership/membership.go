@@ -102,7 +102,7 @@ func (h *Handler) planList() []gin.H {
 	for i := range plans {
 		out = append(out, gin.H{
 			"id": plans[i].ID, "slug": plans[i].Slug, "name": plans[i].Name,
-			"days": plans[i].Days, "price": plans[i].Price,
+			"days": plans[i].Days, "price": plans[i].Price, "origPrice": plans[i].OrigPrice,
 		})
 	}
 	return out
@@ -382,10 +382,10 @@ func Seed(db *gorm.DB) {
 	if db == nil {
 		return
 	}
+	// 两档「租 or 买」：月付=试用漏斗口，年付=主力（低至 ¥9.9/月、划线 ¥199 锚定）。
 	plans := []models.MembershipPlan{
-		{Slug: "month", Name: "月卡", Days: 31, Price: 2900, Sort: 1},
-		{Slug: "quarter", Name: "季卡", Days: 93, Price: 6900, Sort: 2},
-		{Slug: "year", Name: "年卡", Days: 366, Price: 19900, Sort: 3},
+		{Slug: "month", Name: "月付", Days: 31, Price: 1900, OrigPrice: 0, Sort: 1},
+		{Slug: "year", Name: "年付", Days: 366, Price: 11900, OrigPrice: 19900, Sort: 2},
 	}
 	for i := range plans {
 		p := plans[i]
@@ -397,9 +397,12 @@ func Seed(db *gorm.DB) {
 			continue
 		}
 		db.Model(&ex).Updates(map[string]interface{}{
-			"name": p.Name, "days": p.Days, "price": p.Price, "sort": p.Sort,
+			"name": p.Name, "days": p.Days, "price": p.Price,
+			"orig_price": p.OrigPrice, "sort": p.Sort, "enabled": true,
 		})
 	}
+	// 停用历史遗留的季卡（不再售；已购不受影响，Membership 记录独立于套餐）。
+	db.Model(&models.MembershipPlan{}).Where("slug = ?", "quarter").Update("enabled", false)
 }
 
 // h5Template 自包含收银页：微信内引导「在浏览器打开」，外部浏览器渲染套餐并 H5支付。

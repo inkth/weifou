@@ -23,7 +23,9 @@ page { background: var(--bg); }
 .pl-name { font-size: 27rpx; color: var(--accent-ink); font-weight: 600; }
 .pl-price { margin-top: 12rpx; }
 .pl-num { font-size: 42rpx; font-weight: 800; color: var(--accent-strong); letter-spacing: -0.5rpx; }
+.pl-orig { margin-left: 8rpx; font-size: 24rpx; color: var(--faint); text-decoration: line-through; }
 .pl-day { margin-top: 8rpx; font-size: 22rpx; color: var(--sub); }
+.pl-save { display: inline-block; margin-top: 12rpx; padding: 4rpx 14rpx; font-size: 21rpx; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); border-radius: var(--r-full); }
 .pay-tip { text-align: center; font-size: 24rpx; color: var(--sub); margin-top: 22rpx; }
 
 .ios-box { margin: 24rpx 28rpx; background: var(--surface); border: var(--bw) solid var(--border); border-radius: var(--r-xl); padding: 40rpx 32rpx; text-align: center; box-shadow: var(--shadow-card); }

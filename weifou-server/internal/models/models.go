@@ -548,7 +548,8 @@ type MembershipPlan struct {
 	Slug      string    `gorm:"uniqueIndex;size:32" json:"slug"`
 	Name      string    `gorm:"size:32" json:"name"`
 	Days      int       `json:"days"`                     // 时长（天）
-	Price     int       `json:"price"`                    // 价格（分）
+	Price     int       `json:"price"`                    // 现价（分）
+	OrigPrice int       `json:"origPrice"`                // 划线原价（分）；0=不展示。锚定用（如年付现价 119、划线 199）
 	ProductID string    `gorm:"size:64" json:"productId"` // 米大师商品 ID（虚拟支付商品直购；空则回退用 goodsPrice 现价）
 	Enabled   bool      `gorm:"default:true" json:"enabled"`
 	Sort      int       `gorm:"default:0" json:"sort"`

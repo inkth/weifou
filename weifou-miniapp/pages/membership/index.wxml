@@ -24,8 +24,12 @@
       <view class="plans">
         <view wx:for="{{plans}}" wx:key="id" class="plan" bindtap="openPlan" data-id="{{item.id}}">
           <view class="pl-name">{{item.name}}</view>
-          <view class="pl-price"><text class="pl-num">¥{{item.priceYuan}}</text></view>
+          <view class="pl-price">
+            <text class="pl-num">¥{{item.priceYuan}}</text>
+            <text wx:if="{{item.origYuan}}" class="pl-orig">¥{{item.origYuan}}</text>
+          </view>
           <view class="pl-day" wx:if="{{item.perDay}}">约 ¥{{item.perDay}}/天</view>
+          <view wx:if="{{item.saveText}}" class="pl-save">{{item.saveText}}</view>
         </view>
       </view>
       <view class="pay-tip">点套餐开通{{isMember ? '（续费在原有效期上叠加）' : ''}}</view>

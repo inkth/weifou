@@ -19,11 +19,16 @@ Page({
       await ensureLogin();
       await loadEntries();
       const s = await status();
-      const plans = (s.plans || []).map((p) => ({
-        ...p,
-        priceYuan: fenToYuan(p.price),
-        perDay: p.days > 0 ? (p.price / 100 / p.days).toFixed(1) : '',
-      }));
+      const plans = (s.plans || []).map((p) => {
+        const savePct = p.origPrice > p.price ? Math.round((1 - p.price / p.origPrice) * 100) : 0;
+        return {
+          ...p,
+          priceYuan: fenToYuan(p.price),
+          perDay: p.days > 0 ? (p.price / 100 / p.days).toFixed(1) : '',
+          origYuan: p.origPrice > p.price ? fenToYuan(p.origPrice) : '',
+          saveText: savePct > 0 ? `限时立省 ${savePct}%` : '',
+        };
+      });
       this.setData({
         canPay: agentVisible(),
         isMember: !!s.isMember,
