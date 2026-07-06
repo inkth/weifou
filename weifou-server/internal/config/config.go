@@ -72,12 +72,6 @@ type Config struct {
 	// 文件上传 / 静态服务（当前：付费提问语音回答，存本地盘命名卷；未来可换 COS）
 	UploadDir  string // 容器内可写目录（挂 docker 命名卷持久化）
 	PublicHost string // 生成公开 URL 的公网基址；空则回落 AppBaseURL
-
-	// 音乐生成（做音乐 Agent；默认 fal，复用 FALAI_API_KEY）。未配 key 则做音乐 no-op。
-	MusicProvider string // fal（默认）
-	MusicAPIKey   string // FALAI_API_KEY
-	MusicBaseURL  string // https://fal.run
-	MusicModel    string // fal-ai/ace-step
 }
 
 func getEnv(key, def string) string {
@@ -163,10 +157,5 @@ func Load() *Config {
 
 		UploadDir:  getEnv("UPLOAD_DIR", "./uploads"),
 		PublicHost: getEnv("PUBLIC_HOST", ""),
-
-		MusicProvider: getEnv("MUSIC_PROVIDER", "fal"),
-		MusicAPIKey:   getEnv("MUSIC_API_KEY", os.Getenv("FALAI_API_KEY")), // 复用 fal key
-		MusicBaseURL:  getEnv("MUSIC_BASE_URL", "https://fal.run"),
-		MusicModel:    getEnv("MUSIC_MODEL", "fal-ai/ace-step"),
 	}
 }

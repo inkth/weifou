@@ -15,7 +15,6 @@ import (
 	"weifou-server/internal/home"
 	"weifou-server/internal/membership"
 	"weifou-server/internal/mp"
-	"weifou-server/internal/musicgen"
 	"weifou-server/internal/payment"
 	"weifou-server/internal/persona"
 	"weifou-server/internal/plaza"
@@ -92,8 +91,6 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	if publicHost == "" {
 		publicHost = cfg.AppBaseURL
 	}
-	// 音乐生成 provider（做音乐 Agent）；未配 key 时为 disabled，做音乐返回未开通。
-	musicProvider := musicgen.New(cfg.MusicProvider, cfg.MusicAPIKey, cfg.MusicBaseURL, cfg.MusicModel)
 	uploadStore := storage.NewLocal(cfg.UploadDir)
 
 	a := &App{
@@ -107,7 +104,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		paymentH:    paymentH,
 		asyncqH:     asyncq.NewHandler(db, ansEngine, security, subscribe, cfg.JWTSecret),
 		plazaH:      plaza.NewHandler(db),
-		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret, musicProvider, uploadStore, publicHost+"/api/uploads"),
+		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
 		homeH:       home.NewHandler(db, cfg.JWTSecret),
 		membershipH: mbrH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
