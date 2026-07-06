@@ -554,17 +554,18 @@ func Seed(db *gorm.DB) {
 			FreeTrial: 3, Sort: 10,
 		},
 	}
-	// 已退役课程（软退役）：seed 不再包含，且显式下架已入库的旧记录——enabled=false 后列表/详情/对话全部不可见，
-	// 用户历史会话与进度数据保留不动。
+	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），
+	// 而是物理删除 presets 保留名单之外的所有工具 Agent——连行带子数据（含用户进度 user_concepts）
+	// 与创作型产出表一并铲平，不留痕迹。以 presets 的 slug 集合为唯一保留名单，幂等、自维护：
+	// 今后任何课程只需从 presets 移除，下次启动即被自动清除。
+	// 历史退役清单（现已全部物理删除，仅备忘）：
 	// - 2026-07-04：经济/哲学/思想/科学/审美（收缩课程线）。
-	// - 2026-07-05：道德经（44关精选·通行本）——由「道德经·帛书完整版」daodejing-full 取代（全81章·帛书本·带原文）。
-	//   注：daodejing 的概念/精编/判定代码保留在 curriculum.go（curricula 仍含其条目），以保全历史进度映射，只是 agent 下架不可见。
-	retired := []string{"learn-economics", "learn-philosophy", "learn-ideas", "learn-science", "learn-aesthetics", "daodejing"}
-	db.Model(&models.ToolAgent{}).Where("slug IN ?", retired).Update("enabled", false)
-
-	// 2026-07-05 彻底铲平（非软退役，不留任何痕迹）：面试教练/商业军师/写小说/做音乐——技能线
-	// 收敛为六门核心课 + 道德经。连 agent 行、关联数据与创作型产出表一并删除；幂等（删完再跑为 no-op）。
-	purgeRemovedAgents(db)
+	// - 2026-07-05：道德经（44关精选·通行本）→ 由 daodejing-full 取代；面试教练/商业军师/写小说/做音乐（技能线）。
+	keepSlugs := make([]string, len(presets))
+	for i := range presets {
+		keepSlugs[i] = presets[i].Slug
+	}
+	purgeAgentsNotIn(db, keepSlugs)
 
 	for i := range presets {
 		p := presets[i]
@@ -587,12 +588,12 @@ func Seed(db *gorm.DB) {
 	}
 }
 
-// purgeRemovedAgents 硬删除已铲平的工具 Agent 及其全部关联数据（幂等）。与「软退役」（enabled=false
-// 留行留进度）不同：这几门要求不留任何痕迹，故连行带子数据、连创作型产出表一起删。
-func purgeRemovedAgents(db *gorm.DB) {
-	slugs := []string{"interview-coach", "business-coach", "create-novel", "create-music"}
+// purgeAgentsNotIn 物理删除 slug 不在 keepSlugs 名单内的所有工具 Agent 及其全部关联数据（幂等）。
+// 与「软退役」（enabled=false 留行留进度）不同：保留名单外的课程不留任何痕迹，故连行带子数据
+// （会话/消息/权益/置顶/段位/概念课程表/用户进度/学习提醒）、连创作型产出表一起删。
+func purgeAgentsNotIn(db *gorm.DB, keepSlugs []string) {
 	var ids []string
-	db.Model(&models.ToolAgent{}).Where("slug IN ?", slugs).Pluck("id", &ids)
+	db.Model(&models.ToolAgent{}).Where("slug NOT IN ?", keepSlugs).Pluck("id", &ids)
 	if len(ids) > 0 {
 		// 消息挂在会话上：先按会话删消息，再删会话本身。
 		sessionIDs := db.Model(&models.AgentSession{}).Select("id").Where("agent_id IN ?", ids)
@@ -601,7 +602,10 @@ func purgeRemovedAgents(db *gorm.DB) {
 		db.Where("agent_id IN ?", ids).Delete(&models.AgentEntitlement{})
 		db.Where("agent_id IN ?", ids).Delete(&models.AgentPin{})
 		db.Where("agent_id IN ?", ids).Delete(&models.AgentSkill{})
-		db.Where("slug IN ?", slugs).Delete(&models.ToolAgent{})
+		db.Where("agent_id IN ?", ids).Delete(&models.AgentConcept{})
+		db.Where("agent_id IN ?", ids).Delete(&models.UserConcept{})
+		db.Where("agent_id IN ?", ids).Delete(&models.LearnReminder{})
+		db.Where("slug NOT IN ?", keepSlugs).Delete(&models.ToolAgent{})
 	}
 	// 创作型产出表（Work/Chapter/Song 模型已移除、AutoMigrate 不再管理）——整表丢弃，数据与结构都不留。
 	for _, t := range []string{"chapters", "songs", "works"} {
