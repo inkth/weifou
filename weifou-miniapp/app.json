@@ -2,6 +2,7 @@
   "pages": [
     "pages/discover/index",
     "pages/explore/index",
+    "pages/inbox/index",
     "pages/me/index",
     "pages/index/index",
     "pages/onboarding/index",
@@ -23,8 +24,9 @@
     "selectedColor": "#18b690",
     "backgroundColor": "#ffffff",
     "list": [
-      { "pagePath": "pages/discover/index", "text": "分身" },
-      { "pagePath": "pages/explore/index", "text": "发现" },
+      { "pagePath": "pages/discover/index", "text": "首页" },
+      { "pagePath": "pages/explore/index", "text": "技能" },
+      { "pagePath": "pages/inbox/index", "text": "消息" },
       { "pagePath": "pages/me/index", "text": "我的" }
     ]
   },

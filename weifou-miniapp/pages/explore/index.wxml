@@ -1,7 +1,6 @@
 <view class="mkt" style="padding-top:{{statusBarH}}px">
   <view class="mkt-top">
-    <view class="mkt-h1">用 AI 学习一切</view>
-    <view class="mkt-sub">挑一个 AI 老师，先免费体验，会员畅用全部</view>
+    <view class="mkt-h1">闯关式学习，点亮 AI 时代所需技能</view>
     <view wx:if="{{streak}}" class="mkt-streak">🔥 连续学习 {{streak.days}} 天{{streak.todayDone ? '' : ' · 今天还没学，别断'}}</view>
   </view>
 
@@ -31,7 +30,7 @@
         <view class="mcard-tag">{{item.tagline}}</view>
         <view class="mcard-status status-{{item.statusKind}}">{{item.status}}</view>
       </view>
-      <view class="pin {{item.pinned ? 'on' : ''}}" catchtap="togglePin" data-id="{{item.id}}" data-pinned="{{item.pinned}}">{{item.pinned ? '已添加' : '＋ 首页'}}</view>
+      <view class="ic ic-chevron mcard-go"></view>
     </view>
 
     <view wx:if="{{agents.length === 0}}" class="empty-wrap">

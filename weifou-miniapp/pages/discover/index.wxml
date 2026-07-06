@@ -2,14 +2,12 @@
 
   <view class="sq-top" style="padding-top:{{statusBarH}}px">
     <view class="sq-eyebrow">{{greeting}}</view>
-    <view class="sq-h1">想办成<text class="hl">什么？</text></view>
+    <view class="sq-h1">微否，<text class="hl">AI 时代的名片</text></view>
   </view>
 
   <!-- 首屏加载骨架：避免 FALLBACK → 真数据的闪跳 -->
   <block wx:if="{{loading && !loaded}}">
     <view class="skel sk-hero"></view>
-    <view class="skel sk-acard"></view>
-    <view class="skel sk-acard"></view>
   </block>
 
   <block wx:else>
@@ -37,26 +35,6 @@
         <view class="hstat-n">{{item.n}}</view>
         <view class="hstat-l">{{item.label}}</view>
       </view>
-    </view>
-  </view>
-
-  <view wx:if="{{specialists.length}}" class="sec-label">我的 Agent</view>
-
-  <!-- Agent 大卡 -->
-  <view class="acard" wx:for="{{specialists}}" wx:key="id"
-        data-id="{{item.id}}" data-name="{{item.name}}" data-kind="{{item.kind}}"
-        hover-class="card-press" hover-stay-time="0"
-        bindtap="enterSpecialist" bindlongpress="removeSpecialist">
-    <view class="acard-top">
-      <view class="acard-ic"><text>{{item.initial}}</text></view>
-      <view class="acard-meta">
-        <view class="acard-name">{{item.name}}</view>
-        <view class="acard-tag {{item.nudge ? 'nudge' : ''}}">{{item.line}}</view>
-      </view>
-    </view>
-    <view class="acard-foot">
-      <view wx:if="{{item.pill}}" class="acard-pill">{{item.pill}}</view>
-      <view class="acard-cta">去学习<view class="ic ic-arrow acard-cta-ic"></view></view>
     </view>
   </view>
 

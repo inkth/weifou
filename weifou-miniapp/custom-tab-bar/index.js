@@ -5,10 +5,11 @@
 Component({
   data: {
     selected: 0,
-    // icon = styles/icons.wxss 里的字形后缀（.ic-bot / .ic-chat / .ic-user）
+    // icon = styles/icons.wxss 里的字形后缀（.ic-bot / .ic-sparkle / .ic-inbox / .ic-user）
     list: [
-      { pagePath: '/pages/discover/index', icon: 'bot', text: '分身' },
-      { pagePath: '/pages/explore/index', icon: 'sparkle', text: '发现' },
+      { pagePath: '/pages/discover/index', icon: 'bot', text: '首页' },
+      { pagePath: '/pages/explore/index', icon: 'sparkle', text: '技能' },
+      { pagePath: '/pages/inbox/index', icon: 'inbox', text: '消息' },
       { pagePath: '/pages/me/index', icon: 'user', text: '我的' },
     ],
   },

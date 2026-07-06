@@ -5,8 +5,7 @@
   padding: 0 36rpx calc(env(safe-area-inset-bottom) + 180rpx);
 }
 .mkt-top { padding: 36rpx 6rpx 28rpx; }
-.mkt-h1 { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; }
-.mkt-sub { margin-top: 10rpx; font-size: 25rpx; color: var(--sub); }
+.mkt-h1 { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.35; }
 /* 连续学习火焰条：贴纸小条，≥2 天才出现 */
 .mkt-streak {
   display: inline-block;
@@ -72,14 +71,5 @@
 .status-trial { color: var(--accent-strong); }
 .status-used { color: #b3925a; }
 
-/* 添加到首页 */
-.pin {
-  flex: 0 0 auto; align-self: center; font-size: 23rpx; font-weight: 600;
-  padding: 10rpx 22rpx; border-radius: var(--r-full);
-  color: var(--on-accent); background: var(--accent);
-  border: var(--bw-thin) solid transparent;
-  box-shadow: 0 3rpx 0 var(--accent-strong);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
-}
-.pin:active { transform: translateY(3rpx); box-shadow: none; }
-.pin.on { color: var(--sub); background: var(--fill); border-color: var(--border); box-shadow: none; }
+/* 进入指示：右侧雪佛龙（点整卡进技能） */
+.mcard-go { flex: 0 0 auto; align-self: center; font-size: 30rpx; color: var(--sub); }

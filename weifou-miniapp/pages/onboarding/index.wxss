@@ -52,7 +52,6 @@
 }
 .ob-bubble.ai {
   background: var(--glass-dark);
-  backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
   border: 1rpx solid var(--border);
   color: var(--ink);
   border-bottom-left-radius: 8rpx;
@@ -75,9 +74,7 @@
   padding: 12rpx 28rpx;
   font-size: 26rpx;
   color: var(--ink);
-  background: var(--glass-dark);
-  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid var(--border);
+  background: var(--glass-dark);  border: 1rpx solid var(--border);
   border-radius: 100rpx;
 }
 .ob-chip.strong {
@@ -93,9 +90,7 @@
   padding: 16rpx 26rpx;
   font-size: 26rpx;
   color: var(--ink);
-  background: var(--glass-dark);
-  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid var(--border);
+  background: var(--glass-dark);  border: 1rpx solid var(--border);
   border-radius: 100rpx;
 }
 .ob-opt:active { background: var(--accent-soft); border-color: var(--accent); }
@@ -123,9 +118,7 @@
 
 .ob-mic {
   width: 80rpx; height: 80rpx; flex-shrink: 0; border-radius: 50%;
-  background: var(--glass-dark);
-  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid var(--border);
+  background: var(--glass-dark);  border: 1rpx solid var(--border);
   display: flex; align-items: center; justify-content: center;
 }
 .ob-mic.on { background: var(--accent-soft); border-color: var(--accent); }
@@ -137,12 +130,9 @@
   border-radius: 0 0 30rpx 30rpx; color: var(--ink-2);
 }
 .ob-mic.on .ob-mic-i::after { color: var(--accent); }
-/* 恢复毛玻璃（ob-input 已是固定高度+横向内距，无重影问题）*/
 .ob-input {
   flex: 1; height: 80rpx; padding: 0 28rpx;
-  background: var(--glass-dark);
-  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  border: 1rpx solid var(--border);
+  background: var(--glass-dark);  border: 1rpx solid var(--border);
   border-radius: 100rpx; font-size: 28rpx; color: var(--ink);
 }
 .ob-send {

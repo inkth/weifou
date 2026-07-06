@@ -1,6 +1,8 @@
-// 发现 tab = Agent 学习市场「用 AI 学习一切」：全集工具 Agent，先免费体验、会员畅用、可添加到首页。
+// 技能 tab = Agent 学习市场：六门核心课 + 道德经「知常」，先免费体验、会员畅用。
+// 首页已收敛为纯名片，不再承载「添加到首页」，故此处只做浏览 + 进入。
+// 上架范围由服务端 /agents（enabled=true）决定，前端不再做名单过滤。
 const { ensureLogin } = require('../../utils/auth');
-const { listAgents, pinAgent, unpinAgent, learnStreak } = require('../../utils/agent');
+const { listAgents, learnStreak } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 
 function decorate(a, isMember) {
@@ -66,24 +68,8 @@ Page({
       wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(a.accent || '')}&icon=${encodeURIComponent(a.icon || '')}` });
       return;
     }
-    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
-  },
-
-  // 添加 / 从首页移除（catchtap 阻止冒泡，不触发 open）。
-  async togglePin(e) {
-    const { id, pinned } = e.currentTarget.dataset;
-    try {
-      if (pinned) {
-        await unpinAgent(id);
-        wx.showToast({ title: '已从首页移除', icon: 'none' });
-      } else {
-        await pinAgent(id);
-        wx.showToast({ title: '已添加到首页', icon: 'success' });
-      }
-      this.setData({ agents: this.data.agents.map((a) => (a.id === id ? { ...a, pinned: !pinned } : a)) });
-    } catch (err) {
-      wx.showToast({ title: (err && err.message) || '操作失败', icon: 'none' });
-    }
+    // 透传 icon/accent：对话页无网时也能立刻画出对的头像+配色骨架
+    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}` });
   },
 
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },

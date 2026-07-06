@@ -2,8 +2,6 @@ const { ensureLogin } = require('../../utils/auth');
 const {
   agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts, chatAgent,
   remindLearn,
-  getWork, updateWork, addChapter, updateChapter,
-  genMusic, musicStatus, myMusic,
 } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 const { fmtDateTime } = require('../../utils/datetime');
@@ -26,8 +24,11 @@ Page({
     messages: [],
     draft: '',
     options: [],          // 本轮可点选项（服务端从回复剥离下发；点选即发送，输入框兜底）
+    voice: false,         // 产出型三门课（开口/言值/驭手）显示麦克风：可按住说，不用打字
+    recording: false,     // 语音录制中
     pending: false,
     loading: true,
+    errored: false,       // 首屏并发加载失败 → 页内重试骨架（避免白屏）
     scrollTo: '',
     sessions: [],         // 历史会话（抽屉）
     currentSessionId: '', // 当前续聊的会话；空 = 新开一段（下一条消息创建）
@@ -38,22 +39,6 @@ Page({
     remindState: '',      // 提醒承诺条：'' 隐藏 / offer 邀请 / done 已订
     conceptMapVisible: false, // 概念地图抽屉
     celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
-
-    // 写小说
-    novel: false,
-    work: null,           // 作品视图（含 stage/stages/wordCount/chapters）
-    workVisible: false,   // 作品抽屉
-
-    // 做音乐
-    music: false,
-    songs: [],            // 我的曲库
-    libVisible: false,    // 曲库抽屉
-    composeVisible: false,// 写词/生成弹层
-    draftLyrics: '',
-    draftStyle: '',
-    draftTitle: '',
-    genStatus: '',        // '' | 'generating'：生成中提示
-    playingSongId: '',    // 正在播放的歌曲 id
   },
 
   async onLoad(query) {
@@ -65,10 +50,24 @@ Page({
     // 从闯关地图点关进来：记下目标关卡，数据就绪后自动开课
     this._targetConcept = query.concept || '';
     this._autoStart = query.auto === '1';
-    this.setData({ id, name: query.name ? decodeURIComponent(query.name) : '' });
+    // 跳转参数带上就先用：name（顶栏）、icon/accent（骨架外壳配色），无网也能画出「像样的空页」
+    this.setData({
+      id,
+      name: query.name ? decodeURIComponent(query.name) : '',
+      icon: query.icon ? decodeURIComponent(query.icon) : '',
+      accent: query.accent ? decodeURIComponent(query.accent) : '#18b690',
+    });
     try {
       await ensureLogin();
     } catch (e) {}
+    this._load();
+  },
+
+  // 本页数据加载（并发拉 详情/会话/会员/技能/概念）。抽成独立方法，供「网络失败重试」复用。
+  // 失败不再只弹 toast——置 errored 让页内出现「重试」骨架，避免慢网/断网时白屏发愣。
+  async _load() {
+    const id = this.data.id;
+    this.setData({ loading: true, errored: false });
     try {
       const [d, sessions, ms, sk, cp] = await Promise.all([
         agentDetail(id),
@@ -102,13 +101,12 @@ Page({
         skill: sk && sk.enabled ? sk : null,
         concept: cp && cp.enabled ? this._concept(cp) : null,
         reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
-        novel: !!d.novel,
-        music: !!d.music,
+        // 产出型三门课给语音兜底：开口说英文用 en_US，言值/驭手说中文用 zh_CN。
+        voice: ['spoken-english', 'learn-speaking', 'learn-ai'].indexOf(d.slug) >= 0,
         loading: false,
       });
+      this._voiceLang = d.slug === 'spoken-english' ? 'en_US' : 'zh_CN';
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
-      if (d.novel) getWork(id).then((w) => this.setData({ work: this._work(w) })).catch(() => {});
-      if (d.music) myMusic(id).then((list) => this.setData({ songs: this._decorateSongs(list) })).catch(() => {});
       this._scrollEnd();
       // 指定关卡自动开课：新开一段会话，带 concept 参数让教练直接用这一关的钩子开场
       if (this._autoStart && this._targetConcept) {
@@ -120,9 +118,14 @@ Page({
         this._ask('开始这一关', undefined, this._targetConcept);
       }
     } catch (e) {
-      this.setData({ loading: false });
-      wx.showToast({ title: e.message || '加载失败', icon: 'none' });
+      // 白屏止血：不再只弹 toast，改为页内「重试」态（errored），点了重来
+      this.setData({ loading: false, errored: true });
     }
+  },
+
+  // 网络失败后重试（页内「没能连上，点这里重试」）
+  retryLoad() {
+    this._load();
   },
 
   _quota(member, remaining, freeTier) {
@@ -168,6 +171,43 @@ Page({
     if (!content) return;
     this.setData({ draft: '' });
     this._ask(content);
+  },
+
+  // —— 语音输入（微信同声传译插件 WechatSI）：按住麦克风说，松开转写即发 ——
+  // 插件不可用时静默降级为提示打字，不阻断。开口课用 en_US 识别，其余用 zh_CN（见 _voiceLang）。
+  _asrManager() {
+    if (this._asr !== undefined) return this._asr;
+    try {
+      const plugin = requirePlugin('WechatSI');
+      const mgr = plugin.getRecordRecognitionManager();
+      mgr.onStop = (res) => {
+        this.setData({ recording: false });
+        const t = ((res && res.result) || '').trim();
+        if (t) this._ask(t);
+        else wx.showToast({ title: '没听清，再说一次', icon: 'none' });
+      };
+      mgr.onError = () => {
+        this.setData({ recording: false });
+        wx.showToast({ title: '语音识别失败，试试打字', icon: 'none' });
+      };
+      this._asr = mgr;
+    } catch (e) {
+      this._asr = null; // 插件未添加 / 不支持
+    }
+    return this._asr;
+  },
+
+  onMicStart() {
+    if (this.data.pending) return;
+    const mgr = this._asrManager();
+    if (!mgr) { wx.showToast({ title: '语音暂不可用，请打字', icon: 'none' }); return; }
+    this.setData({ recording: true });
+    mgr.start({ lang: this._voiceLang || 'zh_CN' });
+  },
+
+  onMicEnd() {
+    if (!this.data.recording) return;
+    if (this._asr) this._asr.stop(); // 结果在 onStop 回调，并复位 recording
   },
 
   // 复习挑战：快问快答已点亮概念（检索练习，答对保住/升级档位）。
@@ -330,172 +370,7 @@ Page({
     }
   },
 
-  // ==================== 写小说 ====================
-  _work(w) {
-    if (!w) return null;
-    const wc = w.wordCount || 0;
-    const wanText = wc >= 10000 ? (wc / 10000).toFixed(1) + '万字' : wc + '字';
-    return { ...w, wanText };
-  },
-  openWork() { if (this.data.work) this.setData({ workVisible: true }); },
-  closeWork() { this.setData({ workVisible: false }); },
-
-  _deriveTitle(content) {
-    const first = (content || '').split('\n').map((s) => s.trim()).find((s) => s) || '';
-    const clean = first.replace(/^[#>*\-\s]+/, '').slice(0, 20);
-    return clean || '新章节';
-  },
-
-  // assistant 气泡：存为大纲
-  async saveAsOutline(e) {
-    const idx = e.currentTarget.dataset.idx;
-    const content = (this.data.messages[idx] || {}).content;
-    if (!content) return;
-    const hadOutline = !!(this.data.work && this.data.work.outline);
-    try {
-      await updateWork(this.data.id, { outline: content });
-      const w = this._work(await getWork(this.data.id));
-      this.setData({ work: w });
-      wx.showToast({ title: '已存为大纲', icon: 'success' });
-      if (!hadOutline) this._celebrate({ up: '大纲成型', name: '大纲', sub: '骨架搭好，开始写正文吧' });
-    } catch (err) { wx.showToast({ title: err.message || '保存失败', icon: 'none' }); }
-  },
-
-  // assistant 气泡：存为新一章
-  async saveAsChapter(e) {
-    const idx = e.currentTarget.dataset.idx;
-    const content = (this.data.messages[idx] || {}).content;
-    if (!content) return;
-    const prevWord = this.data.work ? this.data.work.wordCount : 0;
-    try {
-      await addChapter(this.data.id, { title: this._deriveTitle(content), content });
-      const w = this._work(await getWork(this.data.id));
-      this.setData({ work: w });
-      wx.showToast({ title: '已存入作品', icon: 'success' });
-      if (prevWord < 10000 && w.wordCount >= 10000) {
-        this._celebrate({ up: '里程碑', name: '破万字', sub: '你的小说破一万字了！' });
-      } else {
-        this._celebrate({ up: '写完一章', name: '第 ' + w.chapterCount + ' 章', sub: '钩子留好，继续往下写' });
-      }
-    } catch (err) { wx.showToast({ title: err.message || '保存失败', icon: 'none' }); }
-  },
-
-  // 编辑作品字段（title/logline/genre/outline）
-  editWorkField(e) {
-    const field = e.currentTarget.dataset.field;
-    const labels = { title: '标题', logline: '一句话立意', genre: '题材', outline: '大纲' };
-    const cur = (this.data.work || {})[field] || '';
-    wx.showModal({
-      title: '编辑' + (labels[field] || ''), editable: true, content: cur,
-      placeholderText: '写点什么…',
-      success: async (r) => {
-        if (!r.confirm) return;
-        try {
-          await updateWork(this.data.id, { [field]: r.content });
-          this.setData({ work: this._work(await getWork(this.data.id)) });
-        } catch (err) { wx.showToast({ title: err.message || '保存失败', icon: 'none' }); }
-      },
-    });
-  },
-
-  editChapter(e) {
-    const { cid, content } = e.currentTarget.dataset;
-    wx.showModal({
-      title: '编辑章节', editable: true, content: content || '',
-      success: async (r) => {
-        if (!r.confirm) return;
-        try {
-          await updateChapter(this.data.id, cid, { content: r.content });
-          this.setData({ work: this._work(await getWork(this.data.id)) });
-        } catch (err) { wx.showToast({ title: err.message || '保存失败', icon: 'none' }); }
-      },
-    });
-  },
-
-  async toggleFinalized() {
-    const cur = !!(this.data.work && this.data.work.finalized);
-    try {
-      await updateWork(this.data.id, { finalized: !cur });
-      const w = this._work(await getWork(this.data.id));
-      this.setData({ work: w });
-      if (!cur) this._celebrate({ up: '定稿！', name: w.title || '你的小说', sub: '恭喜完成一部作品 🎉' });
-    } catch (err) { wx.showToast({ title: err.message || '操作失败', icon: 'none' }); }
-  },
-
-  // ==================== 做音乐 ====================
-  _decorateSongs(list) {
-    return (list || []).map((s) => ({ ...s, timeText: fmtDateTime(s.createdAt) }));
-  },
-  openCompose() {
-    let lyrics = this.data.draftLyrics;
-    if (!lyrics) {
-      for (let i = this.data.messages.length - 1; i >= 0; i--) {
-        if (this.data.messages[i].role === 'assistant') { lyrics = this.data.messages[i].content; break; }
-      }
-    }
-    this.setData({ composeVisible: true, draftLyrics: lyrics || '' });
-  },
-  closeCompose() { this.setData({ composeVisible: false }); },
-  onLyrics(e) { this.setData({ draftLyrics: e.detail.value }); },
-  onStyle(e) { this.setData({ draftStyle: e.detail.value }); },
-  onTitle(e) { this.setData({ draftTitle: e.detail.value }); },
-
-  async doGenerate() {
-    const lyrics = (this.data.draftLyrics || '').trim();
-    if (!lyrics) { wx.showToast({ title: '先写好歌词', icon: 'none' }); return; }
-    this.setData({ composeVisible: false, genStatus: 'generating' });
-    try {
-      const { songId } = await genMusic(this.data.id, { lyrics, style: this.data.draftStyle, title: this.data.draftTitle });
-      this._pollSong(songId, 0);
-    } catch (e) {
-      this.setData({ genStatus: '' });
-      if (e.code === 'MEMBERSHIP_REQUIRED') {
-        wx.showModal({ title: '免费体验已用完', content: '开通会员即可畅用，不限次数。', confirmText: '去开通', cancelText: '再看看',
-          success: (r) => { if (r.confirm) this.goMembership(); } });
-      } else { wx.showToast({ title: e.message || '生成失败', icon: 'none' }); }
-    }
-  },
-
-  _pollSong(songId, tries) {
-    if (tries > 40) { this.setData({ genStatus: '' }); wx.showToast({ title: '生成较慢，稍后到曲库查看', icon: 'none' }); return; }
-    musicStatus(songId).then((s) => {
-      if (s.status === 'done') {
-        const songs = this._decorateSongs([s].concat(this.data.songs.filter((x) => x.songId !== s.songId)));
-        this.setData({ genStatus: '', songs });
-        this._celebrate({ up: '歌曲生成', name: s.title || '新歌', sub: '点开曲库就能听 🎧' });
-        this._play(s.audioUrl, s.songId);
-      } else if (s.status === 'failed') {
-        this.setData({ genStatus: '' });
-        wx.showToast({ title: s.err || '生成失败', icon: 'none' });
-      } else {
-        setTimeout(() => this._pollSong(songId, tries + 1), 3000);
-      }
-    }).catch(() => setTimeout(() => this._pollSong(songId, tries + 1), 3000));
-  },
-
-  openLibrary() { myMusic(this.data.id).then((l) => this.setData({ libVisible: true, songs: this._decorateSongs(l) })).catch(() => this.setData({ libVisible: true })); },
-  closeLibrary() { this.setData({ libVisible: false }); },
-  playSong(e) { this._play(e.currentTarget.dataset.src, e.currentTarget.dataset.id); },
-
-  _audio() {
-    if (this._ac) return this._ac;
-    const ac = wx.createInnerAudioContext();
-    ac.onEnded(() => this.setData({ playingSongId: '' }));
-    ac.onStop(() => this.setData({ playingSongId: '' }));
-    ac.onError(() => { this.setData({ playingSongId: '' }); wx.showToast({ title: '播放失败', icon: 'none' }); });
-    this._ac = ac;
-    return ac;
-  },
-  _play(src, songId) {
-    if (!src) return;
-    if (this.data.playingSongId === (songId || src)) { this._stopAudio(); return; }
-    const ac = this._audio();
-    ac.src = src;
-    ac.play();
-    this.setData({ playingSongId: songId || src });
-  },
-  _stopAudio() { if (this._ac) this._ac.stop(); this.setData({ playingSongId: '' }); },
-  onUnload() { if (this._ac) { this._ac.stop(); this._ac.destroy(); } if (this._celebTimer) clearTimeout(this._celebTimer); },
+  onUnload() { if (this._celebTimer) clearTimeout(this._celebTimer); },
 
   goMembership() {
     wx.navigateTo({ url: '/pages/membership/index' });

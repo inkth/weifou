@@ -164,9 +164,9 @@
 .lihe .stage-status { color: var(--ink-2); }
 .lihe .msg-list { position: relative; z-index: 1; }
 /* 气泡浮层：AI 白玻璃磨砂、用户碧绿，浮在立绘上更跳 */
-.lihe .msg-assistant .bubble { background: rgba(255, 255, 255, 0.82); color: var(--ink); border: none; box-shadow: none; backdrop-filter: blur(8rpx); }
-.lihe .msg-user .bubble { background: rgba(24, 182, 144, 0.92); color: var(--on-accent); } /* bg=--accent@.92，玻璃上有意半透 */
-.lihe .choices, .lihe .composer { position: relative; z-index: 1; background: var(--glass-dark); border-top: none; backdrop-filter: blur(14rpx); }
+.lihe .msg-assistant .bubble { background: rgba(255, 255, 255, 0.92); color: var(--ink); border: none; box-shadow: none; }
+.lihe .msg-user .bubble { background: rgba(24, 182, 144, 0.96); color: var(--on-accent); } /* bg≈--accent，立绘上近实心更跳、免逐帧磨砂 */
+.lihe .choices, .lihe .composer { position: relative; z-index: 1; background: var(--glass-dark); border-top: none; }
 
 .msg-list {
   flex: 1 1 auto;

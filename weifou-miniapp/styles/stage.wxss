@@ -14,11 +14,12 @@
   position: absolute; inset: 0;
   background: radial-gradient(130rpx 130rpx at 50% 40%, var(--amb-a, #18b690) 0%, transparent 72%);
   opacity: 0.16;
-  filter: blur(2rpx);
 }
-.amb-blob { position: absolute; width: 240rpx; height: 240rpx; border-radius: 50%; filter: blur(40rpx); opacity: 0.14; }
-.amb-blob-1 { left: -60rpx; top: -40rpx; background: var(--amb-a, #18b690); animation: ambDrift1 11s ease-in-out infinite; }
-.amb-blob-2 { right: -70rpx; bottom: -50rpx; background: var(--amb-b, #14b8a6); animation: ambDrift2 13s ease-in-out infinite; }
+/* 光斑:软边靠径向渐变自带的 transparent 收口，绝不用 filter:blur——后者在小程序里逐帧重算，
+   叠上无限漂移动画会持续掉帧。渐变是纯栅格、GPU 合成，观感等价而零逐帧成本。 */
+.amb-blob { position: absolute; width: 300rpx; height: 300rpx; border-radius: 50%; opacity: 0.14; }
+.amb-blob-1 { left: -80rpx; top: -60rpx; background: radial-gradient(circle, var(--amb-a, #18b690) 0%, transparent 66%); animation: ambDrift1 11s ease-in-out infinite; }
+.amb-blob-2 { right: -90rpx; bottom: -70rpx; background: radial-gradient(circle, var(--amb-b, #14b8a6) 0%, transparent 66%); animation: ambDrift2 13s ease-in-out infinite; }
 @keyframes ambDrift1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(24rpx, 18rpx); } }
 @keyframes ambDrift2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-20rpx, -16rpx); } }
 

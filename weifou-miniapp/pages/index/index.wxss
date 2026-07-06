@@ -41,7 +41,6 @@
 .float-on { font-size: 22rpx; color: var(--ink-2); }
 .float-bubble {
   background: var(--glass-dark);
-  backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
   border: 1rpx solid var(--border);
   color: var(--ink); font-size: 27rpx; line-height: 1.6;
   padding: 22rpx 26rpx; border-radius: 24rpx; border-bottom-left-radius: 8rpx;
@@ -57,7 +56,6 @@
 .actions { display: flex; flex-direction: column; gap: 20rpx; }
 .glass-btn {
   background: var(--glass-light);
-  backdrop-filter: blur(24rpx); -webkit-backdrop-filter: blur(24rpx);
   border: 1rpx solid var(--border);
   color: var(--ink);
   border-radius: 100rpx;

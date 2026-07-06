@@ -13,7 +13,6 @@
 
 /* 首屏骨架（.skel 微光见 app.wxss） */
 .sk-hero { height: 220rpx; border-radius: var(--r-2xl); margin-bottom: 28rpx; }
-.sk-acard { height: 180rpx; border-radius: var(--r-xl); margin-bottom: 26rpx; }
 
 /* 网络失败重试条：克制描边（非糖果色，成交外的功能提示） */
 .retry {
@@ -74,45 +73,3 @@
 }
 .hstat-n { font-size: 40rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
 .hstat-l { margin-top: 2rpx; font-size: 22rpx; color: var(--accent-ink); }
-
-/* 区段标：剪裁线 */
-.sec-label {
-  display: flex; align-items: center; gap: 16rpx;
-  padding: 0 8rpx 20rpx; font-size: 24rpx; letter-spacing: 3rpx; font-weight: 600; color: var(--sub);
-}
-.sec-label::after { content: ''; flex: 1; border-top: var(--bw-thin) dashed var(--border-strong); }
-
-/* ===== Agent 大卡 ===== */
-.acard {
-  padding: 30rpx 30rpx 22rpx; border-radius: var(--r-xl); margin-bottom: 26rpx;
-  background: var(--surface);
-  border: var(--bw) solid var(--border);
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
-}
-.acard-top { display: flex; align-items: center; gap: 26rpx; }
-.acard-ic {
-  flex: 0 0 auto; width: 96rpx; height: 96rpx; border-radius: var(--r-lg);
-  display: flex; align-items: center; justify-content: center;
-  background: var(--pop-mint);
-  border: none;
-}
-.acard:nth-child(3n) .acard-ic { background: var(--pop-coral); }
-.acard:nth-child(3n+1) .acard-ic { background: var(--pop-lilac); }
-.acard-ic text { font-size: 42rpx; font-weight: 600; color: var(--ink); }
-.acard-meta { flex: 1; min-width: 0; }
-.acard-name { font-size: 32rpx; font-weight: 700; color: var(--ink); }
-.acard-tag { margin-top: 8rpx; font-size: 26rpx; color: var(--ink-2); line-height: 1.5; }
-/* 催课条：服务端算好的动态学习状态（下一个概念/待复习/段位弱项）——比 tagline 更该被看见 */
-.acard-tag.nudge { color: var(--accent-strong); font-weight: 600; }
-.acard-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 24rpx; padding-top: 20rpx; border-top: var(--bw-thin) dashed var(--border);
-}
-.acard-pill {
-  font-size: 23rpx; font-weight: 600; padding: 6rpx 20rpx; border-radius: var(--r-full);
-  background: var(--accent-soft); color: var(--accent-ink);
-  border: none;
-}
-.acard-cta { display: flex; align-items: center; gap: 8rpx; font-size: 26rpx; font-weight: 600; color: var(--ink); }
-.acard-cta-ic { font-size: 26rpx; }

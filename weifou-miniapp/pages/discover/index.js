@@ -1,14 +1,10 @@
 const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
-const { unpinAgent } = require('../../utils/agent');
 
-// 首页 = 我的 Agent 小队，由 /home/agents 驱动；清新浅色 + 薄荷青，成熟产品质感（大卡 + 真实数据）。
+// 首页 = 我的 AI 名片，由 /home/agents 的 primary 卡驱动；清新浅色 + 薄荷青（大卡 + 真实数据）。
+// 学习工具已独立到「技能」Tab，首页只承载名片本体（接待入口在「消息」Tab）。
 const FALLBACK = {
   chief: { name: '我的 AI 名片', initial: '名', online: true, hasProfile: false, profileId: '', line: '替你接待每个来访的人，有结果就喊你', stats: null },
-  specialists: [
-    { id: '', name: '学英语', initial: 'EN', line: '随时开口练，纠音、对话、一段段升级', kind: 'tool', pill: '剩 5 次' },
-    { id: '', name: '学商业', initial: '商', line: '把卡住的生意拆开，给你能落地的下一步', kind: 'tool', pill: '剩 3 次' },
-  ],
 };
 
 function greet() {
@@ -21,7 +17,7 @@ function greet() {
 }
 
 Page({
-  data: { statusBarH: 20, greeting: '你好', chief: FALLBACK.chief, specialists: [], loading: true, loaded: false, errored: false },
+  data: { statusBarH: 20, greeting: '你好', chief: FALLBACK.chief, loading: true, loaded: false, errored: false },
 
   onLoad() {
     try {
@@ -51,13 +47,13 @@ Page({
 
     if (failed) {
       const patch = { loading: false, loaded: true, errored: true };
-      if (!this.data.loaded) { patch.chief = FALLBACK.chief; patch.specialists = FALLBACK.specialists; }
+      if (!this.data.loaded) { patch.chief = FALLBACK.chief; }
       this.setData(patch);
       return;
     }
 
     if (!cards || !cards.length) {
-      this.setData({ chief: FALLBACK.chief, specialists: FALLBACK.specialists, loading: false, loaded: true });
+      this.setData({ chief: FALLBACK.chief, loading: false, loaded: true });
       return;
     }
 
@@ -83,14 +79,7 @@ Page({
       }
     }
 
-    const specialists = cards.filter((c) => c !== primary).map((c) => {
-      const fr = c.freeRemaining;
-      const pill = c.member ? '会员畅用' : (typeof fr === 'number' && fr >= 0 ? `免费剩 ${fr} 次` : '');
-      // nudge=催课条：line 已是服务端算好的动态学习状态（下一个概念/待复习/段位弱项），高亮显示
-      return { id: c.agentId || '', name: c.name, initial: c.initial, line: c.line, nudge: !!c.nudge, kind: 'tool', pill, concept: !!c.concept, accent: c.accent || '' };
-    });
-
-    this.setData({ chief, specialists, loading: false, loaded: true });
+    this.setData({ chief, loading: false, loaded: true });
   },
 
   retry() { this.load(); },
@@ -101,33 +90,6 @@ Page({
     } else {
       wx.navigateTo({ url: '/pages/onboarding/index' });
     }
-  },
-
-  enterSpecialist(e) {
-    const { id, name } = e.currentTarget.dataset;
-    if (!id) { wx.showToast({ title: '正在上线，稍后再来', icon: 'none' }); return; }
-    const sp = (this.data.specialists || []).find((s) => s.id === id);
-    if (sp && sp.concept) {
-      // 概念型学习 Agent → 闯关地图
-      // initial 即 ToolAgent.Icon(emoji),透传给卡流的吉祥物舞台占位
-      wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(sp.accent || '')}&icon=${encodeURIComponent(sp.initial || '')}` });
-      return;
-    }
-    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
-  },
-
-  removeSpecialist(e) {
-    const { id, name } = e.currentTarget.dataset;
-    if (!id) return;
-    wx.showActionSheet({
-      itemList: [`从首页移除「${name}」`],
-      success: async (res) => {
-        if (res.tapIndex !== 0) return;
-        try { await unpinAgent(id); this.load(); }
-        catch (err) { wx.showToast({ title: (err && err.message) || '移除失败', icon: 'none' }); }
-      },
-      fail: () => {},
-    });
   },
 
   onShareAppMessage() {

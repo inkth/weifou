@@ -45,7 +45,9 @@ Page({
 
   open(e) {
     const { id, name } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}` });
+    const a = (this.data.agents || []).find((x) => x.id === id);
+    // 透传 icon/accent：对话页无网时也能立刻画出对的头像+配色骨架
+    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}` });
   },
 
   goMembership() {

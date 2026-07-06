@@ -76,11 +76,12 @@ page {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* —— 沉浸件（亮场玻璃；名保留、值已反转为白玻璃）—— */
-  --glass-light: rgba(255, 255, 255, 0.86);
-  --glass-dark: rgba(255, 255, 255, 0.72);
+  /* —— 沉浸件（亮场玻璃；糖果风白底上不再做实时磨砂：backdrop-filter 是小程序头号卡顿源，
+     且白玻璃叠白底肉眼几乎无差。改为近实心白卡——观感一致、逐帧零重采样。名/用法全保留）—— */
+  --glass-light: rgba(255, 255, 255, 0.94);
+  --glass-dark: rgba(255, 255, 255, 0.92);
   --glass-hair: rgba(75, 75, 75, 0.10);
-  --blur-glass: blur(28rpx) saturate(160%);
+  --blur-glass: none;
   --shadow-lihe: 0 6rpx 24rpx rgba(24, 182, 144, 0.18);
 
   /* —— 遮罩底（弹层/抽屉；换肤时统一改这两个）—— */
