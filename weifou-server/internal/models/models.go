@@ -367,12 +367,17 @@ type AgentPin struct {
 func (AgentPin) TableName() string { return "agent_pins" }
 
 // AgentSession 用户与某工具 Agent 的对话会话（一人一 Agent 一会话，持续累积）。
+// ScriptConcept/ScriptStage：脚本课（零 AI 闯关）的状态机指针——当前关卡 slug 与所处阶段
+// （tap 开场点选 / check 检验关 / review 复习挑战 / done 关卡收尾）；非脚本课恒为空。
 type AgentSession struct {
-	ID        string    `gorm:"primaryKey;size:32" json:"id"`
-	AgentID   string    `gorm:"size:32;index:idx_asess_agent_user" json:"agentId"`
-	UserID    string    `gorm:"size:32;index:idx_asess_agent_user" json:"userId"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID            string    `gorm:"primaryKey;size:32" json:"id"`
+	AgentID       string    `gorm:"size:32;index:idx_asess_agent_user" json:"agentId"`
+	UserID        string    `gorm:"size:32;index:idx_asess_agent_user" json:"userId"`
+	ScriptConcept string    `gorm:"size:64" json:"-"`
+	ScriptStage   string    `gorm:"size:16" json:"-"`
+	ScriptNode    int       `gorm:"default:0" json:"-"` // 多轮分支剧本（对手戏）当前节点下标
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 func (AgentSession) TableName() string { return "agent_sessions" }
@@ -417,8 +422,8 @@ type AgentConcept struct {
 	Tier    int    `gorm:"default:1" json:"tier"`                                     // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
 	Name    string `gorm:"size:64" json:"name"`                                       // 概念名，如 "锚定效应"
 	Blurb   string `gorm:"size:255" json:"blurb"`                                     // 一句话点题（前端展示 + 给打点 LLM 锚定）
-	Hook    string `gorm:"size:255" json:"-"`                                         // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟
-	Check   string `gorm:"size:255" json:"-"`                                         // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
+	Hook    string `gorm:"type:text" json:"-"`                                        // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟。text：帛书课含整章原文，远超 255
+	Check   string `gorm:"type:text" json:"-"`                                        // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
 	Sort    int    `gorm:"default:0" json:"sort"`
 }
 

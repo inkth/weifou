@@ -4,6 +4,7 @@
 package toolagent
 
 import (
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -137,12 +138,17 @@ func (h *Handler) chat(c *gin.Context) error {
 		return httpx.BadRequest("CONTENT_UNSAFE", "内容包含不当信息")
 	}
 
+	// 脚本课（零 AI 闯关）：准入在 scriptedChat 内按「开新关」计，跳过下面的按条扣次。
+	scripted := courseScripts[a.Slug]
+
 	// 准入：会员畅用。概念课按「幕」门控——第一幕(Tier≤FreeTier)免费无限、更高幕需会员；
 	// 其余(工具 / 道德经试读)沿用「免费体验次数」计。
 	var member bool
 	remaining := -1
 	trialGated := false // 是否走了扣次模型（决定 AI 失败时是否退还免费次数）
-	if a.Concept && a.FreeTier > 0 {
+	if scripted != nil {
+		// 门控推迟到状态机内（只有「开新关」才过闸）
+	} else if a.Concept && a.FreeTier > 0 {
 		member = membership.IsActive(h.db, auth.UserID)
 		if !member && h.conceptTier(a.ID, req.Concept) > a.FreeTier {
 			return httpx.BadRequest("MEMBERSHIP_REQUIRED", "第一幕已学完 · 第二幕起开通会员畅用全部")
@@ -172,6 +178,11 @@ func (h *Handler) chat(c *gin.Context) error {
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleUser,
 		Content: content, SafeCheckStatus: models.SafePass,
 	})
+
+	// 脚本课：整个课程流程走作者预写剧本状态机，从这里分流，不进大模型。
+	if scripted != nil {
+		return h.scriptedChat(c, &a, &session, scripted, &req, content)
+	}
 
 	// 最近 20 条历史 + 平台自编 system prompt + 学习状态注入。
 	// L1 主动教学：把学员进度/段位和本轮编排指令喂给模型，让它带着课来，而不是等着被问。
@@ -212,6 +223,7 @@ func (h *Handler) chat(c *gin.Context) error {
 	}
 	raw, derr := h.ds.Chat(msgs, deepseek.ChatOptions{Temperature: 0.7, MaxTokens: 800})
 	if derr != nil {
+		log.Printf("[ai] toolagent chat failed agent=%s user=%s: %v", a.Slug, auth.UserID, derr)
 		if trialGated {
 			// 非会员扣了免费体验但 AI 失败 → 退还 1 次（幕门控的免费幕不计次，无需退）。
 			h.db.Model(&models.AgentEntitlement{}).
@@ -485,7 +497,7 @@ func Seed(db *gorm.DB) {
 			Tagline:     "真实场景英语，一关一关闯",
 			Description: "用中文也能学：从咖啡馆点单到全英面试，28 个真实场景一关关闯。每关给你现成的英文，点一句或开口说都算通关，AI 陪你测流利度 / 准确度 / 表达力，一段段往上升级。",
 			Category:    models.AgentCatEducation, Icon: "🗣️", Accent: "#FB923C",
-			Greeting:     "Hi！这门课只练一件事——开口。不背课文，直接闯真实场景：点咖啡、过海关、见客户、答面试。每关我给你几句现成的英文，你点一句、或按住麦克风说出来都行。从地图挑一关，或告诉我你最近哪个场合要用英语。",
+			Greeting:     "Hi！这门课只练一件事——开口。28 个真实场景一关关闯：点咖啡、过海关、见客户、答面试。每关的走法：对方先开口，你从三句英文里挑一句接住——选对了，按住麦克风把它读出来，读准才算真开口；场景还会出状况，接得住才点亮。点「开始这一关」，先去咖啡馆。",
 			SystemPrompt: buildConceptPrompt(spokenEnglishPrompt, englishScenarios),
 			Assess:       true,
 			Concept:      true,
@@ -496,7 +508,7 @@ func Seed(db *gorm.DB) {
 			Tagline:     "情绪不内耗、关系不拧巴",
 			Description: "看清自己、经营关系、看穿套路——「知心」带你走一趟三幕心理学之旅：情绪不内耗、关系不拧巴、决策不被套路。聊得越深，点亮的关卡越多。",
 			Category:    models.AgentCatEducation, Icon: "🧠", Accent: "#EC4899",
-			Greeting:     "嗨，我是知心。最近心里在琢磨什么？人际、情绪、还是想更懂自己——讲讲你的具体处境，我用心理学陪你照亮它。我们会从「看清自己」出发，一关关把整张地图点亮。",
+			Greeting:     "嗨，我是知心。这门课三幕 80 关：看清自己、经营关系、看穿套路，每章结尾一个综合关。走法：每关一个贴身场景，你挑最像自己的答，过了检验关点亮才算真懂。点「开始这一关」，先看看大脑的出厂设置。",
 			SystemPrompt: buildConceptPrompt(psychologyPersona+"\n\n"+conceptTeachingMethod, psychologyConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 4, // 第一幕免费无限，第二幕起会员
@@ -506,7 +518,7 @@ func Seed(db *gorm.DB) {
 			Tagline:     "一眼看穿话里的逻辑",
 			Description: "从拆论证、识谬误到读数字、断因果——「明辨」带你六幕闯关学会清晰思考，每幕结尾一场 Boss 找茬战。聊得越深，点亮的关卡越多。",
 			Category:    models.AgentCatEducation, Icon: "🧩", Accent: "#0EA5E9",
-			Greeting:     "我是明辨。抛个你觉得有道理、或觉得哪里不对劲的说法给我——我们一起拆：它的前提是什么、推得住吗、有没有藏着谬误。练几轮，你看谁说话都能一眼看穿逻辑。",
+			Greeting:     "我是明辨。这门课六幕 64 关：拆论证、识谬误、读数字、断因果、立论辩护，每幕结尾一场 Boss 找茬战。规矩：每关给你一个说法或场面，你来判断哪里站得住、哪里塌了——判对才点亮。点「开始这一关」，上解剖台。",
 			SystemPrompt: buildConceptPrompt(logicPersona+"\n\n"+conceptTeachingMethod, logicConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 5, // 第一幕免费无限，第二幕起会员
@@ -516,7 +528,7 @@ func Seed(db *gorm.DB) {
 			Tagline:     "让人看见、心动、下单",
 			Description: "定位、差异化、漏斗、增长、说服心理——「破圈」用真实案例把营销讲透，让你懂怎么让人看见、心动、下单。聊得越深，点亮的概念越多。",
 			Category:    models.AgentCatEducation, Icon: "🎯", Accent: "#DC2626",
-			Greeting:     "我是破圈。你在卖什么、想让谁买？不管是产品、门店还是你自己——说说你的具体情况，我用真实案例帮你拆：怎么定位、怎么让人看见、怎么让人下单。核心概念咱们一个个点亮。",
+			Greeting:     "我是破圈。这门课三档 48 关：把生意想明白、把客人请进门、让生意自己转。走法：每关一个真实商业场景，你来判断怎么卖才对——判对点亮，48 个概念一格格占进你脑子。点「开始这一关」，从用户需求开始。",
 			SystemPrompt: buildConceptPrompt(marketingPersona+"\n\n"+conceptTeachingMethod, marketingConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 6, // 第一幕免费无限，第二幕起会员
@@ -526,7 +538,7 @@ func Seed(db *gorm.DB) {
 			Tagline:     "把 AI 使唤明白",
 			Description: "写指令、拆大活、防胡说——「驭手」带你两幕 28 关真刀真枪地练：每一关都亲手下指令办成一件真事，学到的每一招在任何 AI 上都好使。",
 			Category:    models.AgentCatEducation, Icon: "🤖", Accent: "#8B5CF6",
-			Greeting:     "我是驭手。别人教你认识 AI，我只教一件事：把它使唤明白。从「说清目标」到「揪出它一本正经的胡说」，28 关全是实操——你来下指令，我当陪练，办成了才算过关。正好我自己就是个 AI，拿我练手最合适。现在就开第一关？",
+			Greeting:     "我是驭手。别人教你认识 AI，我只教一件事：把它使唤明白。28 关全是实操：每关一个真活，三条指令你挑一条发出去——AI 的产出当场对比给你看，含糊的差在哪、到位的好在哪，一眼见分晓；后半程反过来，教你从它的漂亮回答里揪出一本正经的编造。学到的每招在任何 AI 上都好使。点「开始这一关」。",
 			SystemPrompt: buildConceptPrompt(learnAIPrompt, aiConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 7, // 第一幕免费无限，第二幕起会员
@@ -536,7 +548,7 @@ func Seed(db *gorm.DB) {
 			Tagline:     "话说到位，事成关系稳",
 			Description: "拒绝、开口要、道歉、场面话——「言值」把你丢进 28 个躲不掉的真实场面演对手戏：TA 演难缠的对方，你说你的原话，事办成、关系也稳住，才算过关。",
 			Category:    models.AgentCatEducation, Icon: "💬", Accent: "#06B6D4",
-			Greeting:     "我是言值。人一生吃的亏，一半是话没说到位：不会拒、不敢要、道歉变辩解、饭局把天聊死。我这儿 28 个场面，全是你躲不掉的——我演对方，你说原话，说到位才算过关。先从哪件难开口的事来？",
+			Greeting:     "我是言值。人一生吃的亏，一半是话没说到位：不会拒、不敢要、道歉变辩解、饭局把天聊死。我这儿 28 个场面全是你躲不掉的——我演对方，你从几句原话里挑一句说出去，后果当场演给你看：太软被拿捏、太硬伤关系，都能时间倒回重说；事办成+关系稳，才算过关。点「开始这一关」，先接住那条深夜借钱的消息。",
 			SystemPrompt: buildConceptPrompt(learnSpeakingPrompt, speakingConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
@@ -546,11 +558,12 @@ func Seed(db *gorm.DB) {
 			Tagline:     "帛书全本逐章读老子",
 			Description: "跟着向导「知常」用【马王堆帛书本】逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章，每章都给完整原文（帛书用字），每幕末一个「综合关」。不背经、不玄谈——一章一句，都拉到你正过的日子上用，落地才点亮。",
 			Category:    models.AgentCatEducation, Icon: "📜", Accent: "#0F766E",
-			Greeting:     "我是知常。这门是《老子》帛书全本——按帛书本的原貌，德经在前、道经在后，八十一章我们一章一章读过去，每章都先看完整原文，从「上德不德」直到「道法自然」。还是老规矩：不带你背经、不跟你玄谈，只用老子的每一句，照你自己正过的坎。先说说，你最近有没有一件放不下、或正较着劲的事？我们就从德经第一章开始。",
+			Greeting:     "我是知常。这门是《老子》帛书全本——按帛书本的原貌，德经在前、道经在后，八十一章一章一章读过去，每章先看完整原文，从「上德不德」直到「道法自然」。还是老规矩：不带你背经、不跟你玄谈，只用老子的每一句，照你自己正过的坎。一关的走法：读原文 → 挑一个最贴你的答 → 过检验关，点亮才算读过。点「开始这一关」，从德经第一章走起。",
 			SystemPrompt: buildConceptPrompt(daodejingFullPrompt, daodejingFullConcepts),
 			Concept:      true,
-			// 刻意不采用「第一幕免费」(FreeTier) 模型，沿用 FreeTrial=3 试读几轮即锁（会员转化钩子），
+			// 刻意不采用「第一幕免费」(FreeTier) 模型，沿用 FreeTrial=3 试读即锁（会员转化钩子），
 			// 与六门完备课的第一幕免费区分开——这门是通读经典的深度课。
+			// 2026-07-06 起走脚本闯关引擎（零 AI）：试读按「开新关」计（3 章），不按消息条数计。
 			FreeTrial: 3, Sort: 10,
 		},
 	}

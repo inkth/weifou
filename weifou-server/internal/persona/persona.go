@@ -3,6 +3,7 @@ package persona
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -202,6 +203,7 @@ func (s *Service) ExtractKnowledge(profileID, openid, rawText string) (int, erro
 		{Role: "user", Content: text},
 	}, deepseek.ChatOptions{Temperature: 0.3, MaxTokens: 1500, ResponseFormat: "json_object"})
 	if err != nil {
+		log.Printf("[ai] persona ingest failed: %v", err)
 		return 0, httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 
@@ -298,6 +300,7 @@ func (s *Service) ExtractProfileFields(openid, dialogue string) (*ExtractedProfi
 		{Role: "user", Content: text},
 	}, deepseek.ChatOptions{Temperature: 0.2, MaxTokens: 600, ResponseFormat: "json_object"})
 	if err != nil {
+		log.Printf("[ai] persona extract failed: %v", err)
 		return nil, httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 
@@ -355,6 +358,7 @@ func (s *Service) SuggestStrengths(openid, title, audience string, exclude []str
 		{Role: "user", Content: b.String()},
 	}, deepseek.ChatOptions{Temperature: 0.9, MaxTokens: 300, ResponseFormat: "json_object"})
 	if err != nil {
+		log.Printf("[ai] persona suggest failed: %v", err)
 		return nil, httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 	cleaned := strings.TrimSpace(raw)
@@ -401,6 +405,7 @@ func (s *Service) GenerateForProfile(profileID, openid string) (*Result, error) 
 		{Role: "user", Content: buildUserPrompt(&profile, &input)},
 	}, deepseek.ChatOptions{Temperature: 0.7, MaxTokens: 800, ResponseFormat: "json_object"})
 	if err != nil {
+		log.Printf("[ai] persona generate failed: %v", err)
 		return nil, httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 

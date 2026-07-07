@@ -159,6 +159,25 @@ func (h *Handler) assessAndUpdate(sk *models.AgentSkill, sample string) (changed
 	return true, newLevel > oldLevel
 }
 
+// bumpSkillScripted 脚本课（零 AI）的确定性段位更新：每通一关记一轮，三维沿既有
+// ratchet 曲线向满分爬升（前段快后段慢、只升不降）——通关本身就是一次有效开口样本，
+// 无需 LLM 评估。note（关卡战报）作 LastNote。与 LLM 评估共用同一档案、同一曲线。
+func (h *Handler) bumpSkillScripted(sk *models.AgentSkill, note string) (leveledUp bool) {
+	oldLevel := levelFromDims(sk.Fluency, sk.Accuracy, sk.Expression)
+	sk.Fluency = ratchet(sk.Fluency, 100)
+	sk.Accuracy = ratchet(sk.Accuracy, 100)
+	sk.Expression = ratchet(sk.Expression, 100)
+	sk.Assessed++
+	if note = strings.TrimSpace(note); note != "" {
+		sk.LastNote = clipText(note, 80)
+	}
+	h.db.Model(sk).Updates(map[string]interface{}{
+		"fluency": sk.Fluency, "accuracy": sk.Accuracy, "expression": sk.Expression,
+		"assessed": sk.Assessed, "last_note": sk.LastNote,
+	})
+	return levelFromDims(sk.Fluency, sk.Accuracy, sk.Expression) > oldLevel
+}
+
 // skillStateBrief 拼「学员段位」system 注入段（技能型 Agent 的 L1 主动教学燃料）：
 // 段位/三维/弱项/上次亮点 + 本轮编排指令。fresh=true 表示新会话（要做开场编排）。只给模型看。
 func skillStateBrief(sk *models.AgentSkill, fresh bool) string {

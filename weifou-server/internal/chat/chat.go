@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -272,6 +273,7 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	result, err := h.engine.Complete(msgs)
 	if err != nil {
+		log.Printf("[ai] chat complete failed profile=%s openid=%s: %v", profileID, auth.Openid, err)
 		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 

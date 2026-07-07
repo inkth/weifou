@@ -5,6 +5,7 @@ package asyncq
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -140,6 +141,7 @@ func (h *Handler) qaboxAsk(c *gin.Context) error {
 		if errors.Is(err, answer.ErrProfileNotReady) {
 			return httpx.NotFound("PROFILE_NOT_READY", "Ta 的分身还没准备好")
 		}
+		log.Printf("[ai] asyncq generate failed profile=%s: %v", req.ProfileID, err)
 		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
 	}
 	// gap：分身自认答不上来（具体合理但资料覆盖不到）→ 前端据此高亮「请本人亲自回答」升温入口。
