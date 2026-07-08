@@ -320,6 +320,40 @@
   color: var(--ink-2);
 }
 
+/* 成交阶梯进度条：聊→问→约→赏，走过的段落用碧绿糖果色点亮 */
+.stage-rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 14rpx 24rpx;
+  background: var(--surface);
+  border-top: var(--bw-thin) solid var(--border);
+}
+.rail-node {
+  width: 42rpx;
+  height: 42rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: var(--bw-thin) solid var(--border);
+  transition: transform 0.3s var(--ease), background 0.3s var(--ease), color 0.3s var(--ease);
+}
+.rail-node.done { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-soft); }
+.rail-node.on {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 700;
+  transform: scale(1.08);
+}
+.rail-line { width: 44rpx; height: 4rpx; border-radius: 2rpx; background: var(--border); transition: background 0.3s var(--ease); }
+.rail-line.done { background: var(--accent); }
+
 .composer {
   display: flex;
   gap: 16rpx;
@@ -423,3 +457,34 @@
 .slot-pick.on { background: var(--accent-soft); border-color: var(--accent); }
 .sp-time { font-size: 30rpx; font-weight: 500; color: var(--ink); }
 .sp-meta { font-size: 24rpx; color: var(--sub); margin-top: 6rpx; }
+
+/* —— 成交庆祝浮层（复用课程事件卡）：约/赏/留话达成时全屏彩带 + 大字弹簧 —— */
+.celebrate { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
+.celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
+.celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }
+.celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #7a5c00; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: 0 3rpx 0 var(--gold-strong); }
+.celeb-name { font-size: 56rpx; font-weight: 800; color: var(--ink); margin-top: 8rpx; animation: namePop 0.5s var(--ease-spring) 0.08s both; }
+.celeb-sub { font-size: 24rpx; color: var(--sub); margin-top: 12rpx; }
+@keyframes celebFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes celebPop { 0% { opacity: 0; transform: scale(0.7); } 60% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+@keyframes sparkBounce { 0% { transform: scale(0.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes namePop { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+.confetti { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.cf { position: absolute; top: 0; width: 14rpx; height: 22rpx; border-radius: 4rpx; animation: cfFall 1.6s ease-in both; }
+.cf-1  { left: 6%;  background: var(--pop-butter); animation-delay: 0s; }
+.cf-2  { left: 14%; background: var(--cand-blue);  animation-delay: 0.22s; }
+.cf-3  { left: 24%; background: var(--pop-coral);  animation-delay: 0.10s; }
+.cf-4  { left: 32%; background: var(--accent);     animation-delay: 0.34s; }
+.cf-5  { left: 41%; background: var(--pop-lilac);  animation-delay: 0.05s; }
+.cf-6  { left: 49%; background: var(--gold);       animation-delay: 0.28s; }
+.cf-7  { left: 57%; background: var(--cand-blue);  animation-delay: 0.16s; }
+.cf-8  { left: 66%; background: var(--pop-coral);  animation-delay: 0.42s; }
+.cf-9  { left: 74%; background: var(--accent);     animation-delay: 0.08s; }
+.cf-10 { left: 82%; background: var(--pop-butter); animation-delay: 0.30s; }
+.cf-11 { left: 90%; background: var(--pop-lilac);  animation-delay: 0.20s; }
+.cf-12 { left: 96%; background: var(--gold);       animation-delay: 0.46s; }
+@keyframes cfFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+}

@@ -5,6 +5,9 @@ const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, initial } = require('../../utils/avatars');
 const { buildTrustLine } = require('../../utils/trust');
 
+// 成交阶梯顺序：分身下发的 stage 映射成进度条下标（-1=未知/不显示）
+const STAGE_ORDER = ['chat', 'ask', 'book', 'reward'];
+
 // 从小程序码 scene（URL-encoded 的 "id=xxx"）解析 profileId
 function parseScene(scene) {
   if (!scene) return '';
@@ -20,7 +23,11 @@ Page({
     avatarStyle: '',
     oneLiner: '',
     starters: [], // AI 生成的引导问题（点了即移除，避免重复）
-    followups: [], // 每轮回答后分身给出的追问选项（点选即发，代替打字）
+    options: [], // 每轮回答后分身沿成交阶梯现编的可点选项（点选即发，代替打字）
+    stage: '', // 当前成交阶梯 chat|ask|book|reward（分身判定，仅驱动顶部进度条）
+    stageIdx: -1, // stage 在 STAGE_ORDER 中的下标，驱动进度条高亮（-1=不显示）
+    stageLabels: ['聊', '问', '约', '赏'], // 进度条四段固定文案
+    shownOptions: [], // 本会话已展示过的选项，换一批/追问时回传服务端避重
     startersRevealed: false, // 开场动画结束后才淡入引导问题
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
     contactAvailable: false,
@@ -48,6 +55,7 @@ Page({
     title: '', company: '', city: '', tags: [], fullIntro: '',
     aboutVisible: false,
     tipVisible: false, tipPresets: [6, 18, 66, 88], tipAmount: 18, tipMessage: '', tipPaying: false,
+    celebrate: null, // 成交庆祝浮层：{ up, name, sub }，只在约/赏/留话三个终点动作触发，2.4s 自动收起
   },
 
   async onLoad(query) {
@@ -123,6 +131,15 @@ Page({
     this._abortIntro();
     if (this._answerTimer) { clearInterval(this._answerTimer); this._answerTimer = null; this._answerDone = null; }
     if (this._delightTimer) { clearTimeout(this._delightTimer); this._delightTimer = null; }
+    if (this._celebTimer) { clearTimeout(this._celebTimer); this._celebTimer = null; }
+  },
+
+  // 成交庆祝浮层：约/赏/留话达成时弹一次（复用课程事件卡），2.4s 后自动收起。payload = { up, name, sub }
+  _celebrate(payload) {
+    if (this._celebTimer) clearTimeout(this._celebTimer);
+    wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
+    this.setData({ celebrate: payload || null });
+    this._celebTimer = setTimeout(() => this.setData({ celebrate: null }), 2400);
   },
 
   // 答复打字机：逐字写入第 index 条消息；_flushAnswer 可被新提问/卸载抢断为整条落定。
@@ -280,10 +297,39 @@ Page({
     this.ask(q);
   },
 
-  // 点追问选项 → 作为问题发送（点选为主、输入兜底；ask 开头会清空整组避免重复）
-  pickFollowup(e) {
+  // 点成交阶梯选项 → 作为下一句发送（点选为主、输入兜底；ask 开头会清空整组避免重复）
+  pickOption(e) {
     const q = e.currentTarget.dataset.q;
     if (q) this.ask(q);
+  },
+
+  // 换一批：不产生新对话轮，只让分身基于当前上下文另出一组可点选项（复用 exclude 避重）
+  async reshuffle() {
+    if (this.data.pending || this._reshuffling) return;
+    this._reshuffling = true;
+    try {
+      const data = await request({
+        url: `/chat/${this.data.profileId}/reoptions`,
+        method: 'POST',
+        data: { exclude: this.data.shownOptions.slice(-12) },
+      });
+      const opts = data.options || [];
+      if (opts.length) {
+        const stage = data.stage || this.data.stage;
+        this.setData({
+          options: opts,
+          stage,
+          stageIdx: STAGE_ORDER.indexOf(stage),
+          shownOptions: this.data.shownOptions.concat(opts),
+        });
+      } else {
+        wx.showToast({ title: '暂时没有更多了', icon: 'none' });
+      }
+    } catch (e) {
+      wx.showToast({ title: '换一批失败', icon: 'none' });
+    } finally {
+      this._reshuffling = false;
+    }
   },
 
   toggleInput() {
@@ -329,14 +375,14 @@ Page({
     }
 
     const messages = this.data.messages.concat({ role: 'user', content });
-    // 第三幕结束：一旦开聊，名片收成顶部胶囊条；上一轮追问选项作废
-    this.setData({ messages, pending: true, cardCompact: true, cardFlipped: false, followups: [] });
+    // 第三幕结束：一旦开聊，名片收成顶部胶囊条；上一轮选项作废
+    this.setData({ messages, pending: true, cardCompact: true, cardFlipped: false, options: [] });
 
     try {
       const data = await request({
         url: `/chat/${this.data.profileId}/ask`,
         method: 'POST',
-        data: { content },
+        data: { content, exclude: this.data.shownOptions.slice(-12) },
       });
       // 答复也走打字机：先落一条空气泡，introState=speaking 让舞台维持"在说话"，再逐字显现，
       // 每一轮都有"真人在说"的临场感（开场打字机只是第一拍，问答同样有节奏）。
@@ -344,8 +390,16 @@ Page({
       const idx = msgs.length - 1;
       this.setData({ messages: msgs, pending: false, answeredOnce: true, introState: 'speaking' });
       await this._typeAnswer(idx, data.answer || '');
-      // 回答落定后亮出追问选项：访客不打字也能一路聊下去
-      this.setData({ introState: '', followups: data.suggestions || [] });
+      // 回答落定后亮出成交阶梯选项：访客不打字也能一路被带着往成交走
+      const opts = data.options || [];
+      const stage = data.stage || this.data.stage;
+      this.setData({
+        introState: '',
+        options: opts,
+        stage,
+        stageIdx: STAGE_ORDER.indexOf(stage),
+        shownOptions: this.data.shownOptions.concat(opts),
+      });
       // 轻线索：访客被第 2 个回答"种草"后，给一条不抢戏的"我也要一个"入口（仅一次）
       this._answerCount = (this._answerCount || 0) + 1;
       if (this._answerCount === 2) this._showOwnHook('light');
@@ -399,6 +453,7 @@ Page({
         success: (r) => {
           if (r.confirm) {
             wx.setClipboardData({ data: c.wechat || c.phone || '' });
+            this._celebrate({ up: '联系方式', name: '已拿到 ✓', sub: `主动联系 ${this.data.realName}，趁热打铁` });
             this._showOwnHook('strong');
           }
         },
@@ -440,8 +495,7 @@ Page({
               content: `已把你的话转达给 ${this.data.realName}，TA 会尽快看到 ✅`,
             }),
           });
-          wx.showToast({ title: '已送达', icon: 'success' });
-          this._fireDelight();
+          this._celebrate({ up: '留言', name: '已送达 ✓', sub: `${this.data.realName} 会亲自看到你的话` });
           this._showOwnHook('strong');
         } catch (err) {
           wx.showToast({ title: err.message || '发送失败', icon: 'none' });
@@ -473,8 +527,7 @@ Page({
     try {
       await sendTip(this.data.profileId, Math.round(this.data.tipAmount * 100), this.data.tipMessage, 'chat');
       this.setData({ tipVisible: false, tipMessage: '' });
-      wx.showToast({ title: '感谢你的支持', icon: 'success' });
-      this._fireDelight();
+      this._celebrate({ up: '打赏', name: '谢谢你 ✓', sub: `你的认可，${this.data.realName} 收到了` });
       this._showOwnHook('strong');
     } catch (e) {
       if (e.code !== 'PAY_CANCEL') wx.showToast({ title: e.message || '打赏失败', icon: 'none' });

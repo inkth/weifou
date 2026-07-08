@@ -106,16 +106,24 @@
     </block>
   </scroll-view>
 
+  <!-- 成交阶梯进度条：分身判定的 聊→问→约→赏，纯展示，让访客感到在往前走 -->
+  <view class="stage-rail" wx:if="{{answeredOnce && stageIdx >= 0}}">
+    <block wx:for="{{stageLabels}}" wx:key="*this">
+      <view class="rail-node {{index === stageIdx ? 'on' : ''}} {{index < stageIdx ? 'done' : ''}}">{{item}}</view>
+      <view wx:if="{{index < 3}}" class="rail-line {{index < stageIdx ? 'done' : ''}}"></view>
+    </block>
+  </view>
+
   <!-- 选项区：开场动画结束后引导问题淡入；行动入口在首轮回答后才出现，开场聚焦"开始聊" -->
   <view class="choices {{startersRevealed ? 'revealed' : ''}}" wx:if="{{!pending && startersRevealed}}">
     <view wx:if="{{starters.length && !answeredOnce}}" class="choices-hint muted">你可以这样开始 ↓</view>
-    <!-- 开场引导问题：有了本轮追问选项后让位（追问更贴上下文），下一轮无追问时回归 -->
-    <block wx:if="{{!followups.length}}">
+    <!-- 开场引导问题：本轮有成交阶梯选项时让位（更贴上下文），下一轮无选项时回归 -->
+    <block wx:if="{{!options.length}}">
       <view class="chip q note-{{index % 3}}" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
     </block>
 
-    <!-- 追问选项：每轮回答后分身给的下一问，点选即发（点选为主、输入兜底） -->
-    <view class="chip q note-{{index % 3}}" wx:for="{{followups}}" wx:key="*this" bindtap="pickFollowup" data-q="{{item}}">{{item}}</view>
+    <!-- 成交阶梯选项：每轮回答后分身现编的下一步，点选即发（点选为主、输入兜底） -->
+    <view class="chip q note-{{index % 3}}" wx:for="{{options}}" wx:key="*this" bindtap="pickOption" data-q="{{item}}">{{item}}</view>
 
     <block wx:if="{{answeredOnce && !isMine}}">
       <view class="chip act" bindtap="openAboutEntry">关于 TA</view>
@@ -123,6 +131,7 @@
       <view class="chip act" bindtap="openTip">打赏 TA</view>
       <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
     </block>
+    <view class="chip ghost" wx:if="{{options.length}}" bindtap="reshuffle">🔄 换一批</view>
     <view class="chip ghost" bindtap="toggleInput">{{showInput ? '收起输入' : '✏️ 自己问'}}</view>
 
     <!-- 信任 caption：社会证明；trustLine 为空则不显示 -->
@@ -160,6 +169,22 @@
       </view>
       <input class="sheet-input" placeholder="留句话（选填）" placeholder-style="color: rgba(255,255,255,0.45)" maxlength="60" value="{{tipMessage}}" bindinput="onTipMsg"/>
       <button class="sheet-pay" bindtap="payTip" disabled="{{tipPaying}}">{{tipPaying ? '处理中…' : '确认打赏 ¥' + tipAmount}}</button>
+    </view>
+  </view>
+
+  <!-- 成交庆祝浮层：约/赏/留话达成时弹一次（全屏彩带 + 大字弹簧），2.4s 自动收起 -->
+  <view wx:if="{{celebrate}}" class="celebrate">
+    <view class="confetti">
+      <view class="cf cf-1"></view><view class="cf cf-2"></view><view class="cf cf-3"></view>
+      <view class="cf cf-4"></view><view class="cf cf-5"></view><view class="cf cf-6"></view>
+      <view class="cf cf-7"></view><view class="cf cf-8"></view><view class="cf cf-9"></view>
+      <view class="cf cf-10"></view><view class="cf cf-11"></view><view class="cf cf-12"></view>
+    </view>
+    <view class="celeb-card">
+      <view class="celeb-spark">🎉</view>
+      <view class="celeb-up">{{celebrate.up}}</view>
+      <view class="celeb-name">{{celebrate.name}}</view>
+      <view class="celeb-sub">{{celebrate.sub}}</view>
     </view>
   </view>
 

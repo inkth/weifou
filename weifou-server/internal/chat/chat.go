@@ -38,6 +38,7 @@ func NewHandler(db *gorm.DB, rdb *redis.Client, engine *answer.Engine, security 
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.POST("/chat/:profileId/ask", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.ask))
+	rg.POST("/chat/:profileId/reoptions", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.reoptions))
 	rg.POST("/chat/:profileId/lead", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.lead))
 	rg.GET("/chat/sessions/mine", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.mySessions))
 	rg.GET("/chat/sessions/host", middleware.JWTAuth(h.jwtSecret), httpx.Handle(h.hostSessions))
@@ -185,7 +186,31 @@ func (h *Handler) sessionMessages(c *gin.Context) error {
 }
 
 type askReq struct {
-	Content string `json:"content" binding:"required"`
+	Content string   `json:"content" binding:"required"`
+	Exclude []string `json:"exclude"` // 换一批/多轮里已展示过的选项，要求模型避开
+}
+
+// excludeNote 把「已展示过的选项」拼成注入模型的提示（≤12 条、每条截断），照搬 persona 换一批写法。
+func excludeNote(exclude []string) string {
+	if len(exclude) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("已展示过的选项（生成新选项时避开，不要重复或高度相似）：\n")
+	for i, e := range exclude {
+		if i >= 12 {
+			break
+		}
+		e = strings.TrimSpace(e)
+		if e == "" {
+			continue
+		}
+		if rr := []rune(e); len(rr) > 40 {
+			e = string(rr[:40])
+		}
+		b.WriteString("- " + e + "\n")
+	}
+	return b.String()
 }
 
 func (h *Handler) quotaKey(profileID, openid string) string {
@@ -261,7 +286,7 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	var tags []string
 	_ = json.Unmarshal(p.Tags, &tags)
-	sys := answer.BuildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.engine.KnowledgeFor(profileID))
+	sys := answer.BuildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.engine.KnowledgeFor(profileID), true)
 
 	// 最近 20 条历史（沉浸式对话需要更长记忆窗口）
 	var recent []models.ChatMessage
@@ -269,6 +294,9 @@ func (h *Handler) ask(c *gin.Context) error {
 	msgs := []deepseek.Message{{Role: "system", Content: sys}}
 	for i := len(recent) - 1; i >= 0; i-- {
 		msgs = append(msgs, deepseek.Message{Role: recent[i].Role, Content: recent[i].Content})
+	}
+	if note := excludeNote(req.Exclude); note != "" {
+		msgs = append(msgs, deepseek.Message{Role: "system", Content: note})
 	}
 
 	result, err := h.engine.Complete(msgs)
@@ -279,11 +307,13 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	safe := models.SafePass
 	finalAnswer := result.Answer
-	suggestions := result.Suggestions
-	if !h.security.CheckText(finalAnswer+"\n"+strings.Join(suggestions, "\n"), auth.Openid) {
+	options := result.Options
+	stage := result.Stage
+	if !h.security.CheckText(finalAnswer+"\n"+strings.Join(options, "\n"), auth.Openid) {
 		safe = models.SafeReject
 		finalAnswer = "抱歉，这个问题不方便由 AI 直接回答，建议联系本人沟通。"
-		suggestions = nil
+		options = nil
+		stage = ""
 	}
 	h.db.Create(&models.ChatMessage{
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
@@ -295,8 +325,67 @@ func (h *Handler) ask(c *gin.Context) error {
 		h.recordGap(profileID, content)
 	}
 
-	// suggestions：分身生成的追问候选（点选优先——访客点一下即发出，代替打字）
-	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer, "suggestions": suggestions})
+	// options：分身沿成交阶梯现编的可点选项；stage：当前阶梯（display-only）。suggestions 保留兼容。
+	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer, "options": options, "stage": stage, "suggestions": result.Suggestions})
+	return nil
+}
+
+type reoptionsReq struct {
+	Exclude []string `json:"exclude"` // 已展示过的选项，换一批时要求避开
+}
+
+// reoptions 换一批：不产生新对话轮、不写库，只基于当前会话最近一轮另生成一组可点选项（复用成交阶梯 prompt + exclude）。
+func (h *Handler) reoptions(c *gin.Context) error {
+	auth := middleware.Current(c)
+	profileID := c.Param("profileId")
+	var req reoptionsReq
+	_ = c.ShouldBindJSON(&req)
+
+	var profile models.Profile
+	if err := h.db.First(&profile, "id = ?", profileID).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+	}
+	var p models.PersonaAI
+	if err := h.db.First(&p, "profile_id = ?", profileID).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+	}
+	var input models.PersonaInput
+	_ = h.db.First(&input, "profile_id = ?", profileID).Error
+
+	// 复用访客与本主页最近的会话；还没聊过则无从换起。
+	var session models.ChatSession
+	if err := h.db.Where("profile_id = ? AND visitor_openid = ?", profileID, auth.Openid).
+		Order("created_at desc").First(&session).Error; err != nil {
+		httpx.OK(c, gin.H{"options": []string{}, "stage": ""})
+		return nil
+	}
+
+	var tags []string
+	_ = json.Unmarshal(p.Tags, &tags)
+	sys := answer.BuildSystemPrompt(&profile, p.OneLiner, p.FullIntro, tags, p.Tone, input.Style, h.engine.KnowledgeFor(profileID), true)
+
+	var recent []models.ChatMessage
+	h.db.Where("session_id = ?", session.ID).Order("created_at desc").Limit(20).Find(&recent)
+	msgs := []deepseek.Message{{Role: "system", Content: sys}}
+	for i := len(recent) - 1; i >= 0; i-- {
+		msgs = append(msgs, deepseek.Message{Role: recent[i].Role, Content: recent[i].Content})
+	}
+	// 只换选项：answer 留空，另给一批下一步。
+	instr := "不要重新回答上面的问题，answer 字段给空字符串。只基于最近一轮回答，为访客另生成一组新的可点选项（options）与当前 stage。\n" + excludeNote(req.Exclude)
+	msgs = append(msgs, deepseek.Message{Role: "system", Content: instr})
+
+	result, err := h.engine.Complete(msgs)
+	if err != nil {
+		log.Printf("[ai] chat reoptions failed profile=%s openid=%s: %v", profileID, auth.Openid, err)
+		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
+	}
+	options := result.Options
+	stage := result.Stage
+	if len(options) > 0 && !h.security.CheckText(strings.Join(options, "\n"), auth.Openid) {
+		options = nil
+		stage = ""
+	}
+	httpx.OK(c, gin.H{"options": options, "stage": stage})
 	return nil
 }
 
