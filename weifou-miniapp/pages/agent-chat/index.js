@@ -6,9 +6,17 @@ const {
 const { status: membershipStatus } = require('../../utils/membership');
 const { fmtDateTime } = require('../../utils/datetime');
 const { requestLearnRemind, LEARN_REMIND_TMPL_ID } = require('../../utils/subscribe');
+const { buildNodes, iconForLevel, STATE_TEXT, STATE_CTA } = require('../../utils/learn-nodes');
 
 // streak 里程碑：只在这些天数弹庆祝，其余日子安静（轻而真，不做焦虑轰炸）
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
+
+// 横版「会走的路」几何（rpx）：相邻节点圆心步距 / 轨道左右留白 / 视口宽（rpx 恒为 750）
+const ROAD_STEP = 132;
+const ROAD_PAD = 80;
+const ROAD_VW = 750;
+// 目标关滚到视口这个比例处（左侧留出「已走过的路」的成就感）
+const ROAD_LEAD = 0.33;
 
 Page({
   data: {
@@ -40,6 +48,16 @@ Page({
     remindState: '',      // 提醒承诺条：'' 隐藏 / offer 邀请 / done 已订
     conceptMapVisible: false, // 概念地图抽屉
     celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
+    // —— 横版「会走的路」（概念课舞台=地图合一）——
+    nodes: [],            // 扁平关卡节点 [{ idx,slug,name,state,icon,rx,boss,memberLocked,... }]
+    roadSections: [],     // 幕旗 [{ key,tier,theme,tone,flagX }]
+    currentIndex: -1,     // 当前关扁平下标（角色停靠点；-1=全通关）
+    trackWidth: 0,        // 轨道总宽 rpx
+    heroX: 0,             // 角色 translateX rpx
+    walking: false,       // 走路动画开关
+    roadScrollLeft: 0,    // 横向 scroll 位置 px（rpx→px 已换算）
+    roadAnim: false,      // 横向 scroll 是否带动画（首屏 false 瞬移，走路 true 跟随）
+    card: null,           // 关卡卡片抽屉
   },
 
   async onLoad(query) {
@@ -48,6 +66,11 @@ Page({
       this.setData({ loading: false });
       return;
     }
+    // rpx→px 系数：横向 scroll-left 单位是 px，而坐标全用 rpx，须换算（漏换算高分屏镜头会偏）
+    try {
+      const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()) || {};
+      this._rpx = (info.windowWidth || 375) / 750;
+    } catch (e) { this._rpx = 0.5; }
     // 从闯关地图点关进来：记下目标关卡，数据就绪后自动开课
     this._targetConcept = query.concept || '';
     this._autoStart = query.auto === '1';
@@ -101,7 +124,9 @@ Page({
         sessions: this._decorate(sessions || []),
         skill: sk && sk.enabled ? sk : null,
         concept: cp && cp.enabled ? this._concept(cp) : null,
-        gameSkin: !!((sk && sk.enabled) || (cp && cp.enabled)),
+        // 游戏皮（含隐藏顶部商业条）以主接口的 concept/assess 布尔为准——它必然成功（名字/图标都靠它）；
+        // 次要的 skill/concept 进度接口带 catch 回落，单独当判据会在慢网时漏出「开通会员」商业条。
+        gameSkin: !!(d.concept || d.assess || (sk && sk.enabled) || (cp && cp.enabled)),
         reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
         // 产出型三门课给语音兜底：开口说英文用 en_US，言值/驭手说中文用 zh_CN。
         voice: ['spoken-english', 'learn-speaking', 'learn-ai'].indexOf(d.slug) >= 0,
@@ -110,14 +135,20 @@ Page({
       this._voiceLang = d.slug === 'spoken-english' ? 'en_US' : 'zh_CN';
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
       this._scrollEnd();
-      // 指定关卡自动开课：新开一段会话，带 concept 参数让教练直接用这一关的钩子开场
+      // 概念课：铺横版路，角色停当前关，镜头瞬移定位（首屏不见滚动飞入）
+      if (cp && cp.enabled) this._applyRoad(cp, false);
       if (this._autoStart && this._targetConcept) {
+        // 兼容旧入口（带 concept&auto=1）：新开一段直接开该关
         this._autoStart = false;
         this.setData({
           messages: this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [],
           currentSessionId: '',
         });
         this._ask('开始这一关', undefined, this._targetConcept);
+      } else if (cp && cp.enabled && !currentSessionId && this.data.currentIndex >= 0) {
+        // 秒开当前关：无历史会话时自动开场（有会话则续，上面已载入，不重复烧额度）
+        const cur = this._roadNodes && this._roadNodes[this.data.currentIndex];
+        if (cur && !cur.memberLocked) this._ask('开始这一关', undefined, cur.slug);
       }
     } catch (e) {
       // 白屏止血：不再只弹 toast，改为页内「重试」态（errored），点了重来
@@ -151,6 +182,77 @@ Page({
     const curPct = cur && cur.total ? Math.round((cur.lit / cur.total) * 100) : 0;
     const allDone = tiers.length > 0 && tiers.every((t) => t.lit >= t.total);
     return { ...cp, cur, curPct, allDone };
+  },
+
+  // 铺「横版会走的路」：摊平节点 → 补横向坐标 rx → 角色停当前关 → 镜头定位。
+  // animate=false 首屏瞬移；true 仅用于罕见的一致性全量校准（见 _ask 末尾）。
+  _applyRoad(cp, animate) {
+    const built = buildNodes(cp);
+    const nodes = built.nodes.map((n) => ({ ...n, rx: ROAD_PAD + n.idx * ROAD_STEP }));
+    const TONES = ['butter', 'sky', 'mint', 'lilac'];
+    const roadSections = built.sections.map((s, i) => ({
+      key: s.key, tier: s.tier, theme: s.theme,
+      tone: TONES[i % TONES.length],
+      flagX: ROAD_PAD + s.startIndex * ROAD_STEP,
+    }));
+    const idx = built.currentIndex >= 0 ? built.currentIndex : Math.max(0, nodes.length - 1);
+    this._roadNodes = nodes; // 实例副本，供查找/增量，不进 setData
+    this.setData({
+      nodes,
+      roadSections,
+      currentIndex: built.currentIndex,
+      trackWidth: nodes.length ? ROAD_PAD * 2 + (nodes.length - 1) * ROAD_STEP : 0,
+      heroX: ROAD_PAD + idx * ROAD_STEP,
+      roadAnim: !!animate,
+      roadScrollLeft: this._roadLeft(idx),
+    });
+  },
+
+  // 目标关对应的横向 scroll-left（px）：把它滚到视口 ~1/3 处
+  _roadLeft(idx) {
+    const leftRpx = Math.max(0, ROAD_PAD + idx * ROAD_STEP - ROAD_VW * ROAD_LEAD);
+    return Math.round(leftRpx * (this._rpx || 0.5));
+  },
+
+  // 角色走到目标关：translateX 平移 + 走路 bob + 镜头跟随（rx 与节点同式，对齐恒等不错位）
+  _walkTo(destIndex) {
+    this.setData({
+      walking: true,
+      heroX: ROAD_PAD + destIndex * ROAD_STEP,
+      roadAnim: true,
+      roadScrollLeft: this._roadLeft(destIndex),
+    });
+    if (this._walkTimer) clearTimeout(this._walkTimer);
+    this._walkTimer = setTimeout(() => this.setData({ walking: false }), 720);
+  },
+
+  // 点横版节点 → 关卡卡片抽屉（软锁：锁定关也能点开预览，CTA 变「提前解锁」）
+  openCard(e) {
+    const slug = e.currentTarget.dataset.slug;
+    const n = (this._roadNodes || []).find((x) => x.slug === slug);
+    if (!n) return;
+    const locked = !!n.memberLocked;
+    this.setData({ card: {
+      ...n,
+      stateText: locked ? '🔐 会员解锁' : STATE_TEXT[n.state],
+      cta: locked ? '开通会员 · 解锁' : STATE_CTA[n.state],
+    } });
+  },
+  closeCard() { this.setData({ card: null }); },
+
+  // 抽屉 CTA → 同页开这一关（会员锁走会员页）。等价旧 learn-map 的 _go，但不跨页。
+  startNode() {
+    const c = this.data.card;
+    if (!c) return;
+    this.setData({ card: null });
+    if (c.memberLocked) { this.goMembership(); return; }
+    // 新开一段会话 + 带 concept 让教练用该关钩子开场（与秒开一致）
+    this.setData({
+      messages: this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [],
+      currentSessionId: '',
+      options: [],
+    });
+    this._ask('开始这一关', undefined, c.slug);
   },
 
   openConceptMap() {
@@ -293,6 +395,39 @@ Page({
         } else if (lit.length) {
           this._celebrate({ up: '点亮！', name: lit[0], sub: lit.length > 1 ? `x${lit.length} 连击！本轮点亮 ${lit.length} 个` : '又一个被你打开了' });
         }
+        // 横版路增量点亮 + 角色前进（只 patch 变化的节点，不整表重建，防闪 & 省 setData 体积）
+        if (this._roadNodes && this._roadNodes.length) {
+          const rn = this._roadNodes;
+          const relight = (name, lvl) => {
+            const node = rn.find((x) => x.name === name);
+            if (!node) return;
+            const st = lvl >= 2 ? 'mastered' : 'lit';
+            patch['nodes[' + node.idx + '].state'] = st;
+            patch['nodes[' + node.idx + '].icon'] = iconForLevel(lvl);
+            node.state = st; node.icon = iconForLevel(lvl);
+          };
+          mastered.forEach((nm) => relight(nm, 2));
+          lit.forEach((nm) => relight(nm, 1));
+          // 仅当「当前关」本身被点亮/掌握，角色才前进到下一关（复习点亮别处不误前进）
+          const oldIdx = this.data.currentIndex;
+          const curNode = oldIdx >= 0 ? rn[oldIdx] : null;
+          const curDone = curNode && (lit.indexOf(curNode.name) >= 0 || mastered.indexOf(curNode.name) >= 0);
+          if (curDone) {
+            let ni = -1;
+            for (let i = oldIdx + 1; i < rn.length; i++) {
+              if (rn[i].state !== 'lit' && rn[i].state !== 'mastered') { ni = i; break; }
+            }
+            if (ni >= 0) {
+              patch['nodes[' + ni + '].state'] = 'current';
+              rn[ni].state = 'current';
+              patch.currentIndex = ni;
+              this._walkDest = ni;
+            } else {
+              patch.currentIndex = -1; // 全通关：角色停末关
+              this._walkDest = rn.length - 1;
+            }
+          }
+        }
       }
       // 连续学习：里程碑庆祝 + 补签提示 + 今日首学时递上「明天叫我」的提醒承诺
       if (data.streak && data.streak.newDay) {
@@ -308,6 +443,20 @@ Page({
       }
       this.setData(patch);
       this._scrollEnd();
+      // 角色走到新当前关（在 concept setData 落地后，与彩带同拍）
+      if (typeof this._walkDest === 'number') {
+        const dest = this._walkDest;
+        this._walkDest = null;
+        this._walkTo(dest);
+      }
+      // 一致性护栏：极少数情况（复习跨幕等）增量与服务端 current 不符，才全量校准（正常路径不触发）。
+      // 必须确认 concept 带完整 tiers，否则精简版会摊平出空路 → 误清空整条路。
+      if (data.concept && data.concept.tiers && data.concept.tiers.length && this._roadNodes) {
+        const auth = buildNodes({ enabled: true, ...data.concept });
+        if (auth.currentIndex !== this.data.currentIndex) {
+          this._applyRoad({ enabled: true, ...data.concept }, true);
+        }
+      }
     } catch (e) {
       this.setData({ pending: false });
       if (e.code === 'MEMBERSHIP_REQUIRED') {
@@ -372,7 +521,10 @@ Page({
     }
   },
 
-  onUnload() { if (this._celebTimer) clearTimeout(this._celebTimer); },
+  onUnload() {
+    if (this._celebTimer) clearTimeout(this._celebTimer);
+    if (this._walkTimer) clearTimeout(this._walkTimer);
+  },
 
   goMembership() {
     wx.navigateTo({ url: '/pages/membership/index' });

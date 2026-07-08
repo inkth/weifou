@@ -60,14 +60,11 @@ Page({
     }
   },
 
-  // 点卡片主体：概念型（学心理/英语陪练…）→ 闯关地图；其余 → 直进对话（试用）。
+  // 点卡片主体：一律进对话页。概念型课在对话页顶部铺「横版会走的路」（舞台=地图合一），
+  // 角色停在当前关、进来即续/秒开；非概念型就是普通试用对话。
   open(e) {
     const { id, name } = e.currentTarget.dataset;
     const a = (this.data.agents || []).find((x) => x.id === id);
-    if (a && a.concept) {
-      wx.navigateTo({ url: `/pages/learn-map/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent(a.accent || '')}&icon=${encodeURIComponent(a.icon || '')}` });
-      return;
-    }
     // 透传 icon/accent：对话页无网时也能立刻画出对的头像+配色骨架
     wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}` });
   },

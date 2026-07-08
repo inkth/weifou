@@ -261,3 +261,125 @@ page { background: var(--bg); height: 100%; }
 
 /* 底部点选：游戏皮里作为主操作台，与卡片流之间一道分隔，留白更足 */
 .game .opts { padding: 18rpx 24rpx 10rpx; border-top: var(--bw-thin) solid var(--border); }
+
+/* ===================================================================== */
+/* 横版「会走的路」：概念课舞台=地图合一。矮版水平带，角色沿路前进、到关停下。 */
+/* 几何与 JS 对齐：STEP=132rpx 圆心步距、PAD=80rpx 留白、节点 88rpx 圆。       */
+/* ===================================================================== */
+.road-stage {
+  position: relative; flex: 0 0 auto;
+  background: var(--surface);
+  padding: 6rpx 0 10rpx;
+  border-bottom: var(--bw-thin) solid var(--border);
+}
+.road-stage .gs-hist {
+  position: absolute; top: 12rpx; right: 24rpx; z-index: 8;
+  padding: 8rpx 20rpx; font-size: 22rpx; color: var(--ink-2);
+  background: var(--fill); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full);
+}
+.road-stage .gs-hist:active { transform: translateY(2rpx); }
+.road-stage .gs-quota { text-align: center; }
+.road-scroll { width: 100%; height: 190rpx; white-space: nowrap; }
+.road-track { position: relative; height: 190rpx; }
+
+/* 居中横带路 */
+.road-line {
+  position: absolute; left: 0; right: 0; top: 120rpx; height: 10rpx;
+  background: var(--border); border-radius: var(--r-full);
+}
+
+/* 幕旗 checkpoint：浮在该幕首节点上方，中心对齐首节点圆心 */
+.road-flag {
+  position: absolute; top: 4rpx; transform: translateX(-50%);
+  padding: 4rpx 18rpx; border-radius: var(--r-full);
+  font-size: 20rpx; font-weight: 800; white-space: nowrap;
+}
+.road-flag.tone-butter { background: var(--pop-butter); color: var(--pop-butter-ink); }
+.road-flag.tone-sky    { background: var(--pop-sky);    color: var(--pop-sky-ink); }
+.road-flag.tone-mint   { background: var(--pop-mint);   color: var(--pop-mint-ink); }
+.road-flag.tone-lilac  { background: var(--pop-lilac);  color: var(--pop-lilac-ink); }
+
+/* 节点：88rpx 圆糖果，绝对定位（left=圆心，-44 半径居中；圆心落在连线上） */
+.rnode {
+  position: absolute; top: 81rpx; margin-left: -44rpx;
+  width: 88rpx; height: 88rpx; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.1s var(--ease);
+}
+.rnode:active { transform: translateY(6rpx); }
+.rnode-img { width: 48rpx; height: 48rpx; }
+.rnode-face { font-size: 40rpx; line-height: 1; }
+.rnode.locked    { background: var(--fill); box-shadow: 0 8rpx 0 var(--border); }
+.rnode.locked .rnode-img { opacity: 0.55; }
+.rnode.available { background: var(--surface); border: 4rpx solid var(--accent); box-shadow: 0 8rpx 0 var(--border); }
+.rnode.current   { background: var(--accent); box-shadow: 0 8rpx 0 var(--accent-strong); }
+.rnode.lit       { background: var(--accent); box-shadow: 0 8rpx 0 var(--accent-strong); }
+.rnode.mastered  { background: var(--gold);   box-shadow: 0 8rpx 0 var(--gold-strong); }
+/* Boss 关：金边预告分量 */
+.rnode.boss { border: 4rpx solid var(--gold); box-shadow: 0 8rpx 0 var(--gold-strong); }
+.rnode.mlock .rnode-img, .rnode.mlock .rnode-face { opacity: 0.5; filter: grayscale(0.35); }
+.rnode-lock { position: absolute; right: -6rpx; bottom: -6rpx; font-size: 26rpx; line-height: 1; }
+
+/* 当前关外圈脉冲（沿用 learn-map 节拍） */
+.rnode-pulse {
+  position: absolute; inset: -14rpx; border-radius: 50%;
+  border: 6rpx solid var(--accent); opacity: 0.5;
+  animation: rnodePulse 1.6s ease-out infinite; pointer-events: none;
+}
+@keyframes rnodePulse {
+  0% { transform: scale(0.9); opacity: 0.55; }
+  70%, 100% { transform: scale(1.12); opacity: 0; }
+}
+
+/* 角色：覆盖在路上（宽 0 内部居中），translateX 平移到当前关圆心 */
+.hero {
+  position: absolute; top: 40rpx; left: 0; width: 0;
+  display: flex; justify-content: center; pointer-events: none; z-index: 5;
+  transition: transform 0.7s var(--ease-out);
+}
+.hero-face { font-size: 66rpx; line-height: 1; filter: drop-shadow(0 6rpx 0 rgba(0, 0, 0, 0.10)); }
+/* 走路：bob 上下 + 轻微摆动，走完由 JS 摘掉 .walk */
+.hero.walk .hero-face { animation: heroWalk 0.28s ease-in-out infinite; }
+@keyframes heroWalk {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-10rpx) rotate(4deg); }
+}
+
+/* —— 关卡卡片抽屉（自 learn-map 搬入；复用本页 .drawer-mask 贴底遮罩）—— */
+.lc-drawer {
+  position: relative; width: 100%;
+  background: var(--surface);
+  border-radius: var(--r-3xl) var(--r-3xl) 0 0;
+  padding: 20rpx 40rpx calc(env(safe-area-inset-bottom) + 40rpx);
+  box-shadow: var(--shadow-pop);
+  animation: lcUp 0.26s var(--ease-out);
+}
+@keyframes lcUp { from { transform: translateY(40%); opacity: 0.4; } to { transform: translateY(0); opacity: 1; } }
+.lc-grip { width: 72rpx; height: 8rpx; border-radius: var(--r-full); background: var(--border); margin: 0 auto 28rpx; }
+.lc-state {
+  display: inline-block; padding: 6rpx 20rpx; border-radius: var(--r-full);
+  font-size: 22rpx; font-weight: 800; background: var(--accent-soft); color: var(--accent-ink);
+}
+.lc-state.mastered { background: var(--gold); color: #7a5c00; }
+.lc-state.locked { background: var(--fill); color: var(--sub); }
+.lc-flavor {
+  position: absolute; top: 56rpx; right: 40rpx;
+  padding: 6rpx 20rpx; border-radius: var(--r-full); font-size: 22rpx; font-weight: 800;
+}
+.lc-flavor.current { background: var(--pop-butter); color: var(--pop-butter-ink); }
+.lc-flavor.available { background: var(--pop-sky); color: var(--pop-sky-ink); }
+.lc-flavor.lit { background: var(--pop-mint); color: var(--pop-mint-ink); }
+.lc-flavor.mastered { background: var(--gold); color: #7a5c00; }
+.lc-flavor.locked { background: var(--fill); color: var(--sub); }
+.lc-name { margin-top: 16rpx; font-size: 44rpx; font-weight: 800; color: var(--ink); }
+.lc-blurb { margin-top: 8rpx; font-size: 28rpx; color: var(--ink-2); }
+.lc-report {
+  margin-top: 16rpx; display: inline-block; padding: 8rpx 20rpx; border-radius: var(--r-full);
+  background: var(--pop-mint); color: var(--pop-mint-ink); font-size: 24rpx; font-weight: 700;
+}
+.lc-hook {
+  margin-top: 24rpx; padding: 24rpx 28rpx;
+  background: var(--surface-sunken); border-radius: var(--r-md);
+  font-size: 26rpx; color: var(--ink-2); line-height: 1.7;
+}
+.lc-go { margin-top: 32rpx; font-size: 32rpx; }
