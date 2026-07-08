@@ -267,10 +267,44 @@ page { background: var(--bg); height: 100%; }
 /* 几何与 JS 对齐：STEP=132rpx 圆心步距、PAD=80rpx 留白、节点 88rpx 圆。       */
 /* ===================================================================== */
 .road-stage {
-  position: relative; flex: 0 0 auto;
+  position: relative; flex: 0 0 auto; overflow: hidden;
   background: var(--surface);
   padding: 6rpx 0 10rpx;
   border-bottom: var(--bw-thin) solid var(--border);
+}
+
+/* —— 阶段2 场景层 —— */
+/* 远景：天空渐变铺满舞台，固定不随路（无限远的天）。overflow 裁云山 */
+.road-sky {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background: linear-gradient(180deg, #e9f5ff 0%, #edfbf3 46%, var(--paper) 76%);
+}
+/* accent 远山：一排淡圆丘落在地平线，随课变色 */
+.road-hills {
+  position: absolute; left: -24rpx; right: -24rpx; bottom: 44rpx; height: 104rpx;
+  opacity: 0.13;
+  background:
+    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 24rpx 100% / 220rpx 150rpx no-repeat,
+    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 210rpx 100% / 300rpx 200rpx no-repeat,
+    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 470rpx 100% / 240rpx 168rpx no-repeat,
+    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 690rpx 100% / 320rpx 212rpx no-repeat;
+}
+/* 飘云：三圆拼一朵，缓慢左右浮（与 scroll 无关，纯动感） */
+.cloud {
+  position: absolute; width: 88rpx; height: 30rpx; background: #fff;
+  border-radius: 30rpx; opacity: 0.9;
+}
+.cloud::before, .cloud::after { content: ''; position: absolute; background: #fff; border-radius: 50%; }
+.cloud::before { width: 46rpx; height: 46rpx; left: 12rpx; top: -20rpx; }
+.cloud::after { width: 32rpx; height: 32rpx; right: 14rpx; top: -12rpx; }
+.cloud-a { top: 18rpx; left: 10%; animation: cloudDrift 9s ease-in-out infinite; }
+.cloud-b { top: 40rpx; left: 56%; width: 68rpx; height: 24rpx; opacity: 0.78; animation: cloudDrift 13s ease-in-out infinite reverse; }
+@keyframes cloudDrift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(26rpx); } }
+/* 前景：草地基底，随 track 1:1 横滚。顶沿=地平线，节点/路坐其上 */
+.road-ground {
+  position: absolute; left: 0; top: 130rpx; height: 76rpx; z-index: 0;
+  background: linear-gradient(180deg, #bfeecd 0%, #93dcae 100%);
+  border-top: 3rpx solid #7fd0a0;
 }
 .road-stage .gs-hist {
   position: absolute; top: 12rpx; right: 24rpx; z-index: 8;
@@ -278,19 +312,21 @@ page { background: var(--bg); height: 100%; }
   background: var(--fill); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full);
 }
 .road-stage .gs-hist:active { transform: translateY(2rpx); }
-.road-stage .gs-quota { text-align: center; }
-.road-scroll { width: 100%; height: 190rpx; white-space: nowrap; }
+.road-stage .gs-quota { position: relative; z-index: 2; text-align: center; }
+/* 抬到天空层之上（sky 是绝对定位，scroll 默认 static 会被其遮住） */
+.road-scroll { position: relative; z-index: 1; width: 100%; height: 190rpx; white-space: nowrap; }
 .road-track { position: relative; height: 190rpx; }
 
-/* 居中横带路 */
+/* 草地上的小径（暖土色带底影，坐在地平线上沿） */
 .road-line {
-  position: absolute; left: 0; right: 0; top: 120rpx; height: 10rpx;
-  background: var(--border); border-radius: var(--r-full);
+  position: absolute; left: 0; right: 0; top: 118rpx; height: 16rpx; z-index: 1;
+  background: #ecd3a8; border-radius: var(--r-full);
+  box-shadow: 0 3rpx 0 #d9b783;
 }
 
 /* 幕旗 checkpoint：浮在该幕首节点上方，中心对齐首节点圆心 */
 .road-flag {
-  position: absolute; top: 4rpx; transform: translateX(-50%);
+  position: absolute; top: 4rpx; z-index: 3; transform: translateX(-50%);
   padding: 4rpx 18rpx; border-radius: var(--r-full);
   font-size: 20rpx; font-weight: 800; white-space: nowrap;
 }
@@ -301,7 +337,7 @@ page { background: var(--bg); height: 100%; }
 
 /* 节点：88rpx 圆糖果，绝对定位（left=圆心，-44 半径居中；圆心落在连线上） */
 .rnode {
-  position: absolute; top: 81rpx; margin-left: -44rpx;
+  position: absolute; top: 81rpx; margin-left: -44rpx; z-index: 2;
   width: 88rpx; height: 88rpx; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.1s var(--ease);

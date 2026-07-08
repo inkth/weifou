@@ -13,9 +13,17 @@
   <!-- 游戏皮·横版会走的路（概念课）：角色沿关卡路停在当前关，答对走到下一关。舞台=地图合一。 -->
   <view wx:if="{{gameSkin && concept && !loading && !errored}}" class="road-stage">
     <view class="gs-hist" bindtap="openHistory">历史</view>
+    <!-- 场景·远景（固定不随路，营造纵深）：天空渐变 + 飘云 + accent 远山 -->
+    <view class="road-sky" style="--sky-accent: {{accent}};">
+      <view class="cloud cloud-a"></view>
+      <view class="cloud cloud-b"></view>
+      <view class="road-hills"></view>
+    </view>
     <scroll-view class="road-scroll" scroll-x scroll-left="{{roadScrollLeft}}" scroll-with-animation="{{roadAnim}}" show-scrollbar="{{false}}">
       <view class="road-track" style="width: {{trackWidth}}rpx;">
-        <!-- 居中横带路 -->
+        <!-- 场景·前景（随路 1:1，宽=轨道全宽）：草地基底，路与节点坐其上 -->
+        <view class="road-ground" style="width: {{trackWidth}}rpx;"></view>
+        <!-- 居中横带路（草地上的小径） -->
         <view class="road-line"></view>
         <!-- 幕旗 checkpoint：浮在该幕首节点上方，不打断路 -->
         <view wx:for="{{roadSections}}" wx:key="key" wx:for-item="s" class="road-flag tone-{{s.tone}}" style="left: {{s.flagX}}rpx;">{{s.tier}}·{{s.theme}}</view>
