@@ -7,6 +7,7 @@
 package toolagent
 
 import (
+	"math/rand/v2"
 	"strings"
 	"unicode"
 
@@ -31,12 +32,34 @@ type tapOption struct{ Label, Reply string }
 //     每个选项自带对方的预写反应（后果演给学员看）与去向；走到 NodeClear 即点亮。
 //     此时 Taps 不用；CheckOpts 仍必填——复习挑战（检索练习）用它快问快答升掌握。
 type levelScript struct {
-	Taps      []tapOption  // 开场点选（2-3 项，接住 Hook 结尾的提问；节点图关卡置空）
-	Nodes     []scriptNode // 多轮分支节点图（对手戏）；空 = 两段式
-	CheckOpts []tapOption  // 检验关选项（两段式的主流程门；节点图关卡只用于复习挑战）
-	Correct   int          // CheckOpts 中正确项下标
-	Clear     string       // 点亮语：一句收官 + 下一关悬念钩子
-	Note      string       // 战报（≤20 字，落 UserConcept.Note，复习/卡片流回显）
+	Taps      []tapOption    // 开场点选（2-3 项，接住 Hook 结尾的提问；节点图关卡置空）
+	Nodes     []scriptNode   // 多轮分支节点图（对手戏）；空 = 两段式
+	CheckOpts []tapOption    // 检验关选项（两段式的主流程门；节点图关卡只用于复习挑战）
+	Correct   int            // CheckOpts 中正确项下标
+	Variants  []checkVariant // 复习挑战变式题库（经 attachVariants 挂载；空 = 复习退回主检验题）
+	Clear     string         // 点亮语：一句收官 + 下一关悬念钩子
+	Note      string         // 战报（≤20 字，落 UserConcept.Note，复习/卡片流回显）
+}
+
+// checkVariant 复习挑战的变式题：换语料/换场景考同一概念的迁移应用。复习优先抽变式——
+// 主检验题闯关时已见过，原题重考只测「记住正确句」，测不出掌握。
+type checkVariant struct {
+	Ask     string      // 变式题面（复习时替代 curatedContent 的 Check）
+	Opts    []tapOption // 变式选项（恰一项正确；错误项 Reply=温柔纠偏，不直给答案）
+	Correct int
+}
+
+// attachVariants 把课程文件里独立维护的变式题库挂到剧本上（各课程文件 init 时调用）。
+// 独立成表是为了让主剧本与变式题分开演进，互不搅动 diff；挂载时防御主剧本里不存在的 slug。
+func attachVariants(script map[string]levelScript, variants map[string][]checkVariant) {
+	for slug, vs := range variants {
+		lv, ok := script[slug]
+		if !ok {
+			continue
+		}
+		lv.Variants = append(lv.Variants, vs...)
+		script[slug] = lv
+	}
 }
 
 // scriptNode 对手戏的一个节点。两种节点：
@@ -304,7 +327,7 @@ func (st *scriptTurn) onTap(session *models.AgentSession, content string) {
 	lv := st.script[slug]
 	if opt := matchOption(lv.Taps, content); opt != nil {
 		st.answer = opt.Reply + "\n\n🗝️ 检验关：" + st.checkOf(slug)
-		st.options = labels(lv.CheckOpts)
+		st.options = shuffledLabels(lv.CheckOpts)
 		session.ScriptStage = stageCheck
 		return
 	}
@@ -319,12 +342,12 @@ func (st *scriptTurn) onCheck(session *models.AgentSession, content string) {
 	idx := matchIndex(lv.CheckOpts, content)
 	if idx < 0 {
 		st.answer = "再读一眼题目，选出最贴的那个："
-		st.options = labels(lv.CheckOpts)
+		st.options = shuffledLabels(lv.CheckOpts)
 		return
 	}
 	if idx != lv.Correct {
 		st.answer = lv.CheckOpts[idx].Reply
-		st.options = labels(lv.CheckOpts)
+		st.options = shuffledLabels(lv.CheckOpts)
 		return
 	}
 	st.clearLevel(session, slug, lv.CheckOpts[idx].Reply)
@@ -371,19 +394,20 @@ func (st *scriptTurn) onDone(session *models.AgentSession, content string) error
 
 // review 复习挑战（检索练习）：抽最该复习的已点亮章节，用检验关快问快答；
 // 答对升「已掌握」。fresh=true 表示新抽一题（进入复习 / 再来一题）。
+// 有变式题库的关优先抽变式（换场景考迁移），本轮题号存 session.ScriptNode（复习期间该字段空闲）。
 func (st *scriptTurn) review(session *models.AgentSession, content string, fresh bool) error {
 	if !fresh && session.ScriptStage == stageReview {
 		slug := session.ScriptConcept
-		lv := st.script[slug]
-		idx := matchIndex(lv.CheckOpts, content)
+		_, opts, correct := st.reviewQuestion(slug, session.ScriptNode)
+		idx := matchIndex(opts, content)
 		switch {
 		case idx < 0:
 			st.answer = "选出最贴的那个："
-			st.options = labels(lv.CheckOpts)
+			st.options = shuffledLabels(opts)
 			return nil
-		case idx != lv.Correct:
-			st.answer = lv.CheckOpts[idx].Reply
-			st.options = labels(lv.CheckOpts)
+		case idx != correct:
+			st.answer = opts[idx].Reply
+			st.options = shuffledLabels(opts)
 			return nil
 		}
 		c := st.concept(slug)
@@ -392,7 +416,7 @@ func (st *scriptTurn) review(session *models.AgentSession, content string, fresh
 			name = c.Name
 			st.light(c, 2, "") // 复习答对 → 已掌握；空 note 不覆盖旧战报
 		}
-		st.answer = lv.CheckOpts[idx].Reply + "\n\n✅ 复习通过，「" + name + "」升到已掌握。"
+		st.answer = opts[idx].Reply + "\n\n✅ 复习通过，「" + name + "」升到已掌握。"
 		st.options = []string{optReviewMore, optBackCourse}
 		session.ScriptStage = stageDone
 		return nil
@@ -415,11 +439,28 @@ func (st *scriptTurn) review(session *models.AgentSession, content string, fresh
 		session.ScriptStage = stageDone
 		return nil
 	}
-	st.answer = "🔁 复习挑战 · 「" + c.Name + "」\n\n" + st.checkOf(c.Slug)
-	st.options = labels(st.script[c.Slug].CheckOpts)
+	vi := 0
+	if n := len(st.script[c.Slug].Variants); n > 0 {
+		vi = 1 + rand.IntN(n) // 优先抽变式：主检验题闯关时已见过，原题重考只测记忆
+	}
+	ask, opts, _ := st.reviewQuestion(c.Slug, vi)
+	st.answer = "🔁 复习挑战 · 「" + c.Name + "」\n\n" + ask
+	st.options = shuffledLabels(opts)
 	session.ScriptConcept = c.Slug
+	session.ScriptNode = vi
 	session.ScriptStage = stageReview
 	return nil
+}
+
+// reviewQuestion 复习挑战本轮的题目：题号 0 = 主检验题（题面取精编 Check），
+// 1..n = 变式题库第 n 题；越界（剧本改版缩题库等状态漂移）防御性退回主检验题。
+func (st *scriptTurn) reviewQuestion(slug string, vi int) (string, []tapOption, int) {
+	lv := st.script[slug]
+	if vi >= 1 && vi <= len(lv.Variants) {
+		v := lv.Variants[vi-1]
+		return v.Ask, v.Opts, v.Correct
+	}
+	return st.checkOf(slug), lv.CheckOpts, lv.Correct
 }
 
 // ---------- 小工具 ----------
@@ -514,6 +555,15 @@ func labels(opts []tapOption) []string {
 	return out
 }
 
+// shuffledLabels 检验/复习选项的展示顺序每次随机打乱：作答按 Label 文本回传匹配
+// （matchIndex），乱序不影响判定——防「记住正确项位置」把检验刷成肌肉记忆。
+// 开场 Taps 不乱序（无对错，顺序即作者编排的心态阶梯）。
+func shuffledLabels(opts []tapOption) []string {
+	out := labels(opts)
+	rand.Shuffle(len(out), func(i, j int) { out[i], out[j] = out[j], out[i] })
+	return out
+}
+
 func matchOption(opts []tapOption, content string) *tapOption {
 	if i := matchIndex(opts, content); i >= 0 {
 		return &opts[i]
@@ -552,13 +602,15 @@ func matchNodeIndex(opts []nodeOption, content string) int {
 // ---------- 跟读匹配（开口课 ASR）----------
 
 // matchSay 判定学员的语音转写是否读出了目标句：两边归一化（小写、只留字母数字与汉字）后，
-// 互为包含即命中；否则按编辑距离折算相似度 ≥ 0.72 算命中——ASR 难免错字，卡太严会劝退开口。
+// 转写包含整句目标即命中（多说寒暄不罚）；否则按编辑距离折算相似度 ≥ 0.72 算命中——
+// ASR 难免错字，卡太严会劝退开口。注意不允许反向包含：那意味着只读出目标句的一个碎片
+// （如 12 词长句里的一个 sorry）也算「真开口」，会把跟读门整个架空。
 func matchSay(content, target string) bool {
 	a, b := normSay(content), normSay(target)
 	if a == "" || b == "" {
 		return false
 	}
-	if strings.Contains(a, b) || strings.Contains(b, a) {
+	if strings.Contains(a, b) {
 		return true
 	}
 	ra, rb := []rune(a), []rune(b)
