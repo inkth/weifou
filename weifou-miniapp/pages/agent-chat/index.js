@@ -35,6 +35,7 @@ Page({
     historyVisible: false,
     skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
     concept: null,        // 概念型 Agent 的点亮进度（null/enabled=false 时不展示）
+    gameSkin: false,      // 学习课（有段位或点亮进度）套「游戏事件卡」皮：固定舞台+事件卡流+底部点选；分身聊天保持原样
     reviewDue: 0,         // 到期待复习的概念数（>0 时进度条上出现「复习挑战」徽章）
     remindState: '',      // 提醒承诺条：'' 隐藏 / offer 邀请 / done 已订
     conceptMapVisible: false, // 概念地图抽屉
@@ -100,6 +101,7 @@ Page({
         sessions: this._decorate(sessions || []),
         skill: sk && sk.enabled ? sk : null,
         concept: cp && cp.enabled ? this._concept(cp) : null,
+        gameSkin: !!((sk && sk.enabled) || (cp && cp.enabled)),
         reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
         // 产出型三门课给语音兜底：开口说英文用 en_US，言值/驭手说中文用 zh_CN。
         voice: ['spoken-english', 'learn-speaking', 'learn-ai'].indexOf(d.slug) >= 0,

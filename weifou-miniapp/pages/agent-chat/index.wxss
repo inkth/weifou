@@ -207,3 +207,57 @@ page { background: var(--bg); height: 100%; }
 .cp-send:active { transform: translateY(5rpx); box-shadow: none; }
 .cp-send[disabled] { background: var(--accent); opacity: 0.35; color: var(--on-accent); box-shadow: none; }
 .cp-send::after { border: none; }
+
+/* ===================================================================== */
+/* 游戏事件卡皮肤（.game）：学习课专用——固定舞台 + 事件卡流 + 底部点选主操作台。 */
+/* 分身/工具聊天无 skill/concept，gameSkin=false，不进此分支，样式完全不受影响。 */
+/* ===================================================================== */
+.page.game { background: var(--paper); }
+
+/* 固定舞台：吉祥物常驻顶栏下方，卡片从其下滑过（挂机游戏的「场景位」） */
+.game-stage { position: relative; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 16rpx 0 20rpx; background: var(--surface); }
+/* 历史：缩成右上小胶囊（替代原 topbar 的「历史」按钮） */
+.gs-hist { position: absolute; top: 14rpx; right: 24rpx; padding: 8rpx 20rpx; font-size: 22rpx; color: var(--ink-2); background: var(--fill); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full); }
+.gs-hist:active { transform: translateY(2rpx); }
+/* 额度：一行小灰字，点了才去开通（克制版会员入口，非会员才出现） */
+.gs-quota { margin-top: 8rpx; font-size: 21rpx; color: var(--faint); }
+.gs-quota:active { color: var(--accent-strong); }
+.gs-frame {
+  width: 148rpx; height: 166rpx;
+  border-radius: 74rpx 74rpx 22rpx 22rpx;
+  border: 6rpx solid var(--surface);
+  box-shadow: var(--shadow-card);
+  display: flex; align-items: center; justify-content: center;
+  animation: aBreath 4.5s ease-in-out infinite;
+}
+.gs-frame.busy { animation-duration: 1.6s; }
+.gs-emoji { font-size: 76rpx; line-height: 1; }
+.gs-tag {
+  margin-top: -14rpx; padding: 5rpx 24rpx;
+  background: var(--pop-butter); color: var(--pop-butter-ink);
+  border-radius: var(--r-full); font-size: 23rpx; font-weight: 800;
+  box-shadow: var(--shadow-hair);
+}
+
+/* 消息流里那份会滚走的画框，在游戏皮里由固定舞台替代——隐掉 */
+.game .msgs .astage { display: none; }
+
+/* 事件卡流：助手消息 = 整幅叙事卡（对齐截图「第N天」卡），左侧课程色描边，逐张上浮 */
+.game .msgs { padding-top: 18rpx; }
+.game .row-assistant { margin-bottom: 20rpx; }
+.game .bubble-assistant {
+  max-width: 100%; width: 100%; box-sizing: border-box;
+  padding: 26rpx 28rpx;
+  border-radius: var(--r-lg);
+  border: var(--bw-thin) solid var(--border);
+  border-left: 8rpx solid var(--accent);
+  box-shadow: var(--shadow-card);
+  animation: cardRise 0.34s var(--ease-spring) both;
+}
+.game .bubble-assistant.typing { animation: none; }
+/* 我的选择：右侧小胶囊，读作「你说了这句」，不与事件卡抢戏 */
+.game .bubble-user { max-width: 72%; font-size: 26rpx; padding: 14rpx 22rpx; opacity: 0.94; }
+@keyframes cardRise { 0% { opacity: 0; transform: translateY(24rpx); } 100% { opacity: 1; transform: translateY(0); } }
+
+/* 底部点选：游戏皮里作为主操作台，与卡片流之间一道分隔，留白更足 */
+.game .opts { padding: 18rpx 24rpx 10rpx; border-top: var(--bw-thin) solid var(--border); }

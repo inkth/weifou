@@ -1,6 +1,6 @@
-<view class="page">
-  <!-- 顶部：身份 + 额度/会员 -->
-  <view class="topbar">
+<view class="page {{gameSkin ? 'game' : ''}}" style="--accent: {{accent}};">
+  <!-- 顶部：身份 + 额度/会员。游戏皮（学习课）隐藏整条——身份交给原生标题栏，付费只在真该收时出现（成交克制）。 -->
+  <view wx:if="{{!gameSkin}}" class="topbar">
     <view class="tb-ic" style="background: {{accent}}1a; color: {{accent}};">{{icon}}</view>
     <view class="tb-mid">
       <view class="tb-name">{{name}}</view>
@@ -8,6 +8,17 @@
     </view>
     <view class="tb-act" bindtap="openHistory">历史</view>
     <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">开通会员</view>
+  </view>
+
+  <!-- 游戏皮·固定舞台：吉祥物常驻顶部，事件卡从其下滑过（对齐挂机游戏的场景位）。仅学习课。 -->
+  <view wx:if="{{gameSkin && !loading && !errored}}" class="game-stage">
+    <view class="gs-hist" bindtap="openHistory">历史</view>
+    <view class="gs-frame {{pending ? 'busy' : ''}}" style="background: {{accent}}22;">
+      <text class="gs-emoji">{{icon || '🎓'}}</text>
+    </view>
+    <view class="gs-tag">{{name}}</view>
+    <!-- 额度：降级为一行可点小灰字（它自己就是克制版的会员入口），只对非会员出现，不做常驻绿按钮 -->
+    <view wx:if="{{!member}}" class="gs-quota" bindtap="goMembership">{{quotaText}}</view>
   </view>
 
   <!-- 学习型 Agent：三维段位面板（升级感）。段位只升不降，三维条次次微动。 -->
