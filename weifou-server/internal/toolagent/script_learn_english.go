@@ -300,15 +300,15 @@ var learnEnglishScript = map[string]levelScript{
 			{
 				Prompt: "深呼吸。面试官推门坐下：\"Thanks for coming in. Let's start—tell me about yourself.\" ——三句挑一句开场：",
 				Options: []nodeOption{
-					{Label: "I'm a product designer with three years in e-commerce.", Reply: "面试官点头示意你继续：\"Go on.\" ——第一关练的开场白在真枪实弹的场子里照样立得住：现在的角色一句话说清，稳稳的开局。读出来，这次是整场的第一句。", Next: 1},
+					{Label: "I design products for e-commerce, three years in now.", Reply: "面试官点头示意你继续：\"Go on.\" ——第一关练的开场白，这次换个说法照样立得住：做什么、在哪个领域、几年了，一句说清。别照抄原句，能自己重组才是真会了。读出来，这是整场的第一句。", Next: 1},
 					{Label: "I was born in a small town and I like play basketball.", Reply: "面试官礼貌地打断了你：\"Let's focus on your work experience.\" 两个问题：like 后面要接 playing 或 to play；内容上出生地和篮球跟岗位无关——60 秒很贵，每句话都要花在你和工作的关系上。", Next: NodeRetry},
 					{Label: "Um, sorry, my English is poor, I will try my best.", Reply: "面试官温和地摆手：\"Take your time, you're doing fine.\" 用道歉开场等于让对方从第一秒开始扣分——你前六关练出来的口语根本不 poor，别替自己降价。深呼吸，直接开讲。", Next: NodeRetry},
 				},
 			},
 			{
-				Say:     "I'm a product designer with three years in e-commerce.",
+				Say:     "I design products for e-commerce, three years in now.",
 				SayOK:   "面试官记下第一笔：\"Three years, good.\" ——整场面试的第一句稳稳落地。热身结束，压力题上桌了。",
-				SayFail: "开场白你早就会了——放慢，找回第一关的节奏：I'm a product designer... with three years... in e-commerce。",
+				SayFail: "开场白你早就会了，只是换了个说法——放慢：I design products for e-commerce... three years in now。",
 				SayNext: 2,
 			},
 			{
@@ -395,7 +395,7 @@ var learnEnglishScript = map[string]levelScript{
 			{
 				Prompt: "（三句英文，挑一句接住这只伸过来的手）",
 				Options: []nodeOption{
-					{Label: "Hello, my name is Lin. I am 28 and my job is engineer.", Reply: "对方的笑容礼貌地凝固了半秒：\"Oh... nice.\" ——两个问题：my job is engineer 缺冠词，该说 I'm an engineer；更大的问题是寒暄一上来自报年龄职业，像在念简历。聚会破冰只要名字，加一个抛回去的话头。", Next: NodeRetry},
+					{Label: "Hello, my name is Lin. I am 28 and my job is designer.", Reply: "对方的笑容礼貌地凝固了半秒：\"Oh... nice.\" ——两个问题：my job is designer 缺冠词，该说 I'm a designer；更大的问题是寒暄一上来自报年龄职业，像在念简历。聚会破冰只要名字，加一个抛回去的话头。", Next: NodeRetry},
 					{Label: "Oh, sorry... my English is not very good.", Reply: "对方赶紧安慰：\"No no, you're doing great!\" ——话题瞬间从「认识你」变成「安慰你」。自贬开场是中文式谦虚的假朋友，英语寒暄里它只会让对方不知道接什么，破冰变成了救场。", Next: NodeRetry},
 					{Label: "Hi, I'm Lin. Nice to meet you—how do you know the host?", Reply: "对方眼睛一亮：\"Oh, we went to college together!\" ——名字、一句客套、一个问题，破冰三件套齐了。把话题抛回去，是让对话活下来的第一原则。读出来。", Next: 1},
 				},
@@ -676,15 +676,15 @@ var learnEnglishScript = map[string]levelScript{
 			{
 				Prompt: "（三句英文，挑一句回前台）",
 				Options: []nodeOption{
-					{Label: "I am Li Ming, I ordered a room in your hotel yesterday.", Reply: "前台笑着查了查：\"You... ordered?\" ——order 是点餐下单，订房要说 booked 或 I have a reservation；两个完整句用逗号硬连也是粘连句。一个动词用错，住客听着就成了外卖客。", Next: NodeRetry},
-					{Label: "Yes, under Li Ming. Could I get a quiet high-floor room?", Reply: "前台敲键盘的手没停：\"Room 1208—high floor, away from the elevator.\" ——under + 姓名是报预订的最地道说法，Could I get 提要求不硬不软。两个愿望一句话，全中。读出来。", Next: 1},
-					{Label: "I hereby request accommodation under the name of Li Ming.", Reply: "前台愣了一下，差点站直了敬礼：\"...Certainly, sir?\" 语法满分，语域跑偏——hereby、request accommodation 是律师函措辞，前台不是法庭。口语订房，一句 under Li Ming 就够了。", Next: NodeRetry},
+					{Label: "I am Lin, I ordered a room in your hotel yesterday.", Reply: "前台笑着查了查：\"You... ordered?\" ——order 是点餐下单，订房要说 booked 或 I have a reservation；两个完整句用逗号硬连也是粘连句。一个动词用错，住客听着就成了外卖客。", Next: NodeRetry},
+					{Label: "Yes, under Lin. Could I get a quiet high-floor room?", Reply: "前台敲键盘的手没停：\"Room 1208—high floor, away from the elevator.\" ——under + 姓名是报预订的最地道说法，Could I get 提要求不硬不软。两个愿望一句话，全中。读出来。", Next: 1},
+					{Label: "I hereby request accommodation under the name of Lin.", Reply: "前台愣了一下，差点站直了敬礼：\"...Certainly, sir?\" 语法满分，语域跑偏——hereby、request accommodation 是律师函措辞，前台不是法庭。口语订房，一句 under Lin 就够了。", Next: NodeRetry},
 				},
 			},
 			{
-				Say:     "Yes, under Li Ming. Could I get a quiet high-floor room?",
+				Say:     "Yes, under Lin. Could I get a quiet high-floor room?",
 				SayOK:   "前台递来房卡：\"1208—twelfth floor, quiet side. Enjoy!\" ——要求提得体面，房间就给得痛快。不过这间房，马上要给你出道难题。",
-				SayFail: "不急——断成两段：Yes, under Li Ming... Could I get a quiet high-floor room。quiet 读两拍：qui-et，别吞成一拍。",
+				SayFail: "不急——断成两段：Yes, under Lin... Could I get a quiet high-floor room。quiet 读两拍：qui-et，别吞成一拍。",
 				SayNext: 2,
 			},
 			{
@@ -878,14 +878,14 @@ var learnEnglishScript = map[string]levelScript{
 				Prompt: "（三句英文，挑一句向全组开口）",
 				Options: []nodeOption{
 					{Label: "It is a great honor to join this esteemed organization.", Reply: "同事们礼貌地鼓了掌，但没人记住你——\"Welcome... aboard?\" 这句像年会致辞不像打招呼：esteemed organization 是留给演讲稿的词。团队自我介绍要让人接得上话——名字、做什么、一点个人色彩，说人话就赢了。", Next: NodeRetry},
-					{Label: "Hi, I'm Lin. I'll be working on data—and I hike a lot.", Reply: "话音刚落就有人接茬：\"Oh nice, we have a hiking group!\" ——名字、负责什么、一点个人色彩，三件套一句装下；最后那点「个人色彩」就是钩子，别人想认识你，总得有个话头。把它读出来。", Next: 1},
-					{Label: "My name is Lin. I am work on data. Nice to meet you.", Reply: "几位同事点头微笑，接着小声互相确认：\"...He does what?\" I am work 把 be 动词和实义动词撞在了一起——要么 I work on data，要么 I'll be working on data。开口用 I'm Lin 也比 My name is 更像口语。", Next: NodeRetry},
+					{Label: "Hi, I'm Lin. I'll be working on design—and I hike a lot.", Reply: "话音刚落就有人接茬：\"Oh nice, we have a hiking group!\" ——名字、负责什么、一点个人色彩，三件套一句装下；最后那点「个人色彩」就是钩子，别人想认识你，总得有个话头。把它读出来。", Next: 1},
+					{Label: "My name is Lin. I am work on design. Nice to meet you.", Reply: "几位同事点头微笑，接着小声互相确认：\"...He does what?\" I am work 把 be 动词和实义动词撞在了一起——要么 I work on design，要么 I'll be working on design。开口用 I'm Lin 也比 My name is 更像口语。", Next: NodeRetry},
 				},
 			},
 			{
-				Say:     "Hi, I'm Lin. I'll be working on data—and I hike a lot.",
+				Say:     "Hi, I'm Lin. I'll be working on design—and I hike a lot.",
 				SayOK:   "经理带头鼓掌：\"Welcome aboard, Lin!\" 已经有人约你周五爬山了——被记住的从来不是职位，是那点个人色彩。不过散会后，真正的一对一考验才来。",
-				SayFail: "别急，三个信息点分开咬：Hi, I'm Lin... I'll be working on data... and I hike a lot。一段一口气。",
+				SayFail: "别急，三个信息点分开咬：Hi, I'm Lin... I'll be working on design... and I hike a lot。一段一口气。",
 				SayNext: 2,
 			},
 			{

@@ -38,6 +38,15 @@ func TestCourseScriptsComplete(t *testing.T) {
 			if lv.Correct < 0 || lv.Correct >= len(lv.CheckOpts) {
 				t.Errorf("%s/%s Correct=%d 越界（CheckOpts 共 %d 项）", agentSlug, c.Slug, lv.Correct, len(lv.CheckOpts))
 			}
+			for vi, v := range lv.Variants {
+				if strings.TrimSpace(v.Ask) == "" {
+					t.Errorf("%s/%s Variants[%d] 缺少题面 Ask", agentSlug, c.Slug, vi)
+				}
+				checkOptions(t, agentSlug, c.Slug, "Variants", v.Opts)
+				if v.Correct < 0 || v.Correct >= len(v.Opts) {
+					t.Errorf("%s/%s Variants[%d] Correct=%d 越界（共 %d 项）", agentSlug, c.Slug, vi, v.Correct, len(v.Opts))
+				}
+			}
 			if strings.TrimSpace(lv.Clear) == "" {
 				t.Errorf("%s/%s 缺少点亮语 Clear", agentSlug, c.Slug)
 			}
@@ -166,7 +175,11 @@ func TestMatchSay(t *testing.T) {
 			t.Errorf("应命中却未命中：%s", ok)
 		}
 	}
-	for _, bad := range []string{"", "今天天气不错", "I want coffee"} {
+	for _, bad := range []string{
+		"", "今天天气不错", "I want coffee",
+		// 目标句的碎片不算「真开口」：反向包含漏洞（只说一个词就通关）的回归守护。
+		"sorry", "please", "oat latte",
+	} {
 		if matchSay(bad, target) {
 			t.Errorf("不应命中却命中：%s", bad)
 		}
