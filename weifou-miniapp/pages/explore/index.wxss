@@ -64,7 +64,14 @@
 .mcard:nth-child(3n) .mcard-ic { background: var(--pop-coral); }
 .mcard:nth-child(3n+1) .mcard-ic { background: var(--pop-lilac); }
 .mcard-meta { flex: 1; min-width: 0; }
+.mcard-namerow { display: flex; align-items: center; gap: 12rpx; }
 .mcard-name { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+/* 学科路牌：诗意 Name 旁一枚灰底小标签，一眼点出这门课教什么 */
+.mcard-subject {
+  flex: 0 0 auto; font-size: 20rpx; font-weight: 600; color: var(--ink-2);
+  padding: 2rpx 14rpx; border-radius: 999rpx;
+  background: var(--fill); border: var(--bw-thin) solid var(--border);
+}
 .mcard-tag { margin-top: 6rpx; font-size: 25rpx; color: var(--ink-2); line-height: 1.5; }
 .mcard-status { margin-top: 12rpx; font-size: 22rpx; font-weight: 600; }
 .status-member { color: var(--accent-ink); }

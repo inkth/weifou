@@ -26,7 +26,10 @@
           hover-class="card-press" hover-stay-time="0" bindtap="open">
       <view class="mcard-ic">{{item.icon}}</view>
       <view class="mcard-meta">
-        <view class="mcard-name">{{item.name}}</view>
+        <view class="mcard-namerow">
+          <view class="mcard-name">{{item.name}}</view>
+          <view wx:if="{{item.subject}}" class="mcard-subject">{{item.subject}}</view>
+        </view>
         <view class="mcard-tag">{{item.tagline}}</view>
         <view wx:if="{{item.status}}" class="mcard-status status-{{item.statusKind}}">{{item.status}}</view>
       </view>

@@ -476,7 +476,7 @@ func (h *Handler) card(a *models.ToolAgent, ent *models.AgentEntitlement) gin.H 
 		remaining = ent.Remaining
 	}
 	return gin.H{
-		"id": a.ID, "slug": a.Slug, "name": a.Name, "tagline": a.Tagline,
+		"id": a.ID, "slug": a.Slug, "name": a.Name, "subject": a.Subject, "tagline": a.Tagline,
 		"description": a.Description, "category": a.Category, "icon": a.Icon,
 		"accent": a.Accent, "greeting": a.Greeting,
 		"assess": a.Assess, "concept": a.Concept,
@@ -493,7 +493,7 @@ func Seed(db *gorm.DB) {
 	}
 	presets := []models.ToolAgent{
 		{
-			Slug: "spoken-english", Name: "开口",
+			Slug: "spoken-english", Name: "开口", Subject: "英语",
 			Tagline:     "真实场景英语，一关一关闯",
 			Description: "用中文也能学：从咖啡馆点单到全英面试，28 个真实场景一关关闯。每关给你现成的英文，点一句或开口说都算通关，AI 陪你测流利度 / 准确度 / 表达力，一段段往上升级。",
 			Category:    models.AgentCatEducation, Icon: "🗣️", Accent: "#FB923C",
@@ -504,7 +504,7 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 1, // 第一幕(生活+旅行)免费无限，职场/面试起会员
 		},
 		{
-			Slug: "learn-psychology", Name: "知心",
+			Slug: "learn-psychology", Name: "知心", Subject: "心理",
 			Tagline:     "情绪不内耗、关系不拧巴",
 			Description: "看清自己、经营关系、看穿套路——「知心」带你走一趟三幕心理学之旅：情绪不内耗、关系不拧巴、决策不被套路。聊得越深，点亮的关卡越多。",
 			Category:    models.AgentCatEducation, Icon: "🧠", Accent: "#EC4899",
@@ -514,7 +514,7 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 4, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-logic", Name: "明辨",
+			Slug: "learn-logic", Name: "明辨", Subject: "逻辑",
 			Tagline:     "一眼看穿话里的逻辑",
 			Description: "从拆论证、识谬误到读数字、断因果——「明辨」带你六幕闯关学会清晰思考，每幕结尾一场 Boss 找茬战。聊得越深，点亮的关卡越多。",
 			Category:    models.AgentCatEducation, Icon: "🧩", Accent: "#0EA5E9",
@@ -524,7 +524,7 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 5, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-marketing", Name: "破圈",
+			Slug: "learn-marketing", Name: "破圈", Subject: "营销",
 			Tagline:     "让人看见、心动、下单",
 			Description: "定位、差异化、漏斗、增长、说服心理——「破圈」用真实案例把营销讲透，让你懂怎么让人看见、心动、下单。聊得越深，点亮的概念越多。",
 			Category:    models.AgentCatEducation, Icon: "🎯", Accent: "#DC2626",
@@ -534,7 +534,7 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 6, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-ai", Name: "驭手",
+			Slug: "learn-ai", Name: "驭手", Subject: "AI",
 			Tagline:     "把 AI 使唤明白",
 			Description: "写指令、拆大活、防胡说——「驭手」带你两幕 28 关真刀真枪地练：每一关都亲手下指令办成一件真事，学到的每一招在任何 AI 上都好使。",
 			Category:    models.AgentCatEducation, Icon: "🤖", Accent: "#8B5CF6",
@@ -544,7 +544,7 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 7, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-speaking", Name: "言值",
+			Slug: "learn-speaking", Name: "言值", Subject: "说话",
 			Tagline:     "话说到位，事成关系稳",
 			Description: "拒绝、开口要、道歉、场面话——「言值」把你丢进 28 个躲不掉的真实场面演对手戏：TA 演难缠的对方，你说你的原话，事办成、关系也稳住，才算过关。",
 			Category:    models.AgentCatEducation, Icon: "💬", Accent: "#06B6D4",
@@ -554,7 +554,7 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "daodejing-full", Name: "知常",
+			Slug: "daodejing-full", Name: "知常", Subject: "老子",
 			Tagline:     "帛书全本逐章读老子",
 			Description: "跟着向导「知常」用【马王堆帛书本】逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章，每章都给完整原文（帛书用字），每幕末一个「综合关」。不背经、不玄谈——一章一句，都拉到你正过的日子上用，落地才点亮。",
 			Category:    models.AgentCatEducation, Icon: "📜", Accent: "#0F766E",
@@ -590,7 +590,7 @@ func Seed(db *gorm.DB) {
 		}
 		// 更新展示字段与 prompt，保留人工 enabled 开关与 id。
 		db.Model(&existing).Updates(map[string]interface{}{
-			"name": p.Name, "tagline": p.Tagline, "description": p.Description,
+			"name": p.Name, "subject": p.Subject, "tagline": p.Tagline, "description": p.Description,
 			"category": p.Category, "icon": p.Icon, "accent": p.Accent,
 			"greeting": p.Greeting, "system_prompt": p.SystemPrompt,
 			"assess":     p.Assess,
