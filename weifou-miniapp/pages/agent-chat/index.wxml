@@ -45,7 +45,6 @@
         </view>
       </view>
     </scroll-view>
-    <view wx:if="{{!member}}" class="gs-quota" bindtap="goMembership">{{quotaText}}</view>
   </view>
 
   <!-- 游戏皮·静态舞台（英语课等无概念课）：保留原吉祥物画框 -->
@@ -55,8 +54,6 @@
       <text class="gs-emoji">{{icon || '🎓'}}</text>
     </view>
     <view class="gs-tag">{{name}}</view>
-    <!-- 额度：降级为一行可点小灰字（克制版会员入口），只对非会员出现 -->
-    <view wx:if="{{!member}}" class="gs-quota" bindtap="goMembership">{{quotaText}}</view>
   </view>
 
   <!-- 学习型 Agent：三维段位面板（升级感）。段位只升不降，三维条次次微动。 -->
