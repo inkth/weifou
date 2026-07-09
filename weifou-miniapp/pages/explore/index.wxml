@@ -28,7 +28,7 @@
       <view class="mcard-meta">
         <view class="mcard-name">{{item.name}}</view>
         <view class="mcard-tag">{{item.tagline}}</view>
-        <view class="mcard-status status-{{item.statusKind}}">{{item.status}}</view>
+        <view wx:if="{{item.status}}" class="mcard-status status-{{item.statusKind}}">{{item.status}}</view>
       </view>
       <view class="ic ic-chevron mcard-go"></view>
     </view>

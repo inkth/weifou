@@ -3,12 +3,13 @@ const { listAgents } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 const { loadEntries, agentVisible } = require('../../utils/entries');
 
-// 全站统一「幕门控」：非会员第一幕免费无限、不计次，第二幕起会员——不再显示「剩 N 次」。
+// 成交克制：非会员卡片不挂任何会员/额度角标（第二幕起触到会员关时再弹窗提示）；
+// 仅给会员保留「会员畅用」正向确认。
 function decorate(a, isMember) {
   return {
     ...a,
-    status: isMember ? '会员畅用' : '第一幕免费 · 会员畅用',
-    statusKind: isMember ? 'member' : 'trial',
+    status: isMember ? '会员畅用' : '',
+    statusKind: isMember ? 'member' : '',
   };
 }
 

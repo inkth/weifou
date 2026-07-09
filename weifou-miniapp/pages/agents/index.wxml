@@ -28,7 +28,7 @@
         <view class="body">
           <view class="name">{{item.name}}</view>
           <view class="tagline">{{item.tagline}}</view>
-          <view class="meta">
+          <view class="meta" wx:if="{{item.status}}">
             <text class="status status-{{item.statusKind}}">{{item.status}}</text>
           </view>
         </view>
