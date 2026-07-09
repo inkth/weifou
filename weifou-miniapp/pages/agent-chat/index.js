@@ -118,7 +118,7 @@ Page({
         member,
         remaining: d.freeTrialRemaining,
         freeTier: d.freeTier || 0,
-        quotaText: this._quota(member, d.freeTrialRemaining, d.freeTier || 0),
+        quotaText: this._quota(member),
         messages,
         currentSessionId,
         sessions: this._decorate(sessions || []),
@@ -161,10 +161,10 @@ Page({
     this._load();
   },
 
-  _quota(member, remaining, freeTier) {
+  // 全站统一「幕门控」：非会员第一幕免费无限、不计次，第二幕起开通会员。
+  _quota(member) {
     if (member) return '会员 · 畅用';
-    if (freeTier > 0) return '第一幕免费 · 会员畅用全部';
-    return `免费体验剩 ${remaining} 次`;
+    return '第一幕免费 · 会员畅用全部';
   },
 
   // 庆祝浮层：升级 / 点亮 / 掌握共用，2.4s 后自动收起。payload = { up, name, sub }
@@ -461,7 +461,7 @@ Page({
       this.setData({ pending: false });
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
-          title: this.data.freeTier > 0 ? '第一幕已学完' : '免费体验已用完',
+          title: '第一幕已学完',
           content: e.message || '开通会员即可畅用全部 AI 助手，不限次数。',
           confirmText: '去开通',
           cancelText: '再看看',

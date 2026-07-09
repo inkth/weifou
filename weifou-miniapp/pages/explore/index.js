@@ -1,23 +1,17 @@
-// 技能 tab = Agent 学习市场：六门核心课 + 道德经「知常」，先免费体验、会员畅用。
+// 技能 tab = Agent 学习市场：六门核心课 + 道德经「知常」，第一幕免费、会员畅用全部。
 // 首页已收敛为纯名片，不再承载「添加到首页」，故此处只做浏览 + 进入。
 // 上架范围由服务端 /agents（enabled=true）决定，前端不再做名单过滤。
 const { ensureLogin } = require('../../utils/auth');
 const { listAgents, learnStreak } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 
+// 全站统一「幕门控」：非会员第一幕免费无限、不计次，第二幕起会员——不再显示「剩 N 次」。
 function decorate(a, isMember) {
-  let status, statusKind;
-  if (isMember) {
-    status = '会员畅用';
-    statusKind = 'member';
-  } else if (a.freeTrialRemaining > 0) {
-    status = `免费体验剩 ${a.freeTrialRemaining} 次`;
-    statusKind = 'trial';
-  } else {
-    status = '免费体验已用完';
-    statusKind = 'used';
-  }
-  return { ...a, status, statusKind };
+  return {
+    ...a,
+    status: isMember ? '会员畅用' : '第一幕免费 · 会员畅用',
+    statusKind: isMember ? 'member' : 'trial',
+  };
 }
 
 Page({
