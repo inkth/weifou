@@ -140,7 +140,6 @@
     <view class="msgs-pad"></view>
   </scroll-view>
 
-  <!-- 输入栏 -->
   <!-- 提醒承诺：今日首学后递上「明天叫我」（执行意图；一天只邀一次，模板未配不出现） -->
   <view wx:if="{{remindState === 'offer'}}" class="remind-bar" bindtap="onRemindTap">
     <text class="remind-text">⏰ 明天这个点叫你继续吗？</text>
@@ -150,26 +149,9 @@
     <text class="remind-text">✓ 说定了，明天见</text>
   </view>
 
-  <!-- 本轮可点选项：点选即答（点选为主）。产出型三门课连产出关也给可点成品；理解型课全脚本化、每轮必给选项，故理解型不显示输入栏（纯点选） -->
-  <view class="opts{{gameSkin && !voice ? ' opts-tail' : ''}}" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
+  <!-- 本轮可点选项：点选即答（全站纯点选、无输入栏）。opts-tail 补齐 iPhone 底部安全区，让点选气泡即底栏 -->
+  <view class="opts opts-tail" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
     <view class="opt-chip" wx:for="{{options}}" wx:key="*this" data-t="{{item}}" bindtap="pickOption">{{item}}</view>
-  </view>
-
-  <!-- 输入栏：仅「语音三门课」（开口/言值/驭手，麦克风+打字）与「普通名片对话」（访客打字提问）显示；理解型学习课纯点选、无输入栏 -->
-  <view wx:if="{{voice || !gameSkin}}" class="composer">
-    <view wx:if="{{voice}}" class="cp-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
-      <view class="cp-mic-i"></view>
-    </view>
-    <input
-      class="cp-input"
-      value="{{draft}}"
-      bindinput="onInput"
-      placeholder="{{voice ? '按住麦克风说，或打字…' : '说点什么…'}}"
-      confirm-type="send"
-      bindconfirm="send"
-      disabled="{{pending || loading || errored}}"
-    />
-    <button class="cp-send" bindtap="send" disabled="{{pending || !draft || loading || errored}}">发送</button>
   </view>
 
   <!-- 庆祝浮层：升级 / 点亮 / 掌握共用（全屏彩带 + 大字弹簧） -->

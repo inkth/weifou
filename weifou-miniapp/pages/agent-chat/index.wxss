@@ -60,7 +60,8 @@ page { background: var(--bg); height: 100%; }
 .bubble-assistant { background: var(--surface); color: var(--ink); border-bottom-left-radius: 8rpx; border: var(--bw-thin) solid var(--border); box-shadow: var(--shadow-hair); }
 .bubble-user { background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 8rpx; box-shadow: 0 3rpx 0 var(--accent-strong); }
 .typing { color: var(--faint); }
-.msgs-pad { height: 24rpx; }
+/* 无输入栏：消息流可直抵页底，尾部补齐安全区，末条不压 iPhone Home 指示条 */
+.msgs-pad { height: calc(24rpx + env(safe-area-inset-bottom)); }
 
 /* —— 加载骨架气泡（复用 app.wxss .skel 的微光；无网也先占位，不白屏）—— */
 .skel-bubble { height: 92rpx; width: 58%; border-radius: var(--r-lg); border-bottom-left-radius: 8rpx; }
@@ -194,20 +195,6 @@ page { background: var(--bg); height: 100%; }
 }
 .opt-chip:active { transform: translateY(4rpx); box-shadow: none; border-color: var(--accent); color: var(--accent); }
 
-.composer { flex: 0 0 auto; display: flex; align-items: center; gap: 16rpx; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); background: var(--surface); border-top: var(--bw-thin) solid var(--border); }
-.cp-input { flex: 1 1 auto; min-width: 0; background: var(--surface-sunken); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full); padding: 18rpx 28rpx; font-size: 29rpx; }
-/* 语音麦克风（产出型三门课）：按住说，松开转写即发。样式承 onboarding 的 ob-mic。 */
-.cp-mic { flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 50%; background: var(--surface-sunken); border: var(--bw-thin) solid var(--border); display: flex; align-items: center; justify-content: center; transition: transform 0.1s var(--ease); }
-.cp-mic.on { background: var(--accent-soft); border-color: var(--accent); transform: scale(1.08); }
-.cp-mic-i { position: relative; width: 20rpx; height: 30rpx; border-radius: 100rpx; background: var(--ink-2); }
-.cp-mic.on .cp-mic-i { background: var(--accent); }
-.cp-mic-i::after { content: ''; position: absolute; left: 50%; bottom: -14rpx; transform: translateX(-50%); width: 28rpx; height: 14rpx; border: 3rpx solid currentColor; border-top: none; border-radius: 0 0 28rpx 28rpx; color: var(--ink-2); }
-.cp-mic.on .cp-mic-i::after { color: var(--accent); }
-.cp-send { flex: 0 0 auto; background: var(--accent); color: var(--on-accent); font-size: 28rpx; font-weight: 800; border: none; border-radius: var(--r-full); padding: 0 36rpx; height: 72rpx; line-height: 72rpx; box-shadow: 0 5rpx 0 var(--accent-strong); transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }
-.cp-send:active { transform: translateY(5rpx); box-shadow: none; }
-.cp-send[disabled] { background: var(--accent); opacity: 0.35; color: var(--on-accent); box-shadow: none; }
-.cp-send::after { border: none; }
-
 /* ===================================================================== */
 /* 游戏事件卡皮肤（.game）：学习课专用——固定舞台 + 事件卡流 + 底部点选主操作台。 */
 /* 分身/工具聊天无 skill/concept，gameSkin=false，不进此分支，样式完全不受影响。 */
@@ -261,8 +248,8 @@ page { background: var(--bg); height: 100%; }
 
 /* 底部点选：游戏皮里作为主操作台，与卡片流之间一道分隔，留白更足 */
 .game .opts { padding: 18rpx 24rpx 10rpx; border-top: var(--bw-thin) solid var(--border); }
-/* 理解型学习课无输入栏：点选气泡即底栏，补齐 iPhone 底部安全区（在 .game .opts 之后，覆盖其 padding-bottom） */
-.game .opts-tail { padding-bottom: calc(10rpx + env(safe-area-inset-bottom)); }
+/* 全站无输入栏：点选气泡即底栏，补齐 iPhone 底部安全区（在 .opts 之后，覆盖其 padding-bottom） */
+.opts-tail { padding-bottom: calc(10rpx + env(safe-area-inset-bottom)); }
 
 /* ===================================================================== */
 /* 横版「会走的路」：概念课舞台=地图合一。矮版水平带，角色沿路前进、到关停下。 */

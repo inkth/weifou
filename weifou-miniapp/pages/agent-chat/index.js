@@ -30,10 +30,7 @@ Page({
     freeTier: 0,          // >0：概念课「第一幕免费」模型（配额文案改为「第一幕免费」，不显示剩N次）
     quotaText: '',
     messages: [],
-    draft: '',
-    options: [],          // 本轮可点选项（服务端从回复剥离下发；点选即发送，输入框兜底）
-    voice: false,         // 产出型三门课（开口/言值/驭手）显示麦克风：可按住说，不用打字
-    recording: false,     // 语音录制中
+    options: [],          // 本轮可点选项（服务端从回复剥离下发；点选即答，全站纯点选无输入栏）
     pending: false,
     loading: true,
     errored: false,       // 首屏并发加载失败 → 页内重试骨架（避免白屏）
@@ -128,11 +125,8 @@ Page({
         // 次要的 skill/concept 进度接口带 catch 回落，单独当判据会在慢网时漏出「开通会员」商业条。
         gameSkin: !!(d.concept || d.assess || (sk && sk.enabled) || (cp && cp.enabled)),
         reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
-        // 产出型三门课给语音兜底：开口说英文用 en_US，言值/驭手说中文用 zh_CN。
-        voice: ['spoken-english', 'learn-speaking', 'learn-ai'].indexOf(d.slug) >= 0,
         loading: false,
       });
-      this._voiceLang = d.slug === 'spoken-english' ? 'en_US' : 'zh_CN';
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
       this._scrollEnd();
       // 概念课：铺横版路，角色停当前关，镜头瞬移定位（首屏不见滚动飞入）
@@ -264,54 +258,6 @@ Page({
 
   _decorate(sessions) {
     return (sessions || []).map((s) => ({ ...s, timeText: fmtDateTime(s.updatedAt) }));
-  },
-
-  onInput(e) {
-    this.setData({ draft: e.detail.value });
-  },
-
-  send() {
-    const content = (this.data.draft || '').trim();
-    if (!content) return;
-    this.setData({ draft: '' });
-    this._ask(content);
-  },
-
-  // —— 语音输入（微信同声传译插件 WechatSI）：按住麦克风说，松开转写即发 ——
-  // 插件不可用时静默降级为提示打字，不阻断。开口课用 en_US 识别，其余用 zh_CN（见 _voiceLang）。
-  _asrManager() {
-    if (this._asr !== undefined) return this._asr;
-    try {
-      const plugin = requirePlugin('WechatSI');
-      const mgr = plugin.getRecordRecognitionManager();
-      mgr.onStop = (res) => {
-        this.setData({ recording: false });
-        const t = ((res && res.result) || '').trim();
-        if (t) this._ask(t);
-        else wx.showToast({ title: '没听清，再说一次', icon: 'none' });
-      };
-      mgr.onError = () => {
-        this.setData({ recording: false });
-        wx.showToast({ title: '语音识别失败，试试打字', icon: 'none' });
-      };
-      this._asr = mgr;
-    } catch (e) {
-      this._asr = null; // 插件未添加 / 不支持
-    }
-    return this._asr;
-  },
-
-  onMicStart() {
-    if (this.data.pending) return;
-    const mgr = this._asrManager();
-    if (!mgr) { wx.showToast({ title: '语音暂不可用，请打字', icon: 'none' }); return; }
-    this.setData({ recording: true });
-    mgr.start({ lang: this._voiceLang || 'zh_CN' });
-  },
-
-  onMicEnd() {
-    if (!this.data.recording) return;
-    if (this._asr) this._asr.stop(); // 结果在 onStop 回调，并复位 recording
   },
 
   // 复习挑战：快问快答已点亮概念（检索练习，答对保住/升级档位）。
