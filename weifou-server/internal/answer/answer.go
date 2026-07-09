@@ -27,7 +27,8 @@ func NewEngine(db *gorm.DB, ds *deepseek.Client) *Engine {
 	return &Engine{db: db, ds: ds}
 }
 
-// validStages 是 stage 字段允许的四个成交阶梯枚举（display-only，前端画进度用）。
+// validStages 是 stage 字段允许的成交阶梯枚举（display-only，前端画进度用）。
+// 打赏已下线，阶梯收敛到 聊→问→约(chat/ask/book)；reward 仅作旧数据的容错值保留（前端归并到 book），prompt 不再引导。
 var validStages = map[string]bool{"chat": true, "ask": true, "book": true, "reward": true}
 
 // Result 是模型按要求返回的 JSON 结构。
@@ -36,7 +37,7 @@ type Result struct {
 	Gap         bool     `json:"gap"`
 	Suggestions []string `json:"suggestions"` // 兼容旧协议/qabox：访客可能想接着问的追问
 	Options     []string `json:"options"`     // 成交阶梯下一步的可点选项（访客口吻、点选即发）
-	Stage       string   `json:"stage"`       // 当前成交阶梯：chat|ask|book|reward（display-only，不强制）
+	Stage       string   `json:"stage"`       // 当前成交阶梯：chat|ask|book（display-only，不强制；reward 为旧值容错）
 }
 
 // clip 去空格并按 rune 截断到 max 字（空串跳过由调用方处理）。
@@ -138,7 +139,7 @@ func (e *Engine) KnowledgeFor(profileID string) string {
 	return b.String()
 }
 
-// guidedOutputSpec 是访客对话（chat）的输出契约：分身沿成交阶梯 聊→问→约→赏 现编可点选项。
+// guidedOutputSpec 是访客对话（chat）的输出契约：分身沿成交阶梯 聊→问→约 现编可点选项。
 const guidedOutputSpec = `
 == 输出格式 ==
 只输出一个 JSON 对象，不要任何额外文字或代码块：
@@ -147,9 +148,9 @@ answer：中文回答，规则同上，不超过 200 字。
 gap：当且仅当访客问的是一个具体、合理、但现有资料无法回答的问题（你只能含糊带过或建议联系本人）时设为 true，用于提醒本人补充资料；闲聊、寒暄、与专业方向无关或资料已能回答的问题一律为 false。
 options：2-4 个「访客点一下就能当作下一句发出」的选项，用访客口吻的完整下一步（不是第二人称问句清单），每个不超过 16 字，从不同角度切入、彼此不雷同；这是访客前进的主要方式，代替打字。若给出了「已展示过的选项」，新选项不得与其重复或高度相似。
 stage：本轮对话所处的成交阶梯，取以下之一：
-  chat（初识·了解 TA 能做什么）/ ask（深入·聊到了具体需求或预算）/ book（意向·该约时间或谈合作了）/ reward（认可·想联系本人、打赏或留资）。
-  按对话热度自然推进：开场给"了解型"选项并标 chat；聊出具体需求后给"深入型"并标 ask；火候够了让选项倾向"约个时间聊""看看怎么合作"并标 book 或 reward。
-  务必克制：不要一上来就逼约或逼赏，让访客自己走上来。`
+  chat（初识·了解 TA 能做什么）/ ask（深入·聊到了具体需求或预算）/ book（意向·该约时间、谈合作或留联系方式了）。
+  按对话热度自然推进：开场给"了解型"选项并标 chat；聊出具体需求后给"深入型"并标 ask；火候够了让选项倾向"约个时间聊""看看怎么合作""把联系方式发我"并标 book。
+  务必克制：不要一上来就逼约，让访客自己走上来。绝不引导访客付款/打赏/赞赏。`
 
 // plainOutputSpec 是问答箱（qabox 单发）的输出契约：只需回答 + 追问候选，无成交阶梯。
 const plainOutputSpec = `

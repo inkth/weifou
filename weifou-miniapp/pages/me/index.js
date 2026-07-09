@@ -42,6 +42,8 @@ Page({
   // 创建与编辑统一走对话式 onboarding（已无表单页）
   goOnboarding() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
+  // 名片夹：我交换过名片的人（点开直接问对方分身）
+  goConnections() { wx.navigateTo({ url: '/pages/connections/index' }); },
   // 记忆管理 = 分身记住的关于你的资料（KnowledgeItem），对外回答时会用上
   goMemory() { wx.navigateTo({ url: '/pages/memory/index' }); },
 

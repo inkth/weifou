@@ -149,6 +149,19 @@ type Lead struct {
 
 func (Lead) TableName() string { return "leads" }
 
+// Connection「交换名片」：两个都建了分身的用户互相进对方名片夹的一条边（方向记发起方，
+// 关系视为互相；查询「我的名片夹」时 from/to 任一是我都算）。合规上只表示「关系」，不含私信。
+type Connection struct {
+	ID            string    `gorm:"primaryKey;size:32" json:"id"`
+	FromUserID    string    `gorm:"size:32;index:idx_conn_from;uniqueIndex:idx_conn_pair" json:"fromUserId"`
+	FromProfileID string    `gorm:"size:32" json:"fromProfileId"`
+	ToUserID      string    `gorm:"size:32;index:idx_conn_to;uniqueIndex:idx_conn_pair" json:"toUserId"`
+	ToProfileID   string    `gorm:"size:32" json:"toProfileId"`
+	CreatedAt     time.Time `json:"createdAt"`
+}
+
+func (Connection) TableName() string { return "connections" }
+
 type Visit struct {
 	ID            string    `gorm:"primaryKey;size:32" json:"id"`
 	ProfileID     string    `gorm:"size:32;index:idx_visit_profile_time" json:"profileId"`
@@ -520,7 +533,7 @@ func (MembershipLead) TableName() string { return "membership_leads" }
 func AllModels() []interface{} {
 	return []interface{}{
 		&User{}, &Profile{}, &PersonaInput{}, &PersonaAI{},
-		&KnowledgeItem{}, &KnowledgeGap{}, &Lead{},
+		&KnowledgeItem{}, &KnowledgeGap{}, &Lead{}, &Connection{},
 		&Visit{}, &Event{}, &ChatSession{}, &ChatMessage{},
 		&Order{},
 		&AsyncQuestion{},

@@ -1,12 +1,16 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
-const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, initial } = require('../../utils/avatars');
 const { buildTrustLine } = require('../../utils/trust');
 
-// 成交阶梯顺序：分身下发的 stage 映射成进度条下标（-1=未知/不显示）
-const STAGE_ORDER = ['chat', 'ask', 'book', 'reward'];
+// 成交阶梯顺序：分身下发的 stage 映射成进度条下标（-1=未知/不显示）。
+// 打赏已下线，阶梯收敛到 聊→问→约；旧数据/服务端偶发的 reward 归并到终点 book。
+const STAGE_ORDER = ['chat', 'ask', 'book'];
+function stageIndex(stage) {
+  if (stage === 'reward') return STAGE_ORDER.indexOf('book');
+  return STAGE_ORDER.indexOf(stage);
+}
 
 // 从小程序码 scene（URL-encoded 的 "id=xxx"）解析 profileId
 function parseScene(scene) {
@@ -24,9 +28,9 @@ Page({
     oneLiner: '',
     starters: [], // AI 生成的引导问题（点了即移除，避免重复）
     options: [], // 每轮回答后分身沿成交阶梯现编的可点选项（点选即发，代替打字）
-    stage: '', // 当前成交阶梯 chat|ask|book|reward（分身判定，仅驱动顶部进度条）
+    stage: '', // 当前成交阶梯 chat|ask|book（分身判定，仅驱动顶部进度条）
     stageIdx: -1, // stage 在 STAGE_ORDER 中的下标，驱动进度条高亮（-1=不显示）
-    stageLabels: ['聊', '问', '约', '赏'], // 进度条四段固定文案
+    stageLabels: ['聊', '问', '约'], // 进度条三段固定文案（打赏已下线）
     shownOptions: [], // 本会话已展示过的选项，换一批/追问时回传服务端避重
     startersRevealed: false, // 开场动画结束后才淡入引导问题
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
@@ -37,10 +41,8 @@ Page({
     hasOwnProfile: true, // 默认 true：确认是"无主页访客"前不展示裂变钩子
     notFound: false,
     messages: [],
-    draft: '',
     pending: false,
     introState: '', // 开场动画期间覆盖 avatar 状态（thinking/speaking）
-    showInput: false, // “自己问”展开自由输入
     // —— 沉浸式对话舞台 ——
     stageTier: 'warm', // 氛围档 cool|warm|lively（驱动 .tier-* class），骨架首帧用默认暖底
     ambStyle: '', // 注入头像同色系光晕的内联 CSS 变量（--amb-a/--amb-b）
@@ -51,11 +53,17 @@ Page({
     cardFlipped: false, // 名片翻到背面（完整介绍）
     cardCompact: false, // 开聊后名片收成顶部胶囊条
     cardTags: [],       // 正面只放前 3 个标签，全量在背面
-    // —— 访客页内浮层（不跳 profile）：关于 / 打赏 ——
+    // —— 访客页内浮层（不跳 profile）：关于 ——
     title: '', company: '', city: '', tags: [], fullIntro: '',
     aboutVisible: false,
-    tipVisible: false, tipPresets: [6, 18, 66, 88], tipAmount: 18, tipMessage: '', tipPaying: false,
-    celebrate: null, // 成交庆祝浮层：{ up, name, sub }，只在约/赏/留话三个终点动作触发，2.4s 自动收起
+    connected: false, // 已与主人交换名片（点选连接后置位，chip 变「已交换」）
+    // —— 交换名片弹层：连接（关系）+ 可选「捎句话」（意向点选，跳过则纯连接）——
+    exchangeVisible: false, exchangeSending: false, exchangeNote: '',
+    exchangePresets: ['想约个时间聊聊', '想合作，请联系我', '对你的服务很感兴趣'],
+    // —— 让 TA 找我（无自己分身时的匿名举手，点选代替打字留言）——
+    leaveVisible: false, leaveSending: false, leaveNote: '',
+    leavePresets: ['想约个时间聊聊', '对你的服务很感兴趣', '想合作，请联系我', '单纯欣赏，给你点个赞'],
+    celebrate: null, // 成交庆祝浮层：{ up, name, sub }，只在约/留话等终点动作触发，2.4s 自动收起
   },
 
   async onLoad(query) {
@@ -134,7 +142,7 @@ Page({
     if (this._celebTimer) { clearTimeout(this._celebTimer); this._celebTimer = null; }
   },
 
-  // 成交庆祝浮层：约/赏/留话达成时弹一次（复用课程事件卡），2.4s 后自动收起。payload = { up, name, sub }
+  // 成交庆祝浮层：约/留话达成时弹一次（复用课程事件卡），2.4s 后自动收起。payload = { up, name, sub }
   _celebrate(payload) {
     if (this._celebTimer) clearTimeout(this._celebTimer);
     wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
@@ -297,7 +305,7 @@ Page({
     this.ask(q);
   },
 
-  // 点成交阶梯选项 → 作为下一句发送（点选为主、输入兜底；ask 开头会清空整组避免重复）
+  // 点成交阶梯选项 → 作为下一句发送（全程点选，无自由输入；ask 开头会清空整组避免重复）
   pickOption(e) {
     const q = e.currentTarget.dataset.q;
     if (q) this.ask(q);
@@ -319,7 +327,7 @@ Page({
         this.setData({
           options: opts,
           stage,
-          stageIdx: STAGE_ORDER.indexOf(stage),
+          stageIdx: stageIndex(stage),
           shownOptions: this.data.shownOptions.concat(opts),
         });
       } else {
@@ -330,13 +338,6 @@ Page({
     } finally {
       this._reshuffling = false;
     }
-  },
-
-  toggleInput() {
-    this._abortIntro();
-    const next = !this.data.showInput;
-    // 打开输入=进入对话姿态：名片收起，屏幕还给消息流
-    this.setData({ showInput: next, ...(next ? { cardCompact: true } : {}) });
   },
 
   // —— 名片三态 ——
@@ -350,17 +351,6 @@ Page({
   openAboutEntry() {
     if (this.data.liheSrc) return this.openAbout();
     this.setData({ cardCompact: false, cardFlipped: true });
-  },
-
-  onInput(e) {
-    this.setData({ draft: e.detail.value });
-  },
-
-  send() {
-    const content = (this.data.draft || '').trim();
-    if (!content) return;
-    this.setData({ draft: '' });
-    this.ask(content);
   },
 
   async ask(content) {
@@ -397,7 +387,7 @@ Page({
         introState: '',
         options: opts,
         stage,
-        stageIdx: STAGE_ORDER.indexOf(stage),
+        stageIdx: stageIndex(stage),
         shownOptions: this.data.shownOptions.concat(opts),
       });
       // 轻线索：访客被第 2 个回答"种草"后，给一条不抢戏的"我也要一个"入口（仅一次）
@@ -463,77 +453,92 @@ Page({
     }
   },
 
-  // 行动选项：留个话给 TA（零门槛留资 → 主人侧线索）
-  async onLeaveMessage() {
+  // 行动选项：让 TA 找我（零门槛「举手」→ 主人侧线索）。点选意向代替打字留言。
+  openLeave() {
+    this.setData({ leaveVisible: true, leaveNote: '' });
+  },
+  closeLeave() {
+    this.setData({ leaveVisible: false });
+  },
+  pickLeave(e) {
+    this.setData({ leaveNote: e.currentTarget.dataset.msg });
+  },
+  async sendLeave() {
+    const note = (this.data.leaveNote || '').trim();
+    if (!note || this.data.leaveSending) return;
     try {
       await ensureLogin();
     } catch (e) {
       wx.showToast({ title: '请先登录', icon: 'none' });
       return;
     }
-    wx.showModal({
-      title: `留个话给 ${this.data.realName}`,
-      editable: true,
-      placeholderText: '想说的话 / 怎么联系你，TA 会看到',
-      confirmText: '发送',
-      success: async (r) => {
-        if (!r.confirm) return;
-        const note = (r.content || '').trim();
-        if (!note) {
-          wx.showToast({ title: '请填写留言', icon: 'none' });
-          return;
-        }
-        try {
-          await request({
-            url: `/chat/${this.data.profileId}/lead`,
-            method: 'POST',
-            data: { note },
-          });
-          this.setData({
-            messages: this.data.messages.concat({
-              role: 'assistant',
-              content: `已把你的话转达给 ${this.data.realName}，TA 会尽快看到 ✅`,
-            }),
-          });
-          this._celebrate({ up: '留言', name: '已送达 ✓', sub: `${this.data.realName} 会亲自看到你的话` });
-          this._showOwnHook('strong');
-        } catch (err) {
-          wx.showToast({ title: err.message || '发送失败', icon: 'none' });
-        }
-      },
-    });
+    this.setData({ leaveSending: true });
+    try {
+      await request({
+        url: `/chat/${this.data.profileId}/lead`,
+        method: 'POST',
+        data: { note },
+      });
+      this.setData({
+        leaveVisible: false,
+        messages: this.data.messages.concat({
+          role: 'assistant',
+          content: `已把「${note}」转达给 ${this.data.realName}，TA 会尽快看到并联系你 ✅`,
+        }),
+      });
+      this._celebrate({ up: '已举手', name: '送达 ✓', sub: `${this.data.realName} 会亲自看到你` });
+      this._showOwnHook('strong');
+    } catch (err) {
+      wx.showToast({ title: err.message || '发送失败', icon: 'none' });
+    } finally {
+      this.setData({ leaveSending: false });
+    }
   },
 
-  // 行动选项：预约咨询 / 打赏 → 主页（转化中心）
-  // chat-first 后 chat 是首落点，导航栈里通常没有 profile，直接前进打开。
-  // from=chat 必带：否则 profile 的访客分流会把页面弹回 chat 造成死循环。
-  goProfileAction() {
-    wx.navigateTo({ url: `/pages/profile/index?id=${this.data.profileId}&from=chat` });
+  // 行动选项：交换名片（站内连接，不导流微信）。有自己分身 → 打开弹层可捎句话；没有 → 引导创建（裂变）。
+  openExchange() {
+    if (this.data.isMine || this.data.connected) return;
+    if (!this.data.hasOwnProfile) { this.goCreateOwn(); return; } // 先建一个你的分身才能交换
+    this.setData({ exchangeVisible: true, exchangeNote: '' });
+  },
+  closeExchange() { this.setData({ exchangeVisible: false }); },
+  // 捎句话点选（选填）：再点一次已选的取消
+  pickExchangeNote(e) {
+    const msg = e.currentTarget.dataset.msg;
+    this.setData({ exchangeNote: this.data.exchangeNote === msg ? '' : msg });
+  },
+  // 交换=建立关系；exchangeNote=可选携带的具体诉求（有则后端同时落线索、通知带话）
+  async confirmExchange() {
+    if (this.data.exchangeSending) return;
+    this.setData({ exchangeSending: true });
+    try {
+      await ensureLogin();
+      const note = this.data.exchangeNote || '';
+      const r = await request({ url: `/connect/${this.data.profileId}`, method: 'POST', data: note ? { note } : {} });
+      const withNote = !!note;
+      this.setData({
+        connected: true,
+        exchangeVisible: false,
+        messages: this.data.messages.concat({
+          role: 'assistant',
+          content: r.already
+            ? `我们早就交换过名片啦${withNote ? '，你的话我也转达给 ' + this.data.realName + ' 了' : ''} ✅`
+            : `已和 ${this.data.realName} 交换名片，进了你的名片夹 ✅${withNote ? ` 你捎的话 TA 会看到` : ' 随时能回来问我'}`,
+        }),
+      });
+      this._celebrate({ up: '交换名片', name: '成功 ✓', sub: withNote ? `${this.data.realName} 会看到你的话` : `${this.data.realName} 进了你的名片夹` });
+      this._showOwnHook('strong');
+    } catch (e) {
+      if (e.code === 'NO_PROFILE') { this.setData({ exchangeVisible: false }); this.goCreateOwn(); return; }
+      wx.showToast({ title: e.message || '交换失败', icon: 'none' });
+    } finally {
+      this.setData({ exchangeSending: false });
+    }
   },
 
   // —— 页内浮层：关于 TA ——
   openAbout() { this.setData({ aboutVisible: true }); },
   closeAbout() { this.setData({ aboutVisible: false }); },
   noop() {},
-
-  // —— 页内浮层：打赏 ——
-  openTip() { this.setData({ tipVisible: true }); },
-  closeTip() { this.setData({ tipVisible: false }); },
-  selectTip(e) { this.setData({ tipAmount: e.currentTarget.dataset.amount }); },
-  onTipMsg(e) { this.setData({ tipMessage: e.detail.value }); },
-  async payTip() {
-    if (this.data.tipPaying) return;
-    this.setData({ tipPaying: true });
-    try {
-      await sendTip(this.data.profileId, Math.round(this.data.tipAmount * 100), this.data.tipMessage, 'chat');
-      this.setData({ tipVisible: false, tipMessage: '' });
-      this._celebrate({ up: '打赏', name: '谢谢你 ✓', sub: `你的认可，${this.data.realName} 收到了` });
-      this._showOwnHook('strong');
-    } catch (e) {
-      if (e.code !== 'PAY_CANCEL') wx.showToast({ title: e.message || '打赏失败', icon: 'none' });
-    } finally {
-      this.setData({ tipPaying: false });
-    }
-  },
 
 });

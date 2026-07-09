@@ -11,6 +11,7 @@ import (
 	"weifou-server/internal/chat"
 	"weifou-server/internal/clientcfg"
 	"weifou-server/internal/config"
+	"weifou-server/internal/connection"
 	"weifou-server/internal/deepseek"
 	"weifou-server/internal/home"
 	"weifou-server/internal/membership"
@@ -39,6 +40,7 @@ type App struct {
 	userH       *user.Handler
 	profileH    *profile.Handler
 	chatH       *chat.Handler
+	connectionH *connection.Handler
 	visitH      *visit.Handler
 	shareH      *share.Handler
 	paymentH    *payment.Handler
@@ -99,6 +101,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		userH:       user.NewHandler(db, cfg.JWTSecret),
 		profileH:    profile.NewHandler(db, personaSvc, cfg.JWTSecret),
 		chatH:       chat.NewHandler(db, rdb, ansEngine, security, subscribe, cfg.JWTSecret, cfg.ChatFreeQuotaPerDay),
+		connectionH: connection.NewHandler(db, security, subscribe, cfg.JWTSecret),
 		visitH:      visit.NewHandler(db, cfg.JWTSecret),
 		shareH:      share.NewHandler(db, loginClient),
 		paymentH:    paymentH,
@@ -122,6 +125,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.userH.Register(api)
 	a.profileH.Register(api)
 	a.chatH.Register(api)
+	a.connectionH.Register(api)
 	a.visitH.Register(api)
 	a.shareH.Register(api)
 	a.paymentH.Register(api)

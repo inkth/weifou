@@ -166,7 +166,7 @@
 /* 气泡浮层：AI 白玻璃磨砂、用户碧绿，浮在立绘上更跳 */
 .lihe .msg-assistant .bubble { background: rgba(255, 255, 255, 0.92); color: var(--ink); border: none; box-shadow: none; }
 .lihe .msg-user .bubble { background: rgba(24, 182, 144, 0.96); color: var(--on-accent); } /* bg≈--accent，立绘上近实心更跳、免逐帧磨砂 */
-.lihe .choices, .lihe .composer { position: relative; z-index: 1; background: var(--glass-dark); border-top: none; }
+.lihe .choices { position: relative; z-index: 1; background: var(--glass-dark); border-top: none; }
 
 .msg-list {
   flex: 1 1 auto;
@@ -314,13 +314,14 @@
   background: var(--accent);
   color: var(--on-accent);
 }
-/* 自己问：描边 */
+.chip.act.done { background: var(--accent-soft); color: var(--accent-ink); }
+/* 换一批：描边 */
 .chip.ghost {
   background: var(--surface);
   color: var(--ink-2);
 }
 
-/* 成交阶梯进度条：聊→问→约→赏，走过的段落用碧绿糖果色点亮 */
+/* 成交阶梯进度条：聊→问→约，走过的段落用碧绿糖果色点亮 */
 .stage-rail {
   display: flex;
   align-items: center;
@@ -354,37 +355,20 @@
 .rail-line { width: 44rpx; height: 4rpx; border-radius: 2rpx; background: var(--border); transition: background 0.3s var(--ease); }
 .rail-line.done { background: var(--accent); }
 
-.composer {
-  display: flex;
-  gap: 16rpx;
-  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: var(--surface);
-  border-top: var(--bw-thin) solid var(--border);
+/* 点选附言 / 举手意向：弹层内 chip 组，代替输入框 */
+.sheet-chips { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 24rpx 0 4rpx; }
+.leave-chips { margin-top: 28rpx; }
+.sheet-chip {
+  padding: 18rpx 26rpx;
+  background: var(--fill);
+  border: 1rpx solid var(--border);
+  border-radius: 100rpx;
+  font-size: 27rpx;
+  color: var(--ink);
+  transition: transform 0.1s var(--ease);
 }
-.composer .input {
-  flex: 1;
-  height: 72rpx;
-  background: var(--surface-sunken);
-  border: var(--bw-thin) solid var(--border);
-  border-radius: 36rpx;
-  padding: 0 28rpx;
-  font-size: 28rpx;
-}
-.composer .send {
-  width: 140rpx;
-  height: 72rpx;
-  line-height: 72rpx;
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: 36rpx;
-  font-size: 28rpx;
-  font-weight: 700;
-  box-shadow: 0 6rpx 0 var(--accent-strong);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
-}
-.composer .send:active { transform: translateY(6rpx); box-shadow: none; }
-.composer .send[disabled] { opacity: 0.4; box-shadow: none; }
+.sheet-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.sheet-chip:active { transform: translateY(3rpx); }
 
 /* —— chat-first 开场体验 —— */
 .choices { opacity: 0; transform: translateY(12rpx); }
@@ -426,7 +410,7 @@
 }
 .own-cta-btn:active { transform: translateY(6rpx); box-shadow: none; }
 
-/* —— 页内浮层：白玻璃底部抽屉（关于 / 打赏 / 约档期）——成交面克制：白/灰/绿 —— */
+/* —— 页内浮层：白玻璃底部抽屉（关于 / 让 TA 找我）——成交面克制：白/灰/绿 —— */
 .mask { position: fixed; inset: 0; z-index: 100; background: var(--scrim); display: flex; align-items: flex-end; }
 .sheet {
   width: 100%; box-sizing: border-box;
@@ -448,9 +432,6 @@
 .sheet-pay { margin-top: 8rpx; background: var(--accent); color: var(--on-accent); border-radius: 100rpx; padding: 24rpx 0; text-align: center; font-size: 30rpx; font-weight: 700; box-shadow: 0 8rpx 0 var(--accent-strong); transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
 .sheet-pay:active { transform: translateY(8rpx); box-shadow: none; }
 .sheet-pay[disabled] { opacity: 0.45; box-shadow: none; }
-.tip-amounts { display: flex; gap: 18rpx; margin: 28rpx 0 4rpx; }
-.tip-amount { flex: 1; text-align: center; padding: 26rpx 0; background: var(--fill); border: 1rpx solid var(--border); border-radius: 16rpx; font-size: 30rpx; font-weight: 600; color: var(--ink); }
-.tip-amount.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
 .slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
 .sheet-empty { text-align: center; padding: 48rpx 0; color: var(--sub); font-size: 26rpx; }
 .slot-pick { padding: 24rpx; background: var(--fill); border: 1rpx solid var(--border); border-radius: 16rpx; margin-bottom: 16rpx; }
@@ -458,7 +439,7 @@
 .sp-time { font-size: 30rpx; font-weight: 500; color: var(--ink); }
 .sp-meta { font-size: 24rpx; color: var(--sub); margin-top: 6rpx; }
 
-/* —— 成交庆祝浮层（复用课程事件卡）：约/赏/留话达成时全屏彩带 + 大字弹簧 —— */
+/* —— 成交庆祝浮层（复用课程事件卡）：约/留话达成时全屏彩带 + 大字弹簧 —— */
 .celebrate { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
 .celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
 .celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }

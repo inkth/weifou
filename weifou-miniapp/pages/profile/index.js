@@ -1,7 +1,5 @@
 const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
-const { fenToYuan } = require('../../utils/pay');
-const { sendTip } = require('../../utils/consult');
 const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, initial } = require('../../utils/avatars');
 const { requestNewQuestionNotify, requestLeadNotify } = require('../../utils/subscribe');
@@ -17,17 +15,13 @@ Page({
     trustLine: '', // 信任徽章文案（社会证明，冷启动数字过小时为空）
     notifyAsked: false, // 首胜里点过"开启通知"后给即时反馈
     pricing: { enabled: false },
+    hasOwnProfile: false, // 访客自己是否已建分身（决定「交换名片」还是「建名片来交换」）
+    connected: false, // 已与本主页交换名片
     // 沉浸式 hero 氛围（与对话舞台同一套温度档/光晕词汇）
     stageTier: 'warm',
     ambStyle: '',
     liheSrc: '', // 全屏立绘背景（与首页/对话统一，所有场景一致）
     freshDelight: false, // 刚创建（fresh+本人）时 hero 头像庆祝一跳
-    // 打赏
-    tipVisible: false,
-    tipPresets: [6, 18, 66, 88],
-    tipAmount: 18,
-    tipMessage: '',
-    tipPaying: false,
   },
 
   async onLoad(query) {
@@ -64,15 +58,17 @@ Page({
 
     if (isMine) {
       try {
+        // 只用到访问/访客/问答三项计数；打赏下线后收入项不再展示
         const stats = await request({ url: '/visit/stats/mine' });
-        // 收入「可见」：累计成交 + 本月（分账由微信直接打到主人零钱，无需提现）
-        stats.incomeGrossYuan = fenToYuan(stats.incomeGross || 0);
-        stats.incomeMonthYuan = fenToYuan(stats.incomeMonth || 0);
         this.setData({ stats });
       } catch (e) {}
     } else {
       // 访客：提问对所有分身免费开放（AI 即时答 + 本人可异步补一句）
       this.setData({ pricing: { asyncEnabled: true } });
+      // 访客是否已有自己的分身（决定「交换名片」文案，失败保持 false）
+      request({ url: '/user/me' })
+        .then((me) => this.setData({ hasOwnProfile: !!me.profileId }))
+        .catch(() => {});
     }
   },
 
@@ -134,6 +130,24 @@ Page({
     wx.showToast({ title: '已开启来访通知', icon: 'success' });
   },
 
+  // 交换名片：站内连接（不导流微信）。有自己分身 → 互进名片夹；没有 → 引导创建（裂变）。
+  async exchangeCard() {
+    if (this.data.isMine || this.data.connected || this._connecting) return;
+    if (!this.data.hasOwnProfile) { this.goCreateOwn(); return; }
+    this._connecting = true;
+    try {
+      await ensureLogin();
+      const r = await request({ url: `/connect/${this.data.profileId}`, method: 'POST' });
+      this.setData({ connected: true });
+      wx.showToast({ title: r.already ? '已在名片夹里' : '已交换名片', icon: 'success' });
+    } catch (e) {
+      if (e.code === 'NO_PROFILE') { this.goCreateOwn(); return; }
+      wx.showToast({ title: e.message || '交换失败', icon: 'none' });
+    } finally {
+      this._connecting = false;
+    }
+  },
+
   // 裂变：访客页脚 → 对话式创建自己的助理（带来源归因；已有主页会自动进入编辑态）
   goCreateOwn() {
     track('own_hook_click', this.data.profileId, 'profile');
@@ -171,40 +185,6 @@ Page({
     }
   },
 
-  // ---------- 打赏 ----------
-  openTip() {
-    this.setData({ tipVisible: true });
-  },
-  closeTip() {
-    this.setData({ tipVisible: false });
-  },
-  noop() {},
-  selectTip(e) {
-    this.setData({ tipAmount: e.currentTarget.dataset.amount });
-  },
-  onTipMsg(e) {
-    this.setData({ tipMessage: e.detail.value });
-  },
-  async payTip() {
-    if (this.data.tipPaying) return;
-    this.setData({ tipPaying: true });
-    try {
-      await sendTip(
-        this.data.profileId,
-        Math.round(this.data.tipAmount * 100),
-        this.data.tipMessage,
-        'profile'
-      );
-      this.setData({ tipVisible: false, tipMessage: '' });
-      wx.showToast({ title: '感谢你的支持', icon: 'success' });
-    } catch (e) {
-      if (e.code !== 'PAY_CANCEL') {
-        wx.showToast({ title: e.message || '打赏失败', icon: 'none' });
-      }
-    } finally {
-      this.setData({ tipPaying: false });
-    }
-  },
 
 
   onShareAppMessage() {

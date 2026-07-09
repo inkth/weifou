@@ -9,6 +9,7 @@
     "pages/generating/index",
     "pages/profile/index",
     "pages/chat/index",
+    "pages/connections/index",
     "pages/poster/index",
     "pages/settings/index",
     "pages/qabox/index",

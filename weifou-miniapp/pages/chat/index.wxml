@@ -106,11 +106,11 @@
     </block>
   </scroll-view>
 
-  <!-- 成交阶梯进度条：分身判定的 聊→问→约→赏，纯展示，让访客感到在往前走 -->
+  <!-- 成交阶梯进度条：分身判定的 聊→问→约，纯展示，让访客感到在往前走 -->
   <view class="stage-rail" wx:if="{{answeredOnce && stageIdx >= 0}}">
     <block wx:for="{{stageLabels}}" wx:key="*this">
       <view class="rail-node {{index === stageIdx ? 'on' : ''}} {{index < stageIdx ? 'done' : ''}}">{{item}}</view>
-      <view wx:if="{{index < 3}}" class="rail-line {{index < stageIdx ? 'done' : ''}}"></view>
+      <view wx:if="{{index < stageLabels.length - 1}}" class="rail-line {{index < stageIdx ? 'done' : ''}}"></view>
     </block>
   </view>
 
@@ -122,17 +122,17 @@
       <view class="chip q note-{{index % 3}}" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
     </block>
 
-    <!-- 成交阶梯选项：每轮回答后分身现编的下一步，点选即发（点选为主、输入兜底） -->
+    <!-- 成交阶梯选项：每轮回答后分身现编的下一步，点选即发（全程点选，无自由输入；换不到就「换一批」） -->
     <view class="chip q note-{{index % 3}}" wx:for="{{options}}" wx:key="*this" bindtap="pickOption" data-q="{{item}}">{{item}}</view>
 
     <block wx:if="{{answeredOnce && !isMine}}">
       <view class="chip act" bindtap="openAboutEntry">关于 TA</view>
-      <view class="chip act" wx:if="{{contactAvailable}}" bindtap="onContact">联系本人</view>
-      <view class="chip act" bindtap="openTip">打赏 TA</view>
-      <view class="chip act" bindtap="onLeaveMessage">💬 留个话给 TA</view>
+      <view class="chip act" bindtap="onContact" wx:if="{{contactAvailable}}">联系本人</view>
+      <!-- 有自己分身：交换名片（站内连接，可捎句话，主路径）；没有：让 TA 找我（匿名举手，兜底） -->
+      <view wx:if="{{hasOwnProfile}}" class="chip act {{connected ? 'done' : ''}}" bindtap="openExchange">{{connected ? '✓ 已交换名片' : '🤝 交换名片'}}</view>
+      <view wx:else class="chip act" bindtap="openLeave">💬 让 TA 找我</view>
     </block>
     <view class="chip ghost" wx:if="{{options.length}}" bindtap="reshuffle">🔄 换一批</view>
-    <view class="chip ghost" bindtap="toggleInput">{{showInput ? '收起输入' : '✏️ 自己问'}}</view>
 
     <!-- 信任 caption：社会证明；trustLine 为空则不显示 -->
     <view class="trust-cap" wx:if="{{answeredOnce && !isMine && trustLine}}">
@@ -140,12 +140,7 @@
     </view>
   </view>
 
-  <view class="composer" wx:if="{{showInput}}">
-    <input class="input" placeholder="请输入你的问题" value="{{draft}}" maxlength="200" bindinput="onInput" confirm-type="send" bindconfirm="send" focus="{{showInput}}"/>
-    <button class="send" bindtap="send" disabled="{{pending || !draft}}">发送</button>
-  </view>
-
-  <!-- 页内浮层：关于 TA / 打赏 / 约档期（毛玻璃底部抽屉，访客不离立绘）-->
+  <!-- 页内浮层：关于 TA（毛玻璃底部抽屉，访客不离立绘）-->
   <view class="mask" wx:if="{{aboutVisible}}" bindtap="closeAbout">
     <view class="sheet" catchtap="noop">
       <view class="sheet-grab"></view>
@@ -159,20 +154,33 @@
     </view>
   </view>
 
-  <view class="mask" wx:if="{{tipVisible}}" bindtap="closeTip">
+  <!-- 交换名片：站内连接（关系）+ 可选「捎句话」（意向点选，跳过则纯连接） -->
+  <view class="mask" wx:if="{{exchangeVisible}}" bindtap="closeExchange">
     <view class="sheet" catchtap="noop">
       <view class="sheet-grab"></view>
-      <view class="sheet-title">打赏 {{realName}}</view>
-      <view class="sheet-sub">自愿赠予，表达你的认可</view>
-      <view class="tip-amounts">
-        <view class="tip-amount {{tipAmount === item ? 'on' : ''}}" wx:for="{{tipPresets}}" wx:key="*this" data-amount="{{item}}" bindtap="selectTip">¥{{item}}</view>
+      <view class="sheet-title">交换名片</view>
+      <view class="sheet-sub">和 {{realName}} 互相进名片夹，随时能问 TA 的分身。想捎句话就点一个（可跳过）</view>
+      <view class="sheet-chips">
+        <view class="sheet-chip {{exchangeNote === item ? 'on' : ''}}" wx:for="{{exchangePresets}}" wx:key="*this" data-msg="{{item}}" bindtap="pickExchangeNote">{{item}}</view>
       </view>
-      <input class="sheet-input" placeholder="留句话（选填）" placeholder-style="color: rgba(255,255,255,0.45)" maxlength="60" value="{{tipMessage}}" bindinput="onTipMsg"/>
-      <button class="sheet-pay" bindtap="payTip" disabled="{{tipPaying}}">{{tipPaying ? '处理中…' : '确认打赏 ¥' + tipAmount}}</button>
+      <button class="sheet-pay" bindtap="confirmExchange" disabled="{{exchangeSending}}">{{exchangeSending ? '交换中…' : (exchangeNote ? '交换名片并捎话' : '交换名片')}}</button>
     </view>
   </view>
 
-  <!-- 成交庆祝浮层：约/赏/留话达成时弹一次（全屏彩带 + 大字弹簧），2.4s 自动收起 -->
+  <!-- 让 TA 找我：零门槛「举手」，点选意向即送达主人（代替打字留言） -->
+  <view class="mask" wx:if="{{leaveVisible}}" bindtap="closeLeave">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">让 {{realName}} 找我</view>
+      <view class="sheet-sub">点一个最贴近的意向，{{realName}} 会看到并主动联系你</view>
+      <view class="sheet-chips leave-chips">
+        <view class="sheet-chip {{leaveNote === item ? 'on' : ''}}" wx:for="{{leavePresets}}" wx:key="*this" data-msg="{{item}}" bindtap="pickLeave">{{item}}</view>
+      </view>
+      <button class="sheet-pay" bindtap="sendLeave" disabled="{{leaveSending || !leaveNote}}">{{leaveSending ? '发送中…' : (leaveNote ? '发送给 ' + realName : '先选一个意向')}}</button>
+    </view>
+  </view>
+
+  <!-- 成交庆祝浮层：约/留话达成时弹一次（全屏彩带 + 大字弹簧），2.4s 自动收起 -->
   <view wx:if="{{celebrate}}" class="celebrate">
     <view class="confetti">
       <view class="cf cf-1"></view><view class="cf cf-2"></view><view class="cf cf-3"></view>

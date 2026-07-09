@@ -60,18 +60,9 @@
     </view>
   </view>
 
-  <!-- 收入可见：给主人留下来的理由。分账由微信直接到零钱，所以是"可见"而非"提现" -->
-  <view class="card income-card" wx:if="{{isMine && stats && stats.incomeGross > 0}}">
-    <view class="income-row">
-      <view class="income-num">¥{{stats.incomeGrossYuan}}</view>
-      <view class="income-label muted">累计成交</view>
-    </view>
-    <view class="income-sub muted">本月 ¥{{stats.incomeMonthYuan}} · 分账后直接进你的微信零钱</view>
-  </view>
-
   <view class="actions">
     <button class="btn-accent" bindtap="goChat">问 {{profile.realName}} 的 AI 分身</button>
-    <button class="btn-ghost" bindtap="openTip" wx:if="{{!isMine}}">打赏 TA</button>
+    <button class="btn-ghost" bindtap="exchangeCard" wx:if="{{!isMine}}">{{connected ? '✓ 已交换名片' : (hasOwnProfile ? '🤝 交换名片' : '🤝 建名片来交换')}}</button>
     <button class="btn-ghost" bindtap="onContact" wx:if="{{profile.contactVisible || isMine}}">联系本人</button>
     <button class="btn-ghost" open-type="share" wx:if="{{!isMine}}">分享给好友</button>
     <button class="btn-ghost" bindtap="goPoster" wx:if="{{isMine}}">生成分享海报</button>
@@ -83,25 +74,4 @@
 </view>
 
 <view wx:if="{{!profile && !loading}}" class="empty muted">主页不存在或加载失败</view>
-
-<!-- 打赏弹层 -->
-<view class="mask" wx:if="{{tipVisible}}" bindtap="closeTip">
-  <view class="tip-sheet" catchtap="noop">
-    <view class="tip-title">打赏 {{profile.realName}}</view>
-    <view class="tip-sub muted">自愿赠予，表达你的认可</view>
-    <view class="tip-amounts">
-      <view
-        class="tip-amount {{tipAmount === item ? 'active' : ''}}"
-        wx:for="{{tipPresets}}"
-        wx:key="*this"
-        data-amount="{{item}}"
-        bindtap="selectTip"
-      >¥{{item}}</view>
-    </view>
-    <input class="tip-msg" placeholder="留句话（选填）" maxlength="60" value="{{tipMessage}}" bindinput="onTipMsg"/>
-    <button class="btn-primary tip-pay" bindtap="payTip" disabled="{{tipPaying}}">
-      {{tipPaying ? '处理中…' : '确认打赏 ¥' + tipAmount}}
-    </button>
-  </view>
-</view>
 

@@ -35,6 +35,9 @@
 
   <!-- 功能入口 -->
   <view class="group">
+    <view class="cell" bindtap="goConnections">
+      <view class="ic ic-user cell-ic cell-ic-accent"></view><text class="cell-label">名片夹 · 交换过名片的人</text><view class="ic ic-chevron cell-arrow"></view>
+    </view>
     <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
       <view class="ic ic-crown cell-ic cell-ic-accent"></view><text class="cell-label">会员</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
