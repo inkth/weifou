@@ -261,6 +261,8 @@ page { background: var(--bg); height: 100%; }
 
 /* 底部点选：游戏皮里作为主操作台，与卡片流之间一道分隔，留白更足 */
 .game .opts { padding: 18rpx 24rpx 10rpx; border-top: var(--bw-thin) solid var(--border); }
+/* 理解型学习课无输入栏：点选气泡即底栏，补齐 iPhone 底部安全区（在 .game .opts 之后，覆盖其 padding-bottom） */
+.game .opts-tail { padding-bottom: calc(10rpx + env(safe-area-inset-bottom)); }
 
 /* ===================================================================== */
 /* 横版「会走的路」：概念课舞台=地图合一。矮版水平带，角色沿路前进、到关停下。 */

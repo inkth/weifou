@@ -153,12 +153,13 @@
     <text class="remind-text">✓ 说定了，明天见</text>
   </view>
 
-  <!-- 本轮可点选项：点选即答（点选为主）。产出型三门课连产出关也给可点成品；理解型课自由表达环节服务端不下发选项，改用麦克风/打字 -->
-  <view class="opts" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
+  <!-- 本轮可点选项：点选即答（点选为主）。产出型三门课连产出关也给可点成品；理解型课全脚本化、每轮必给选项，故理解型不显示输入栏（纯点选） -->
+  <view class="opts{{gameSkin && !voice ? ' opts-tail' : ''}}" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
     <view class="opt-chip" wx:for="{{options}}" wx:key="*this" data-t="{{item}}" bindtap="pickOption">{{item}}</view>
   </view>
 
-  <view class="composer">
+  <!-- 输入栏：仅「语音三门课」（开口/言值/驭手，麦克风+打字）与「普通名片对话」（访客打字提问）显示；理解型学习课纯点选、无输入栏 -->
+  <view wx:if="{{voice || !gameSkin}}" class="composer">
     <view wx:if="{{voice}}" class="cp-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
       <view class="cp-mic-i"></view>
     </view>
