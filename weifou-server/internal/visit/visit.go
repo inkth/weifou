@@ -120,22 +120,10 @@ func (h *Handler) stats(c *gin.Context) error {
 		Where("chat_sessions.profile_id = ? AND chat_messages.role = ?", profile.ID, models.RoleUser).
 		Count(&askCount)
 
-	// 主人收入可见：累计成交（已支付的打赏订单）+ 本月成交。
-	// 通话/付费咨询已下线、分账已移除，C2C 收费仅剩打赏（自愿赠予）。incomeNet 保留为 0 兼容前端。
-	payTypes := []string{models.OrderTip}
-	now := time.Now()
-	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	var incomeGross, incomeMonth int64
-	h.db.Model(&models.Order{}).
-		Where("payee_user_id = ? AND status = ? AND type IN ?", auth.UserID, models.OrderPaid, payTypes).
-		Select("COALESCE(SUM(amount),0)").Scan(&incomeGross)
-	h.db.Model(&models.Order{}).
-		Where("payee_user_id = ? AND status = ? AND type IN ? AND created_at >= ?", auth.UserID, models.OrderPaid, payTypes, monthStart).
-		Select("COALESCE(SUM(amount),0)").Scan(&incomeMonth)
-
+	// C2C 收费（打赏）已下线，主人侧无收入项；income* 恒为 0，仅保留键位兼容老客户端。
 	httpx.OK(c, gin.H{
 		"profileId": profile.ID, "pv": pv, "uv": uv, "askCount": askCount,
-		"incomeGross": incomeGross, "incomeMonth": incomeMonth, "incomeNet": 0,
+		"incomeGross": 0, "incomeMonth": 0, "incomeNet": 0,
 	})
 	return nil
 }

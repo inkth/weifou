@@ -38,7 +38,6 @@ type Config struct {
 	WxPayPrivateKeyPath string
 	WxPayPlatformCert   string
 	WxPayNotifyURL      string
-	TipMaxAmount        int
 	OrderTimeoutMin     int
 	CallEarlyJoinMin    int
 	CallGraceMin        int
@@ -129,7 +128,6 @@ func Load() *Config {
 		WxPayPrivateKeyPath: os.Getenv("WXPAY_PRIVATE_KEY_PATH"),
 		WxPayPlatformCert:   os.Getenv("WXPAY_PLATFORM_CERT_PATH"),
 		WxPayNotifyURL:      os.Getenv("WXPAY_NOTIFY_URL"),
-		TipMaxAmount:        getInt("TIP_MAX_AMOUNT", 50000),
 		OrderTimeoutMin:     getInt("ORDER_TIMEOUT_MIN", 15),
 		CallEarlyJoinMin:    getInt("CALL_EARLY_JOIN_MIN", 5),
 		CallGraceMin:        getInt("CALL_GRACE_MIN", 15),

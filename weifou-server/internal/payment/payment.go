@@ -2,7 +2,6 @@ package payment
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -15,79 +14,23 @@ import (
 	"weifou-server/internal/idgen"
 	"weifou-server/internal/middleware"
 	"weifou-server/internal/models"
-	"weifou-server/internal/wechat"
 	"weifou-server/internal/wxpay"
 )
 
 type Handler struct {
-	db           *gorm.DB
-	pay          *wxpay.Client
-	security     *wechat.SecurityService
-	subscribe    *wechat.SubscribeService
-	jwtSecret    string
-	tipMaxAmount int
+	db        *gorm.DB
+	pay       *wxpay.Client
+	jwtSecret string
 }
 
-func NewHandler(db *gorm.DB, pay *wxpay.Client, security *wechat.SecurityService, subscribe *wechat.SubscribeService, jwtSecret string, tipMax int) *Handler {
-	return &Handler{db: db, pay: pay, security: security, subscribe: subscribe, jwtSecret: jwtSecret, tipMaxAmount: tipMax}
+func NewHandler(db *gorm.DB, pay *wxpay.Client, jwtSecret string) *Handler {
+	return &Handler{db: db, pay: pay, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
-	rg.POST("/payment/tip", auth, httpx.Handle(h.tip))
 	rg.GET("/payment/orders/:id", auth, httpx.Handle(h.getOrder))
 	rg.POST("/payment/notify", httpx.Handle(h.notify))
-}
-
-// normSource 将客户端传入的成交来源收敛到白名单，默认 profile。
-func normSource(s string) string {
-	if s == "chat_card" {
-		return "chat_card"
-	}
-	return "profile"
-}
-
-// ---------- 打赏 ----------
-
-type tipReq struct {
-	ProfileID string `json:"profileId" binding:"required"`
-	Amount    int    `json:"amount" binding:"required"`
-	Message   string `json:"message"`
-	Source    string `json:"source"`
-}
-
-func (h *Handler) tip(c *gin.Context) error {
-	auth := middleware.Current(c)
-	var req tipReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
-	}
-	if req.Amount < 100 {
-		return httpx.BadRequest("INVALID_AMOUNT", "金额过小")
-	}
-	if req.Amount > h.tipMaxAmount {
-		return httpx.BadRequest("TIP_TOO_LARGE", "打赏金额超出上限")
-	}
-	var profile models.Profile
-	if err := h.db.First(&profile, "id = ?", req.ProfileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
-	}
-	if req.Message != "" && !h.security.CheckText(req.Message, auth.Openid) {
-		return httpx.BadRequest("CONTENT_UNSAFE", "留言包含不当内容")
-	}
-
-	order := models.Order{
-		ID: idgen.New(), OutTradeNo: idgen.WithPrefix("TIP"), Type: models.OrderTip,
-		Amount: req.Amount, ProfileID: profile.ID, PayerOpenid: auth.Openid,
-		PayerUserID: &auth.UserID, PayeeUserID: profile.UserID,
-		Source: normSource(req.Source),
-	}
-	if req.Message != "" {
-		order.Message = &req.Message
-	}
-	h.db.Create(&order)
-
-	return h.prepay(c, &order, fmt.Sprintf("打赏 %s", profile.RealName))
 }
 
 func (h *Handler) prepay(c *gin.Context, order *models.Order, desc string) error {

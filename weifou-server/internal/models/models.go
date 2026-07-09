@@ -220,7 +220,6 @@ func (ChatMessage) TableName() string { return "chat_messages" }
 // ========== 订单 ==========
 
 const (
-	OrderTip        = "tip"
 	OrderAgent      = "agent"      // 旧：单 Agent 次卡（已被会员制取代，保留兼容）
 	OrderMembership = "membership" // 会员：一价解锁全部工具 Agent（虚拟商品，平台自营、不分账）
 

@@ -83,7 +83,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 
 	// 业务服务
 	personaSvc := persona.NewService(db, ds, security)
-	paymentH := payment.NewHandler(db, payClient, security, subscribe, cfg.JWTSecret, cfg.TipMaxAmount)
+	paymentH := payment.NewHandler(db, payClient, cfg.JWTSecret)
 	vpayClient := wxvpay.New(cfg.WxAppID, cfg.WxvOfferID, cfg.WxvAppKey, cfg.WxvSandbox, loginClient)
 	mbrH := membership.NewHandler(db, paymentH, vpayClient, loginClient, cfg.JWTSecret)
 	mpLogin := wechat.NewLoginClient(cfg.MpAppID, cfg.MpSecret)
