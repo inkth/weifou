@@ -144,14 +144,6 @@ page { background: var(--bg); height: 100%; }
 .cp-fill { position: relative; height: 100%; border-radius: var(--r-full); background: var(--accent); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 .cp-fill::after { content: ''; position: absolute; left: 8rpx; right: 8rpx; top: 4rpx; height: 6rpx; border-radius: var(--r-full); background: rgba(255, 255, 255, 0.35); }
 
-/* 概念地图：按主题的概念芯片，亮度区分掌握档位（lv2 = 金冠） */
-.cm-theme { margin-bottom: 24rpx; }
-.cm-th-name { font-size: 24rpx; font-weight: 800; color: var(--ink); margin-bottom: 12rpx; }
-.cm-grid { display: flex; flex-wrap: wrap; gap: 12rpx; }
-.cm-chip { font-size: 22rpx; padding: 8rpx 18rpx; border-radius: var(--r-full); border: var(--bw-thin) solid var(--border); color: var(--faint); background: var(--fill-pressed); }
-.cm-chip.lv1 { color: var(--accent-strong); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
-.cm-chip.lv2 { color: #7a5c00; border-color: transparent; background: var(--gold); font-weight: 800; box-shadow: 0 3rpx 0 var(--gold-strong); }
-
 /* 庆祝浮层：多邻国式全屏彩带 + 大字弹簧 */
 .celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
 .celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }

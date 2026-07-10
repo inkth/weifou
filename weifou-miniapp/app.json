@@ -16,7 +16,6 @@
     "pages/memory/index",
     "pages/agents/index",
     "pages/agent-chat/index",
-    "pages/learn-map/index",
     "pages/membership/index"
   ],
   "tabBar": {
