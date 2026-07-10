@@ -29,3 +29,5 @@ weifou-server/server
 
 # 生图 png 母版留本地不进仓库(webp 才进包)
 weifou-miniapp/assets/**/raw/
+# 生成资产的 1024px 母版（重出要花钱，故本地留存；体积大，不进 git、更不进小程序包）
+assets-src/**/raw/

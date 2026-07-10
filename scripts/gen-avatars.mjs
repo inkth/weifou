@@ -10,7 +10,8 @@ const FAL_KEY = process.env.FALAI_API_KEY;
 if (!FAL_KEY) { console.error('✗ 缺少 FALAI_API_KEY'); process.exit(1); }
 
 const T2I_MODEL = process.env.FAL_IMAGE_MODEL || 'fal-ai/gpt-image-1/text-to-image';
-const EDIT_MODEL = process.env.FAL_EDIT_MODEL || 'fal-ai/gpt-image-1/edit';
+// 端点是 /edit-image，不是 /edit（后者 404：Path /edit not found，--states 分支曾因此全灭）
+const EDIT_MODEL = process.env.FAL_EDIT_MODEL || 'fal-ai/gpt-image-1/edit-image';
 const IMAGE_SIZE = process.env.FAL_IMAGE_SIZE || '1024x1536';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, '..', 'weifou-miniapp', 'assets', 'avatars');

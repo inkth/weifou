@@ -28,6 +28,17 @@ const DUEL_SLUGS = {
   'learn-ai': 1, 'learn-speaking': 1,
 };
 
+// 吉祥物「负鼠」姿势图（scripts/gen-mascot.mjs 派生自同一张母版）。它是玩家小人、不是课程角色，
+// 所以全部概念课共用一只——与「身份面不戴别人的脸」不冲突：那条规矩管的是分身立绘。
+const MASCOT = {
+  idle:  '/assets/mascot/possum_idle.webp',
+  walk:  '/assets/mascot/possum_walk.webp',
+  atk:   '/assets/mascot/possum_atk.webp',
+  win:   '/assets/mascot/possum_win.webp',
+  dead:  '/assets/mascot/possum_dead.webp',
+  think: '/assets/mascot/possum_think.webp',
+};
+
 Page({
   data: {
     id: '',
@@ -68,6 +79,7 @@ Page({
     heroAct: '',          // 主角动作：'atk' 出招冲刺 / 'win' 击破欢呼 / 'dead' 装死诈尸
     foeAct: '',           // 对手动作：'hit' 受击 / 'taunt' 挑衅（答对未拿下）/ 'strike' 反击（答错）/ 'down' 被击破
     duelIdx: -1,          // 对手＝哪个节点（通常=currentIndex；击破瞬间锁旧关，防状态翻转后丢动画）
+    heroImg: MASCOT.idle, // 负鼠当前姿势图（由 _pose 按 动作>走路>思考>待机 的优先级算出）
   },
 
   async onLoad(query) {
@@ -231,21 +243,39 @@ Page({
       roadAnim: true,
       roadScrollLeft: this._roadLeft(destIndex),
       duelIdx: destIndex, // 新对手就位
+      heroImg: this._pose(this.data.heroAct, true, this.data.pending),
     });
     if (this._walkTimer) clearTimeout(this._walkTimer);
-    this._walkTimer = setTimeout(() => this.setData({ walking: false }), 720);
+    this._walkTimer = setTimeout(() => this.setData({
+      walking: false,
+      heroImg: this._pose(this.data.heroAct, false, this.data.pending),
+    }), 720);
   },
 
-  // 战斗动作一拍：设主角/对手动作类名，一次性播完自清。idx 缺省＝当前关。
-  // 全程只加/摘 class（transform 动画），不触碰路的几何与节点状态。
+  // 负鼠该摆哪个姿势：动作 > 走路 > 思考 > 待机。
+  // 动作压过 pending，所以「点选出招 → 服务端还在想」会先冲刺、动作播完再自然落到挠头。
+  _pose(act, walking, pending) {
+    if (act && MASCOT[act]) return MASCOT[act];
+    if (walking) return MASCOT.walk;
+    if (pending) return MASCOT.think;
+    return MASCOT.idle;
+  },
+
+  // 战斗动作一拍：切姿势图 + 设动作类名，一次性播完自清。idx 缺省＝当前关。
+  // 姿势由图管（装死图本身就是四脚朝天），CSS 只管位移与时序，两边不要都做同一件事。
   _duel(heroAct, foeAct, ms, idx) {
     if (this._duelTimer) clearTimeout(this._duelTimer);
+    const act = heroAct || '';
     this.setData({
-      heroAct: heroAct || '',
+      heroAct: act,
       foeAct: foeAct || '',
       duelIdx: typeof idx === 'number' ? idx : this.data.currentIndex,
+      heroImg: this._pose(act, this.data.walking, this.data.pending),
     });
-    this._duelTimer = setTimeout(() => this.setData({ heroAct: '', foeAct: '' }), ms || 520);
+    this._duelTimer = setTimeout(() => this.setData({
+      heroAct: '', foeAct: '',
+      heroImg: this._pose('', this.data.walking, this.data.pending),
+    }), ms || 520);
   },
 
   // 点横版节点 → 关卡卡片抽屉（软锁：锁定关也能点开预览，CTA 变「提前解锁」）
@@ -346,6 +376,8 @@ Page({
       pending: true,
       options: [],
       messages: this.data.messages.concat({ role: 'user', content }),
+      // 出招动作未播完时不抢姿势（_pose 里动作压过 pending），播完自然落到挠头
+      heroImg: this._pose(this.data.heroAct, this.data.walking, true),
     });
     this._scrollEnd();
     try {
@@ -361,6 +393,7 @@ Page({
         currentSessionId: data.sessionId || this.data.currentSessionId,
         options: data.options || [],
         pending: false,
+        heroImg: this._pose(this.data.heroAct, this.data.walking, false),
       };
       // 学习型 Agent：更新三维段位，升级时弹庆祝浮层
       if (data.skill) {
@@ -468,7 +501,7 @@ Page({
     } catch (e) {
       this._answerTurn = false;
       this._duelWin = null;
-      this.setData({ pending: false });
+      this.setData({ pending: false, heroImg: this._pose(this.data.heroAct, this.data.walking, false) });
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
           title: '第一幕已学完',
