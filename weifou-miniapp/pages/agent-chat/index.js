@@ -65,8 +65,8 @@ Page({
     roadAnim: false,      // 横向 scroll 是否带动画（首屏 false 瞬移，走路 true 跟随）
     card: null,           // 关卡卡片抽屉
     // —— 战斗动作层（判断型概念课）：舞台不承载信息，只把对话事件翻译成身体语言 ——
-    heroAct: '',          // 主角动作：'atk' 出招冲刺 / 'win' 击破欢呼
-    foeAct: '',           // 对手动作：'hit' 受击 / 'taunt' 挑衅（还没拿下）/ 'down' 被击破
+    heroAct: '',          // 主角动作：'atk' 出招冲刺 / 'win' 击破欢呼 / 'dead' 装死诈尸
+    foeAct: '',           // 对手动作：'hit' 受击 / 'taunt' 挑衅（答对未拿下）/ 'strike' 反击（答错）/ 'down' 被击破
     duelIdx: -1,          // 对手＝哪个节点（通常=currentIndex；击破瞬间锁旧关，防状态翻转后丢动画）
   },
 
@@ -431,13 +431,17 @@ Page({
       }
       this.setData(patch);
       this._scrollEnd();
-      // 战斗动作层：本关点亮＝击破（主角欢呼+对手爆开）；答题轮没拿下＝对手挑衅还站着
+      // 战斗动作层第二拍（第一拍「出招」在 pickOption 即时播完）。按服务端 verdict 分派：
+      // 点亮＝击破 > 答错＝反击+装死诈尸 > 答对未拿下＝对手挑衅还站着 > 教学轮＝安静。
+      // verdict 为空（讲解/开场/模型拿不准）时不演戏——舞台宁可静，也不要每轮乱晃。
       const won = typeof this._duelWin === 'number';
-      if (this._duelOn) {
+      if (this._duelOn && !this._reviewing) {
         if (won) {
           this._duel('win', 'down', 660, this._duelWin);
         } else if (this._answerTurn && this.data.currentIndex >= 0) {
-          this._duel('', 'taunt', 560);
+          const v = data.verdict || '';
+          if (v === 'wrong') this._duel('dead', 'strike', 1500);
+          else if (v === 'right') this._duel('', 'taunt', 560);
         }
       }
       this._answerTurn = false;

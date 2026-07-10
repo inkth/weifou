@@ -263,13 +263,14 @@ func (h *Handler) chat(c *gin.Context) error {
 	}
 
 	// 概念型 Agent（学心理/学经济/学哲学）：判定本轮点亮/掌握的概念，更新进度，给「点亮/打通一档」的反馈。
+	// verdict（本轮答得对不对）只驱动前端舞台动作，不落库、不影响点亮。
 	if a.Concept {
-		view, newlyLit, newlyMastered, tierCleared := h.assessConcepts(&a, auth.UserID, content, answer)
-		if view != nil {
-			resp["concept"] = view
-			resp["newlyLit"] = newlyLit
-			resp["newlyMastered"] = newlyMastered
-			resp["tierCleared"] = tierCleared
+		if out := h.assessConcepts(&a, auth.UserID, content, answer); out != nil && out.View != nil {
+			resp["concept"] = out.View
+			resp["newlyLit"] = out.NewlyLit
+			resp["newlyMastered"] = out.NewlyMastered
+			resp["tierCleared"] = out.TierCleared
+			resp["verdict"] = out.Verdict
 		}
 	}
 
