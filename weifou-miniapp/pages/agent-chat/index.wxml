@@ -10,7 +10,8 @@
     <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">开通会员</view>
   </view>
 
-  <!-- 游戏皮·横版会走的路（概念课）：角色沿关卡路停在当前关，答对走到下一关。舞台=地图合一。 -->
+  <!-- 游戏皮·横版会走的路（概念课）：角色沿关卡路停在当前关左侧对峙，点亮后走到下一关。舞台=地图合一。
+       判断型课程叠「战斗动作层」：点选=出招、点亮=击破、没拿下=对手挑衅（纯 class 动画，不承载信息）。 -->
   <view wx:if="{{gameSkin && concept && !loading && !errored}}" class="road-stage">
     <view class="gs-hist" bindtap="openHistory">历史</view>
     <!-- 场景·远景（固定不随路，营造纵深）：天空渐变 + 飘云 + accent 远山 -->
@@ -30,7 +31,7 @@
         <!-- 关卡节点：绝对定位按 rx（left=圆心） -->
         <view
           wx:for="{{nodes}}" wx:key="slug" wx:for-item="n"
-          class="rnode {{n.state}} {{n.memberLocked ? 'mlock' : ''}} {{n.boss ? 'boss' : ''}}"
+          class="rnode {{n.state}} {{n.memberLocked ? 'mlock' : ''}} {{n.boss ? 'boss' : ''}} {{duelIdx === n.idx ? foeAct : ''}}"
           style="left: {{n.rx}}rpx;"
           bindtap="openCard" data-slug="{{n.slug}}"
         >
@@ -39,8 +40,8 @@
           <text wx:else class="rnode-face">{{n.emoji}}</text>
           <view wx:if="{{n.memberLocked}}" class="rnode-lock">🔐</view>
         </view>
-        <!-- 角色：覆盖在路上，translateX 平移到当前关 -->
-        <view class="hero {{walking ? 'walk' : ''}}" style="transform: translateX({{heroX}}rpx);">
+        <!-- 角色：覆盖在路上，translateX 平移到当前关对峙位 -->
+        <view class="hero {{walking ? 'walk' : ''}} {{heroAct}}" style="transform: translateX({{heroX}}rpx);">
           <text class="hero-face">{{icon || '🎓'}}</text>
         </view>
       </view>

@@ -12,11 +12,21 @@ const { buildNodes, iconForLevel, STATE_TEXT, STATE_CTA } = require('../../utils
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
 
 // 横版「会走的路」几何（rpx）：相邻节点圆心步距 / 轨道左右留白 / 视口宽（rpx 恒为 750）
+// PAD 须 ≥ HERO_GAP + 主角半宽（33），否则第一关的对峙位会被视口左沿裁掉半张脸
 const ROAD_STEP = 132;
-const ROAD_PAD = 80;
+const ROAD_PAD = 144;
 const ROAD_VW = 750;
 // 目标关滚到视口这个比例处（左侧留出「已走过的路」的成就感）
 const ROAD_LEAD = 0.33;
+// 主角站当前关左侧这个距离处对峙（不再踩在关卡上）——关卡即对手，出招才有的放矢
+const HERO_GAP = 80;
+
+// 战斗动作层只给判断型课程（题型=看穿一个说法，关卡天然是对手）。
+// 开口（英语）是开口练习、知常（道德经）调性不合，都保持纯行走舞台。
+const DUEL_SLUGS = {
+  'learn-psychology': 1, 'learn-logic': 1, 'learn-marketing': 1,
+  'learn-ai': 1, 'learn-speaking': 1,
+};
 
 Page({
   data: {
@@ -55,6 +65,10 @@ Page({
     roadScrollLeft: 0,    // 横向 scroll 位置 px（rpx→px 已换算）
     roadAnim: false,      // 横向 scroll 是否带动画（首屏 false 瞬移，走路 true 跟随）
     card: null,           // 关卡卡片抽屉
+    // —— 战斗动作层（判断型概念课）：舞台不承载信息，只把对话事件翻译成身体语言 ——
+    heroAct: '',          // 主角动作：'atk' 出招冲刺 / 'win' 击破欢呼
+    foeAct: '',           // 对手动作：'hit' 受击 / 'taunt' 挑衅（还没拿下）/ 'down' 被击破
+    duelIdx: -1,          // 对手＝哪个节点（通常=currentIndex；击破瞬间锁旧关，防状态翻转后丢动画）
   },
 
   async onLoad(query) {
@@ -128,6 +142,8 @@ Page({
         loading: false,
       });
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
+      // 战斗动作层开关：按 slug 门控（详情接口必回 slug）
+      this._duelOn = !!DUEL_SLUGS[d.slug];
       this._scrollEnd();
       // 概念课：铺横版路，角色停当前关，镜头瞬移定位（首屏不见滚动飞入）
       if (cp && cp.enabled) this._applyRoad(cp, false);
@@ -196,7 +212,7 @@ Page({
       roadSections,
       currentIndex: built.currentIndex,
       trackWidth: nodes.length ? ROAD_PAD * 2 + (nodes.length - 1) * ROAD_STEP : 0,
-      heroX: ROAD_PAD + idx * ROAD_STEP,
+      heroX: ROAD_PAD + idx * ROAD_STEP - HERO_GAP,
       roadAnim: !!animate,
       roadScrollLeft: this._roadLeft(idx),
     });
@@ -208,16 +224,29 @@ Page({
     return Math.round(leftRpx * (this._rpx || 0.5));
   },
 
-  // 角色走到目标关：translateX 平移 + 走路 bob + 镜头跟随（rx 与节点同式，对齐恒等不错位）
+  // 角色走到目标关的对峙位：translateX 平移 + 走路 bob + 镜头跟随（rx 与节点同式，对齐恒等不错位）
   _walkTo(destIndex) {
     this.setData({
       walking: true,
-      heroX: ROAD_PAD + destIndex * ROAD_STEP,
+      heroX: ROAD_PAD + destIndex * ROAD_STEP - HERO_GAP,
       roadAnim: true,
       roadScrollLeft: this._roadLeft(destIndex),
+      duelIdx: destIndex, // 新对手就位
     });
     if (this._walkTimer) clearTimeout(this._walkTimer);
     this._walkTimer = setTimeout(() => this.setData({ walking: false }), 720);
+  },
+
+  // 战斗动作一拍：设主角/对手动作类名，一次性播完自清。idx 缺省＝当前关。
+  // 全程只加/摘 class（transform 动画），不触碰路的几何与节点状态。
+  _duel(heroAct, foeAct, ms, idx) {
+    if (this._duelTimer) clearTimeout(this._duelTimer);
+    this.setData({
+      heroAct: heroAct || '',
+      foeAct: foeAct || '',
+      duelIdx: typeof idx === 'number' ? idx : this.data.currentIndex,
+    });
+    this._duelTimer = setTimeout(() => this.setData({ heroAct: '', foeAct: '' }), ms || 520);
   },
 
   // 点横版节点 → 关卡卡片抽屉（软锁：锁定关也能点开预览，CTA 变「提前解锁」）
@@ -238,6 +267,7 @@ Page({
   startNode() {
     const c = this.data.card;
     if (!c) return;
+    this._reviewing = false; // 开新关＝回到对峙，战斗动作层恢复
     this.setData({ card: null });
     if (c.memberLocked) { this.goMembership(); return; }
     // 新开一段会话 + 带 concept 让教练用该关钩子开场（与秒开一致）
@@ -263,6 +293,7 @@ Page({
   // 复习挑战：快问快答已点亮概念（检索练习，答对保住/升级档位）。
   startReview() {
     if (this.data.pending) return;
+    this._reviewing = true; // 复习态：战斗动作层歇场，开新关/新会话时复位
     this.setData({ reviewDue: 0 }); // 先清徽章：防连点，真实到期数下次进页刷新
     this._ask('开始复习挑战', 'review');
   },
@@ -296,7 +327,14 @@ Page({
   // 点选选项 = 原样作为回答发送（点选为主、输入兜底）
   pickOption(e) {
     const t = e.currentTarget.dataset.t;
-    if (t) this._ask(t);
+    if (!t || this.data.pending) return;
+    // 出招：点选即答，主角向当前关冲一记、对手受击晃动。
+    // 复习挑战不打当前关（考的是别处的概念，冲错对象比不冲更违和）。
+    if (this._duelOn && !this._reviewing && this.data.currentIndex >= 0) {
+      this._answerTurn = true;
+      this._duel('atk', 'hit', 520);
+    }
+    this._ask(t);
   },
 
   async _ask(content, mode, concept) {
@@ -358,6 +396,7 @@ Page({
           const oldIdx = this.data.currentIndex;
           const curNode = oldIdx >= 0 ? rn[oldIdx] : null;
           const curDone = curNode && (lit.indexOf(curNode.name) >= 0 || mastered.indexOf(curNode.name) >= 0);
+          if (curDone) this._duelWin = oldIdx; // 击破动画锁定旧关（patch 落地后 currentIndex 已翻页）
           if (curDone) {
             let ni = -1;
             for (let i = oldIdx + 1; i < rn.length; i++) {
@@ -389,11 +428,27 @@ Page({
       }
       this.setData(patch);
       this._scrollEnd();
-      // 角色走到新当前关（在 concept setData 落地后，与彩带同拍）
+      // 战斗动作层：本关点亮＝击破（主角欢呼+对手爆开）；答题轮没拿下＝对手挑衅还站着
+      const won = typeof this._duelWin === 'number';
+      if (this._duelOn) {
+        if (won) {
+          this._duel('win', 'down', 660, this._duelWin);
+        } else if (this._answerTurn && this.data.currentIndex >= 0) {
+          this._duel('', 'taunt', 560);
+        }
+      }
+      this._answerTurn = false;
+      this._duelWin = null;
+      // 角色走到新当前关（在 concept setData 落地后，与彩带同拍；有击破戏时先播完再起步）
       if (typeof this._walkDest === 'number') {
         const dest = this._walkDest;
         this._walkDest = null;
-        this._walkTo(dest);
+        if (this._duelOn && won) {
+          if (this._walkDelay) clearTimeout(this._walkDelay);
+          this._walkDelay = setTimeout(() => this._walkTo(dest), 700);
+        } else {
+          this._walkTo(dest);
+        }
       }
       // 一致性护栏：极少数情况（复习跨幕等）增量与服务端 current 不符，才全量校准（正常路径不触发）。
       // 必须确认 concept 带完整 tiers，否则精简版会摊平出空路 → 误清空整条路。
@@ -404,6 +459,8 @@ Page({
         }
       }
     } catch (e) {
+      this._answerTurn = false;
+      this._duelWin = null;
       this.setData({ pending: false });
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
@@ -427,6 +484,7 @@ Page({
   // —— 多会话 ——
   // 新开一段：清回开场白、清空 currentSessionId，下一条消息会创建新会话
   newSession() {
+    this._reviewing = false;
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     this.setData({ messages, currentSessionId: '', historyVisible: false, options: [] });
     this._scrollEnd();
@@ -453,6 +511,7 @@ Page({
       this.setData({ historyVisible: false });
       return;
     }
+    this._reviewing = false;
     this.setData({ historyVisible: false });
     try {
       const msgs = await sessionMessages(sid);
@@ -470,6 +529,8 @@ Page({
   onUnload() {
     if (this._celebTimer) clearTimeout(this._celebTimer);
     if (this._walkTimer) clearTimeout(this._walkTimer);
+    if (this._duelTimer) clearTimeout(this._duelTimer);
+    if (this._walkDelay) clearTimeout(this._walkDelay);
   },
 
   goMembership() {
