@@ -252,8 +252,8 @@ page { background: var(--bg); height: 100%; }
 .opts-tail { padding-bottom: calc(10rpx + env(safe-area-inset-bottom)); }
 
 /* ===================================================================== */
-/* 横版「会走的路」：概念课舞台=地图合一。矮版水平带，角色沿路前进、到关停下。 */
-/* 几何与 JS 对齐：STEP=132rpx 圆心步距、PAD=80rpx 留白、节点 88rpx 圆。       */
+/* 横版「会走的路」：概念课舞台=地图合一。矮版水平带，角色沿路前进、停在关卡左侧对峙。 */
+/* 几何与 JS 对齐：STEP=132rpx 圆心步距、PAD=144rpx 留白（≥对峙距+主角半宽，护住第一关）、节点 88rpx 圆。 */
 /* ===================================================================== */
 .road-stage {
   position: relative; flex: 0 0 auto; overflow: hidden;
@@ -368,6 +368,45 @@ page { background: var(--bg); height: 100%; }
 @keyframes heroWalk {
   0%, 100% { transform: translateY(0) rotate(-4deg); }
   50%      { transform: translateY(-10rpx) rotate(4deg); }
+}
+
+/* —— 战斗动作层（判断型概念课）：出招/欢呼在 hero-face、受击/挑衅/击破在 rnode。 —
+   全部只动 transform、一次性播完由 JS 摘 class；与 .hero 行内 translateX 分层不打架。 */
+/* 出招：向对手（右侧当前关）冲一记再弹回 */
+.hero.atk .hero-face { animation: heroAtk 0.5s var(--ease); }
+@keyframes heroAtk {
+  0%, 100% { transform: translateX(0); }
+  38%      { transform: translateX(56rpx) rotate(10deg); }
+  70%      { transform: translateX(-6rpx); }
+}
+/* 击破欢呼：跳起转体，落地接走路 */
+.hero.win .hero-face { animation: heroWin 0.62s var(--ease); }
+@keyframes heroWin {
+  0%, 100% { transform: translateY(0); }
+  35%      { transform: translateY(-36rpx) scale(1.1) rotate(-8deg); }
+  70%      { transform: translateY(0) scale(1.04); }
+}
+/* 受击：被顶得后仰晃动 */
+.rnode.hit { animation: foeHit 0.5s var(--ease); }
+@keyframes foeHit {
+  0%, 100% { transform: translateX(0); }
+  30%      { transform: translateX(16rpx) rotate(7deg); }
+  62%      { transform: translateX(-8rpx) rotate(-3deg); }
+}
+/* 挑衅：这轮没被拿下，鼓起来晃两下「我还站着」 */
+.rnode.taunt { animation: foeTaunt 0.55s var(--ease); }
+@keyframes foeTaunt {
+  0%, 100% { transform: scale(1); }
+  30%      { transform: scale(1.14) rotate(-7deg); }
+  65%      { transform: scale(1.06) rotate(6deg); }
+}
+/* 击破：鼓到最大→瘪下去→回正（同拍图标已翻成 ⭐/👑，读作「被点亮收服」） */
+.rnode.down { animation: foeDown 0.64s var(--ease); }
+@keyframes foeDown {
+  0%   { transform: scale(1); }
+  28%  { transform: scale(1.28); }
+  55%  { transform: scale(0.8) rotate(-10deg); }
+  100% { transform: scale(1); }
 }
 
 /* —— 关卡卡片抽屉（自 learn-map 搬入；复用本页 .drawer-mask 贴底遮罩）—— */
