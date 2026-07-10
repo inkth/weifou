@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -70 140 140" width="140" height="140" role="img" aria-labelledby="title desc">
+  <title id="title">微否</title>
+  <desc id="desc">深林底上的小盆栽：不对称碧绿树冠、珊瑚陶盆</desc>
+
+  <!--
+    微否 logo 定稿 · 深林版
+      底 --forest #08312a（logo 专用令牌，不进 UI）
+      冠 --accent #18b690（三圆不对称，右肩高于左肩 —— 这点歪就是指纹，勿改对称）
+      盆 --pop-coral #ff9600
+      花 --gold #ffd335（掌握态，把 .bloom 的 display 打开）
+    冠底最低 y=9，盆沿顶 y=12 —— 那 3 个单位的缝必须留着：
+    单色印刷/刻章只剩剪影时，靠它读出"一棵东西长在一个盆里"而不是一个葫芦。
+    单色场合：整体填 --ink；绿底场合：整体填白。半调子（绿冠白盆）永不出现。
+  -->
+  <style>
+    svg { --forest: #08312a; --accent: #18b690; --coral: #ff9600; --gold: #ffd335; --ink: #0c5a48; }
+    .bg     { fill: var(--forest); }
+    .crown  { fill: var(--accent); }
+    .pot    { fill: var(--coral); }
+    .shine  { fill: #fff; opacity: .85; }
+    .bloom  { fill: var(--gold); display: none; }
+  </style>
+
+  <rect class="bg" x="-70" y="-70" width="140" height="140" rx="33"/>
+
+  <g class="crown">
+    <circle cx="-2" cy="-17" r="25"/>
+    <circle cx="-20" cy="-4" r="13"/>
+    <circle cx="17" cy="-10" r="16.5"/>
+  </g>
+  <circle class="shine" cx="14" cy="-27" r="4.4"/>
+  <!-- 掌握态金花：开在冠内左上；顶在冠尖上会读成圣诞树 -->
+  <path class="bloom" d="M-14 -38 L-12 -32.75 L-6.39 -32.47 L-10.77 -28.95 L-9.3 -23.53 L-14 -26.6 L-18.7 -23.53 L-17.23 -28.95 L-21.61 -32.47 L-16 -32.75 Z"/>
+
+  <g class="pot">
+    <rect x="-24" y="12" width="48" height="9.5" rx="3.5"/>
+    <path d="M-20 21 L-15 46 Q-14 50 -9 50 L9 50 Q14 50 15 46 L20 21 Z"/>
+  </g>
+</svg>

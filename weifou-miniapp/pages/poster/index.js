@@ -47,9 +47,11 @@ Page({
           // 顶部色块
           ctx.fillStyle = '#18b690';
           ctx.fillRect(0, 0, cssW, 100);
+          // 绿底场合 logo 整体反白（见 assets/brand/logo.svg 的单色规则）
+          this.drawMark(ctx, 20, 14, 24, '#ffffff');
           ctx.fillStyle = '#ffffff';
           ctx.font = '14px sans-serif';
-          ctx.fillText('微否 · 我的 AI 主页', 20, 30);
+          ctx.fillText('微否 · 我的 AI 主页', 52, 31);
           ctx.font = 'bold 22px sans-serif';
           ctx.fillText(this.data.bundle.realName || '', 20, 70);
 
@@ -100,6 +102,46 @@ Page({
           resolve();
         });
     });
+  },
+
+  /**
+   * 微否图形标（小盆栽）。几何真源 assets/brand/logo.svg，坐标系 140×140、中心原点。
+   * 这里只画冠与盆、不画底色方块 —— 底色由调用方所在的色块提供。
+   * @param x,y 左上角  @param size 边长  @param color 单色填充（绿底反白 / 浅底墨绿）
+   */
+  drawMark(ctx, x, y, size, color) {
+    const s = size / 140;
+    const px = (u) => x + (u + 70) * s;
+    const py = (u) => y + (u + 70) * s;
+
+    ctx.fillStyle = color;
+
+    // 树冠：三圆不对称，右肩高于左肩
+    ctx.beginPath();
+    [
+      [-2, -17, 25],
+      [-20, -4, 13],
+      [17, -10, 16.5],
+    ].forEach(([cx, cy, r]) => {
+      ctx.moveTo(px(cx) + r * s, py(cy));
+      ctx.arc(px(cx), py(cy), r * s, 0, Math.PI * 2);
+    });
+    ctx.fill();
+
+    // 盆沿
+    this.roundRect(ctx, px(-24), py(12), 48 * s, 9.5 * s, 3.5 * s);
+    ctx.fill();
+
+    // 盆身
+    ctx.beginPath();
+    ctx.moveTo(px(-20), py(21));
+    ctx.lineTo(px(-15), py(46));
+    ctx.quadraticCurveTo(px(-14), py(50), px(-9), py(50));
+    ctx.lineTo(px(9), py(50));
+    ctx.quadraticCurveTo(px(14), py(50), px(15), py(46));
+    ctx.lineTo(px(20), py(21));
+    ctx.closePath();
+    ctx.fill();
   },
 
   drawAvatar(ctx, cx, cy, r) {
