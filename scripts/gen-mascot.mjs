@@ -20,13 +20,17 @@ const FAL_KEY = process.env.FALAI_API_KEY;
 if (!FAL_KEY) { console.error('✗ 缺少 FALAI_API_KEY'); process.exit(1); }
 
 const T2I_MODEL = process.env.FAL_IMAGE_MODEL || 'fal-ai/gpt-image-1/text-to-image';
-const EDIT_MODEL = process.env.FAL_EDIT_MODEL || 'fal-ai/gpt-image-1/edit';
+// 注意端点是 /edit-image，不是 /edit（后者 404：Path /edit not found）
+const EDIT_MODEL = process.env.FAL_EDIT_MODEL || 'fal-ai/gpt-image-1/edit-image';
 // 吉祥物是方形贴纸，不用立绘的竖版
 const IMAGE_SIZE = process.env.FAL_IMAGE_SIZE || '1024x1024';
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// 成品 webp 才进小程序包；母版/候选一律留在包外的 assets-src/——
+// 小程序打包看磁盘不看 .gitignore，1024px 母版留在 assets/ 下会把主包直接顶爆（17MB vs 2MB 上限）。
 const OUT_DIR = join(__dirname, '..', 'weifou-miniapp', 'assets', 'mascot');
-const CAND_DIR = join(OUT_DIR, 'candidates');
-const RAW_DIR = join(OUT_DIR, 'raw');
+const SRC_DIR = join(__dirname, '..', 'assets-src', 'mascot');
+const CAND_DIR = join(SRC_DIR, 'candidates');
+const RAW_DIR = join(SRC_DIR, 'raw');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const FORCE = process.argv.includes('--force');
@@ -64,7 +68,7 @@ const POSES = {
   think: `${LOCK}歪头思考：一只手托着下巴，眼睛向上瞟，嘴角困惑地撇着，头顶微微歪斜。`,
 };
 
-async function falRun(model, input, { tries = 2 } = {}) {
+async function falRun(model, input, { tries = 4 } = {}) {
   let lastErr;
   for (let i = 1; i <= tries; i++) {
     try {
@@ -84,9 +88,12 @@ async function falRun(model, input, { tries = 2 } = {}) {
       return url;
     } catch (e) {
       lastErr = e;
-      if (!e.retry || i === tries) break;
-      console.warn(`  …第 ${i} 次失败，重试`);
-      await sleep(1500 * i);
+      // fetch 层错误（网络瞬断 / 连接重置 / 超时）不带 retry 标记，但同样该重试——
+      // 出图请求耗时长，裸奔一次就放弃会稳定丢图。只有明确的 4xx 才立即认输。
+      const fatal = e.message.startsWith('HTTP ') && !e.retry;
+      if (fatal || i === tries) break;
+      console.warn(`  …第 ${i} 次失败（${e.message}），重试`);
+      await sleep(2000 * i);
     }
   }
   throw lastErr;
@@ -161,8 +168,8 @@ async function genPoses(fromId) {
       console.log(`✓ possum_${pose}.${EXT}`);
     } catch (e) { console.error(`✗ ${e.message}`); }
   }
-  console.log(`\n完成。舞台接线：把 agent-chat 的 .hero-face emoji 换成 <image src="/assets/mascot/possum_idle.${EXT}">，`);
-  console.log(`动作层 class（walk/atk/dead/win）改为切 src 或叠加 CSS 动画。`);
+  console.log(`\n下一步：python3 scripts/pack-mascot.py —— 清假透明脏边 + 缩到 256px 出包内 webp。`);
+  console.log(`（fal 的 edit 端点偶发吐半透明灰底，直接进包会在角色四周渲染一圈灰框）`);
 }
 
 async function main() {

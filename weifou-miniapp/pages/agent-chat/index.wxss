@@ -348,47 +348,50 @@ page { background: var(--bg); height: 100%; }
   70%, 100% { transform: scale(1.12); opacity: 0; }
 }
 
-/* 角色：覆盖在路上（宽 0 内部居中），translateX 平移到当前关圆心 */
+/* 角色「负鼠」：覆盖在路上（宽 0 内部居中），translateX 平移到当前关对峙位。
+   脚落在小径下沿（top + 图高 - 图内留白 ≈ 134rpx 的路面）。 */
 .hero {
-  position: absolute; top: 40rpx; left: 0; width: 0;
+  position: absolute; top: 44rpx; left: 0; width: 0;
   display: flex; justify-content: center; pointer-events: none; z-index: 5;
   transition: transform 0.7s var(--ease-out);
 }
-.hero-face { font-size: 66rpx; line-height: 1; filter: drop-shadow(0 6rpx 0 rgba(0, 0, 0, 0.10)); }
-/* 走路：bob 上下 + 轻微摆动，走完由 JS 摘掉 .walk */
-.hero.walk .hero-face { animation: heroWalk 0.28s ease-in-out infinite; }
+.hero-img { width: 96rpx; height: 96rpx; filter: drop-shadow(0 6rpx 0 rgba(0, 0, 0, 0.10)); }
+/* 走路：bob 上下。图本身已是侧身迈步，不再叠 rotate（会拧着走） */
+.hero.walk .hero-img { animation: heroWalk 0.28s ease-in-out infinite; }
 @keyframes heroWalk {
-  0%, 100% { transform: translateY(0) rotate(-4deg); }
-  50%      { transform: translateY(-10rpx) rotate(4deg); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10rpx); }
 }
 
-/* —— 战斗动作层（判断型概念课）：出招/欢呼在 hero-face、受击/挑衅/击破在 rnode。 —
+/* —— 战斗动作层（判断型概念课）：出招/欢呼/装死在 hero-img、受击/挑衅/击破在 rnode。 —
+   姿势由图管，CSS 只管位移与时序——两边都做同一件事就会「躺两次」。
    全部只动 transform、一次性播完由 JS 摘 class；与 .hero 行内 translateX 分层不打架。 */
-/* 出招：向对手（右侧当前关）冲一记再弹回 */
-.hero.atk .hero-face { animation: heroAtk 0.5s var(--ease); }
+/* 出招：向对手（右侧当前关）冲一记再弹回（图已是冲刺姿态） */
+.hero.atk .hero-img { animation: heroAtk 0.5s var(--ease); }
 @keyframes heroAtk {
   0%, 100% { transform: translateX(0); }
-  38%      { transform: translateX(56rpx) rotate(10deg); }
+  38%      { transform: translateX(56rpx); }
   70%      { transform: translateX(-6rpx); }
 }
-/* 击破欢呼：跳起转体，落地接走路 */
-.hero.win .hero-face { animation: heroWin 0.62s var(--ease); }
+/* 击破欢呼：跳起，落地接走路（图已是举手欢呼） */
+.hero.win .hero-img { animation: heroWin 0.62s var(--ease); }
 @keyframes heroWin {
   0%, 100% { transform: translateY(0); }
-  35%      { transform: translateY(-36rpx) scale(1.1) rotate(-8deg); }
-  70%      { transform: translateY(0) scale(1.04); }
+  35%      { transform: translateY(-36rpx) scale(1.06); }
+  70%      { transform: translateY(0) scale(1.03); }
 }
-/* 装死诈尸（答错）：被打飞 → 躺平装死 → 抽搐 → 弹起来当无事发生。
+/* 装死诈尸（答错）：被打退砸地 → 躺尸 → 抽搐 → 弹起来当无事发生。
+   图已是四脚朝天，这里只做击退位移与停顿；瞬切姿势正是卡通里「啪一下躺了」的笑点。
    这是答错的全部惩罚：没有扣血扣分，只有一场喜剧——重试永远零成本。 */
-.hero.dead .hero-face { animation: heroDead 1.5s var(--ease); }
+.hero.dead .hero-img { animation: heroDead 1.5s var(--ease); }
 @keyframes heroDead {
-  0%        { transform: translate(0, 0) rotate(0); }
-  10%       { transform: translate(-22rpx, -16rpx) rotate(-22deg); }
-  22%, 62%  { transform: translate(-36rpx, 18rpx) rotate(-90deg); }
-  68%       { transform: translate(-36rpx, 14rpx) rotate(-84deg); }
-  74%       { transform: translate(-36rpx, 18rpx) rotate(-90deg); }
-  88%       { transform: translate(-8rpx, -10rpx) rotate(8deg); }
-  100%      { transform: translate(0, 0) rotate(0); }
+  0%        { transform: translate(0, 0); }
+  12%       { transform: translate(-30rpx, -12rpx); }
+  24%, 66%  { transform: translate(-40rpx, 14rpx); }
+  72%       { transform: translate(-40rpx, 8rpx); }
+  78%       { transform: translate(-40rpx, 14rpx); }
+  90%       { transform: translate(-8rpx, -10rpx); }
+  100%      { transform: translate(0, 0); }
 }
 /* 反击（答错）：对手后撤蓄力，朝主角（左）撞一记 */
 .rnode.strike { animation: foeStrike 0.6s var(--ease); }

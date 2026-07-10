@@ -40,9 +40,9 @@
           <text wx:else class="rnode-face">{{n.emoji}}</text>
           <view wx:if="{{n.memberLocked}}" class="rnode-lock">🔐</view>
         </view>
-        <!-- 角色：覆盖在路上，translateX 平移到当前关对峙位 -->
+        <!-- 角色「负鼠」：覆盖在路上，translateX 平移到当前关对峙位。姿势切图、位移交 CSS -->
         <view class="hero {{walking ? 'walk' : ''}} {{heroAct}}" style="transform: translateX({{heroX}}rpx);">
-          <text class="hero-face">{{icon || '🎓'}}</text>
+          <image class="hero-img" src="{{heroImg}}" mode="aspectFit" />
         </view>
       </view>
     </scroll-view>
