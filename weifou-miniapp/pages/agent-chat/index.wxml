@@ -86,8 +86,8 @@
     </view>
   </view>
 
-  <!-- 概念型 Agent：分档点亮进度条 + 概念地图入口。头部显示当前正在攻的那一档。 -->
-  <view wx:if="{{concept}}" class="cprog" style="--accent: {{accent}};" bindtap="openConceptMap">
+  <!-- 概念型 Agent：分档点亮进度条。头部显示当前正在攻的那一档；点条＝镜头拉回当前关（路即地图，不再弹图鉴层）。 -->
+  <view wx:if="{{concept}}" class="cprog" style="--accent: {{accent}};" bindtap="recenterRoad">
     <view class="cp-head">
       <view class="cp-stat">
         <block wx:if="{{concept.allDone}}"><text class="cp-tier">全部通关</text></block>
@@ -98,7 +98,7 @@
         <text class="cp-all">· 共点亮 {{concept.lit}}/{{concept.total}}</text>
       </view>
       <view wx:if="{{reviewDue > 0}}" class="cp-review" catchtap="startReview">🔁 复习 {{reviewDue}}</view>
-      <view wx:else class="cp-note">{{concept.note || '看概念地图 ›'}}</view>
+      <view wx:else class="cp-note">{{concept.note || '回到当前关 ›'}}</view>
     </view>
     <view class="cp-track"><view class="cp-fill" style="width: {{concept.curPct}}%;"></view></view>
   </view>
@@ -168,22 +168,6 @@
       <view class="celeb-up">{{celebrate.up}}</view>
       <view class="celeb-name">{{celebrate.name}}</view>
       <view class="celeb-sub">{{celebrate.sub}}</view>
-    </view>
-  </view>
-
-  <!-- 概念地图抽屉：按主题列出全部概念，圆点亮度区分 未学/点亮/掌握 -->
-  <view class="drawer-mask" wx:if="{{conceptMapVisible}}" bindtap="closeConceptMap">
-    <view class="drawer" catchtap="noop" style="--accent: {{accent}};">
-      <view class="drawer-grip"></view>
-      <view class="drawer-title">概念地图 · 已点亮 {{concept.lit}}/{{concept.total}}</view>
-      <scroll-view scroll-y class="drawer-list">
-        <view wx:for="{{concept.tiers}}" wx:key="tier" class="cm-theme">
-          <view class="cm-th-name">{{item.tier}} · {{item.lit}}/{{item.total}}</view>
-          <view class="cm-grid">
-            <view wx:for="{{item.concepts}}" wx:for-item="c" wx:key="name" class="cm-chip lv{{c.level}}">{{c.name}}</view>
-          </view>
-        </view>
-      </scroll-view>
     </view>
   </view>
 

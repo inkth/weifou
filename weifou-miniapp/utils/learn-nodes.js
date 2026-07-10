@@ -1,8 +1,8 @@
-// 概念型学习课的「关卡节点」摊平逻辑（原 learn-map/index.js _build 抽出，两页共用）。
+// 概念型学习课的「关卡节点」摊平逻辑（现仅 agent-chat 横版路使用；
+// 纵版 learn-map 页与图鉴抽屉已退役——路即唯一地图）。
 // 把 agentConcepts 返回的 tiers[].concepts[] 摊平成一条扁平序列 + 分幕信息，
 // 逐节点算出状态机（当前关/下一关/已点亮/已掌握/未解锁）与会员锁、Boss 标记。
-// 注意：横向/纵向坐标语义不同，本模块不产坐标——只给扁平 index 与分幕 startIndex，
-// 由各页（横版 agent-chat / 纵版 learn-map）按方向自行计算 x。
+// 本模块不产坐标——只给扁平 index 与分幕 startIndex，由使用方自行计算 x。
 
 const ICON_BASE = '/assets/icons/learn/';
 const STATE_ICONS = { mastered: 'crown', lit: 'star', current: 'star', available: 'sparkle', locked: 'lock' };

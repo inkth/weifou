@@ -53,7 +53,6 @@ Page({
     gameSkin: false,      // 学习课（有段位或点亮进度）套「游戏事件卡」皮：固定舞台+事件卡流+底部点选；分身聊天保持原样
     reviewDue: 0,         // 到期待复习的概念数（>0 时进度条上出现「复习挑战」徽章）
     remindState: '',      // 提醒承诺条：'' 隐藏 / offer 邀请 / done 已订
-    conceptMapVisible: false, // 概念地图抽屉
     celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
     // —— 横版「会走的路」（概念课舞台=地图合一）——
     nodes: [],            // 扁平关卡节点 [{ idx,slug,name,state,icon,rx,boss,memberLocked,... }]
@@ -279,11 +278,15 @@ Page({
     this._ask('开始这一关', undefined, c.slug);
   },
 
-  openConceptMap() {
-    if (this.data.concept) this.setData({ conceptMapVisible: true });
-  },
-  closeConceptMap() {
-    this.setData({ conceptMapVisible: false });
+  // 点进度条＝镜头拉回当前关（用户横滚看远处后的「回家」键）。
+  // 路即唯一地图：图鉴抽屉与 learn-map 页已退役，总览/跳转都在路上完成。
+  recenterRoad() {
+    if (!this.data.nodes.length) return;
+    const idx = this.data.currentIndex >= 0 ? this.data.currentIndex : this.data.nodes.length - 1;
+    let left = this._roadLeft(idx);
+    // 手滚不回写 data，同值 setData 是 no-op 滚不回来——同值时挪 1px 强制生效
+    if (left === this.data.roadScrollLeft) left += 1;
+    this.setData({ roadAnim: true, roadScrollLeft: left });
   },
 
   _decorate(sessions) {
