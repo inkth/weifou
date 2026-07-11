@@ -51,7 +51,7 @@ Page({
           this.drawMark(ctx, 20, 14, 24, '#ffffff');
           ctx.fillStyle = '#ffffff';
           ctx.font = '14px sans-serif';
-          ctx.fillText('微否 · 我的 AI 主页', 52, 31);
+          ctx.fillText('微否 · 我的 AI 分身', 52, 31);
           ctx.font = 'bold 22px sans-serif';
           ctx.fillText(this.data.bundle.realName || '', 20, 70);
 

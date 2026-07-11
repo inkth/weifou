@@ -39,7 +39,7 @@
     <view wx:if="{{agents.length === 0}}" class="empty-wrap">
       <view class="empty-ic"><view class="ic ic-sparkle"></view></view>
       <view class="empty-title">课程正在上新</view>
-      <view class="empty-sub">AI 老师们正在备课，很快就能开讲</view>
+      <view class="empty-sub">新课正在打磨，很快就能开讲</view>
     </view>
   </block>
 </view>

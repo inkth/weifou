@@ -505,7 +505,7 @@ Page({
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
           title: '第一幕已学完',
-          content: e.message || '开通会员即可畅用全部 AI 助手，不限次数。',
+          content: e.message || '开通会员，继续畅用全部技能课。',
           confirmText: '去开通',
           cancelText: '再看看',
           success: (r) => {

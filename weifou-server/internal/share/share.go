@@ -35,11 +35,11 @@ func (h *Handler) bundle(c *gin.Context) error {
 	profileID := c.Param("profileId")
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 	var p models.PersonaAI
 	if err := h.db.First(&p, "profile_id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 	var u models.User
 	h.db.First(&u, "id = ?", profile.UserID)

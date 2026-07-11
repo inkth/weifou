@@ -4,7 +4,6 @@ const { ensureLogin } = require('../../utils/auth');
 Page({
   data: {
     form: {
-      contactWechat: '',
       contactPhone: '',
       contactVisible: false,
     },
@@ -19,7 +18,6 @@ Page({
       if (mine) {
         this.setData({
           form: {
-            contactWechat: mine.contactWechat || '',
             contactPhone: mine.contactPhone || '',
             contactVisible: !!mine.contactVisible,
           },
@@ -41,7 +39,8 @@ Page({
     if (this.data.saving) return;
     this.setData({ saving: true });
     try {
-      await request({ url: '/profile/contact', method: 'PATCH', data: this.data.form });
+      // 微信号字段已下线（站内连接，不导流微信）：显式传空清掉历史存量
+      await request({ url: '/profile/contact', method: 'PATCH', data: { ...this.data.form, contactWechat: '' } });
       wx.showToast({ title: '已保存', icon: 'success' });
     } catch (e) {
       wx.showToast({ title: e.message || '保存失败', icon: 'none' });

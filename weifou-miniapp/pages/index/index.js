@@ -45,7 +45,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '别人加你微信前，先和你的 AI 聊聊 — 微否',
+      title: '来微否，养一个替你把事办成的 AI 分身',
       path: '/pages/index/index',
     };
   },

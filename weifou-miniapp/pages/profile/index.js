@@ -165,10 +165,8 @@ Page({
     }
     try {
       const c = await request({ url: `/profile/${this.data.profileId}/contact` });
-      const lines = [];
-      if (c.wechat) lines.push(`微信：${c.wechat}`);
-      if (c.phone) lines.push(`电话：${c.phone}`);
-      const content = lines.join('\n') || '本人未填写联系方式';
+      // 微信号已下线（站内连接，不导流微信）：只展示电话
+      const content = c.phone ? `电话：${c.phone}` : '本人未填写联系方式';
       wx.showModal({
         title: '联系本人',
         content,
@@ -176,7 +174,7 @@ Page({
         cancelText: '关闭',
         success: (r) => {
           if (r.confirm) {
-            wx.setClipboardData({ data: c.wechat || c.phone || '' });
+            wx.setClipboardData({ data: c.phone || '' });
           }
         },
       });
@@ -205,7 +203,7 @@ Page({
   onShareTimeline() {
     const p = this.data.profile;
     return {
-      title: p?.persona?.oneLiner || `${p?.realName} 的 AI 主页`,
+      title: p?.persona?.oneLiner || `${p?.realName} 的 AI 分身`,
       query: `id=${this.data.profileId}&from=timeline`,
     };
   },

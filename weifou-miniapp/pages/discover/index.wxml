@@ -2,7 +2,7 @@
 
   <view class="sq-top" style="padding-top:{{statusBarH}}px">
     <view class="sq-eyebrow">{{greeting}}</view>
-    <view class="sq-h1">微否，<text class="hl">AI 时代的名片</text></view>
+    <view class="sq-h1">微否，<text class="hl">每个人的 AI 分身</text></view>
   </view>
 
   <!-- 首屏加载骨架：避免 FALLBACK → 真数据的闪跳 -->

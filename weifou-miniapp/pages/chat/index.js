@@ -289,7 +289,7 @@ Page({
     const name = this.data.realName || 'TA';
     const title = this.data.oneLiner
       ? `和 ${name} 的 AI 分身聊聊：${this.data.oneLiner}`
-      : `加微信前，先和 ${name} 的 AI 分身聊聊`;
+      : `想认识 ${name}？先和 TA 的 AI 分身聊聊`;
     return {
       title,
       path: `/pages/chat/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(name)}&avatarStyle=${this.data.avatarStyle || ''}`,
@@ -432,17 +432,15 @@ Page({
   async onContact() {
     try {
       const c = await request({ url: `/profile/${this.data.profileId}/contact` });
-      const lines = [];
-      if (c.wechat) lines.push(`微信：${c.wechat}`);
-      if (c.phone) lines.push(`电话：${c.phone}`);
+      // 微信号已下线（站内连接，不导流微信）：只展示电话
       wx.showModal({
         title: '联系本人',
-        content: lines.join('\n') || '本人未填写联系方式',
+        content: c.phone ? `电话：${c.phone}` : '本人未填写联系方式',
         confirmText: '复制',
         cancelText: '关闭',
         success: (r) => {
           if (r.confirm) {
-            wx.setClipboardData({ data: c.wechat || c.phone || '' });
+            wx.setClipboardData({ data: c.phone || '' });
             this._celebrate({ up: '联系方式', name: '已拿到 ✓', sub: `主动联系 ${this.data.realName}，趁热打铁` });
             this._showOwnHook('strong');
           }

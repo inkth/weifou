@@ -57,7 +57,7 @@ func (h *Handler) connect(c *gin.Context) error {
 
 	var target models.Profile
 	if err := h.db.First(&target, "id = ?", targetProfileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "AI 分身不存在")
 	}
 	if target.UserID == auth.UserID {
 		return httpx.BadRequest("CANNOT_CONNECT_SELF", "不能和自己交换名片")

@@ -110,7 +110,7 @@ func (h *Handler) hostSessions(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	var sessions []models.ChatSession
 	h.db.Where("profile_id = ?", profile.ID).Order("updated_at desc").Limit(50).Find(&sessions)
@@ -252,11 +252,11 @@ func (h *Handler) ask(c *gin.Context) error {
 
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 	var p models.PersonaAI
 	if err := h.db.First(&p, "profile_id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 	// 沟通风格直读 PersonaInput（查不到不阻断，style 为空即可）
 	var input models.PersonaInput
@@ -343,11 +343,11 @@ func (h *Handler) reoptions(c *gin.Context) error {
 
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 	var p models.PersonaAI
 	if err := h.db.First(&p, "profile_id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 	var input models.PersonaInput
 	_ = h.db.First(&input, "profile_id = ?", profileID).Error
@@ -440,7 +440,7 @@ func (h *Handler) lead(c *gin.Context) error {
 
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", profileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "AI 分身不存在")
 	}
 
 	contactCheck := note

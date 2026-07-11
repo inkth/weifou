@@ -389,11 +389,11 @@ func (s *Service) SuggestStrengths(openid, title, audience string, exclude []str
 func (s *Service) GenerateForProfile(profileID, openid string) (*Result, error) {
 	var profile models.Profile
 	if err := s.db.First(&profile, "id = ?", profileID).Error; err != nil {
-		return nil, httpx.BadRequest("PROFILE_INCOMPLETE", "请先填写主页信息")
+		return nil, httpx.BadRequest("PROFILE_INCOMPLETE", "分身资料还没填齐，先补一下")
 	}
 	var input models.PersonaInput
 	if err := s.db.First(&input, "profile_id = ?", profileID).Error; err != nil {
-		return nil, httpx.BadRequest("PROFILE_INCOMPLETE", "请先填写主页信息")
+		return nil, httpx.BadRequest("PROFILE_INCOMPLETE", "分身资料还没填齐，先补一下")
 	}
 
 	if !s.security.CheckText(input.Strengths+"\n"+input.RecentWork+"\n"+input.HowToKnow, openid) {

@@ -65,7 +65,7 @@ func (h *Handler) create(c *gin.Context) error {
 	}
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", req.ProfileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "AI 分身不存在")
 	}
 	if profile.UserID == auth.UserID {
 		return httpx.BadRequest("CANNOT_ASK_SELF", "不能向自己提问")
@@ -129,7 +129,7 @@ func (h *Handler) qaboxAsk(c *gin.Context) error {
 	}
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", req.ProfileID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "AI 分身不存在")
 	}
 	if !h.security.CheckText(q, auth.Openid) {
 		return httpx.BadRequest("CONTENT_UNSAFE", "问题包含不当内容")

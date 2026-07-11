@@ -4,7 +4,7 @@ const { request } = require('../../utils/request');
 // 首页 = 我的 AI 名片，由 /home/agents 的 primary 卡驱动；清新浅色 + 薄荷青（大卡 + 真实数据）。
 // 学习工具已独立到「技能」Tab，首页只承载名片本体（接待入口在「消息」Tab）。
 const FALLBACK = {
-  chief: { name: '我的 AI 名片', initial: '名', online: true, hasProfile: false, profileId: '', line: '替你接待每个来访的人，有结果就喊你', stats: null },
+  chief: { name: '我的 AI 分身', initial: '分', online: true, hasProfile: false, profileId: '', line: '替你接待每个来访的人，有结果就喊你', stats: null },
 };
 
 function greet() {
@@ -93,6 +93,6 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: '来微否，养一个替你把事办成的 AI 名片', path: '/pages/discover/index' };
+    return { title: '来微否，养一个替你把事办成的 AI 分身', path: '/pages/discover/index' };
   },
 });

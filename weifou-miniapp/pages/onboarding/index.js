@@ -5,7 +5,7 @@ const { track } = require('../../utils/track');
 // 对话式创建（唯一创建方式）：把原「5 步点选」融进对话——AI 逐步引导，结构化项（做什么/接待谁/气质）
 // 直接给可点「快捷选项」气泡，点了即答；名字与一句话走输入/语音；也可自由说一段，由 /profile/extract
 // 一次抽多字段并跳过已答步骤。必填 realName/title/strengths 齐即可上岗。最终走现有 POST /profile，零后端改动。
-const OPENER = '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
+const OPENER = '嗨，我来帮你建 AI 分身～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
 
 // —— 结构化选项（承自原 5 步点选）——
 const DOMAINS = ['顾问·教练', '设计·创意', '开发·技术', '教育·培训', '医美·健康', '法律·财税', '电商·带货', '内容·创作', '生活服务'];
@@ -28,7 +28,7 @@ const STAGES = [
   { key: 'name', field: 'realName', required: true, ask: '先问一句——我该怎么称呼你？', chips: null },
   { key: 'domain', field: 'title', required: true, ask: '你主要是做什么的？挑一个最接近的，或直接说～', chips: 'domain' },
   { key: 'audience', field: 'howToKnow', required: false, ask: '主要想接待谁？', chips: 'audience' },
-  { key: 'style', field: 'style', required: false, ask: '希望你的 AI 什么气质、说话调？', chips: 'style' },
+  { key: 'style', field: 'style', required: false, ask: '希望你的分身什么气质、说话调？', chips: 'style' },
   // strengths 走 AI 动态候选（/profile/suggest 按职业+受众现生成，可换一批）；打字/语音仍是兜底
   { key: 'substance', field: 'strengths', required: true, ask: '最后——你最能帮别人解决的一件事是什么？我按你的方向想了几个，点一个就行，说你自己的更好。', chips: 'strengths' },
 ];
@@ -86,7 +86,7 @@ Page({
     };
     this._edit = true;
     this.setData({ editMode: true, form, canFinish: true, confirmed: true });
-    this._pushAi(`这是你现在的 AI 主页——${form.realName}｜${form.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新主页」。`);
+    this._pushAi(`这是你现在的 AI 分身——${form.realName}｜${form.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新分身」。`);
   },
 
   _push(role, text) {
@@ -198,7 +198,7 @@ Page({
     // 编辑态：不逐项追问，改了回一句确认，随时可「更新主页」
     if (this._edit) {
       this.setData({ chipKind: null });
-      this._pushAi('好，记下了～ 还想改别的就继续说，或点「更新主页」。');
+      this._pushAi('好，记下了～ 还想改别的就继续说，或点「更新分身」。');
       return;
     }
 
@@ -256,7 +256,7 @@ Page({
     if (this.data.submitting) return;
     const edit = this.data.editMode;
     this.setData({ submitting: true, chipKind: null });
-    this._pushAi(edit ? '好，这就替你更新主页，稍等几秒 ✨' : '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨');
+    this._pushAi(edit ? '好，这就替你更新分身，稍等几秒 ✨' : '好，我这就替你把 AI 分身生成出来，稍等 5–15 秒 ✨');
     wx.showLoading({ title: edit ? '更新中…' : 'AI 生成中…', mask: true });
     try {
       await ensureLogin();

@@ -2,7 +2,7 @@
   <view class="hero">
     <view class="ic ic-crown crown"></view>
     <view class="h-title">微否会员</view>
-    <view class="h-sub">一价畅用全部 AI 助手</view>
+    <view class="h-sub">一价畅用全部技能课</view>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>

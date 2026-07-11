@@ -1,7 +1,7 @@
 <view class="wrap">
   <view class="head">
     <view class="h-title">AI 工具箱</view>
-    <view class="h-sub">挑一个 AI 助手，先免费体验，会员畅用全部</view>
+    <view class="h-sub">挑一门技能，先免费体验，会员畅用全部</view>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>

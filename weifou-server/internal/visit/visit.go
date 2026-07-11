@@ -104,7 +104,7 @@ func (h *Handler) stats(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	var pv int64
 	h.db.Model(&models.Visit{}).Where("profile_id = ?", profile.ID).Count(&pv)
@@ -134,7 +134,7 @@ func (h *Handler) visitors(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 
 	type row struct {

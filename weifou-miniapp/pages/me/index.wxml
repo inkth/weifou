@@ -7,7 +7,7 @@
       <view class="clone-ava"><view class="ic ic-bot"></view></view>
       <view class="clone-id">
         <view class="clone-name">{{realName ? realName + ' 的 AI 分身' : '我的 AI 分身'}}</view>
-        <view class="clone-sub">查看主页 · 人设 / 定价 / 收益</view>
+        <view class="clone-sub">查看主页 · 人设 / 数据</view>
       </view>
       <view class="ic ic-chevron clone-arrow"></view>
     </view>
@@ -20,7 +20,7 @@
   <!-- 我的活名片：会说话的你——发出去别人点开就能直接问你 / 和你聊（分发中心：分享 / 海报 / 预览） -->
   <view wx:if="{{profileId}}" class="qabox card">
     <view class="qabox-info">
-      <view class="qabox-title">我的活名片</view>
+      <view class="qabox-title">我的名片</view>
       <view class="qabox-sub muted">会说话的你 —— 发给别人，他们点开就能直接问你、和你聊。</view>
     </view>
     <view class="qabox-acts">

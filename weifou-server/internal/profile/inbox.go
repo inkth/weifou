@@ -31,7 +31,7 @@ func (h *Handler) myProfile(c *gin.Context) (*models.Profile, error) {
 	auth := middleware.Current(c)
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return nil, httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return nil, httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	return &profile, nil
 }

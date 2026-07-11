@@ -208,7 +208,7 @@ func (h *Handler) regenerate(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	if _, err := h.persona.GenerateForProfile(profile.ID, auth.Openid); err != nil {
 		return err
@@ -225,7 +225,7 @@ func (h *Handler) regenerate(c *gin.Context) error {
 func (h *Handler) publicByID(profileID string) (gin.H, error) {
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", profileID).Error; err != nil {
-		return nil, httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+		return nil, httpx.NotFound("PROFILE_NOT_FOUND", "AI 分身不存在")
 	}
 	var u models.User
 	h.db.First(&u, "id = ?", profile.UserID)
@@ -352,7 +352,7 @@ func (h *Handler) updateContact(c *gin.Context) error {
 	}
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	updates := map[string]interface{}{}
 	if req.ContactWechat != nil {
@@ -387,7 +387,7 @@ func (h *Handler) updateAvatar(c *gin.Context) error {
 	}
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	h.db.Model(&profile).Updates(map[string]interface{}{
 		"avatar_style": req.AvatarStyle,
@@ -413,11 +413,11 @@ func (h *Handler) updatePersona(c *gin.Context) error {
 	}
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	var p models.PersonaAI
 	if err := h.db.First(&p, "profile_id = ?", profile.ID).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_READY", "主页未生成")
+		return httpx.NotFound("PROFILE_NOT_READY", "AI 分身还没生成好")
 	}
 
 	// 对用户改写的文本做内容安全校验。
@@ -468,7 +468,7 @@ func (h *Handler) updateDiscoverable(c *gin.Context) error {
 	}
 	var profile models.Profile
 	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建主页")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
 	}
 	h.db.Model(&profile).Updates(map[string]interface{}{
 		"discoverable": req.Discoverable,
@@ -481,7 +481,7 @@ func (h *Handler) updateDiscoverable(c *gin.Context) error {
 func (h *Handler) contact(c *gin.Context) error {
 	var profile models.Profile
 	if err := h.db.First(&profile, "id = ?", c.Param("id")).Error; err != nil {
-		return httpx.NotFound("PROFILE_NOT_FOUND", "主页不存在")
+		return httpx.NotFound("PROFILE_NOT_FOUND", "AI 分身不存在")
 	}
 	if !profile.ContactVisible {
 		return httpx.Forbidden("CONTACT_HIDDEN", "本人未公开联系方式")
