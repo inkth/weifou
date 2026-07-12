@@ -9,6 +9,14 @@ Page({
     profileId: null,
     realName: '',
     memberEntry: true,
+    statusBarH: 20, // 自定义导航：顶部留出状态栏高度，去掉原生白色标题栏
+  },
+
+  onLoad() {
+    try {
+      const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()) || {};
+      this.setData({ statusBarH: info.statusBarHeight || 20 });
+    } catch (e) { /* 兜底默认 20 */ }
   },
 
   onShow() {
