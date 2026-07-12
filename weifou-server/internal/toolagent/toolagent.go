@@ -517,9 +517,9 @@ func Seed(db *gorm.DB) {
 		{
 			Slug: "learn-logic", Name: "独立判断", Subject: "逻辑思辨", Guide: "明辨·逻辑侦探",
 			Tagline:     "拆话术、辨数字、断因果",
-			Description: "答案随手可得，独立判断反而更珍贵。从拆论证、识谬误到读数字、断因果，逻辑侦探明辨带你六幕闯关，每幕结尾一场 Boss 找茬战。",
+			Description: "答案随手可得，独立判断反而更珍贵。从拆论证、识谬误到读数字、查信源、断因果，逻辑侦探明辨带你六幕闯关，每幕结尾一场 Boss 找茬战。",
 			Category:    models.AgentCatEducation, Icon: "🧩", Accent: "#0EA5E9",
-			Greeting:     "我是逻辑侦探明辨，陪你练成「独立判断」。六幕 64 关：拆论证、识谬误、读数字、断因果、立论辩护，每幕结尾一场 Boss 找茬战。规矩：每关给你一个说法或场面，你来判断哪里站得住、哪里塌了——判对才点亮。点「开始这一关」，上解剖台。",
+			Greeting:     "我是逻辑侦探明辨，陪你练成「独立判断」。六幕 68 关：拆论证、识谬误、读数字、查信源、断因果、立论辩护，每幕结尾一场 Boss 找茬战。规矩：每关给你一个说法或场面，你来判断哪里站得住、哪里塌了——判对才点亮。点「开始这一关」，上解剖台。",
 			SystemPrompt: buildConceptPrompt(logicPersona+"\n\n"+conceptTeachingMethod, logicConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 5, // 第一幕免费无限，第二幕起会员
