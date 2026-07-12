@@ -49,4 +49,14 @@ function h5Link() {
   return request({ url: '/membership/h5-link', method: 'POST' });
 }
 
-module.exports = { status, openMembership, buyMembership, leaveIntent, h5Link };
+// 我的邀请概况：{ refCode, invitedCount, pendingDays, grantedDays, isInvitee }
+function referralSummary() {
+  return request({ url: '/referral/summary' });
+}
+
+// 被邀人绑定推荐人（通过邀请链接进入时调用；服务端幂等，失败静默不打断购买）。
+function bindReferral(inviterUserId) {
+  return request({ url: '/referral/bind', method: 'POST', data: { inviterUserId } });
+}
+
+module.exports = { status, openMembership, buyMembership, leaveIntent, h5Link, referralSummary, bindReferral };

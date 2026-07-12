@@ -529,6 +529,47 @@ type MembershipLead struct {
 
 func (MembershipLead) TableName() string { return "membership_leads" }
 
+// ========== 好友邀请返奖（推荐好友开通会员，双边送会员时长） ==========
+//
+// 合规边界：奖励只挂「好友完成支付」不挂分享动作（微信利诱分享红线）；
+// 只做一级（推荐人→好友）、只送时长不返现金；奖励过退款窗口后由定时任务发放。
+
+// ReferralBinding 邀请绑定：被邀人首次通过邀请链接进入会员页时写入（每人只绑一次，先到先得）。
+// 只在被邀人尚无已支付会员订单时允许绑定；奖励发放后保留作历史归因。
+type ReferralBinding struct {
+	ID            string    `gorm:"primaryKey;size:32" json:"id"`
+	InviteeUserID string    `gorm:"uniqueIndex;size:32" json:"inviteeUserId"`
+	InviterUserID string    `gorm:"size:32;index" json:"inviterUserId"`
+	CreatedAt     time.Time `json:"createdAt"`
+}
+
+func (ReferralBinding) TableName() string { return "referral_bindings" }
+
+const (
+	ReferralRewardPending   = "pending"   // 推荐人奖励等退款窗口结束
+	ReferralRewardGranted   = "granted"   // 已发放
+	ReferralRewardCancelled = "cancelled" // 订单退款，奖励作废
+)
+
+// ReferralReward 一笔成功邀请的奖励账目（每个被邀人一生只产生一条）。
+// 被邀人加赠（InviteeDays）支付成功即发；推荐人奖励（InviterDays）到 UnlockAt 后由定时任务发。
+type ReferralReward struct {
+	ID            string     `gorm:"primaryKey;size:32" json:"id"`
+	OrderID       string     `gorm:"uniqueIndex;size:32" json:"orderId"`
+	InviterUserID string     `gorm:"size:32;index" json:"inviterUserId"`
+	InviteeUserID string     `gorm:"size:32;index" json:"inviteeUserId"`
+	PlanSlug      string     `gorm:"size:32" json:"planSlug"`
+	InviterDays   int        `json:"inviterDays"`
+	InviteeDays   int        `json:"inviteeDays"`
+	Status        string     `gorm:"size:16;default:pending;index" json:"status"`
+	UnlockAt      time.Time  `gorm:"index" json:"unlockAt"`
+	GrantedAt     *time.Time `json:"grantedAt,omitempty"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+}
+
+func (ReferralReward) TableName() string { return "referral_rewards" }
+
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -541,5 +582,6 @@ func AllModels() []interface{} {
 		&ToolAgent{}, &AgentEntitlement{}, &AgentPin{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
 		&AgentConcept{}, &UserConcept{}, &LearnStreak{}, &LearnReminder{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
+		&ReferralBinding{}, &ReferralReward{},
 	}
 }

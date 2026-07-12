@@ -36,6 +36,21 @@ page { background: var(--bg); }
 .ios-btn:active { transform: scale(0.985); background: var(--accent-strong); }
 .ios-done { margin-top: 28rpx; font-size: 28rpx; color: var(--success); font-weight: 600; }
 
+/* 被邀人首开加赠横幅 */
+.ref-banner { display: flex; align-items: center; gap: 12rpx; margin: 24rpx 28rpx 0; padding: 20rpx 24rpx; background: var(--accent-soft); border-radius: var(--r-md); }
+.ref-banner-tag { flex-shrink: 0; padding: 4rpx 14rpx; font-size: 21rpx; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: var(--r-full); }
+.ref-banner-text { font-size: 24rpx; color: var(--accent-ink); line-height: 1.5; }
+
+/* 邀请好友卡片 */
+.ref-card { margin: 32rpx 28rpx 0; background: var(--surface); border: var(--bw-thin) solid var(--border); border-radius: var(--r-xl); padding: 32rpx; box-shadow: var(--shadow-card); }
+.ref-title { font-size: 30rpx; font-weight: 700; color: var(--accent-ink); }
+.ref-rule { margin-top: 12rpx; font-size: 25rpx; color: var(--ink-2); line-height: 1.6; }
+.ref-stats { margin-top: 16rpx; padding: 14rpx 20rpx; font-size: 24rpx; color: var(--accent-ink); background: var(--accent-soft); border-radius: var(--r-md); }
+.ref-btn { margin-top: 24rpx; background: var(--accent); color: var(--on-accent); font-size: 29rpx; font-weight: 600; border: none; border-radius: var(--r-md); line-height: 84rpx; box-shadow: var(--shadow-accent); }
+.ref-btn::after { border: none; }
+.ref-btn:active { transform: scale(0.985); background: var(--accent-strong); }
+.ref-note { margin-top: 16rpx; text-align: center; font-size: 22rpx; color: var(--sub); }
+
 .ios-alt { margin: 8rpx 28rpx; padding: 28rpx 32rpx; text-align: center; }
 .ios-or { font-size: 26rpx; color: var(--sub); }
 .ios-btn2 { margin-top: 18rpx; background: var(--surface); color: var(--ink); font-size: 28rpx; font-weight: 700; border: var(--bw-thin) solid var(--border); border-radius: var(--r-md); line-height: 84rpx; box-shadow: var(--shadow-card); }
