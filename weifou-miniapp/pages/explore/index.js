@@ -1,4 +1,4 @@
-// 修炼 tab =「人类基本功计划」：七条能力路径，第一幕免费、全课会员解锁后续。
+// 技能 tab =「人类基本功计划」：多条能力路径，第一幕免费、全课会员解锁后续。
 // 首页已收敛为纯名片，不再承载「添加到首页」，故此处只做浏览 + 进入。
 // 上架范围由服务端 /agents（enabled=true）决定，前端不再做名单过滤。
 const { ensureLogin } = require('../../utils/auth');
@@ -61,7 +61,7 @@ Page({
     const { id, name } = e.currentTarget.dataset;
     const a = (this.data.agents || []).find((x) => x.id === id);
     // 透传 icon/accent：对话页无网时也能立刻画出对的头像+配色骨架
-    // game=1：修炼页进来的都是课，首帧即套游戏皮，免得加载窗口先闪一下普通聊天顶栏（含「解锁全课」）
+    // game=1：技能页进来的都是课，首帧即套游戏皮，免得加载窗口先闪一下普通聊天顶栏（含「解锁全课」）
     wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}&game=1` });
   },
 

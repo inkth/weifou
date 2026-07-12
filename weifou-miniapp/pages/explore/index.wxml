@@ -1,7 +1,7 @@
 <view class="mkt" style="padding-top:{{statusBarH}}px">
   <view class="mkt-top">
-    <view class="mkt-h1">人类基本功</view>
-    <view class="mkt-sub">AI 越强，人的判断、连接与表达越重要</view>
+    <view class="mkt-h1">把想学的，练成会的</view>
+    <view class="mkt-sub">选择一项能力，开始今天的练习</view>
     <view wx:if="{{streak}}" class="mkt-streak">连续 {{streak.days}} 天{{streak.todayDone ? '' : ' · 今天待练习'}}</view>
   </view>
 
@@ -18,8 +18,13 @@
   <block wx:else>
     <view class="mbr {{isMember ? 'on' : ''}}" hover-class="card-press" hover-stay-time="0" bindtap="goMembership">
       <view class="ic ic-crown mbr-ic"></view>
-      <text class="mbr-text">{{isMember ? '会员有效 · 全部路径可用' : '加入计划 · 解锁全部路径'}}</text>
+      <text class="mbr-text">{{isMember ? '会员有效 · 全部能力可学' : '加入计划 · 解锁全部能力'}}</text>
       <text wx:if="{{!isMember}}" class="mbr-go">去开通 ›</text>
+    </view>
+
+    <view class="ability-head" wx:if="{{agents.length}}">
+      <view class="ability-title">能力地图</view>
+      <view class="ability-sub">按自己的节奏，选一项开始</view>
     </view>
 
     <view class="mcard" wx:for="{{agents}}" wx:key="id"
@@ -38,8 +43,8 @@
 
     <view wx:if="{{agents.length === 0}}" class="empty-wrap">
       <view class="empty-ic"><view class="ic ic-sparkle"></view></view>
-      <view class="empty-title">课程正在上新</view>
-      <view class="empty-sub">新课正在打磨，很快就能开讲</view>
+      <view class="empty-title">新能力正在准备</view>
+      <view class="empty-sub">新的练习正在打磨，很快就能开始</view>
     </view>
   </block>
 </view>
