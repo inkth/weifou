@@ -595,6 +595,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 12, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-learning", Name: "学什么都快", Subject: "学习科学", Guide: "开窍·学习教练",
+			Tagline:     "拆假学习、装引擎、跑起来",
+			Description: "AI 时代知识随手可得，会学的人和假学的人差距反而更大。参考 Coursera 史上最多人学过的《Learning How to Learn》与《认知天性》等学习科学实证，由「微否」原创设计三幕 21 关：拆穿假学习（流畅错觉、检索、间隔）、给大脑装引擎（番茄、组块、睡眠）、把学习跑起来（刻意练习、反馈、AI 陪练）。这是一门元课程：学完它，你学任何东西都更快——包括这里的其他课。",
+			Category:    models.AgentCatEducation, Icon: "🎓", Accent: "#14B8A6",
+			Greeting:     "我是学习教练开窍，陪你练成「学什么都快」。先交个底：这门课不教速成魔法，只教被实验反复验证的方法——检索练习、间隔重复、交错练习、刻意练习，顺手辟掉几个害人的迷思（学习风格、一万小时、熬夜等于努力）。三幕 21 关：先拆穿假学习，再给大脑装引擎，最后把学习跑起来。它是门元课程：学完它，你在这里学英语、学心理、学任何课都会更快——连这个 App 的复习挑战是什么原理，你都会看穿。点「开始这一关」，先拆学习最大的骗局。",
+			SystemPrompt: buildConceptPrompt(learningPersona+"\n\n"+conceptTeachingMethod, learningConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 13, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
@@ -604,7 +614,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 13, // 会员隐藏课压轴（新课递增后顺延）
+			FreeTier: 1, Sort: 14, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），

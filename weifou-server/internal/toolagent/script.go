@@ -114,6 +114,7 @@ var courseScripts = map[string]map[string]levelScript{
 	"learn-love":       learnLoveScript,       // 好好相爱三幕21关（判断关+对手戏混合、零LLM）
 	"learn-happiness":  learnHappinessScript,  // 把幸福练出来三幕21关（两段式判断关、零LLM）
 	"learn-writing":    learnWritingScript,    // 让文字办事三幕21关（判断关+综合关真动笔产出节点）
+	"learn-learning":   learnLearningScript,   // 学什么都快三幕21关（两段式判断关、零LLM、元课程）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。
