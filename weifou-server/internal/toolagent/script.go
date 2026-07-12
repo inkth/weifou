@@ -103,18 +103,19 @@ const (
 // 产出课（英语/沟通/AI，点亮判据=学员真实产出）先点选化保流畅，再用产出节点（Free）保课魂——
 // 识别≠产出，章末大关的最后一拍必须留给学员自己的原话（跳过不罚，判过直升掌握）。
 var courseScripts = map[string]map[string]levelScript{
-	"daodejing-full":   daodejingFullScript,
-	"learn-logic":      learnLogicScript,
-	"learn-psychology": learnPsychologyScript,
-	"learn-marketing":  learnMarketingScript,
-	"learn-speaking":   learnSpeakingScript,   // 节点图对手戏（产出课点选化第一门）
-	"learn-ai":         learnAIScript,         // 节点图指令对比+找茬（产出课点选化第二门）
-	"spoken-english":   learnEnglishScript,    // 两轮场景裁决+迁移（纯点选、零LLM）
-	"learn-lifedesign": learnLifedesignScript, // 人生设计三幕21关（两段式概念课、零LLM）
-	"learn-love":       learnLoveScript,       // 好好相爱三幕21关（判断关+对手戏混合、零LLM）
-	"learn-happiness":  learnHappinessScript,  // 把幸福练出来三幕21关（两段式判断关、零LLM）
-	"learn-writing":    learnWritingScript,    // 让文字办事三幕21关（判断关+综合关真动笔产出节点）
-	"learn-learning":   learnLearningScript,   // 学什么都快三幕21关（两段式判断关、零LLM、元课程）
+	"daodejing-full":    daodejingFullScript,
+	"learn-logic":       learnLogicScript,
+	"learn-psychology":  learnPsychologyScript,
+	"learn-marketing":   learnMarketingScript,
+	"learn-speaking":    learnSpeakingScript,    // 节点图对手戏（产出课点选化第一门）
+	"learn-ai":          learnAIScript,          // 节点图指令对比+找茬（产出课点选化第二门）
+	"spoken-english":    learnEnglishScript,     // 两轮场景裁决+迁移（纯点选、零LLM）
+	"learn-lifedesign":  learnLifedesignScript,  // 人生设计三幕21关（两段式概念课、零LLM）
+	"learn-love":        learnLoveScript,        // 好好相爱三幕21关（判断关+对手戏混合、零LLM）
+	"learn-happiness":   learnHappinessScript,   // 把幸福练出来三幕21关（两段式判断关、零LLM）
+	"learn-writing":     learnWritingScript,     // 让文字办事三幕21关（判断关+综合关真动笔产出节点）
+	"learn-learning":    learnLearningScript,    // 学什么都快三幕21关（两段式判断关、零LLM、元课程）
+	"learn-negotiation": learnNegotiationScript, // 争取更多三幕21关（四场对手戏+终局真开口产出节点）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。
@@ -550,8 +551,9 @@ func (st *scriptTurn) reviewQuestion(slug string, vi int) (string, []tapOption, 
 // freeJudgeRubrics：产出节点的判定口径，按课程配置（rubric 里写清尺子与及格线，输出 JSON）。
 // 有 Free 节点的课程必须在这里登记（TestCourseScriptsComplete 守护），否则产出关只收不判。
 var freeJudgeRubrics = map[string]string{
-	"learn-speaking": speakingFreeJudge,
-	"learn-writing":  writingFreeJudge,
+	"learn-speaking":    speakingFreeJudge,
+	"learn-writing":     writingFreeJudge,
+	"learn-negotiation": negotiationFreeJudge,
 }
 
 type freeVerdict struct {

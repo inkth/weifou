@@ -605,6 +605,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 13, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-negotiation", Name: "争取更多", Subject: "谈判实战", Guide: "有底·谈判教练",
+			Tagline:     "上桌有清单、桌上有招法、难局能守身",
+			Description: "AI 能替你查行情，替你上桌开口的永远是你。参考哈佛谈判项目（Getting to Yes）、沃顿最受欢迎谈判课（Getting More）与 FBI 谈判专家的方法，由「微否」原创设计三幕 21 关：换一副谈判脑、桌上的招法、难局与守身——砍价、加薪、房租、大单，四场对手戏真刀真枪。只教真诚的谈判：可以不说全部，不能说假的。",
+			Category:    models.AgentCatEducation, Icon: "🤝", Accent: "#D946EF",
+			Greeting:     "我是谈判教练有底，陪你练「争取更多」。先记住一句：底气来自底牌，不来自嗓门。这门课把哈佛、沃顿和 FBI 谈判专家的方法搬进你的日常：三幕 21 关——先换一副谈判脑（利益、底牌、锚、对方的世界），再学桌上的招法（校准提问、不等价交换、搬标准），最后练难局与守身（接脏招、让步的舞步、敢于离场）。四场对手戏我演对方：二手砍价、加薪谈判、房租保卫战、大单终局——说砸了时间倒回，终局最后一拍轮到你真开口。只教真诚的谈判，不教套路诈术。点「开始这一关」，先看看你每天错过了多少场谈判。",
+			SystemPrompt: buildConceptPrompt(negotiationPersona+"\n\n"+conceptTeachingMethod, negotiationConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 14, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
@@ -614,7 +624,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 14, // 会员隐藏课压轴（新课递增后顺延）
+			FreeTier: 1, Sort: 15, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），
