@@ -52,6 +52,7 @@ func TestThreeActCoursesStructure(t *testing.T) {
 		"把幸福练出来": happinessConcepts,
 		"让文字办事":  writingConcepts,
 		"学什么都快":  learningConcepts,
+		"争取更多":   negotiationConcepts,
 	} {
 		if len(list) != 21 {
 			t.Fatalf("%s 应为 21 关，实际 %d", name, len(list))

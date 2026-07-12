@@ -78,6 +78,8 @@ func tiersFor(agentSlug string) (map[int]string, []int) {
 		return writingTierLabels, writingTierOrder
 	case "learn-learning":
 		return learningTierLabels, learningTierOrder
+	case "learn-negotiation":
+		return negotiationTierLabels, negotiationTierOrder
 	}
 	return tierLabels, tierOrder
 }
@@ -94,18 +96,19 @@ func tiersFor(agentSlug string) (map[int]string, []int) {
 // 同日按同一「精编」规格新增第五门「会用AI」、第六门「会说话」、及会员隐藏课「道德经」；
 // 2026-07-12 撤下六幕44关精选版，会员隐藏课只保留帛书完整版 daodejing-full。
 var curricula = map[string][]seedConcept{
-	"learn-psychology": psychologyConcepts,
-	"learn-logic":      logicConcepts,
-	"learn-marketing":  marketingConcepts,
-	"spoken-english":   englishScenarios,
-	"learn-ai":         aiConcepts,
-	"learn-speaking":   speakingConcepts,
-	"learn-lifedesign": lifedesignConcepts,
-	"learn-love":       loveConcepts,
-	"learn-happiness":  happinessConcepts,
-	"learn-writing":    writingConcepts,
-	"learn-learning":   learningConcepts,
-	"daodejing-full":   daodejingFullConcepts,
+	"learn-psychology":  psychologyConcepts,
+	"learn-logic":       logicConcepts,
+	"learn-marketing":   marketingConcepts,
+	"spoken-english":    englishScenarios,
+	"learn-ai":          aiConcepts,
+	"learn-speaking":    speakingConcepts,
+	"learn-lifedesign":  lifedesignConcepts,
+	"learn-love":        loveConcepts,
+	"learn-happiness":   happinessConcepts,
+	"learn-writing":     writingConcepts,
+	"learn-learning":    learningConcepts,
+	"learn-negotiation": negotiationConcepts,
+	"daodejing-full":    daodejingFullConcepts,
 }
 
 // hookCheck 人工精编内容（开课钩子 + 检验题）。与 seedConcept 分开存，SeedConcepts 时按 slug 合并写入。
@@ -114,18 +117,19 @@ type hookCheck struct{ Hook, Check string }
 // curatedContent：agent slug → concept slug → 精编内容。六门课全部精编。
 // 这是这条产品线的护城河：钩子制造好奇缺口、检验题考迁移应用——不是模型现编能稳定给出的品质。
 var curatedContent = map[string]map[string]hookCheck{
-	"learn-psychology": psychologyContent,
-	"spoken-english":   englishContent,
-	"learn-logic":      logicContent,
-	"learn-marketing":  marketingContent,
-	"learn-ai":         aiContent,
-	"learn-speaking":   speakingContent,
-	"learn-lifedesign": lifedesignContent,
-	"learn-love":       loveContent,
-	"learn-happiness":  happinessContent,
-	"learn-writing":    writingContent,
-	"learn-learning":   learningContent,
-	"daodejing-full":   daodejingFullContent,
+	"learn-psychology":  psychologyContent,
+	"spoken-english":    englishContent,
+	"learn-logic":       logicContent,
+	"learn-marketing":   marketingContent,
+	"learn-ai":          aiContent,
+	"learn-speaking":    speakingContent,
+	"learn-lifedesign":  lifedesignContent,
+	"learn-love":        loveContent,
+	"learn-happiness":   happinessContent,
+	"learn-writing":     writingContent,
+	"learn-learning":    learningContent,
+	"learn-negotiation": negotiationContent,
+	"daodejing-full":    daodejingFullContent,
 }
 
 // ============================ 英语陪练 · 场景关卡课程表 ============================
