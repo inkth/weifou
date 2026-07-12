@@ -143,10 +143,18 @@ Page({
       // 默认载入最近一段会话；没有则以开场白起新的一段
       let messages = [];
       let currentSessionId = '';
+      let restoredOptions = [];
       if (sessions && sessions.length) {
         currentSessionId = sessions[0].sessionId;
         const msgs = await sessionMessages(currentSessionId).catch(() => []);
         messages = this._decorateMsgs((msgs || []).map((m) => ({ role: m.role, content: m.content })));
+        // 恢复「最后一张助手卡」（与 _lessonFocus 取的卡一致）的点选项——服务端随消息回传。
+        // 本课纯点选无输入栏，不回填气泡则复原的卡片没法作答成死局；老会话未存 options 时为空，走页面兜底重开。
+        for (let i = (msgs || []).length - 1; i >= 0; i--) {
+          if (msgs[i].role !== 'assistant') continue;
+          if (msgs[i].options && msgs[i].options.length) restoredOptions = this._toOpts(msgs[i].options);
+          break;
+        }
       }
       if (messages.length === 0 && d.greeting) messages = [{ role: 'assistant', content: d.greeting }];
       const lesson = this._lessonFocus(messages);
@@ -165,6 +173,7 @@ Page({
         lessonChoice: lesson.choice,
         lessonTitle: d.guide || d.name || '当前练习',
         lessonProgress: sk && sk.enabled ? `Lv.${sk.level || 1}` : '',
+        options: restoredOptions,
         currentSessionId,
         sessions: this._decorate(sessions || []),
         skill: sk && sk.enabled ? sk : null,
@@ -365,6 +374,27 @@ Page({
       options: [],
     });
     this._ask('开始这一关', undefined, c.slug);
+  },
+
+  // 兜底：复原出的卡片没有点选项（老会话未存 options / 或安全拦截清空）时，纯点选课会成死局——
+  // 给一个「重新开始这一关」，新开一段以当前关钩子重开，跟秒开/抽屉开关走同一条路。
+  restartLevel() {
+    if (this.data.pending) return;
+    const idx = this.data.currentIndex;
+    const cur = this._roadNodes && idx >= 0 ? this._roadNodes[idx] : null;
+    if (cur && cur.memberLocked) { this.goMembership(); return; }
+    this._reviewing = false;
+    const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
+    this.setData({
+      messages,
+      lessonCard: this._lessonFocus(messages).card,
+      lessonChoice: '',
+      lessonTitle: cur ? cur.name : this.data.lessonTitle,
+      currentSessionId: '',
+      options: [],
+      mapVisible: false,
+    });
+    this._ask('开始这一关', undefined, cur ? cur.slug : undefined);
   },
 
   // 点进度条＝镜头拉回当前关（用户横滚看远处后的「回家」键）。

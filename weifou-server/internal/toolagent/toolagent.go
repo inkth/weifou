@@ -4,6 +4,7 @@
 package toolagent
 
 import (
+	"encoding/json"
 	"log"
 	"regexp"
 	"strings"
@@ -240,9 +241,16 @@ func (h *Handler) chat(c *gin.Context) error {
 		options = nil
 	}
 	// 入库存剥离选项后的正文：历史回放干净，模型看到的上下文也不带标记行。
+	// 选项另存一列（JSON）：本课纯点选无输入栏，复原历史会话时须重现气泡，否则卡片成死局。
+	optsJSON := ""
+	if len(options) > 0 {
+		if b, e := json.Marshal(options); e == nil {
+			optsJSON = string(b)
+		}
+	}
 	h.db.Create(&models.AgentMessage{
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
-		Content: answer, SafeCheckStatus: safe,
+		Content: answer, Options: optsJSON, SafeCheckStatus: safe,
 	})
 	h.db.Model(&session).Update("updated_at", time.Now())
 
@@ -329,7 +337,15 @@ func (h *Handler) messages(c *gin.Context) error {
 	h.db.Where("session_id = ?", session.ID).Order("created_at asc").Limit(200).Find(&msgs)
 	out := make([]gin.H, 0, len(msgs))
 	for _, m := range msgs {
-		out = append(out, gin.H{"role": m.Role, "content": m.Content, "createdAt": m.CreatedAt})
+		row := gin.H{"role": m.Role, "content": m.Content, "createdAt": m.CreatedAt}
+		// 回传随消息存下的点选项，让纯点选课复原历史时能重现气泡（老消息无此列则不带，前端有兜底）。
+		if m.Options != "" {
+			var opts []string
+			if json.Unmarshal([]byte(m.Options), &opts) == nil && len(opts) > 0 {
+				row["options"] = opts
+			}
+		}
+		out = append(out, row)
 	}
 	httpx.OK(c, out)
 	return nil

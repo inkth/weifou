@@ -175,9 +175,16 @@ func (h *Handler) scriptedChat(c *gin.Context, a *models.ToolAgent, session *mod
 	}
 
 	// 剧本文本是平台作者静态内容（上线前整体审），不逐条过 msg_sec_check。
+	// 选项另存一列（JSON）：本课纯点选无输入栏，复原历史会话时须重现气泡，否则卡片成死局。
+	optsJSON := ""
+	if len(st.options) > 0 {
+		if b, e := json.Marshal(st.options); e == nil {
+			optsJSON = string(b)
+		}
+	}
 	h.db.Create(&models.AgentMessage{
 		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
-		Content: st.answer, SafeCheckStatus: models.SafePass,
+		Content: st.answer, Options: optsJSON, SafeCheckStatus: models.SafePass,
 	})
 	h.db.Model(session).Updates(map[string]interface{}{
 		"script_concept": session.ScriptConcept, "script_stage": session.ScriptStage,
