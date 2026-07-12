@@ -113,6 +113,7 @@ var courseScripts = map[string]map[string]levelScript{
 	"learn-lifedesign": learnLifedesignScript, // 人生设计三幕21关（两段式概念课、零LLM）
 	"learn-love":       learnLoveScript,       // 好好相爱三幕21关（判断关+对手戏混合、零LLM）
 	"learn-happiness":  learnHappinessScript,  // 把幸福练出来三幕21关（两段式判断关、零LLM）
+	"learn-writing":    learnWritingScript,    // 让文字办事三幕21关（判断关+综合关真动笔产出节点）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。
@@ -549,6 +550,7 @@ func (st *scriptTurn) reviewQuestion(slug string, vi int) (string, []tapOption, 
 // 有 Free 节点的课程必须在这里登记（TestCourseScriptsComplete 守护），否则产出关只收不判。
 var freeJudgeRubrics = map[string]string{
 	"learn-speaking": speakingFreeJudge,
+	"learn-writing":  writingFreeJudge,
 }
 
 type freeVerdict struct {
