@@ -1,6 +1,6 @@
 const { ensureLogin } = require('../../utils/auth');
 const { loadEntries, agentVisible } = require('../../utils/entries');
-const { status, openMembership } = require('../../utils/membership');
+const { status, openMembership, referralSummary, bindReferral } = require('../../utils/membership');
 const { fenToYuan } = require('../../utils/pay');
 
 Page({
@@ -11,6 +11,17 @@ Page({
     expiresText: '',
     plans: [],
     paying: false,
+    // 邀请返奖：refCode=我的邀请参数；invitee=我是被邀人（首开加赠横幅）
+    refCode: '',
+    invitedCount: 0,
+    pendingDays: 0,
+    grantedDays: 0,
+    isInvitee: false,
+  },
+
+  onLoad(options) {
+    // 好友邀请链接带来的推荐人参数：登录后绑定（只试一次，服务端幂等）
+    this._pendingRef = (options && options.ref) || '';
   },
 
   async onShow() {
@@ -18,6 +29,8 @@ Page({
     try {
       await ensureLogin();
       await loadEntries();
+      await this.bindPendingRef();
+      this.loadReferral();
       const s = await status();
       const plans = (s.plans || []).map((p) => {
         const savePct = p.origPrice > p.price ? Math.round((1 - p.price / p.origPrice) * 100) : 0;
@@ -70,6 +83,39 @@ Page({
         setTimeout(() => this.refreshStatus(retries - 1), 2500);
       }
     } catch (e) {}
+  },
+
+  // 绑定邀请链接携带的推荐人（失败静默，不打断购买流程）。
+  async bindPendingRef() {
+    const ref = this._pendingRef;
+    if (!ref) return;
+    this._pendingRef = '';
+    try {
+      await bindReferral(ref);
+    } catch (e) {}
+  },
+
+  // 拉取我的邀请概况（分享参数 + 战报 + 被邀标记）。
+  async loadReferral() {
+    try {
+      const r = await referralSummary();
+      this.setData({
+        refCode: r.refCode || '',
+        invitedCount: r.invitedCount || 0,
+        pendingDays: r.pendingDays || 0,
+        grantedDays: r.grantedDays || 0,
+        isInvitee: !!r.isInvitee,
+      });
+    } catch (e) {}
+  },
+
+  // 邀请好友：奖励只挂「好友完成开通」，分享动作本身无奖励（利诱分享红线）。
+  onShareAppMessage() {
+    const ref = this.data.refCode;
+    return {
+      title: '给你留了份会员加赠：首次开通「人类基本功计划」多得会员天数',
+      path: ref ? `/pages/membership/index?ref=${ref}` : '/pages/membership/index',
+    };
   },
 
 });

@@ -20,6 +20,7 @@ import (
 	"weifou-server/internal/persona"
 	"weifou-server/internal/plaza"
 	"weifou-server/internal/profile"
+	"weifou-server/internal/referral"
 	"weifou-server/internal/share"
 	"weifou-server/internal/storage"
 	"weifou-server/internal/tasks"
@@ -49,6 +50,7 @@ type App struct {
 	toolagentH  *toolagent.Handler
 	homeH       *home.Handler
 	membershipH *membership.Handler
+	referralH   *referral.Handler
 	mpH         *mp.Handler
 	clientcfgH  *clientcfg.Handler
 	uploadH     *upload.Handler
@@ -84,6 +86,9 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 	// 业务服务
 	personaSvc := persona.NewService(db, ds, security)
 	paymentH := payment.NewHandler(db, payClient, cfg.JWTSecret)
+	// 邀请返奖：挂到「会员订单支付成功」钩子上（三条支付通道统一触发）。
+	referralH := referral.NewHandler(db, cfg.JWTSecret, paymentH.GrantDays)
+	paymentH.SetMembershipPaidHook(referralH.OnMembershipPaid)
 	vpayClient := wxvpay.New(cfg.WxAppID, cfg.WxvOfferID, cfg.WxvAppKey, cfg.WxvSandbox, loginClient)
 	mbrH := membership.NewHandler(db, paymentH, vpayClient, loginClient, cfg.JWTSecret)
 	mpLogin := wechat.NewLoginClient(cfg.MpAppID, cfg.MpSecret)
@@ -110,10 +115,11 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		toolagentH:  toolagent.NewHandler(db, ds, security, cfg.JWTSecret),
 		homeH:       home.NewHandler(db, cfg.JWTSecret),
 		membershipH: mbrH,
+		referralH:   referralH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH:  clientcfg.NewHandler(vpayClient.Ready()),
 		uploadH:     upload.NewHandler(uploadStore, publicHost+"/api/uploads", cfg.JWTSecret),
-		scheduler:   tasks.NewScheduler(db, paymentH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
+		scheduler:   tasks.NewScheduler(db, paymentH, referralH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
 	}
 	return a
 }
@@ -134,6 +140,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.toolagentH.Register(api)
 	a.homeH.Register(api)
 	a.membershipH.Register(api)
+	a.referralH.Register(api)
 	a.mpH.Register(api)
 	a.clientcfgH.Register(api)
 	a.uploadH.Register(api)

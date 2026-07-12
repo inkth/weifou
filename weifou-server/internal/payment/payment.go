@@ -21,6 +21,8 @@ type Handler struct {
 	db        *gorm.DB
 	pay       *wxpay.Client
 	jwtSecret string
+	// onMembershipPaid 会员订单支付成功钩子（邀请返奖等；app 装配时注入，可为 nil）。
+	onMembershipPaid func(*models.Order)
 }
 
 func NewHandler(db *gorm.DB, pay *wxpay.Client, jwtSecret string) *Handler {
@@ -158,12 +160,8 @@ func (h *Handler) handlePaid(res wxpay.NotifyResource) error {
 		"status": models.OrderPaid, "transaction_id": d.TransactionID, "paid_at": now,
 	})
 
-	if order.Type == models.OrderMembership && order.PlanID != nil {
-		var plan models.MembershipPlan
-		if h.db.First(&plan, "id = ?", *order.PlanID).Error == nil {
-			h.grantMembership(order.PayerUserID, plan.Days)
-		}
-	}
+	order.PaidAt = &now
+	h.GrantMembershipByOrder(&order)
 	return nil
 }
 
@@ -187,7 +185,17 @@ func (h *Handler) grantMembership(userID *string, days int) {
 		Update("expires_at", base.AddDate(0, 0, days))
 }
 
-// GrantMembershipByOrder 供虚拟支付发货回调复用：按已支付的会员订单开通/续费。
+// GrantDays 往用户会员状态上直接叠加天数（邀请返奖等非订单场景用）。
+func (h *Handler) GrantDays(userID string, days int) {
+	h.grantMembership(&userID, days)
+}
+
+// SetMembershipPaidHook 注册「会员订单支付成功」钩子（app 装配时注入 referral，避免包循环依赖）。
+func (h *Handler) SetMembershipPaidHook(fn func(*models.Order)) {
+	h.onMembershipPaid = fn
+}
+
+// GrantMembershipByOrder 按已支付的会员订单开通/续费（JSAPI/H5 回调与虚拟支付发货共用入口）。
 // 幂等由调用方的「订单 paid 守卫」保证（同一订单只发货一次）。
 func (h *Handler) GrantMembershipByOrder(order *models.Order) {
 	if order.Type != models.OrderMembership || order.PlanID == nil {
@@ -196,6 +204,9 @@ func (h *Handler) GrantMembershipByOrder(order *models.Order) {
 	var plan models.MembershipPlan
 	if h.db.First(&plan, "id = ?", *order.PlanID).Error == nil {
 		h.grantMembership(order.PayerUserID, plan.Days)
+	}
+	if h.onMembershipPaid != nil {
+		h.onMembershipPaid(order)
 	}
 }
 
