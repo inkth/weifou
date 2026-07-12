@@ -1,11 +1,14 @@
-/* 消息 = 接待收件箱：清新浅色令牌（真源见 app.wxss），单列白卡。底部留出悬浮 dock 的空间。 */
+/* 消息：安静的高密度接待列表，状态只用少量蓝紫和功能色。 */
 .page { padding: 24rpx 32rpx 200rpx; }
+.hd { display: flex; align-items: baseline; justify-content: space-between; padding: 14rpx 0 24rpx; }
+.hd-title { font-size: 48rpx; font-weight: 800; color: var(--ink); letter-spacing: -1rpx; }
+.hd-meta { font-size: 24rpx; color: var(--accent-deep); }
 
 .muted { color: var(--sub); }
 .tip { font-size: 24rpx; margin-bottom: 20rpx; line-height: 1.5; }
 .empty { text-align: center; padding-top: 120rpx; font-size: 28rpx; }
 
-/* 真失败可重试条——奶油黄警示，与订阅贴条区分（此为异常态） */
+/* 真失败可重试条 */
 .retry-row {
   background: var(--pop-butter);
   color: var(--pop-butter-ink);
@@ -17,7 +20,7 @@
   box-shadow: var(--shadow-hair);
 }
 
-/* 主人召回：开启「新提问」微信订阅提醒——奶油黄贴条 */
+/* 主人召回：开启「新提问」微信订阅提醒 */
 .notify-row {
   display: flex;
   align-items: center;
@@ -36,38 +39,35 @@
 /* 空收件箱破局：把"还没人来"变成可行动的分享下一步（结构用 app.wxss 空态三层） */
 .empty-wrap { padding-top: 100rpx; text-align: center; }
 .empty-ic { font-size: 72rpx; color: var(--sub); }
-.empty-title { font-size: 32rpx; font-weight: 600; color: var(--ink); margin-top: 20rpx; }
+.empty-title { font-size: 32rpx; font-weight: 800; color: var(--ink); margin-top: 20rpx; }
 .empty-sub { font-size: 26rpx; color: var(--sub); margin-top: 10rpx; line-height: 1.5; }
 .es-btn {
   display: inline-block; margin-top: 32rpx;
   background: var(--accent); color: var(--on-accent);
   border: none;
-  border-radius: var(--r-full); font-size: 26rpx;
+  border-radius: var(--r-md); font-size: 26rpx; font-weight: 800;
   padding: 0 44rpx; line-height: 78rpx;
   box-shadow: var(--shadow-accent);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.es-btn:active { transform: translateY(8rpx); box-shadow: none; }
+.es-btn:active { transform: scale(0.985); background: var(--accent-strong); }
 
 .card {
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-xl);
   padding: 28rpx;
   margin-bottom: 20rpx;
   box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.card:active { transform: translateY(3rpx); box-shadow: none; }
-/* 访客点名要本人亲自答：碧绿描边提优先级 */
+.card:active { transform: scale(0.99); background: var(--fill-pressed); }
+/* 访客点名要本人亲自答：蓝紫描边提优先级 */
 .card.urgent { border-color: var(--accent); }
 
 .lead-head { display: flex; justify-content: space-between; align-items: baseline; }
-.lead-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
+.lead-name { font-size: 28rpx; font-weight: 800; color: var(--ink); }
 
-.q { font-size: 30rpx; font-weight: 600; color: var(--ink); line-height: 1.5; margin-top: 8rpx; }
-.note { font-size: 28rpx; color: var(--ink-2); line-height: 1.6; margin-top: 10rpx; word-break: break-all; }
-.note.mine { color: var(--ink); }
-
+.q { font-size: 30rpx; font-weight: 700; color: var(--ink); line-height: 1.5; margin-top: 8rpx; }
 .meta { font-size: 22rpx; margin-top: 12rpx; }
 .status.todo { color: var(--accent); font-weight: 600; }

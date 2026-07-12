@@ -96,7 +96,7 @@ Page({
     const seed = this.data.profileId;
     const tier = tierForPreset(id, seed);
     const p = getPreset(id, seed);
-    const c0 = (p.colors && p.colors[0]) || '#18b690';
+    const c0 = (p.colors && p.colors[0]) || '#7772c8';
     const c1 = (p.colors && p.colors[1]) || c0;
     // 立绘只给有专属 image 形象的人；否则回退首字 toon 占位——
     // 名片是对外信任场景，绝不能是别人共用的脸。

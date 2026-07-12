@@ -1,70 +1,60 @@
-/* 组件默认 styleIsolation:isolated，app.wxss 的 .ic 不会下传，需自行 import 图标真源。
-   CSS 自定义属性可沿 DOM 继承进组件，故色值用 var(--令牌, 字面量)：能读到 page 令牌就随皮换，
-   读不到（老基础库）则回退字面量、绝不掉色。字面量与 app.wxss 糖果令牌一一对齐。 */
+/* 组件样式隔离，令牌均提供与 app.wxss 一致的雾蓝紫回退值。 */
 @import "../styles/icons.wxss";
 
-/* 糖果悬浮 dock：白底胶囊 + 浅灰细边 + 垂直底唇，悬浮于白底之上。
-   活跃态 = 碧绿实底胶囊（白字）。仅 tabBar 页渲染，沉浸页不出现。 */
+/* 平面底栏：不使用悬浮胶囊，视觉退到内容之后。 */
 .tabbar {
   position: fixed;
-  left: 28rpx;
-  right: 28rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 20rpx);
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1000;
   display: flex;
   align-items: center;
-  padding: 10rpx 12rpx;
-  background: var(--surface, #ffffff);
-  border: 2rpx solid var(--border, #e5e5e5);
-  border-radius: 999rpx;
-  box-shadow: 0 6rpx 0 var(--border, #e5e5e5);
+  padding: 12rpx 20rpx calc(env(safe-area-inset-bottom) + 10rpx);
+  background: rgba(246, 247, 251, 0.96);
+  border-top: 1rpx solid rgba(23, 24, 28, 0.04);
 }
 .tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rpx;
-  padding: 6rpx 0;
-  color: var(--sub, #999999); /* = currentColor → 驱动图标颜色 */
-  border-radius: 999rpx;
-  transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 0;
+  padding: 8rpx 0 4rpx;
+  color: var(--sub, #8d909b);
+  transition: color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-pill {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 96rpx;
-  height: 52rpx;
-  border-radius: 999rpx;
-  border: 2rpx solid transparent;
-  transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 80rpx;
+  height: 50rpx;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-ic {
-  font-size: 40rpx;
+  font-size: 42rpx;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tab-label {
-  font-size: 22rpx;
+  font-size: 23rpx;
   color: var(--sub, #999999);
   letter-spacing: 0.5rpx;
   transition: color 0.15s ease;
 }
 .tab.active {
-  color: var(--on-accent, #ffffff);
+  color: var(--accent-deep, #4f4a8b);
 }
 .tab.active .tab-pill {
-  background: var(--accent, #18b690);
-  border-color: transparent;
-  box-shadow: 0 4rpx 0 var(--accent-strong, #0e9c7a);
+  background: transparent;
 }
 .tab.active .tab-ic {
-  transform: scale(1.04);
+  transform: scale(1.06);
 }
 .tab.active .tab-label {
-  color: var(--accent, #18b690);
+  color: var(--accent-deep, #4f4a8b);
   font-weight: 800;
 }
 .tab:active .tab-pill {
-  transform: scale(0.9);
+  transform: scale(0.94);
 }

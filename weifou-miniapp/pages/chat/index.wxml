@@ -31,60 +31,12 @@
     </view>
   </view>
 
-  <!-- 名片开场（无立绘）：三幕——递卡→开口→便签。开聊后收成顶部胶囊条。 -->
-  <block wx:if="{{!liheSrc}}">
-    <view wx:if="{{!cardCompact}}"
-          class="ncard-wrap {{stageEntered ? 'stage-in' : ''}} {{(pending || introState) ? 'stage-active' : ''}}"
-          style="{{ambStyle}}">
-      <view class="ncard {{cardFlipped ? 'flipped' : ''}}">
-        <view class="ncard-inner">
-          <!-- 正面：信任信息一次给足（点卡翻面） -->
-          <view class="ncard-face ncard-front" bindtap="flipCard">
-            <view class="ncard-sticker">AI 分身 · 随时在线</view>
-            <view class="ncard-row">
-              <view class="ncard-frame"><view class="frame-toon">{{stageInitial}}</view></view>
-              <view class="ncard-id">
-                <view class="ncard-name">{{realName || '正在连线…'}}</view>
-                <view class="ncard-title" wx:if="{{title || company}}">{{title}}{{title && company ? ' · ' : ''}}{{company}}</view>
-                <view class="ncard-proof" wx:if="{{trustLine}}">{{trustLine}}</view>
-                <view class="ncard-proof" wx:elif="{{city}}">{{city}}</view>
-              </view>
-            </view>
-            <view class="ncard-oneliner" wx:if="{{oneLiner}}">{{oneLiner}}</view>
-            <view class="ncard-tags">
-              <text class="ncard-tag" wx:for="{{cardTags}}" wx:key="*this">{{item}}</text>
-              <text class="ncard-flip">翻面看详情 ↻</text>
-            </view>
-            <view class="stage-indicator ncard-dots {{(pending || introState === 'thinking') ? 'on' : ''}}">
-              <view class="dot"></view><view class="dot"></view><view class="dot"></view>
-            </view>
-          </view>
-          <!-- 背面：完整介绍（只有"翻回"按钮可翻，内容可滚动） -->
-          <view class="ncard-face ncard-back">
-            <view class="ncard-back-head">
-              <view class="ncard-back-title">关于 {{realName}}</view>
-              <view class="ncard-flip" bindtap="flipCard">↻ 翻回</view>
-            </view>
-            <scroll-view class="ncard-back-scroll" scroll-y>
-              <view class="ncard-back-sub" wx:if="{{title || company || city}}">{{title}}{{title && (company || city) ? ' · ' : ''}}{{company}}{{company && city ? ' · ' : ''}}{{city}}</view>
-              <view class="ncard-back-tags" wx:if="{{tags.length}}">
-                <text class="ncard-tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
-              </view>
-              <view class="ncard-back-intro" wx:if="{{fullIntro}}">{{fullIntro}}</view>
-              <view class="ncard-back-proof" wx:if="{{trustLine}}">{{trustLine}}</view>
-            </scroll-view>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 收起态：顶部胶囊条（点击重新展开名片） -->
-    <view wx:else class="ncard-bar" bindtap="expandCard">
-      <view class="ncard-bar-ava" style="{{ambStyle}}"><view class="frame-toon">{{stageInitial}}</view></view>
-      <view class="ncard-bar-name">{{realName}} 的 AI 分身</view>
-      <view class="ncard-bar-chip">名片</view>
-    </view>
-  </block>
+  <!-- 无立绘时保持一行身份头；详细资料统一进入「关于 TA」抽屉。 -->
+  <view wx:if="{{!liheSrc}}" class="ncard-bar identity-bar" bindtap="openAbout">
+    <view class="ncard-bar-ava" style="{{ambStyle}}"><view class="frame-toon">{{stageInitial}}</view></view>
+    <view class="ncard-bar-name">{{realName ? realName + ' 的 AI 分身' : '正在连线…'}}</view>
+    <view class="ncard-bar-chip">关于 TA ›</view>
+  </view>
 
   <scroll-view class="msg-list" scroll-y scroll-into-view="msg-{{messages.length-1}}" enhanced show-scrollbar="{{false}}">
     <block wx:for="{{messages}}" wx:key="index">
@@ -92,27 +44,12 @@
         <view class="bubble">{{item.content}}</view>
       </view>
 
-      <!-- 裂变：对话内轻线索（被回答种草后） -->
-      <view wx:if="{{item.action === 'create-own'}}" id="msg-{{index}}" class="sys-link own-hook" bindtap="goCreateOwn">
-        ✨ 这个 AI 分身是 {{realName}} 用 1 分钟建的 · 我也要一个 ›
-      </view>
-
-      <!-- 裂变：目的达成后的身份反转 CTA -->
-      <view wx:if="{{item.action === 'create-own-strong'}}" id="msg-{{index}}" class="own-cta">
-        <view class="own-cta-title">也有很多人想了解你</view>
-        <view class="own-cta-sub">刚才它替 {{realName}} 接待了你。1 分钟，建一个你的 AI 分身替你先聊。</view>
-        <button class="own-cta-btn" bindtap="goCreateOwn">建一个我的 AI 分身</button>
+      <!-- 裂变线索降为一行，不打断对话。 -->
+      <view wx:if="{{item.action === 'create-own' || item.action === 'create-own-strong'}}" id="msg-{{index}}" class="sys-link own-hook" bindtap="goCreateOwn">
+        我也建一个 AI 分身 ›
       </view>
     </block>
   </scroll-view>
-
-  <!-- 成交阶梯进度条：分身判定的 聊→问→约，纯展示，让访客感到在往前走 -->
-  <view class="stage-rail" wx:if="{{answeredOnce && stageIdx >= 0}}">
-    <block wx:for="{{stageLabels}}" wx:key="*this">
-      <view class="rail-node {{index === stageIdx ? 'on' : ''}} {{index < stageIdx ? 'done' : ''}}">{{item}}</view>
-      <view wx:if="{{index < stageLabels.length - 1}}" class="rail-line {{index < stageIdx ? 'done' : ''}}"></view>
-    </block>
-  </view>
 
   <!-- 选项区：开场动画结束后引导问题淡入；行动入口在首轮回答后才出现，开场聚焦"开始聊" -->
   <view class="choices {{startersRevealed ? 'revealed' : ''}}" wx:if="{{!pending && startersRevealed}}">
@@ -125,14 +62,13 @@
     <!-- 成交阶梯选项：每轮回答后分身现编的下一步，点选即发（全程点选，无自由输入；换不到就「换一批」） -->
     <view class="chip q note-{{index % 3}}" wx:for="{{options}}" wx:key="*this" bindtap="pickOption" data-q="{{item}}">{{item}}</view>
 
+    <!-- 每次只给一个最相关的关系行动；其他资料从顶部身份头进入。 -->
     <block wx:if="{{answeredOnce && !isMine}}">
-      <view class="chip act" bindtap="openAboutEntry">关于 TA</view>
-      <view class="chip act" bindtap="onContact" wx:if="{{contactAvailable}}">联系本人</view>
-      <!-- 有自己分身：交换名片（站内连接，可捎句话，主路径）；没有：让 TA 找我（匿名举手，兜底） -->
-      <view wx:if="{{hasOwnProfile}}" class="chip act {{connected ? 'done' : ''}}" bindtap="openExchange">{{connected ? '✓ 已交换名片' : '🤝 交换名片'}}</view>
-      <view wx:else class="chip act" bindtap="openLeave">💬 让 TA 找我</view>
+      <view wx:if="{{hasOwnProfile}}" class="chip act next-action {{connected ? 'done' : ''}}" bindtap="openExchange">{{connected ? '已交换名片' : '交换名片'}}</view>
+      <view wx:elif="{{contactAvailable}}" class="chip act next-action" bindtap="onContact">联系本人</view>
+      <view wx:else class="chip act next-action" bindtap="openLeave">让 TA 找我</view>
     </block>
-    <view class="chip ghost" wx:if="{{options.length}}" bindtap="reshuffle">🔄 换一批</view>
+    <view class="chip ghost reshuffle" wx:if="{{options.length}}" bindtap="reshuffle">换一批</view>
 
     <!-- 信任 caption：社会证明；trustLine 为空则不显示 -->
     <view class="trust-cap" wx:if="{{answeredOnce && !isMine && trustLine}}">

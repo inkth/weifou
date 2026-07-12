@@ -1,4 +1,4 @@
-/* 我的 = 糖果风（令牌真源见 app.wxss）：浅灰边资产卡 + 垂直底唇 + 分组单元格。 */
+/* 我的：分身与分享是核心资产，其他功能回归清晰列表。 */
 .page {
   min-height: 100vh;
   box-sizing: border-box;
@@ -6,18 +6,18 @@
   padding: 16rpx 28rpx calc(env(safe-area-inset-bottom) + 180rpx);
 }
 .hd { padding: 28rpx 4rpx 16rpx; }
-.hd-title { font-size: 48rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; }
+.hd-title { font-size: 48rpx; font-weight: 800; color: var(--ink); letter-spacing: -1rpx; }
 
 .card {
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 
 .clone { padding: 32rpx 28rpx; margin-bottom: 28rpx; }
-.clone:active { transform: translateY(5rpx); box-shadow: none; }
+.clone:active { transform: scale(0.99); background: var(--fill-pressed); }
 .clone-top { display: flex; align-items: center; gap: 22rpx; }
 .clone-ava {
   width: 100rpx;
@@ -32,7 +32,7 @@
 }
 .clone-ava .ic { font-size: 56rpx; color: var(--on-accent); }
 .clone-id { flex: 1 1 auto; min-width: 0; }
-.clone-name { font-size: 32rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.clone-name { font-size: 32rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.3rpx; }
 .clone-sub { margin-top: 6rpx; font-size: 25rpx; color: var(--sub); }
 .clone-arrow { font-size: 30rpx; color: var(--ink); }
 .clone-acts {
@@ -49,15 +49,16 @@
   gap: 10rpx;
   padding: 22rpx 0 6rpx;
   font-size: 24rpx;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--ink-2);
 }
+.clone-act::after { border: none; }
 .clone-act:active { opacity: 0.55; }
 .ca-ic { font-size: 42rpx; color: var(--ink); }
 
 .create { padding: 44rpx 32rpx; margin-bottom: 28rpx; text-align: center; }
-.create:active { transform: translateY(5rpx); box-shadow: none; }
-.create-title { font-size: 34rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.3rpx; }
+.create:active { transform: scale(0.99); }
+.create-title { font-size: 34rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.3rpx; }
 .create-sub { margin-top: 10rpx; font-size: 26rpx; color: var(--sub); }
 .create-btn {
   display: inline-flex;
@@ -68,10 +69,10 @@
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: var(--r-full);
+  border-radius: var(--r-md);
   font-size: 28rpx;
   font-weight: 700;
-  box-shadow: 0 4rpx 0 var(--accent-strong);
+  box-shadow: var(--shadow-accent);
 }
 .create-btn-ic { font-size: 30rpx; }
 
@@ -79,7 +80,7 @@
   margin-top: 4rpx;
   margin-bottom: 24rpx;
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-xl);
   overflow: hidden;
   box-shadow: var(--shadow-card);
@@ -94,26 +95,11 @@
 .cell:active { background: var(--fill-pressed); }
 .cell-ic { font-size: 42rpx; margin-right: 22rpx; color: var(--ink-2); }
 .cell-ic-accent { color: var(--accent-strong); }
-.cell-label { flex: 1; font-size: 30rpx; font-weight: 500; color: var(--ink); }
+.cell-label { flex: 1; font-size: 30rpx; font-weight: 600; color: var(--ink); }
 .cell-arrow { font-size: 28rpx; color: var(--faint); }
-
-/* 我的问答箱入口 */
-.qabox { margin-top: 0; margin-bottom: 24rpx; display: flex; align-items: center; gap: 20rpx; padding: 28rpx; }
-.qabox-info { flex: 1; }
-.qabox-title { font-size: 30rpx; font-weight: 700; color: var(--ink); }
-.qabox-sub { font-size: 24rpx; margin-top: 6rpx; line-height: 1.5; }
-.qabox-acts { display: flex; flex-direction: column; align-items: flex-end; gap: 12rpx; }
-.qabox-share {
-  background: var(--accent); color: var(--on-accent); font-size: 26rpx; font-weight: 700;
-  border: none;
-  border-radius: var(--r-full); padding: 10rpx 36rpx; line-height: 1.4; margin: 0;
-  box-shadow: 0 4rpx 0 var(--accent-strong);
-}
-.qabox-share::after { border: none; }
-.qabox-share:active { transform: translateY(4rpx); box-shadow: none; }
-.qabox-preview { font-size: 24rpx; color: var(--sub); }
 
 .legal { margin-top: 40rpx; text-align: center; color: var(--faint); font-size: 22rpx; line-height: 1.8; }
 .brand-sign { color: var(--ink); opacity: 0.6; font-size: 26rpx; font-weight: 600; letter-spacing: 1rpx; margin-bottom: 14rpx; }
 .legal-links { margin-top: 4rpx; }
 .legal-links .dot { margin: 0 12rpx; }
+.logout-link { display: inline-block; margin-top: 20rpx; padding: 8rpx 20rpx; color: var(--sub); }

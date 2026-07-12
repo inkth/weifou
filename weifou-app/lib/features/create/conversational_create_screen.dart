@@ -5,12 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../core/network/api_exception.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/api/profile_api.dart';
 
 /// 对话式创建：把原「分步点选」融进对话——AI 逐步引导，结构化项（做什么/接待谁/气质）直接给
 /// 可点「快捷气泡」，点了即答；名字与一句话走输入/语音；也可自由说一段由 /profile/extract 一次
 /// 抽多字段并跳过已答步骤。必填 realName/title/strengths 齐即可上岗。与小程序 pages/onboarding 全面
-/// 对齐：全屏立绘暗场沉浸皮肤 + 毛玻璃气泡/气泡选项/输入条。
+/// 对齐：人物在场的雾蓝紫亮场 + 高对比气泡/选项/输入条。
 const _opener =
     '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
 
@@ -21,20 +22,27 @@ const Map<String, String> _styleAvatar = {
   'humorous': 'toon-humorous',
 };
 
-// —— 沉浸暗场皮肤色（与小程序 onboarding.wxss 同值）——
-const _accent = Color(0xFF18B690);
-const _accentSoft = Color(0x5718B690); // rgba(24,182,144,0.34)
-const _accentBorder = Color(0x9918B690); // rgba(24,182,144,0.6)
-const _glassFill = Color(0x6B12141C); // rgba(18,20,28,0.42)
-const _glassBorder = Color(0x4DFFFFFF); // rgba(255,255,255,0.30)
-const _aiBubble = Color(0x8012141C); // rgba(18,20,28,0.5)
-const _aiBorder = Color(0x2EFFFFFF); // rgba(255,255,255,0.18)
-const _userBubble = Color(0xE618B690); // rgba(24,182,144,0.9)
+// —— 雾蓝紫亮场（与小程序 onboarding.wxss 同源）——
+const _accent = AppTheme.accent;
+const _accentSoft = AppTheme.accentSoft;
+const _accentBorder = Color(0xFFCCC8E7);
+const _glassFill = Color(0xF2FFFFFF);
+const _glassBorder = AppTheme.border;
+const _aiBubble = Color(0xF7FFFFFF);
+const _aiBorder = AppTheme.border;
+const _userBubble = AppTheme.accent;
 
 // —— 结构化快捷选项（与小程序 pages/onboarding 同源）——
 const _domains = [
-  '顾问·教练', '设计·创意', '开发·技术', '教育·培训', '医美·健康',
-  '法律·财税', '电商·带货', '内容·创作', '生活服务',
+  '顾问·教练',
+  '设计·创意',
+  '开发·技术',
+  '教育·培训',
+  '医美·健康',
+  '法律·财税',
+  '电商·带货',
+  '内容·创作',
+  '生活服务',
 ];
 
 class _Audience {
@@ -80,7 +88,13 @@ const _stages = [
   _Stage('domain', 'title', true, '你主要是做什么的？挑一个最接近的，或直接说～', 'domain'),
   _Stage('audience', 'howToKnow', false, '主要想接待谁？', 'audience'),
   _Stage('style', 'style', false, '希望你的 AI 什么气质、说话调？', 'style'),
-  _Stage('substance', 'strengths', true, '最后——你最能帮别人解决的一件事是什么？越具体它越懂你（也可写个代表作）。', null),
+  _Stage(
+    'substance',
+    'strengths',
+    true,
+    '最后——你最能帮别人解决的一件事是什么？越具体它越懂你（也可写个代表作）。',
+    null,
+  ),
 ];
 
 class _OMsg {
@@ -190,8 +204,12 @@ class _ConversationalCreateScreenState
         _city = d.city;
         _canFinish = true;
         _confirmed = true;
-        _msgs.add(_OMsg(true,
-            '这是你现在的 AI 主页——${d.realName}｜${d.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新主页」。'));
+        _msgs.add(
+          _OMsg(
+            true,
+            '这是你现在的 AI 主页——${d.realName}｜${d.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新主页」。',
+          ),
+        );
       } else {
         _msgs.add(_OMsg(true, _opener));
       }
@@ -238,8 +256,7 @@ class _ConversationalCreateScreenState
     await _speech.listen(
       onResult: (r) => setState(() {
         _input.text = r.recognizedWords;
-        _input.selection =
-            TextSelection.collapsed(offset: _input.text.length);
+        _input.selection = TextSelection.collapsed(offset: _input.text.length);
       }),
       listenOptions: stt.SpeechListenOptions(
         localeId: 'zh_CN',
@@ -259,8 +276,11 @@ class _ConversationalCreateScreenState
   void _scrollEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
-        _scroll.animateTo(_scroll.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        _scroll.animateTo(
+          _scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
@@ -369,13 +389,15 @@ class _ConversationalCreateScreenState
     if (_submitting) return;
     setState(() {
       _submitting = true;
-      _msgs.add(_OMsg(true, _edit
-          ? '好，这就替你更新主页，稍等几秒 ✨'
-          : '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨'));
+      _msgs.add(
+        _OMsg(true, _edit ? '好，这就替你更新主页，稍等几秒 ✨' : '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨'),
+      );
     });
     _scrollEnd();
     try {
-      final profile = await ref.read(profileApiProvider).createOrUpdate(
+      final profile = await ref
+          .read(profileApiProvider)
+          .createOrUpdate(
             ProfileInput(
               realName: _realName,
               title: _title,
@@ -412,42 +434,34 @@ class _ConversationalCreateScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: const Color(0xFF20232E),
+      backgroundColor: AppTheme.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        foregroundColor: AppTheme.ink,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: Stack(
         children: [
-          // 底层暗场渐变（立绘加载前/不覆盖处兜底，与 wxss 的 .ob 同色）
+          // 雾蓝紫亮场兜底。
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF36303A),
-                  Color(0xFF20232E),
-                  Color(0xFF15171F)
+                  Color(0xFFE2DFF5),
+                  Color(0xFFE2F0F6),
+                  Color(0xFFF6F7FB),
                 ],
                 stops: [0, 0.58, 1],
               ),
             ),
             child: SizedBox.expand(),
           ),
-          // 全屏立绘（缺图则降级为暗场渐变）
-          Positioned.fill(
-            child: Image.asset(
-              'assets/avatars/gf-meinv_idle.webp',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
-          ),
-          // 暗场 scrim（与 wxss .bg-scrim 同色阶）
+          // 创建阶段不预设人物形象，只保留安静的 AI 环境光。
           const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -455,10 +469,10 @@ class _ConversationalCreateScreenState
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0x8010121A),
-                    Color(0x0F10121A),
-                    Color(0x5710121A),
-                    Color(0xE010121A),
+                    Color(0x66FFFFFF),
+                    Color(0x1AFFFFFF),
+                    Color(0x99F6F7FB),
+                    Color(0xF7F6F7FB),
                   ],
                   stops: [0, 0.26, 0.62, 1],
                 ),
@@ -467,24 +481,27 @@ class _ConversationalCreateScreenState
           ),
           SafeArea(
             child: _initializing
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.white))
+                ? const Center(child: CircularProgressIndicator(color: _accent))
                 : Column(
                     children: [
                       const SizedBox(height: kToolbarHeight),
-                      Text(_edit ? '想更新什么？说一句就改' : '先聊几句，我来替你写主页',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            shadows: [
-                              Shadow(color: Colors.black54, blurRadius: 8)
-                            ],
-                          )),
+                      Text(
+                        _edit ? '想更新什么？说一句就改' : '先聊几句，我来替你写主页',
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          shadows: [Shadow(color: Colors.white, blurRadius: 8)],
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(_edit ? '没提到的都给你留着' : '说一句，或点下方选项都行',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
+                      Text(
+                        _edit ? '没提到的都给你留着' : '说一句，或点下方选项都行',
+                        style: const TextStyle(
+                          color: AppTheme.ink2,
+                          fontSize: 12,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       Expanded(
                         child: ListView.builder(
@@ -502,7 +519,8 @@ class _ConversationalCreateScreenState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_chipKind != null && !_submitting) _buildChips(),
+                            if (_chipKind != null && !_submitting)
+                              _buildChips(),
                             if (_canFinish && !_submitting)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
@@ -512,7 +530,9 @@ class _ConversationalCreateScreenState
                               const Padding(
                                 padding: EdgeInsets.only(bottom: 10),
                                 child: LinearProgressIndicator(
-                                    minHeight: 2, color: _accent),
+                                  minHeight: 2,
+                                  color: _accent,
+                                ),
                               ),
                             _Composer(
                               controller: _input,
@@ -533,7 +553,7 @@ class _ConversationalCreateScreenState
     );
   }
 
-  // 当前阶段的快捷气泡（点了即答，承接原分步点选）：行业/接待=毛玻璃 pill；气质=两行卡片
+  // 当前阶段的快捷气泡：行业/接待=白底选项；气质=两行卡片。
   Widget _buildChips() {
     final List<Widget> chips;
     switch (_chipKind) {
@@ -544,8 +564,10 @@ class _ConversationalCreateScreenState
         break;
       case 'audience':
         chips = _audiences
-            .map((a) =>
-                _pill(a.label, () => _pickChip('howToKnow', a.hk, a.label)))
+            .map(
+              (a) =>
+                  _pill(a.label, () => _pickChip('howToKnow', a.hk, a.label)),
+            )
             .toList();
         break;
       case 'style':
@@ -561,71 +583,82 @@ class _ConversationalCreateScreenState
   }
 
   Widget _pill(String label, VoidCallback onTap) => Material(
-        color: Colors.transparent,
-        child: InkWell(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(100),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: _glassFill,
           borderRadius: BorderRadius.circular(100),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-            decoration: BoxDecoration(
-              color: _glassFill,
-              borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: _glassBorder),
-            ),
-            child: Text(label,
-                style: const TextStyle(color: Colors.white, fontSize: 13)),
-          ),
+          border: Border.all(color: _glassBorder),
         ),
-      );
+        child: Text(
+          label,
+          style: const TextStyle(color: AppTheme.ink, fontSize: 13),
+        ),
+      ),
+    ),
+  );
 
   Widget _styleCard(_StyleOpt s) => Material(
-        color: Colors.transparent,
-        child: InkWell(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => _pickChip('style', s.value, s.label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _glassFill,
           borderRadius: BorderRadius.circular(14),
-          onTap: () => _pickChip('style', s.value, s.label),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: _glassFill,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _glassBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(s.label,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(s.desc,
-                    style: const TextStyle(color: Colors.white70, fontSize: 11)),
-              ],
-            ),
-          ),
+          border: Border.all(color: _glassBorder),
         ),
-      );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              s.label,
+              style: const TextStyle(
+                color: AppTheme.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              s.desc,
+              style: const TextStyle(color: AppTheme.sub, fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   Widget _finishChip() => Material(
-        color: Colors.transparent,
-        child: InkWell(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(100),
+      onTap: _finish,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+        decoration: BoxDecoration(
+          color: _accentSoft,
           borderRadius: BorderRadius.circular(100),
-          onTap: _finish,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-            decoration: BoxDecoration(
-              color: _accentSoft,
-              borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: _accentBorder),
-            ),
-            child: Text(_edit ? '更新主页 ›' : '信息够了，先上岗 ›',
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w500)),
+          border: Border.all(color: _accentBorder),
+        ),
+        child: Text(
+          _edit ? '更新主页 ›' : '信息够了，先上岗 ›',
+          style: const TextStyle(
+            color: AppTheme.accentInk,
+            fontWeight: FontWeight.w600,
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _Bubble extends StatelessWidget {
@@ -640,8 +673,9 @@ class _Bubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
+        ),
         decoration: BoxDecoration(
           color: ai ? _aiBubble : _userBubble,
           borderRadius: BorderRadius.only(
@@ -652,8 +686,13 @@ class _Bubble extends StatelessWidget {
           ),
           border: ai ? Border.all(color: _aiBorder) : null,
         ),
-        child: Text(msg.text,
-            style: const TextStyle(color: Colors.white, height: 1.5)),
+        child: Text(
+          msg.text,
+          style: TextStyle(
+            color: ai ? AppTheme.ink : Colors.white,
+            height: 1.5,
+          ),
+        ),
       ),
     );
   }
@@ -674,8 +713,10 @@ class _TypingBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _aiBorder),
         ),
-        child: const Text('正在理解…',
-            style: TextStyle(color: Colors.white70, fontSize: 13)),
+        child: const Text(
+          '正在理解…',
+          style: TextStyle(color: AppTheme.sub, fontSize: 13),
+        ),
       ),
     );
   }
@@ -712,10 +753,15 @@ class _Composer extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: recording ? _accentSoft : _glassFill,
-              border:
-                  Border.all(color: recording ? _accentBorder : _glassBorder),
+              border: Border.all(
+                color: recording ? _accentBorder : _glassBorder,
+              ),
             ),
-            child: const Icon(Icons.mic, size: 22, color: Colors.white),
+            child: Icon(
+              Icons.mic,
+              size: 22,
+              color: recording ? AppTheme.accentDeep : AppTheme.ink2,
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -725,17 +771,19 @@ class _Composer extends StatelessWidget {
             enabled: enabled && !recording,
             minLines: 1,
             maxLines: 4,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppTheme.ink),
             cursorColor: _accent,
             textInputAction: TextInputAction.send,
             onSubmitted: (_) => onSend(),
             decoration: InputDecoration(
               hintText: recording ? '正在听…松开结束' : '按住麦克风说，或打字',
-              hintStyle: const TextStyle(color: Colors.white60),
+              hintStyle: const TextStyle(color: AppTheme.sub),
               filled: true,
               fillColor: _glassFill,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
                 borderSide: const BorderSide(color: _glassBorder),

@@ -38,35 +38,42 @@
     <view class="tags" wx:if="{{profile.persona}}">
       <view class="tag" wx:for="{{profile.persona.tags}}" wx:key="*this">{{item}}</view>
     </view>
-  </view>
 
-  <view class="card section" wx:if="{{profile.persona}}">
-    <view class="section-title">关于 {{profile.realName}}</view>
-    <view class="full-intro">{{profile.persona.fullIntro}}</view>
-  </view>
+    <view class="hero-about" wx:if="{{profile.persona && profile.persona.fullIntro}}">
+      <view class="section-title">关于 {{profile.realName}}</view>
+      <view class="full-intro">{{profile.persona.fullIntro}}</view>
+    </view>
 
-  <view class="card section stats" wx:if="{{isMine && stats}}">
-    <view class="stat">
-      <view class="stat-num">{{stats.pv}}</view>
-      <view class="stat-label muted">访问数</view>
-    </view>
-    <view class="stat">
-      <view class="stat-num">{{stats.uv}}</view>
-      <view class="stat-label muted">访客数</view>
-    </view>
-    <view class="stat">
-      <view class="stat-num">{{stats.askCount}}</view>
-      <view class="stat-label muted">问答数</view>
+    <view class="stats" wx:if="{{isMine && stats}}">
+      <view class="stat">
+        <view class="stat-num">{{stats.pv}}</view>
+        <view class="stat-label muted">访问</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{stats.uv}}</view>
+        <view class="stat-label muted">访客</view>
+      </view>
+      <view class="stat">
+        <view class="stat-num">{{stats.askCount}}</view>
+        <view class="stat-label muted">问答</view>
+      </view>
     </view>
   </view>
 
   <view class="actions">
-    <button class="btn-accent" bindtap="goChat">问 {{profile.realName}} 的 AI 分身</button>
-    <button class="btn-ghost" bindtap="exchangeCard" wx:if="{{!isMine}}">{{connected ? '✓ 已交换名片' : (hasOwnProfile ? '🤝 交换名片' : '🤝 建名片来交换')}}</button>
-    <button class="btn-ghost" bindtap="onContact" wx:if="{{profile.contactVisible || isMine}}">联系本人</button>
-    <button class="btn-ghost" open-type="share" wx:if="{{!isMine}}">分享给好友</button>
-    <button class="btn-ghost" bindtap="goPoster" wx:if="{{isMine}}">生成分享海报</button>
-    <button class="btn-ghost" bindtap="goSettings" wx:if="{{isMine}}">设置 / 重新生成</button>
+    <button class="btn-accent" bindtap="goChat">{{isMine ? '试聊我的 AI 分身' : '和 ' + profile.realName + ' 的 AI 聊聊'}}</button>
+
+    <view class="secondary-actions" wx:if="{{!isMine}}">
+      <button class="action-link" bindtap="exchangeCard">{{connected ? '已交换' : (hasOwnProfile ? '交换名片' : '建名片交换')}}</button>
+      <button class="action-link" bindtap="onContact" wx:if="{{profile.contactVisible}}">联系本人</button>
+      <button class="action-link" open-type="share">分享</button>
+    </view>
+
+    <view class="secondary-actions" wx:else>
+      <button class="action-link" open-type="share">分享名片</button>
+      <button class="action-link" bindtap="goPoster">生成海报</button>
+      <button class="action-link" bindtap="goSettings">设置</button>
+    </view>
   </view>
 
   <!-- 裂变：访客视图的平台线索（克制、不抢主人的转化场景） -->
@@ -74,4 +81,3 @@
 </view>
 
 <view wx:if="{{!profile && !loading}}" class="empty muted">主页不存在或加载失败</view>
-

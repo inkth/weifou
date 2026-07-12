@@ -1,4 +1,4 @@
-/* 首页 = 糖果风（令牌真源见 app.wxss）：纯白底、浅灰细边白卡、垂直 3D 底唇、糖果色点缀。 */
+/* 首页：人物身份优先，雾蓝紫只围绕 AI 分身出现。 */
 .squad {
   min-height: 100vh;
   background: var(--bg);
@@ -6,25 +6,25 @@
 }
 
 .sq-top { padding: 36rpx 8rpx 28rpx; }
-.sq-eyebrow { font-size: 26rpx; color: var(--ink-2); font-weight: 500; }
-.sq-h1 { margin-top: 10rpx; font-size: 52rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.3; }
+.sq-eyebrow { font-size: 25rpx; color: var(--ink-2); font-weight: 700; }
+.sq-h1 { margin-top: 10rpx; font-size: 52rpx; font-weight: 800; color: var(--ink); letter-spacing: -1rpx; line-height: 1.25; }
 
-/* 按压=下沉+底唇收没：复用 app.wxss 全局 .card-press，本页不再另立 */
+/* 按压反馈复用 app.wxss 全局 .card-press。 */
 
 /* 首屏骨架（.skel 微光见 app.wxss） */
 .sk-hero { height: 220rpx; border-radius: var(--r-2xl); margin-bottom: 28rpx; }
 
-/* 网络失败重试条：克制描边（非糖果色，成交外的功能提示） */
+/* 网络失败重试条 */
 .retry {
   display: flex; align-items: center; justify-content: center; gap: 12rpx;
   padding: 20rpx 28rpx; border-radius: var(--r-lg); margin-bottom: 24rpx;
   background: var(--surface);
   border: var(--bw-thin) solid var(--border);
-  box-shadow: 0 5rpx 0 var(--border);
+  box-shadow: var(--shadow-hair);
   font-size: 26rpx; font-weight: 600; color: var(--ink-2);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.retry-press { transform: translateY(5rpx); box-shadow: none; }
+.retry-press { transform: scale(0.985); background: var(--fill-pressed); }
 .retry-ic { font-size: 32rpx; color: var(--accent-strong); }
 
 /* ===== AI 名片大卡 ===== */
@@ -32,8 +32,8 @@
   position: relative;
   padding: 40rpx 36rpx 12rpx;
   border-radius: var(--r-2xl); margin-bottom: 28rpx;
-  background: var(--surface);
-  border: var(--bw) solid var(--border);
+  background: linear-gradient(145deg, var(--surface) 52%, var(--accent-soft) 140%);
+  border: var(--bw-thin) solid var(--border);
   box-shadow: var(--shadow-lift);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
@@ -42,7 +42,7 @@
   padding: 4rpx 20rpx;
   background: var(--pop-butter); color: var(--pop-butter-ink);
   border: none; border-radius: var(--r-full);
-  font-size: 22rpx; font-weight: 600;
+  font-size: 22rpx; font-weight: 800;
   box-shadow: var(--shadow-hair);
 }
 .hero-top { display: flex; align-items: center; gap: 28rpx; }
@@ -50,11 +50,11 @@
   position: relative; flex: 0 0 auto; width: 120rpx; height: 120rpx; border-radius: 28rpx;
   display: flex; align-items: center; justify-content: center;
   background: var(--accent); border: none;
-  font-size: 50rpx; font-weight: 600; color: var(--on-accent);
+  font-size: 50rpx; font-weight: 800; color: var(--on-accent);
 }
 .hero-dot { position: absolute; right: -8rpx; bottom: -8rpx; width: 26rpx; height: 26rpx; border-radius: 50%; background: var(--pop-butter); border: var(--bw-thin) solid #ffffff; }
 .hero-id { flex: 1; min-width: 0; }
-.hero-name { font-size: 38rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.hero-name { font-size: 38rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.5rpx; }
 .hero-line { margin-top: 10rpx; font-size: 27rpx; color: var(--ink-2); line-height: 1.5; }
 .hero-go {
   flex: 0 0 auto; width: 52rpx; height: 52rpx; border-radius: 50%;
@@ -71,5 +71,5 @@
   border: none;
   border-radius: var(--r-md);
 }
-.hstat-n { font-size: 40rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.hstat-n { font-size: 40rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.5rpx; }
 .hstat-l { margin-top: 2rpx; font-size: 22rpx; color: var(--accent-ink); }

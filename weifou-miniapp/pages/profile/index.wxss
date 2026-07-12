@@ -1,18 +1,20 @@
-/* 名片对外页 = 糖果风·克制档（令牌真源见 app.wxss）：浅灰边白卡 + 垂直底唇，不上糖果色——
-   这是发给客户/HR 的脸，成交信任优先。付费弹层保持白底。 */
+@import "../../styles/stage.wxss";
+
+/* 公开名片：人物优先，AI 气场只在 Hero 内轻微出现。 */
 .page { padding: 36rpx 32rpx 120rpx; min-height: 100vh; box-sizing: border-box; background: var(--bg); }
 
 .card {
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-card);
 }
 .muted { color: var(--sub); }
 
 /* hero */
-.hero { margin-bottom: 26rpx; padding: 36rpx 32rpx; box-shadow: var(--shadow-lift); }
-.hero .amb-layer { display: none; }
+.hero { position: relative; overflow: hidden; margin-bottom: 26rpx; padding: 36rpx 32rpx; box-shadow: var(--shadow-lift); background: linear-gradient(145deg, #ffffff 54%, var(--accent-soft) 150%); }
+.hero .amb-layer { display: block; opacity: 0.72; }
+.hero-row, .one-liner, .tags { position: relative; z-index: 1; }
 .hero-row { display: flex; align-items: center; gap: 24rpx; }
 .hero-ava { flex: 0 0 auto; width: 120rpx; height: 120rpx; border-radius: 28rpx; background: var(--accent-soft); border: var(--bw-thin) solid var(--border); }
 .hero-ava-ph { display: flex; align-items: center; justify-content: center; }
@@ -20,15 +22,15 @@
 /* 首字 toon 回退：主人形象同色系渐变（角色层词汇），与对话页画框同脸 */
 .hero-ava-toon {
   display: flex; align-items: center; justify-content: center;
-  font-size: 52rpx; font-weight: 700; color: var(--on-accent);
-  background: linear-gradient(135deg, var(--amb-a, #18b690), var(--amb-b, #14b8a6));
+  font-size: 52rpx; font-weight: 800; color: var(--on-accent);
+  background: linear-gradient(135deg, var(--amb-a, #7772c8), var(--amb-b, #b9dded));
 }
 .hero-meta { flex: 1; min-width: 0; }
-.name { font-size: 38rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.name { font-size: 38rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.5rpx; }
 .title-text { font-size: 26rpx; margin-top: 8rpx; color: var(--sub); }
 .city { font-size: 24rpx; margin-top: 4rpx; color: var(--faint); }
 
-.one-liner { margin-top: 26rpx; font-size: 32rpx; font-weight: 500; color: var(--ink); line-height: 1.55; }
+.one-liner { margin-top: 26rpx; font-size: 32rpx; font-weight: 600; color: var(--ink); line-height: 1.55; }
 .tags { margin-top: 20rpx; display: flex; flex-wrap: wrap; gap: 14rpx; }
 .tag {
   background: var(--accent-soft); color: var(--accent-ink);
@@ -36,42 +38,41 @@
   font-size: 24rpx; padding: 6rpx 20rpx; border-radius: var(--r-full); margin: 0;
 }
 
-.section { margin-bottom: 26rpx; padding: 32rpx; }
-.section-title { font-size: 28rpx; font-weight: 700; margin-bottom: 16rpx; color: var(--ink); }
+.hero-about { position: relative; z-index: 1; margin-top: 28rpx; padding-top: 26rpx; border-top: 1rpx solid var(--line); }
+.section-title { font-size: 26rpx; font-weight: 800; margin-bottom: 12rpx; color: var(--ink); }
 .full-intro { font-size: 28rpx; line-height: 1.7; color: var(--ink-2); white-space: pre-wrap; }
 
-.stats { display: flex; padding: 28rpx 0; }
+.stats { position: relative; z-index: 1; display: flex; margin-top: 28rpx; padding: 24rpx 0 2rpx; border-top: 1rpx solid var(--line); }
 .stat { flex: 1; text-align: center; position: relative; }
 .stat::after { content: ''; position: absolute; right: 0; top: 10rpx; bottom: 10rpx; border-right: var(--bw-thin) dashed var(--border); }
 .stat:last-child::after { display: none; }
-.stat-num { font-size: 44rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.stat-num { font-size: 44rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.5rpx; }
 .stat-label { font-size: 22rpx; margin-top: 6rpx; color: var(--sub); }
 
-.actions { display: flex; flex-direction: column; gap: 22rpx; margin-top: 36rpx; }
+.actions { display: flex; flex-direction: column; gap: 18rpx; margin-top: 32rpx; }
 .btn-accent {
   background: var(--accent); color: var(--on-accent);
   border: none;
-  border-radius: var(--r-full); font-size: 30rpx; font-weight: 700; padding: 24rpx 0;
+  border-radius: var(--r-md); font-size: 30rpx; font-weight: 800; padding: 24rpx 0;
   box-shadow: var(--shadow-accent);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .btn-accent::after { border: none; }
-.btn-accent:active { transform: translateY(8rpx); box-shadow: none; }
-.btn-ghost {
-  background: var(--surface); color: var(--ink);
-  border: var(--bw) solid var(--border);
-  border-radius: var(--r-full); font-size: 29rpx; font-weight: 500; padding: 24rpx 0;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+.btn-accent:active { transform: scale(0.985); background: var(--accent-strong); }
+.secondary-actions { display: flex; align-items: center; justify-content: center; gap: 8rpx; }
+.action-link {
+  flex: 0 1 auto; margin: 0; padding: 14rpx 24rpx;
+  background: transparent; color: var(--ink-2);
+  font-size: 25rpx; font-weight: 600; line-height: 1.3;
 }
-.btn-ghost::after { border: none; }
-.btn-ghost:active { transform: translateY(5rpx); box-shadow: none; background: var(--fill-pressed); }
+.action-link::after { border: none; }
+.action-link:active { color: var(--accent-deep); background: var(--accent-soft); border-radius: var(--r-md); }
 
 .empty { text-align: center; padding-top: 240rpx; color: var(--faint); }
 .brand-foot { text-align: center; font-size: 24rpx; padding: 32rpx 0 16rpx; color: var(--sub); }
 .trust-badge { font-size: 24rpx; color: var(--accent-deep); margin: -6rpx 0 16rpx; }
 
-/* fresh 庆祝卡：庆祝时刻允许糖果能量 */
+/* 分身新生成：以柔和气场承接分享高峰。 */
 .fresh-card {
   padding: 32rpx; text-align: center;
   background: var(--pop-mint);
@@ -79,7 +80,7 @@
   box-shadow: var(--shadow-soft);
   margin-bottom: 26rpx;
 }
-.fresh-title { font-size: 36rpx; font-weight: 700; color: var(--pop-mint-ink); }
+.fresh-title { font-size: 36rpx; font-weight: 800; color: var(--pop-mint-ink); }
 .fresh-sub { font-size: 26rpx; margin: 12rpx 0 8rpx; color: var(--accent-ink); }
 .fresh-starters { margin-bottom: 20rpx; }
 .fresh-starter { font-size: 26rpx; color: var(--accent-ink); line-height: 1.9; }

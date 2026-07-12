@@ -23,7 +23,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const FORCE = process.argv.includes('--force');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// 统一贴纸风：深描边留在插画内部；配色贴微否糖果令牌（碧绿#18B690/金#FFD335/珊瑚#FF9600/天蓝#1CB0F6）
+// 统一成长插画：深描边留在插画内部；以雾蓝紫、低饱和金与路径辅助色为主。
 const STYLE = [
   '游戏贴纸风小图标：单个物件居中、饱满圆润卡通造型、均匀的深棕色粗描边（描边只属于这枚贴纸本身）、',
   '明亮糖果色扁平填充+一处简单高光、微弱的同色深一档底部投影表现体积；',
@@ -35,12 +35,12 @@ const ICONS = [
   { id: 'flame',   name: '连学火焰',  prompt: `一枚燃烧的小火苗贴纸，珊瑚橙#FF9600为主、内焰奶油黄#FFC800，元气十足。${STYLE}` },
   { id: 'star',    name: '点亮星星',  prompt: `一枚五角星贴纸，金黄色#FFD335、边角圆润、闪亮饱满。${STYLE}` },
   { id: 'crown',   name: '掌握金冠',  prompt: `一顶三尖小王冠贴纸，金色#FFD335、冠尖各嵌一颗小圆宝石、庄重又可爱。${STYLE}` },
-  { id: 'sparkle', name: '下一关星芒', prompt: `一簇四角星芒贴纸（一大两小），薄荷绿#A8F0D4与碧绿#18B690搭配、轻盈闪烁感。${STYLE}` },
+  { id: 'sparkle', name: '下一关星芒', prompt: `一簇四角星芒贴纸（一大两小），雾蓝#B9DDED与蓝紫#7772C8搭配、轻盈闪烁感。${STYLE}` },
   { id: 'lock',    name: '未解锁挂锁', prompt: `一把圆润的小挂锁贴纸，暖灰色锁体、锁孔清晰、憨态可掬不冷硬。${STYLE}` },
   { id: 'review',  name: '复习循环',  prompt: `两支首尾相接的环形循环箭头贴纸，天蓝色#1CB0F6、箭头圆头粗壮。${STYLE}` },
-  { id: 'medal',   name: '段位奖牌',  prompt: `一枚挂着绶带的圆形奖牌贴纸，牌面碧绿#18B690、绶带珊瑚橙#FF9600、中央一颗小星。${STYLE}` },
+  { id: 'medal',   name: '段位奖牌',  prompt: `一枚挂着绶带的圆形奖牌贴纸，牌面蓝紫#7772C8、绶带低饱和金#C7A45D、中央一颗小星。${STYLE}` },
   { id: 'speak',   name: '流利开口',  prompt: `一张侧面张开说话的可爱嘴巴加三道声波弧线的贴纸，珊瑚橙#FF9600声波、活力开朗。${STYLE}` },
-  { id: 'target',  name: '准确靶心',  prompt: `一个三环圆靶正中插着一支圆头飞镖的贴纸，靶环碧绿#18B690与白相间、飞镖金黄#FFD335。${STYLE}` },
+  { id: 'target',  name: '准确靶心',  prompt: `一个三环圆靶正中插着一支圆头飞镖的贴纸，靶环蓝紫#7772C8与白相间、飞镖低饱和金#C7A45D。${STYLE}` },
   { id: 'bubble',  name: '表达气泡',  prompt: `一只圆润对话气泡里排着三个小圆点的贴纸，天蓝色#DDF4FF气泡、深蓝#1CB0F6圆点。${STYLE}` },
 ];
 

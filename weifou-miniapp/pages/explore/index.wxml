@@ -1,7 +1,8 @@
 <view class="mkt" style="padding-top:{{statusBarH}}px">
   <view class="mkt-top">
-    <view class="mkt-h1">闯关式学习，点亮 AI 时代所需技能</view>
-    <view wx:if="{{streak}}" class="mkt-streak">🔥 连续学习 {{streak.days}} 天{{streak.todayDone ? '' : ' · 今天还没学，别断'}}</view>
+    <view class="mkt-h1">人类基本功</view>
+    <view class="mkt-sub">AI 越强，人的判断、连接与表达越重要</view>
+    <view wx:if="{{streak}}" class="mkt-streak">连续 {{streak.days}} 天{{streak.todayDone ? '' : ' · 今天待练习'}}</view>
   </view>
 
   <block wx:if="{{loading}}">
@@ -17,7 +18,7 @@
   <block wx:else>
     <view class="mbr {{isMember ? 'on' : ''}}" hover-class="card-press" hover-stay-time="0" bindtap="goMembership">
       <view class="ic ic-crown mbr-ic"></view>
-      <text class="mbr-text">{{isMember ? '会员有效中 · 全部畅用' : '开通会员 · 一价畅用全部'}}</text>
+      <text class="mbr-text">{{isMember ? '会员有效 · 全部路径可用' : '加入计划 · 解锁全部路径'}}</text>
       <text wx:if="{{!isMember}}" class="mbr-go">去开通 ›</text>
     </view>
 
@@ -28,7 +29,6 @@
       <view class="mcard-meta">
         <view class="mcard-namerow">
           <view class="mcard-name">{{item.name}}</view>
-          <view wx:if="{{item.subject}}" class="mcard-subject">{{item.subject}}</view>
         </view>
         <view class="mcard-tag">{{item.tagline}}</view>
         <view wx:if="{{item.status}}" class="mcard-status status-{{item.statusKind}}">{{item.status}}</view>

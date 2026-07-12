@@ -7,11 +7,11 @@
 }
 
 .canvas-wrap {
-  background: #fff;
-  border: var(--bw) solid var(--border);
-  border-radius: 24rpx;
+  background: var(--surface);
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-xl);
   overflow: hidden;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-lift);
 }
 
 .poster-canvas { display: block; }

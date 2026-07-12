@@ -44,7 +44,7 @@ Page({
     id: '',
     name: '',
     icon: '',
-    accent: '#18b690',
+    accent: '#7772c8',
     greeting: '',
     member: false,
     remaining: 0,
@@ -101,7 +101,7 @@ Page({
       id,
       name: query.name ? decodeURIComponent(query.name) : '',
       icon: query.icon ? decodeURIComponent(query.icon) : '',
-      accent: query.accent ? decodeURIComponent(query.accent) : '#18b690',
+      accent: query.accent ? decodeURIComponent(query.accent) : '#7772c8',
     });
     try {
       await ensureLogin();
@@ -135,7 +135,7 @@ Page({
       this.setData({
         name: d.name,
         icon: d.icon,
-        accent: d.accent || '#18b690',
+        accent: d.accent || '#7772c8',
         greeting: d.greeting || '',
         member,
         remaining: d.freeTrialRemaining,

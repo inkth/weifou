@@ -21,11 +21,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 // ─── 设计令牌（与 logo.svg 的 <style> 同步）───────────────────────────
 const C = {
-  forest: [0x08, 0x31, 0x2a], // --forest  logo 专用底色，不进 UI
-  accent: [0x18, 0xb6, 0x90], // --accent  碧绿树冠
-  coral: [0xff, 0x96, 0x00], // --pop-coral 珊瑚陶盆
-  gold: [0xff, 0xd3, 0x35], // --gold    掌握态金花
-  ink: [0x0c, 0x5a, 0x48], // --accent-ink 单色版
+  forest: [0x23, 0x22, 0x38], // --night 深靛底
+  accent: [0x77, 0x72, 0xc8], // --accent 蓝紫树冠
+  coral: [0xb9, 0xdd, 0xed], // --mist-blue 雾蓝陶盆（旧键名保留）
+  gold: [0xc7, 0xa4, 0x5d], // --gold 掌握态金花
+  ink: [0x4f, 0x4a, 0x8b], // --accent-deep 单色版
   white: [0xff, 0xff, 0xff],
 };
 

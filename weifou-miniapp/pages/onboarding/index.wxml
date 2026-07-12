@@ -1,6 +1,5 @@
 <view class="ob">
-  <!-- 与首页/build 统一：古风美女立绘全屏铺底 + 暗场 -->
-  <image class="bg-lihe" src="/assets/avatars/gf-meinv_idle.webp" mode="aspectFill"/>
+  <!-- 创建阶段不预设人物形象，只保留安静的 AI 环境光。 -->
   <view class="bg-scrim"></view>
 
   <view class="ob-hero">
@@ -53,7 +52,7 @@
       <view class="ob-mic {{recording ? 'on' : ''}}" bindtouchstart="onMicStart" bindtouchend="onMicEnd" bindtouchcancel="onMicEnd">
         <view class="ob-mic-i"></view>
       </view>
-      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" placeholder-style="color: rgba(255,255,255,0.7)" value="{{input}}"
+      <input class="ob-input" placeholder="{{recording ? '松开结束 · 正在听…' : '打字，或按住左侧说话'}}" placeholder-style="color: #8d909b" value="{{input}}"
              confirm-type="send" bindinput="onInput" bindconfirm="onSend"
              disabled="{{submitting || recording}}"/>
       <view class="ob-send {{input ? '' : 'off'}}" bindtap="onSend">

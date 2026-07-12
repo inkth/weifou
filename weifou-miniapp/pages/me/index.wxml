@@ -1,54 +1,39 @@
 <view class="page">
   <view class="hd"><view class="hd-title">我的</view></view>
 
-  <!-- 我的分身：顶部最显眼的资产卡（主人的核心资产 / 收益入口） -->
-  <view wx:if="{{profileId}}" class="clone card" bindtap="goMyProfile">
-    <view class="clone-top">
+  <!-- 分身、名片和分享合并为一张核心资产卡。 -->
+  <view wx:if="{{profileId}}" class="clone card">
+    <view class="clone-top" bindtap="goMyProfile">
       <view class="clone-ava"><view class="ic ic-bot"></view></view>
       <view class="clone-id">
         <view class="clone-name">{{realName ? realName + ' 的 AI 分身' : '我的 AI 分身'}}</view>
-        <view class="clone-sub">查看主页 · 人设 / 数据</view>
+        <view class="clone-sub">会说话的个人名片 · 随时在线</view>
       </view>
       <view class="ic ic-chevron clone-arrow"></view>
     </view>
     <view class="clone-acts">
-      <view class="clone-act" catchtap="goOnboarding"><view class="ic ic-edit ca-ic"></view><text>编辑</text></view>
-      <view class="clone-act" catchtap="goMyProfile"><view class="ic ic-stats ca-ic"></view><text>数据</text></view>
-    </view>
-  </view>
-
-  <!-- 我的活名片：会说话的你——发出去别人点开就能直接问你 / 和你聊（分发中心：分享 / 海报 / 预览） -->
-  <view wx:if="{{profileId}}" class="qabox card">
-    <view class="qabox-info">
-      <view class="qabox-title">我的名片</view>
-      <view class="qabox-sub muted">会说话的你 —— 发给别人，他们点开就能直接问你、和你聊。</view>
-    </view>
-    <view class="qabox-acts">
-      <button class="qabox-share" open-type="share">分享名片</button>
-      <view class="qabox-preview">
-        <text catchtap="goPoster">海报</text>
-        <text class="qabox-sep"> · </text>
-        <text catchtap="goQabox">预览</text>
-      </view>
+      <view class="clone-act" bindtap="goMyProfile"><view class="ic ic-user ca-ic"></view><text>主页</text></view>
+      <button class="clone-act" open-type="share"><view class="ic ic-compose ca-ic"></view><text>分享</text></button>
+      <view class="clone-act" bindtap="goOnboarding"><view class="ic ic-edit ca-ic"></view><text>编辑</text></view>
     </view>
   </view>
 
   <!-- 功能入口 -->
   <view class="group">
     <view class="cell" bindtap="goConnections">
-      <view class="ic ic-user cell-ic cell-ic-accent"></view><text class="cell-label">名片夹 · 交换过名片的人</text><view class="ic ic-chevron cell-arrow"></view>
+      <view class="ic ic-user cell-ic cell-ic-accent"></view><text class="cell-label">名片夹</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
     <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
       <view class="ic ic-crown cell-ic cell-ic-accent"></view><text class="cell-label">会员</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
     <view class="cell" bindtap="goMemory">
-      <view class="ic ic-edit cell-ic cell-ic-accent"></view><text class="cell-label">记忆管理 · 分身记住的你</text><view class="ic ic-chevron cell-arrow"></view>
+      <view class="ic ic-edit cell-ic cell-ic-accent"></view><text class="cell-label">分身记忆</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
   </view>
 
   <view class="group">
-    <view class="cell" bindtap="logout">
-      <view class="ic ic-settings cell-ic"></view><text class="cell-label">退出登录</text><view class="ic ic-chevron cell-arrow"></view>
+    <view class="cell" bindtap="goSettings">
+      <view class="ic ic-settings cell-ic"></view><text class="cell-label">设置</text><view class="ic ic-chevron cell-arrow"></view>
     </view>
   </view>
 
@@ -57,5 +42,6 @@
     <view class="brand-sign">微否 · 每个人的 AI 分身</view>
     <view>大模型服务已依法备案 · 内容由 AI 生成</view>
     <view class="legal-links"><text>用户协议</text><text class="dot">·</text><text>隐私政策</text></view>
+    <view class="logout-link" bindtap="logout">退出登录</view>
   </view>
 </view>

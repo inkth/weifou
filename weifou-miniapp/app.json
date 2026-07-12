@@ -20,11 +20,11 @@
   "tabBar": {
     "custom": true,
     "color": "#8a9a93",
-    "selectedColor": "#18b690",
+    "selectedColor": "#7772c8",
     "backgroundColor": "#ffffff",
     "list": [
       { "pagePath": "pages/discover/index", "text": "首页" },
-      { "pagePath": "pages/explore/index", "text": "技能" },
+      { "pagePath": "pages/explore/index", "text": "修炼" },
       { "pagePath": "pages/inbox/index", "text": "消息" },
       { "pagePath": "pages/me/index", "text": "我的" }
     ]

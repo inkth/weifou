@@ -1,6 +1,6 @@
 @import "../../styles/stage.wxss";
 
-/* 创建页 = 全屏糖果亮场沉浸：助理在场 + 对话/输入全白玻璃半透明，与首页同款 */
+/* 创建页：助理在场的雾蓝紫沉浸式分步对话。 */
 .ob {
   display: flex;
   flex-direction: column;
@@ -26,7 +26,7 @@
   background: transparent;
 }
 .ob-helper { display: flex; align-items: center; gap: 14rpx; }
-.ob-hero-title { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.ob-hero-title { font-size: 30rpx; font-weight: 800; color: var(--ink); }
 .ob-hero-sub { font-size: 24rpx; margin-top: 8rpx; color: var(--ink-2); }
 
 .ob-msgs {
@@ -52,14 +52,16 @@
 }
 .ob-bubble.ai {
   background: var(--glass-dark);
-  border: 1rpx solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   color: var(--ink);
   border-bottom-left-radius: 8rpx;
+  box-shadow: var(--shadow-hair);
 }
 .ob-bubble.me {
-  background: rgba(24, 182, 144, 0.9); /* = --accent @ .9，玻璃上有意留半透，故落 rgba */
+  background: rgba(91, 86, 159, 0.94);
   color: var(--on-accent);
   border-bottom-right-radius: 8rpx;
+  box-shadow: var(--shadow-accent);
 }
 
 .ob-foot {
@@ -81,10 +83,10 @@
   color: var(--accent-ink);
   background: var(--accent-soft);
   border-color: var(--accent);
-  font-weight: 500;
+  font-weight: 700;
 }
 
-/* 快捷选项（承自原 5 步点选）：白玻璃气泡，点按高亮碧绿 */
+/* 快捷选项（承自原 5 步点选）：白玻璃气泡，点按高亮蓝紫。 */
 .ob-opts { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }
 .ob-opt {
   padding: 16rpx 26rpx;
@@ -93,7 +95,7 @@
   background: var(--glass-dark);  border: 1rpx solid var(--border);
   border-radius: 100rpx;
 }
-.ob-opt:active { background: var(--accent-soft); border-color: var(--accent); }
+.ob-opt:active { background: var(--accent-soft); border-color: var(--accent); transform: scale(0.985); }
 .ob-opt.col {
   display: flex;
   flex-direction: column;
@@ -102,7 +104,7 @@
   padding: 18rpx 26rpx;
   border-radius: 20rpx;
 }
-.ob-opt-l { font-size: 28rpx; font-weight: 600; }
+.ob-opt-l { font-size: 28rpx; font-weight: 800; }
 .ob-opt-d { font-size: 22rpx; color: var(--sub); }
 /* 卖点动态候选：整句成行 + 「换一批/生成中」灰态 */
 .ob-opt.full { width: 100%; box-sizing: border-box; border-radius: 20rpx; line-height: 1.5; }
@@ -139,9 +141,10 @@
   width: 80rpx; height: 80rpx; border-radius: 50%;
   background: var(--accent);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6rpx 0 var(--accent-strong);
+  box-shadow: var(--shadow-accent);
 }
 .ob-send.off { background: var(--border); box-shadow: none; }
+.ob-send:active { transform: scale(0.96); background: var(--accent-strong); }
 .ob-send-i { width: 0; height: 0; border-left: 14rpx solid transparent; border-right: 14rpx solid transparent; border-bottom: 20rpx solid var(--on-accent); margin-top: -2rpx; }
 
 .ob-form-link { text-align: center; font-size: 24rpx; margin-top: 18rpx; color: var(--sub); }

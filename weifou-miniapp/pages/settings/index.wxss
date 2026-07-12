@@ -1,22 +1,23 @@
-/* 设置页：令牌化表单（真源见 app.wxss）。 */
-.page { padding: 32rpx 32rpx 120rpx; }
-.card { margin-bottom: 24rpx; }
-.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 24rpx; color: var(--ink); }
+/* 设置页：成交/隐私相关界面保持克制，靠层级、留白与聚焦态建立可信感。 */
+.page { padding: 32rpx 32rpx calc(env(safe-area-inset-bottom) + 96rpx); }
+.card { margin-bottom: 28rpx; }
+.section-title { font-size: 30rpx; font-weight: 800; margin-bottom: 24rpx; color: var(--ink); }
 
 .field { margin-bottom: 24rpx; }
 .label { font-size: 26rpx; color: var(--ink-2); margin-bottom: 12rpx; }
 .input {
-  height: 80rpx;
+  height: 88rpx;
   background: var(--surface-sunken);
   border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-md);
   padding: 0 24rpx;
   font-size: 30rpx;
 }
+.input:focus { border-color: var(--accent); background: var(--surface); }
 
 .row { display: flex; align-items: center; margin-bottom: 24rpx; }
 .flex-1 { flex: 1; }
 
-.save { margin-top: 16rpx; }
+.save { margin-top: 20rpx; }
 .regen { margin-top: 16rpx; }
 .danger { color: var(--danger); }

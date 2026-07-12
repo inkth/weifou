@@ -45,7 +45,7 @@ Page({
           ctx.fillRect(0, 0, cssW, cssH);
 
           // 顶部色块
-          ctx.fillStyle = '#18b690';
+          ctx.fillStyle = '#7772c8';
           ctx.fillRect(0, 0, cssW, 100);
           // 绿底场合 logo 整体反白（见 assets/brand/logo.svg 的单色规则）
           this.drawMark(ctx, 20, 14, 24, '#ffffff');

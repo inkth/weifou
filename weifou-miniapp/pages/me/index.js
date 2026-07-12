@@ -46,6 +46,7 @@ Page({
   goConnections() { wx.navigateTo({ url: '/pages/connections/index' }); },
   // 记忆管理 = 分身记住的关于你的资料（KnowledgeItem），对外回答时会用上
   goMemory() { wx.navigateTo({ url: '/pages/memory/index' }); },
+  goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },
 
   logout() {
     wx.showModal({

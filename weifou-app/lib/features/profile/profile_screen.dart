@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/avatar/weifou_avatar.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/api/profile_api.dart';
 import '../../data/models/profile.dart';
 
 /// 按 id 拉取主页（访客视图）。
-final profileProvider =
-    FutureProvider.family<Profile, String>((ref, id) async {
+final profileProvider = FutureProvider.family<Profile, String>((ref, id) async {
   return ref.read(profileApiProvider).findOne(id);
 });
 
@@ -38,6 +38,7 @@ class ProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: ElevatedButton.icon(
+              style: AppTheme.accentButton,
               icon: const Icon(Icons.chat_bubble_outline),
               label: Text('和 ${p.realName} 的 AI 聊聊'),
               onPressed: () => context.pushNamed(
@@ -65,22 +66,72 @@ class _ProfileBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          profile.realName,
-          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, AppTheme.accentSoft],
+              stops: [0.55, 1],
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.r2xl),
+            border: Border.all(color: AppTheme.border),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  WeifouAvatar(
+                    style: profile.avatarStyle,
+                    name: profile.realName,
+                    size: 72,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profile.realName,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          [
+                            profile.title,
+                            profile.company,
+                            profile.city,
+                          ].where((e) => e != null && e.isNotEmpty).join(' · '),
+                          style: const TextStyle(
+                            color: AppTheme.ink2,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (persona?.oneLiner != null) ...[
+                const SizedBox(height: 20),
+                Text(
+                  persona!.oneLiner!,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    height: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          [profile.title, profile.company, profile.city]
-              .where((e) => e != null && e.isNotEmpty)
-              .join(' · '),
-          style: const TextStyle(color: AppTheme.sub, fontSize: 14),
-        ),
-        if (persona?.oneLiner != null) ...[
-          const SizedBox(height: 20),
-          Text(persona!.oneLiner!,
-              style: const TextStyle(fontSize: 17, height: 1.5)),
-        ],
         if (persona?.tags.isNotEmpty ?? false) ...[
           const SizedBox(height: 16),
           Wrap(
@@ -98,11 +149,15 @@ class _ProfileBody extends StatelessWidget {
         ],
         if (persona?.fullIntro != null) ...[
           const SizedBox(height: 24),
-          const Text('关于',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          const Text(
+            '关于',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
-          Text(persona!.fullIntro!,
-              style: const TextStyle(height: 1.6, color: AppTheme.ink)),
+          Text(
+            persona!.fullIntro!,
+            style: const TextStyle(height: 1.6, color: AppTheme.ink),
+          ),
         ],
         const SizedBox(height: 80),
       ],

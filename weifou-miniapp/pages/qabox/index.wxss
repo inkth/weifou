@@ -10,7 +10,7 @@
   display: flex; align-items: center; justify-content: center;
 }
 .qb-ava .ic-bot { width: 72rpx; height: 72rpx; background: var(--accent); }
-.qb-name { font-size: 36rpx; font-weight: 700; color: var(--ink); }
+.qb-name { font-size: 36rpx; font-weight: 800; color: var(--ink); }
 .qb-oneliner { font-size: 26rpx; margin-top: 8rpx; line-height: 1.5; padding: 0 40rpx; }
 .qb-badge {
   display: inline-block; margin-top: 20rpx; padding: 8rpx 24rpx;
@@ -20,7 +20,7 @@
 
 /* 提问态 */
 .qb-ask { margin-top: 8rpx; }
-.qb-ask-title { font-size: 30rpx; font-weight: 600; margin-bottom: 16rpx; }
+.qb-ask-title { font-size: 30rpx; font-weight: 800; margin-bottom: 16rpx; }
 .qb-input { width: 100%; min-height: 200rpx; font-size: 30rpx; line-height: 1.6; }
 .qb-count { text-align: right; font-size: 22rpx; margin-top: 8rpx; }
 .qb-submit { margin-top: 30rpx; }
@@ -51,12 +51,12 @@
 }
 .qb-esc-btn {
   width: 100%; background: var(--accent); color: var(--on-accent);
-  border: none; font-weight: 700;
-  border-radius: var(--r-full); font-size: 28rpx; padding: 20rpx 0;
+  border: none; font-weight: 800;
+  border-radius: var(--r-md); font-size: 28rpx; padding: 20rpx 0;
   box-shadow: var(--shadow-accent);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.qb-esc-btn:active { transform: translateY(8rpx); box-shadow: none; }
+.qb-esc-btn:active { transform: scale(0.985); background: var(--accent-strong); }
 .qb-esc-btn::after { border: none; }
 .qb-esc-btn[disabled] { opacity: .6; box-shadow: none; }
 .qb-esc-link { font-size: 26rpx; color: var(--accent-ink); text-align: center; padding: 8rpx 0; }
@@ -70,6 +70,6 @@
   border: none;
   box-shadow: var(--shadow-soft);
 }
-.qb-cta-title { font-size: 32rpx; font-weight: 700; color: var(--accent-ink); }
+.qb-cta-title { font-size: 32rpx; font-weight: 800; color: var(--accent-ink); }
 .qb-cta-sub { font-size: 26rpx; margin-top: 12rpx; line-height: 1.5; }
 .qb-cta-btn { margin-top: 28rpx; }

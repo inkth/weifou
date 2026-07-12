@@ -34,7 +34,7 @@
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; color: var(--on-accent);
-  background: linear-gradient(135deg, var(--amb-a, #18b690), var(--amb-b, #14b8a6));
+  background: linear-gradient(135deg, var(--amb-a, #7772c8), var(--amb-b, #b9dded));
   animation: toonBreath 4.5s ease-in-out infinite;
 }
 @keyframes toonBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
@@ -61,7 +61,7 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-lift);
 }
@@ -91,10 +91,10 @@
 }
 .ncard-frame .frame-toon { font-size: 50rpx; }
 .ncard-id { flex: 1; min-width: 0; }
-.ncard-name { font-size: 36rpx; font-weight: 700; color: var(--ink); letter-spacing: -0.5rpx; }
+.ncard-name { font-size: 36rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.5rpx; }
 .ncard-title { margin-top: 4rpx; font-size: 24rpx; color: var(--ink-2); }
 .ncard-proof { margin-top: 4rpx; font-size: 22rpx; color: var(--sub); }
-.ncard-oneliner { margin-top: 20rpx; font-size: 28rpx; font-weight: 500; color: var(--ink); line-height: 1.55; }
+.ncard-oneliner { margin-top: 20rpx; font-size: 28rpx; font-weight: 600; color: var(--ink); line-height: 1.55; }
 .ncard-tags { margin-top: 18rpx; display: flex; flex-wrap: wrap; gap: 10rpx; align-items: center; }
 .ncard-tag {
   font-size: 21rpx; padding: 4rpx 16rpx;
@@ -112,7 +112,7 @@
 
 /* 背面：完整介绍（内滚） */
 .ncard-back-head { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; }
-.ncard-back-title { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+.ncard-back-title { font-size: 30rpx; font-weight: 800; color: var(--ink); }
 .ncard-back-scroll { flex: 1 1 auto; min-height: 0; margin-top: 14rpx; }
 .ncard-back-sub { font-size: 24rpx; color: var(--ink-2); }
 .ncard-back-tags { margin-top: 14rpx; display: flex; flex-wrap: wrap; gap: 10rpx; }
@@ -145,6 +145,20 @@
   background: var(--accent-soft); color: var(--accent-ink);
   border: var(--bw-thin) solid var(--border); border-radius: var(--r-full);
 }
+.identity-bar {
+  margin: 0;
+  padding: 18rpx 28rpx;
+  border: none;
+  border-bottom: 1rpx solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  background: linear-gradient(90deg, var(--surface), var(--accent-soft));
+}
+.identity-bar .ncard-bar-chip {
+  padding: 4rpx 0;
+  background: transparent;
+  border: none;
+}
 
 /* —— 全屏立绘模式（星野式：立绘铺底 + 气泡浮层）—— */
 .lihe-bg { position: fixed; inset: 0; z-index: 0; }
@@ -163,9 +177,9 @@
 .lihe .stage-more { color: var(--sub); }
 .lihe .stage-status { color: var(--ink-2); }
 .lihe .msg-list { position: relative; z-index: 1; }
-/* 气泡浮层：AI 白玻璃磨砂、用户碧绿，浮在立绘上更跳 */
+/* 气泡浮层：AI 白玻璃、用户深蓝紫，浮在立绘上保持清晰。 */
 .lihe .msg-assistant .bubble { background: rgba(255, 255, 255, 0.92); color: var(--ink); border: none; box-shadow: none; }
-.lihe .msg-user .bubble { background: rgba(24, 182, 144, 0.96); color: var(--on-accent); } /* bg≈--accent，立绘上近实心更跳、免逐帧磨砂 */
+.lihe .msg-user .bubble { background: rgba(91, 86, 159, 0.96); color: var(--on-accent); }
 .lihe .choices { position: relative; z-index: 1; background: var(--glass-dark); border-top: none; }
 
 .msg-list {
@@ -218,8 +232,8 @@
 /* 对话内成交卡片 */
 .offer-card {
   background: var(--surface);
-  border: var(--bw) solid var(--border);
-  border-radius: 24rpx;
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-lg);
   padding: 24rpx;
   margin: 0 0 24rpx;
   box-shadow: var(--shadow-card);
@@ -258,13 +272,13 @@
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 40rpx;
+  border-radius: var(--r-md);
   font-size: 28rpx;
   font-weight: 700;
-  box-shadow: 0 8rpx 0 var(--accent-strong);
+  box-shadow: var(--shadow-accent);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.offer-btn:active { transform: translateY(8rpx); box-shadow: none; }
+.offer-btn:active { transform: scale(0.985); background: var(--accent-strong); }
 .offer-btn[disabled] { opacity: 0.4; box-shadow: none; }
 
 .sys-link {
@@ -291,14 +305,14 @@
   line-height: 1.2;
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.chip:active { transform: translateY(4rpx); box-shadow: none; }
-/* 第三幕：引导问题=手写便签——糖果浅底、错落贴入（仅开场邀请，角色层词汇） */
+.chip:active { transform: scale(0.985); opacity: 0.9; }
+/* 第三幕：引导问题使用低饱和气场底，保持邀请感。 */
 .chip.q {
   flex: 1 1 100%;
   text-align: left;
   padding: 20rpx 26rpx;
   border-radius: var(--r-md);
-  box-shadow: 0 5rpx 0 var(--border);
+  box-shadow: var(--shadow-hair);
   font-size: 27rpx;
   line-height: 1.4;
 }
@@ -308,20 +322,23 @@
 @keyframes noteIn0 { from { opacity: 0; transform: translateY(14rpx); } }
 @keyframes noteIn1 { from { opacity: 0; transform: translateY(14rpx); } }
 @keyframes noteIn2 { from { opacity: 0; transform: translateY(14rpx); } }
-.chip.q:active { transform: translateY(4rpx); box-shadow: none; }
-/* 行动入口（转化）：绿糖强调 */
+.chip.q:active { transform: scale(0.985); }
+/* 行动入口（转化）：深蓝紫强调 */
 .chip.act {
   background: var(--accent);
   color: var(--on-accent);
 }
 .chip.act.done { background: var(--accent-soft); color: var(--accent-ink); }
+.next-action { flex: 1 1 100%; text-align: center; border-radius: var(--r-md); padding: 20rpx 26rpx; }
 /* 换一批：描边 */
 .chip.ghost {
-  background: var(--surface);
+  background: transparent;
   color: var(--ink-2);
+  border-color: transparent;
 }
+.reshuffle { margin-left: auto; padding-left: 12rpx; padding-right: 12rpx; font-size: 24rpx; }
 
-/* 成交阶梯进度条：聊→问→约，走过的段落用碧绿糖果色点亮 */
+/* 成交阶梯进度条：聊→问→约，走过的段落用蓝紫点亮。 */
 .stage-rail {
   display: flex;
   align-items: center;
@@ -368,7 +385,7 @@
   transition: transform 0.1s var(--ease);
 }
 .sheet-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.sheet-chip:active { transform: translateY(3rpx); }
+.sheet-chip:active { transform: scale(0.985); }
 
 /* —— chat-first 开场体验 —— */
 .choices { opacity: 0; transform: translateY(12rpx); }
@@ -380,7 +397,7 @@
 .choices-hint { width: 100%; font-size: 24rpx; margin-bottom: 4rpx; }
 .trust-cap { width: 100%; font-size: 22rpx; color: var(--sub); margin-top: 2rpx; line-height: 1.5; }
 .empty { padding: 200rpx 48rpx; text-align: center; }
-.empty-title { font-size: 34rpx; font-weight: 600; color: var(--ink); margin-bottom: 16rpx; }
+.empty-title { font-size: 34rpx; font-weight: 800; color: var(--ink); margin-bottom: 16rpx; }
 
 /* —— 裂变钩子 —— */
 .own-hook { color: var(--faint); font-size: 24rpx; }
@@ -388,29 +405,29 @@
   margin: 16rpx 48rpx;
   padding: 28rpx;
   background: var(--surface);
-  border: var(--bw) solid var(--border);
-  border-radius: 24rpx;
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-lg);
   box-shadow: var(--shadow-card);
   text-align: center;
 }
-.own-cta-title { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.own-cta-title { font-size: 30rpx; font-weight: 800; color: var(--ink); }
 .own-cta-sub { font-size: 24rpx; color: var(--sub); margin: 8rpx 0 20rpx; }
 .own-cta-btn {
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 36rpx;
+  border-radius: var(--r-md);
   font-size: 28rpx;
   font-weight: 700;
   padding: 0 48rpx;
   display: inline-block;
   line-height: 72rpx;
-  box-shadow: 0 6rpx 0 var(--accent-strong);
+  box-shadow: var(--shadow-accent);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.own-cta-btn:active { transform: translateY(6rpx); box-shadow: none; }
+.own-cta-btn:active { transform: scale(0.985); background: var(--accent-strong); }
 
-/* —— 页内浮层：白玻璃底部抽屉（关于 / 让 TA 找我）——成交面克制：白/灰/绿 —— */
+/* —— 页内浮层：白玻璃底部抽屉（关于 / 让 TA 找我）—— */
 .mask { position: fixed; inset: 0; z-index: 100; background: var(--scrim); display: flex; align-items: flex-end; }
 .sheet {
   width: 100%; box-sizing: border-box;
@@ -422,28 +439,28 @@
   color: var(--ink);
 }
 .sheet-grab { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: var(--border); margin: 6rpx auto 22rpx; }
-.sheet-title { font-size: 34rpx; font-weight: 600; color: var(--ink); }
+.sheet-title { font-size: 34rpx; font-weight: 800; color: var(--ink); }
 .sheet-sub { font-size: 24rpx; color: var(--sub); margin-top: 8rpx; }
-.sheet-oneliner { font-size: 30rpx; font-weight: 500; color: var(--ink); margin-top: 22rpx; line-height: 1.5; }
+.sheet-oneliner { font-size: 30rpx; font-weight: 600; color: var(--ink); margin-top: 22rpx; line-height: 1.5; }
 .sheet-tags { margin-top: 18rpx; display: flex; flex-wrap: wrap; gap: 12rpx; }
 .sheet-tag { font-size: 24rpx; color: var(--ink-2); background: var(--fill); border: 1rpx solid var(--border); border-radius: 100rpx; padding: 6rpx 20rpx; }
 .sheet-intro { font-size: 27rpx; line-height: 1.7; color: var(--ink-2); margin-top: 22rpx; white-space: pre-wrap; }
 .sheet-input { background: var(--fill); border: 1rpx solid var(--border); border-radius: 16rpx; padding: 24rpx; font-size: 28rpx; color: var(--ink); margin: 28rpx 0; }
-.sheet-pay { margin-top: 8rpx; background: var(--accent); color: var(--on-accent); border-radius: 100rpx; padding: 24rpx 0; text-align: center; font-size: 30rpx; font-weight: 700; box-shadow: 0 8rpx 0 var(--accent-strong); transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
-.sheet-pay:active { transform: translateY(8rpx); box-shadow: none; }
+.sheet-pay { margin-top: 8rpx; background: var(--accent); color: var(--on-accent); border-radius: var(--r-md); padding: 24rpx 0; text-align: center; font-size: 30rpx; font-weight: 800; box-shadow: var(--shadow-accent); transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
+.sheet-pay:active { transform: scale(0.985); background: var(--accent-strong); }
 .sheet-pay[disabled] { opacity: 0.45; box-shadow: none; }
 .slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
 .sheet-empty { text-align: center; padding: 48rpx 0; color: var(--sub); font-size: 26rpx; }
 .slot-pick { padding: 24rpx; background: var(--fill); border: 1rpx solid var(--border); border-radius: 16rpx; margin-bottom: 16rpx; }
 .slot-pick.on { background: var(--accent-soft); border-color: var(--accent); }
-.sp-time { font-size: 30rpx; font-weight: 500; color: var(--ink); }
+.sp-time { font-size: 30rpx; font-weight: 600; color: var(--ink); }
 .sp-meta { font-size: 24rpx; color: var(--sub); margin-top: 6rpx; }
 
 /* —— 成交庆祝浮层（复用课程事件卡）：约/留话达成时全屏彩带 + 大字弹簧 —— */
 .celebrate { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
 .celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
 .celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }
-.celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #7a5c00; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: 0 3rpx 0 var(--gold-strong); }
+.celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #574825; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: var(--shadow-hair); }
 .celeb-name { font-size: 56rpx; font-weight: 800; color: var(--ink); margin-top: 8rpx; animation: namePop 0.5s var(--ease-spring) 0.08s both; }
 .celeb-sub { font-size: 24rpx; color: var(--sub); margin-top: 12rpx; }
 @keyframes celebFade { from { opacity: 0; } to { opacity: 1; } }

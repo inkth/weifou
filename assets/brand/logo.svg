@@ -1,22 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -70 140 140" width="140" height="140" role="img" aria-labelledby="title desc">
   <title id="title">微否</title>
-  <desc id="desc">深林底上的小盆栽：不对称碧绿树冠、珊瑚陶盆</desc>
+  <desc id="desc">深靛底上的小盆栽：不对称蓝紫树冠、雾蓝陶盆</desc>
 
   <!--
-    微否 logo 定稿 · 深林版
-      底 --forest #08312a（logo 专用令牌，不进 UI）
-      冠 --accent #18b690（三圆不对称，右肩高于左肩 —— 这点歪就是指纹，勿改对称）
-      盆 --pop-coral #ff9600
-      花 --gold #ffd335（掌握态，把 .bloom 的 display 打开）
+    微否 logo · 雾蓝紫版
+      底 night #232238
+      冠 accent #7772c8（三圆不对称，右肩高于左肩 —— 这点歪就是指纹，勿改对称）
+      盆 mist-blue #b9dded
+      花 gold #c7a45d（掌握态，把 .bloom 的 display 打开）
     冠底最低 y=9，盆沿顶 y=12 —— 那 3 个单位的缝必须留着：
     单色印刷/刻章只剩剪影时，靠它读出"一棵东西长在一个盆里"而不是一个葫芦。
-    单色场合：整体填 --ink；绿底场合：整体填白。半调子（绿冠白盆）永不出现。
+    单色场合整体填 ink；深底场合整体填白。
   -->
   <style>
-    svg { --forest: #08312a; --accent: #18b690; --coral: #ff9600; --gold: #ffd335; --ink: #0c5a48; }
-    .bg     { fill: var(--forest); }
+    svg { --night: #232238; --accent: #7772c8; --mist-blue: #b9dded; --gold: #c7a45d; --ink: #4f4a8b; }
+    .bg     { fill: var(--night); }
     .crown  { fill: var(--accent); }
-    .pot    { fill: var(--coral); }
+    .pot    { fill: var(--mist-blue); }
     .shine  { fill: #fff; opacity: .85; }
     .bloom  { fill: var(--gold); display: none; }
   </style>

@@ -67,7 +67,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     _scrollToEnd();
     try {
-      final ans = await ref.read(chatApiProvider).ask(widget.profileId, content);
+      final ans = await ref
+          .read(chatApiProvider)
+          .ask(widget.profileId, content);
       setState(() => _msgs.add(_Msg(false, ans.answer, animate: true)));
     } on ApiException catch (e) {
       setState(() => _msgs.add(_Msg(false, '（${e.message}）')));
@@ -91,21 +93,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
-  void _toast(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _toast(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
     final name = widget.profile?.realName ?? 'AI';
-    final showStarters = _starters.isNotEmpty &&
-        _msgs.where((m) => m.fromMe).isEmpty;
+    final showStarters =
+        _starters.isNotEmpty && _msgs.where((m) => m.fromMe).isEmpty;
     return Scaffold(
       appBar: AppBar(title: Text('与 $name 的 AI')),
       body: Column(
         children: [
           Container(
             width: double.infinity,
-            color: Colors.white,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, AppTheme.accentSoft],
+              ),
+            ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
             child: Column(
               children: [
@@ -117,13 +125,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   state: _sending ? AvatarState.thinking : AvatarState.idle,
                 ),
                 const SizedBox(height: 8),
-                Text(name,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w500)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 if (widget.profile?.title != null)
-                  Text(widget.profile!.title,
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.sub)),
+                  Text(
+                    widget.profile!.title,
+                    style: const TextStyle(fontSize: 12, color: AppTheme.sub),
+                  ),
               ],
             ),
           ),
@@ -139,8 +152,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
           ),
-          if (showStarters)
-            _StartersBar(starters: _starters, onTap: _send),
+          if (showStarters) _StartersBar(starters: _starters, onTap: _send),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
           _Composer(
             controller: _input,
@@ -221,7 +233,7 @@ class _Bubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: me ? AppTheme.ink : Colors.white,
+          color: me ? AppTheme.accent : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: me ? null : Border.all(color: AppTheme.border),
         ),
@@ -276,8 +288,7 @@ class _TypewriterTextState extends State<_TypewriterText> {
 
   @override
   Widget build(BuildContext context) {
-    final shown =
-        String.fromCharCodes(widget.text.runes.take(_count));
+    final shown = String.fromCharCodes(widget.text.runes.take(_count));
     return Text(shown, style: widget.style);
   }
 }
@@ -315,7 +326,9 @@ class _Composer extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),

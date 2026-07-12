@@ -180,7 +180,7 @@ Page({
     const id = this.data.avatarStyle || '';
     const tier = tierForPreset(id, this.data.profileId);
     const p = getPreset(id, this.data.profileId);
-    const c0 = (p.colors && p.colors[0]) || '#18b690';
+    const c0 = (p.colors && p.colors[0]) || '#7772c8';
     const c1 = (p.colors && p.colors[1]) || c0;
     // 立绘只给有专属 image 形象的人；没有就走"画框舞台"（首字 toon 呼吸形象）——
     // 不再全员回退共用默认立绘：张三和李四的分身不该是同一张脸。

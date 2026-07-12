@@ -1,33 +1,35 @@
 .page { padding: 24rpx 28rpx calc(24rpx + env(safe-area-inset-bottom)); }
 
 .hd { padding: 12rpx 4rpx 20rpx; }
-.hd-title { font-size: 44rpx; font-weight: 700; color: var(--ink); }
+.hd-title { font-size: 44rpx; font-weight: 800; color: var(--ink); }
 .hd-sub { font-size: 24rpx; margin-top: 8rpx; }
 
 .list { display: flex; flex-direction: column; gap: 18rpx; }
-.card { background: var(--surface); border: var(--bw-thin) solid var(--border); border-radius: var(--r-md); }
+.card { background: var(--surface); border: var(--bw-thin) solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-card); }
 
 .conn { display: flex; align-items: center; gap: 22rpx; padding: 24rpx 26rpx; transition: transform 0.1s var(--ease); }
-.conn:active { transform: translateY(2rpx); }
+.conn:active { transform: scale(0.99); background: var(--fill-pressed); }
 .conn-ava {
   width: 84rpx; height: 84rpx; border-radius: 24rpx; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   background: var(--accent-soft); color: var(--accent-ink);
-  font-size: 38rpx; font-weight: 700;
+  font-size: 38rpx; font-weight: 800;
 }
 .conn-id { flex: 1; min-width: 0; }
-.conn-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
+.conn-name { font-size: 30rpx; font-weight: 800; color: var(--ink); }
 .conn-sub { font-size: 24rpx; margin-top: 6rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conn-arrow { width: 32rpx; height: 32rpx; opacity: 0.35; flex-shrink: 0; }
 
 .empty { text-align: center; padding: 120rpx 40rpx; }
-.empty-title { font-size: 32rpx; font-weight: 600; color: var(--ink); }
+.empty-title { font-size: 32rpx; font-weight: 800; color: var(--ink); }
 .empty .muted { margin-top: 12rpx; font-size: 26rpx; }
 .empty-btn {
   margin-top: 32rpx; display: inline-block;
   background: var(--accent); color: var(--on-accent);
-  border-radius: 100rpx; padding: 20rpx 48rpx; font-size: 28rpx; font-weight: 700;
+  border-radius: var(--r-md); padding: 20rpx 48rpx; font-size: 28rpx; font-weight: 800;
+  box-shadow: var(--shadow-accent);
 }
+.empty-btn:active { transform: scale(0.985); background: var(--accent-strong); }
 .empty-btn::after { border: none; }
 
 .loading { text-align: center; padding: 120rpx 0; font-size: 26rpx; }

@@ -1,4 +1,4 @@
-/* 首页 = 全屏沉浸界面：立绘铺底 + 糖果亮场白雾 + 所有操作白玻璃半透明浮层（游戏式单界面） */
+/* 首次入口：人物在场的雾蓝紫沉浸界面，操作保持高对比。 */
 .page {
   position: relative;
   min-height: 100vh;
@@ -7,7 +7,7 @@
   box-sizing: border-box;
   padding: calc(env(safe-area-inset-top) + 72rpx) 48rpx calc(env(safe-area-inset-bottom) + 44rpx);
   overflow: hidden;
-  /* 全背景基底：糖果亮渐变（立绘叠其上；无立绘的老用户态也有沉浸底） */
+  /* 全背景基底：雾蓝紫气场（立绘叠其上）。 */
   background: var(--grad-sky);
 }
 
@@ -25,7 +25,7 @@
 .hero, .grow, .float, .actions, .loading { position: relative; z-index: 2; }
 
 .brand { font-size: 26rpx; color: var(--ink-2); letter-spacing: 8rpx; margin-bottom: 10rpx; }
-.tagline { font-size: 30rpx; font-weight: 600; color: var(--ink); letter-spacing: 1rpx; margin-bottom: 22rpx; }
+.tagline { font-size: 30rpx; font-weight: 700; color: var(--ink); letter-spacing: 1rpx; margin-bottom: 22rpx; }
 .headline {
   font-size: 56rpx; font-weight: 800; color: var(--ink); line-height: 1.4;
 }
@@ -35,9 +35,9 @@
 /* 示例助理：名牌 + 招呼气泡（白玻璃） */
 .float { margin-bottom: 30rpx; }
 .float-id { display: flex; align-items: center; gap: 10rpx; margin-bottom: 14rpx; }
-.float-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
-.dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: #34d399; animation: presencePulse 2s ease-in-out infinite; }
-@keyframes presencePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); } 50% { box-shadow: 0 0 0 8rpx rgba(52,211,153,0); } }
+.float-name { font-size: 28rpx; font-weight: 800; color: var(--ink); }
+.dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--success); animation: presencePulse 2s ease-in-out infinite; }
+@keyframes presencePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(88,204,2,0.42); } 50% { box-shadow: 0 0 0 8rpx rgba(88,204,2,0); } }
 .float-on { font-size: 22rpx; color: var(--ink-2); }
 .float-bubble {
   background: var(--glass-dark);
@@ -52,26 +52,26 @@
 }
 @keyframes caretBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* 操作区：白玻璃 3D 糖果按钮 */
+/* 操作区：高对比玻璃按钮 */
 .actions { display: flex; flex-direction: column; gap: 20rpx; }
 .glass-btn {
   background: var(--glass-light);
   border: 1rpx solid var(--border);
   color: var(--ink);
-  border-radius: 100rpx;
+  border-radius: var(--r-md);
   padding: 26rpx 0; text-align: center;
-  font-size: 30rpx; font-weight: 500;
-  box-shadow: 0 6rpx 0 var(--border);
+  font-size: 30rpx; font-weight: 700;
+  box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.glass-btn:active { transform: translateY(6rpx); box-shadow: none; }
-/* 主操作：实心绿糖 CTA */
+.glass-btn:active { transform: scale(0.985); background: var(--fill-pressed); }
+/* 主操作：实心蓝紫 AI CTA */
 .glass-btn.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 800;
-  box-shadow: 0 8rpx 0 var(--accent-strong);
+  box-shadow: var(--shadow-accent);
 }
 
 .loading { color: var(--ink-2); text-align: center; margin-top: 60rpx; }

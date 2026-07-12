@@ -1,11 +1,12 @@
-/* 学习市场 = 糖果风（令牌真源见 app.wxss）：浅灰边工具卡 + 糖果黄会员条 + 垂直底唇。 */
+/* 修炼：与全站共享编辑式结构，有限路径色只承担成长状态。 */
 .mkt {
   min-height: 100vh;
   background: var(--bg);
   padding: 0 36rpx calc(env(safe-area-inset-bottom) + 180rpx);
 }
 .mkt-top { padding: 36rpx 6rpx 28rpx; }
-.mkt-h1 { font-size: 46rpx; font-weight: 700; color: var(--ink); letter-spacing: -1rpx; line-height: 1.35; }
+.mkt-h1 { font-size: 46rpx; font-weight: 800; color: var(--ink); letter-spacing: -1rpx; line-height: 1.3; }
+.mkt-sub { margin-top: 12rpx; max-width: 650rpx; font-size: 25rpx; color: var(--ink-2); line-height: 1.55; }
 /* 连续学习火焰条：贴纸小条，≥2 天才出现 */
 .mkt-streak {
   display: inline-block;
@@ -18,7 +19,7 @@
   box-shadow: var(--shadow-hair);
 }
 .mkt-state { text-align: center; padding: 80rpx 0; color: var(--faint); font-size: 26rpx; }
-.card-press { transform: translateY(4rpx); box-shadow: none !important; }
+.card-press { transform: scale(0.985); opacity: 0.94; }
 
 /* 骨架屏：结构与工具卡一致，加载不跳版 */
 .skel-card {
@@ -31,19 +32,19 @@
 .skel-l1 { height: 30rpx; width: 40%; }
 .skel-l2 { height: 24rpx; width: 72%; margin-top: 14rpx; }
 
-/* 会员横幅：奶油黄贴条 */
+/* 会员横幅：低饱和成就提示 */
 .mbr {
   display: flex; align-items: center; gap: 14rpx;
   padding: 24rpx 28rpx; border-radius: var(--r-lg); margin-bottom: 32rpx;
   background: var(--pop-butter);
   border: none;
-  box-shadow: 0 5rpx 0 var(--gold-strong);
+  box-shadow: var(--shadow-hair);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 .mbr-ic { font-size: 34rpx; color: var(--pop-butter-ink); }
 .mbr-text { flex: 1; font-size: 27rpx; font-weight: 600; color: var(--pop-butter-ink); }
 .mbr-go { font-size: 24rpx; color: var(--pop-butter-ink); font-weight: 600; }
-.mbr.on { background: var(--accent); box-shadow: 0 5rpx 0 var(--accent-strong); }
+.mbr.on { background: var(--accent); box-shadow: var(--shadow-accent); }
 .mbr.on .mbr-go { color: var(--on-accent); }
 .mbr.on .mbr-ic, .mbr.on .mbr-text { color: var(--on-accent); }
 
@@ -52,7 +53,7 @@
   display: flex; align-items: center; gap: 24rpx;
   padding: 26rpx 28rpx; border-radius: var(--r-xl); margin-bottom: 24rpx;
   background: var(--surface);
-  border: var(--bw) solid var(--border);
+  border: var(--bw-thin) solid var(--border);
   box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
@@ -65,7 +66,7 @@
 .mcard:nth-child(3n+1) .mcard-ic { background: var(--pop-lilac); }
 .mcard-meta { flex: 1; min-width: 0; }
 .mcard-namerow { display: flex; align-items: center; gap: 12rpx; }
-.mcard-name { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+.mcard-name { font-size: 30rpx; font-weight: 800; color: var(--ink); }
 /* 学科路牌：诗意 Name 旁一枚灰底小标签，一眼点出这门课教什么 */
 .mcard-subject {
   flex: 0 0 auto; font-size: 20rpx; font-weight: 600; color: var(--ink-2);
@@ -76,7 +77,7 @@
 .mcard-status { margin-top: 12rpx; font-size: 22rpx; font-weight: 600; }
 .status-member { color: var(--accent-ink); }
 .status-trial { color: var(--accent-strong); }
-.status-used { color: #b3925a; }
+.status-used { color: var(--sub); }
 
 /* 进入指示：右侧雪佛龙（点整卡进技能） */
 .mcard-go { flex: 0 0 auto; align-self: center; font-size: 30rpx; color: var(--sub); }

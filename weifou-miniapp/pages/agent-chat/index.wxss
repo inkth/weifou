@@ -4,19 +4,19 @@ page { background: var(--bg); height: 100%; }
 .topbar { display: flex; align-items: center; padding: 18rpx 28rpx; background: var(--surface); border-bottom: var(--bw-thin) solid var(--border); flex: 0 0 auto; }
 .tb-ic { width: 64rpx; height: 64rpx; border-radius: var(--r-md); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 34rpx; }
 .tb-mid { flex: 1 1 auto; min-width: 0; margin-left: 18rpx; }
-.tb-name { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+.tb-name { font-size: 30rpx; font-weight: 800; color: var(--ink); }
 .tb-quota { font-size: 23rpx; color: var(--sub); margin-top: 2rpx; }
-.tb-buy { flex: 0 0 auto; padding: 12rpx 28rpx; background: var(--accent); color: var(--on-accent); font-size: 25rpx; font-weight: 700; border: none; border-radius: var(--r-full); box-shadow: 0 4rpx 0 var(--accent-strong); transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }
-.tb-buy:active { transform: translateY(4rpx); box-shadow: none; }
+.tb-buy { flex: 0 0 auto; padding: 12rpx 28rpx; background: var(--accent); color: var(--on-accent); font-size: 25rpx; font-weight: 800; border: none; border-radius: var(--r-md); box-shadow: var(--shadow-accent); transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }
+.tb-buy:active { transform: scale(0.985); background: var(--accent-strong); }
 .tb-act { flex: 0 0 auto; margin-left: 12rpx; padding: 10rpx 22rpx; background: var(--fill); color: var(--ink-2); font-size: 24rpx; border: var(--bw-thin) solid var(--border); border-radius: var(--r-full); transition: transform 0.1s var(--ease); }
-.tb-act:active { transform: translateY(4rpx); box-shadow: none; }
+.tb-act:active { transform: scale(0.985); opacity: 0.9; }
 
 /* 历史会话抽屉 */
 .drawer-mask { position: fixed; inset: 0; background: var(--scrim-soft); z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; }
 .drawer { background: var(--surface); border-radius: var(--r-3xl) var(--r-3xl) 0 0; max-height: 76vh; display: flex; flex-direction: column; padding: 0 28rpx calc(24rpx + env(safe-area-inset-bottom)); box-shadow: var(--shadow-pop); }
 .drawer-grip { width: 64rpx; height: 8rpx; border-radius: 8rpx; background: var(--border); margin: 16rpx auto 8rpx; }
 .drawer-title { font-size: 30rpx; font-weight: 700; color: var(--ink); text-align: center; padding: 8rpx 0 16rpx; }
-.drawer-new { text-align: center; color: var(--accent-strong); font-size: 28rpx; font-weight: 700; padding: 20rpx; border: 2rpx dashed rgba(24, 182, 144, 0.4); border-radius: var(--r-md); margin-bottom: 16rpx; }
+.drawer-new { text-align: center; color: var(--accent-strong); font-size: 28rpx; font-weight: 700; padding: 20rpx; border: 2rpx dashed rgba(119, 114, 200, 0.40); border-radius: var(--r-md); margin-bottom: 16rpx; }
 .drawer-new:active { opacity: 0.8; }
 .drawer-list { flex: 1 1 auto; min-height: 0; }
 .drawer-empty { text-align: center; color: var(--faint); font-size: 26rpx; padding: 60rpx 0; }
@@ -29,7 +29,7 @@ page { background: var(--bg); height: 100%; }
 
 .msgs { flex: 1 1 auto; min-height: 0; padding: 24rpx 28rpx 0; box-sizing: border-box; }
 
-/* —— 角色画框（消息流顶部，随对话滚走）：糖果拱窗 + 胶囊名牌 —— */
+/* —— 角色画框（消息流顶部，随对话滚走）：人物拱窗 + 状态名牌 —— */
 .astage { display: flex; flex-direction: column; align-items: center; padding: 24rpx 0 30rpx; }
 .astage-frame {
   width: 168rpx; height: 188rpx;
@@ -58,7 +58,7 @@ page { background: var(--bg); height: 100%; }
 .row-assistant { justify-content: flex-start; }
 .bubble { max-width: 76%; padding: 20rpx 24rpx; font-size: 29rpx; line-height: 1.55; border-radius: var(--r-lg); word-break: break-word; white-space: pre-wrap; }
 .bubble-assistant { background: var(--surface); color: var(--ink); border-bottom-left-radius: 8rpx; border: var(--bw-thin) solid var(--border); box-shadow: var(--shadow-hair); }
-.bubble-user { background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 8rpx; box-shadow: 0 3rpx 0 var(--accent-strong); }
+.bubble-user { background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 8rpx; box-shadow: var(--shadow-hair); }
 .typing { color: var(--faint); }
 /* 无输入栏：消息流可直抵页底，尾部补齐安全区，末条不压 iPhone Home 指示条 */
 .msgs-pad { height: calc(24rpx + env(safe-area-inset-bottom)); }
@@ -69,7 +69,7 @@ page { background: var(--bg); height: 100%; }
 .skel-bubble.sk-long { width: 70%; height: 148rpx; }
 .skel-bubble.sk-mine { width: 46%; height: 84rpx; border-bottom-left-radius: var(--r-lg); border-bottom-right-radius: 8rpx; }
 
-/* —— 加载失败：页内重试条（糖果白卡 + 底唇，点按下沉）—— */
+/* —— 加载失败：页内重试条 —— */
 .chat-retry {
   display: flex; align-items: center; justify-content: center; gap: 12rpx;
   margin: 80rpx 40rpx 0; padding: 28rpx;
@@ -105,18 +105,18 @@ page { background: var(--bg); height: 100%; }
 .cp-tot { font-size: 24rpx; font-weight: 600; color: var(--faint); }
 .cp-all { font-size: 22rpx; color: var(--sub); margin-left: 4rpx; }
 .cp-note { flex: 0 0 auto; font-size: 22rpx; color: var(--accent-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260rpx; }
-/* 复习挑战徽章：奶油黄糖果胶囊（检索练习入口，有到期概念时替换右侧提示） */
+/* 复习挑战徽章（检索练习入口，有到期概念时替换右侧提示） */
 .cp-review {
   flex: 0 0 auto; font-size: 22rpx; font-weight: 800;
   padding: 4rpx 18rpx;
   background: var(--pop-butter); color: var(--pop-butter-ink);
   border: none; border-radius: var(--r-full);
-  box-shadow: 0 4rpx 0 var(--gold-strong);
+  box-shadow: var(--shadow-hair);
   transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
-.cp-review:active { transform: translateY(4rpx); box-shadow: none; }
+.cp-review:active { transform: scale(0.985); }
 
-/* 提醒承诺条：奶油黄糖果条（课后邀请「明天叫我」，点整条即弹授权） */
+/* 提醒承诺条（课后邀请「明天叫我」，点整条即弹授权） */
 .remind-bar {
   flex: 0 0 auto;
   display: flex; align-items: center; gap: 12rpx;
@@ -126,12 +126,12 @@ page { background: var(--bg); height: 100%; }
   border: none;
   border-radius: var(--r-md);
   font-size: 26rpx; font-weight: 700;
-  box-shadow: 0 5rpx 0 var(--gold-strong);
+  box-shadow: var(--shadow-hair);
   animation: barIn 0.25s var(--ease) both;
   transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
-.remind-bar:active { transform: translateY(4rpx); box-shadow: none; }
-.remind-bar.done { background: var(--accent-soft); color: var(--accent-ink); box-shadow: 0 5rpx 0 #b9e6d6; }
+.remind-bar:active { transform: scale(0.985); }
+.remind-bar.done { background: var(--accent-soft); color: var(--accent-ink); box-shadow: var(--shadow-hair); }
 .remind-text { flex: 1; }
 .remind-yes {
   flex: 0 0 auto; font-size: 24rpx; font-weight: 800;
@@ -144,11 +144,11 @@ page { background: var(--bg); height: 100%; }
 .cp-fill { position: relative; height: 100%; border-radius: var(--r-full); background: var(--accent); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 .cp-fill::after { content: ''; position: absolute; left: 8rpx; right: 8rpx; top: 4rpx; height: 6rpx; border-radius: var(--r-full); background: rgba(255, 255, 255, 0.35); }
 
-/* 庆祝浮层：多邻国式全屏彩带 + 大字弹簧 */
+/* 庆祝浮层：克制彩带 + 里程碑大字 */
 .celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
 .celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
 .celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }
-.celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #7a5c00; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: 0 3rpx 0 var(--gold-strong); }
+.celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #574825; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: var(--shadow-hair); }
 .celeb-name { font-size: 56rpx; font-weight: 800; color: var(--ink); margin-top: 8rpx; animation: namePop 0.5s var(--ease-spring) 0.08s both; }
 .celeb-sub { font-size: 24rpx; color: var(--sub); margin-top: 12rpx; }
 @keyframes celebFade { from { opacity: 0; } to { opacity: 1; } }
@@ -177,15 +177,35 @@ page { background: var(--bg); height: 100%; }
   100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
 }
 
-/* 本轮可点选项：糖果风白底气泡 + 3D 底唇，点选即答（点选为主、输入兜底） */
+/* 本轮可点选项：白底细边气泡，点选即答（点选为主、输入兜底） */
 .opts { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 14rpx; padding: 14rpx 24rpx 6rpx; background: var(--surface); }
 .opt-chip {
+  display: inline-flex; align-items: center;
   padding: 14rpx 26rpx; font-size: 27rpx; color: var(--ink);
   background: var(--surface); border: var(--bw-thin) solid var(--border);
-  border-radius: var(--r-full); box-shadow: 0 4rpx 0 var(--border);
+  border-radius: var(--r-full); box-shadow: var(--shadow-hair);
   transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
 }
-.opt-chip:active { transform: translateY(4rpx); box-shadow: none; border-color: var(--accent); color: var(--accent); }
+.opt-chip:active { transform: scale(0.985); border-color: var(--accent); color: var(--accent); }
+/* 英语课·英文选项句：右侧🔊只朗读不作答（catchtap 拦截冒泡） */
+.opt-chip-en .opt-tx { margin-right: 4rpx; }
+.opt-speak {
+  margin-left: 8rpx; font-size: 30rpx; line-height: 1;
+  padding: 2rpx 6rpx; border-radius: var(--r-full);
+}
+.opt-speak:active { opacity: 0.45; }
+
+/* 英语课·跟读示范句下方的「听发音」胶囊（示范句进场自动播一遍，这里供重播） */
+.say-row { margin-top: -10rpx; }
+.say-audio {
+  display: inline-flex; align-items: center; gap: 8rpx;
+  padding: 8rpx 22rpx; font-size: 24rpx; font-weight: 700;
+  color: var(--accent-strong);
+  background: var(--surface); border: var(--bw-thin) solid var(--accent);
+  border-radius: var(--r-full); box-shadow: var(--shadow-hair);
+}
+.say-audio-press { transform: scale(0.985); background: var(--accent-soft); }
+.say-audio-ic { font-size: 28rpx; }
 
 /* ===================================================================== */
 /* 游戏事件卡皮肤（.game）：学习课专用——固定舞台 + 事件卡流 + 底部点选主操作台。 */
@@ -197,7 +217,8 @@ page { background: var(--bg); height: 100%; }
 .game-stage { position: relative; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 16rpx 0 20rpx; background: var(--surface); }
 /* 历史：缩成右上小胶囊（替代原 topbar 的「历史」按钮） */
 .gs-hist { position: absolute; top: 14rpx; right: 24rpx; padding: 8rpx 20rpx; font-size: 22rpx; color: var(--ink-2); background: var(--fill); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full); }
-.gs-hist:active { transform: translateY(2rpx); }
+.gs-hist:active { transform: scale(0.97); }
+.gs-guide { position: absolute; top: 14rpx; left: 24rpx; z-index: 8; padding: 8rpx 18rpx; font-size: 21rpx; font-weight: 700; color: var(--accent-ink); background: var(--pop-mint); border-radius: var(--r-full); }
 /* 额度：一行小灰字，点了才去开通（克制版会员入口，非会员才出现） */
 .gs-quota { margin-top: 8rpx; font-size: 21rpx; color: var(--faint); }
 .gs-quota:active { color: var(--accent-strong); }
@@ -292,7 +313,7 @@ page { background: var(--bg); height: 100%; }
   padding: 8rpx 20rpx; font-size: 22rpx; color: var(--ink-2);
   background: var(--fill); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full);
 }
-.road-stage .gs-hist:active { transform: translateY(2rpx); }
+.road-stage .gs-hist:active { transform: scale(0.97); }
 .road-stage .gs-quota { position: relative; z-index: 2; text-align: center; }
 /* 抬到天空层之上（sky 是绝对定位，scroll 默认 static 会被其遮住） */
 .road-scroll { position: relative; z-index: 1; width: 100%; height: 190rpx; white-space: nowrap; }
@@ -302,7 +323,7 @@ page { background: var(--bg); height: 100%; }
 .road-line {
   position: absolute; left: 0; right: 0; top: 118rpx; height: 16rpx; z-index: 1;
   background: #ecd3a8; border-radius: var(--r-full);
-  box-shadow: 0 3rpx 0 #d9b783;
+  box-shadow: 0 4rpx 12rpx rgba(114, 86, 48, 0.10);
 }
 
 /* 幕旗 checkpoint：浮在该幕首节点上方，中心对齐首节点圆心 */
@@ -316,24 +337,24 @@ page { background: var(--bg); height: 100%; }
 .road-flag.tone-mint   { background: var(--pop-mint);   color: var(--pop-mint-ink); }
 .road-flag.tone-lilac  { background: var(--pop-lilac);  color: var(--pop-lilac-ink); }
 
-/* 节点：88rpx 圆糖果，绝对定位（left=圆心，-44 半径居中；圆心落在连线上） */
+/* 节点：88rpx 圆形里程碑，绝对定位（left=圆心，-44 半径居中）。 */
 .rnode {
   position: absolute; top: 81rpx; margin-left: -44rpx; z-index: 2;
   width: 88rpx; height: 88rpx; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.1s var(--ease);
 }
-.rnode:active { transform: translateY(6rpx); }
+.rnode:active { transform: scale(0.94); }
 .rnode-img { width: 48rpx; height: 48rpx; }
 .rnode-face { font-size: 40rpx; line-height: 1; }
-.rnode.locked    { background: var(--fill); box-shadow: 0 8rpx 0 var(--border); }
+.rnode.locked    { background: var(--fill); box-shadow: var(--shadow-hair); }
 .rnode.locked .rnode-img { opacity: 0.55; }
-.rnode.available { background: var(--surface); border: 4rpx solid var(--accent); box-shadow: 0 8rpx 0 var(--border); }
-.rnode.current   { background: var(--accent); box-shadow: 0 8rpx 0 var(--accent-strong); }
-.rnode.lit       { background: var(--accent); box-shadow: 0 8rpx 0 var(--accent-strong); }
-.rnode.mastered  { background: var(--gold);   box-shadow: 0 8rpx 0 var(--gold-strong); }
+.rnode.available { background: var(--surface); border: 4rpx solid var(--accent); box-shadow: var(--shadow-card); }
+.rnode.current   { background: var(--accent); box-shadow: var(--shadow-accent); }
+.rnode.lit       { background: var(--accent); box-shadow: var(--shadow-accent); }
+.rnode.mastered  { background: var(--gold);   box-shadow: var(--shadow-card); }
 /* Boss 关：金边预告分量 */
-.rnode.boss { border: 4rpx solid var(--gold); box-shadow: 0 8rpx 0 var(--gold-strong); }
+.rnode.boss { border: 4rpx solid var(--gold); box-shadow: var(--shadow-card); }
 .rnode.mlock .rnode-img, .rnode.mlock .rnode-face { opacity: 0.5; filter: grayscale(0.35); }
 .rnode-lock { position: absolute; right: -6rpx; bottom: -6rpx; font-size: 26rpx; line-height: 1; }
 
@@ -439,7 +460,7 @@ page { background: var(--bg); height: 100%; }
   display: inline-block; padding: 6rpx 20rpx; border-radius: var(--r-full);
   font-size: 22rpx; font-weight: 800; background: var(--accent-soft); color: var(--accent-ink);
 }
-.lc-state.mastered { background: var(--gold); color: #7a5c00; }
+.lc-state.mastered { background: var(--gold); color: #574825; }
 .lc-state.locked { background: var(--fill); color: var(--sub); }
 .lc-flavor {
   position: absolute; top: 56rpx; right: 40rpx;
@@ -448,7 +469,7 @@ page { background: var(--bg); height: 100%; }
 .lc-flavor.current { background: var(--pop-butter); color: var(--pop-butter-ink); }
 .lc-flavor.available { background: var(--pop-sky); color: var(--pop-sky-ink); }
 .lc-flavor.lit { background: var(--pop-mint); color: var(--pop-mint-ink); }
-.lc-flavor.mastered { background: var(--gold); color: #7a5c00; }
+.lc-flavor.mastered { background: var(--gold); color: #574825; }
 .lc-flavor.locked { background: var(--fill); color: var(--sub); }
 .lc-name { margin-top: 16rpx; font-size: 44rpx; font-weight: 800; color: var(--ink); }
 .lc-blurb { margin-top: 8rpx; font-size: 28rpx; color: var(--ink-2); }

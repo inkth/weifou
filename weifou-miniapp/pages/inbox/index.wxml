@@ -1,5 +1,8 @@
 <view class="page">
-  <view class="tip muted">你的 AI 分身替你接待的访客提问都在这。分身已先答过，亲自补一句会让对方更惊喜。</view>
+  <view class="hd">
+    <view class="hd-title">消息</view>
+    <view class="hd-meta" wx:if="{{pendingCount}}">{{pendingCount}} 条待回复</view>
+  </view>
 
   <!-- 真网络失败：可重试条（不把「挂了」伪装成「没消息」） -->
   <view wx:if="{{errored}}" class="retry-row" bindtap="load">
@@ -9,7 +12,7 @@
   <!-- 主人召回：开启「新提问」微信订阅提醒（仅订阅模板已配时显示） -->
   <view wx:if="{{canNotify}}" class="notify-row" bindtap="enableNotify">
     <view class="ic ic-bell notify-ico"></view>
-    <text>开启提醒：有人问你的分身时微信通知我 ›</text>
+    <text>新提问微信提醒 ›</text>
   </view>
 
   <view wx:if="{{loading}}" class="empty muted">加载中…</view>
@@ -24,7 +27,6 @@
     </view>
 
     <view wx:else>
-      <view wx:if="{{pendingCount}}" class="tip muted">有 {{pendingCount}} 条还等着你亲自回一句。</view>
       <view
         class="card {{item.escalatedAt ? 'urgent' : ''}}"
         wx:for="{{questions}}"
@@ -39,8 +41,6 @@
           <text class="meta muted">{{item.timeText}}</text>
         </view>
         <view class="q">{{item.question}}</view>
-        <view wx:if="{{item.aiAnswer}}" class="note">分身答：{{item.aiAnswer}}</view>
-        <view wx:if="{{item.status === 'answered' && item.answer}}" class="note mine">你答：{{item.answer}}</view>
         <view class="meta status {{item.needsReply ? 'todo' : ''}}">{{item.statusText}}{{item.needsReply ? ' ›' : ''}}</view>
       </view>
     </view>
