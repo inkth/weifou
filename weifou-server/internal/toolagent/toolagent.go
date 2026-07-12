@@ -565,6 +565,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 9, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-love", Name: "好好相爱", Subject: "亲密关系", Guide: "同频·亲密关系教练",
+			Tagline:     "看懂心动、接住冲突、养住长期",
+			Description: "AI 越强，真实的亲密关系越珍贵。参考 Gottman 夫妻实验室四十年观察研究、EFT 情绪聚焦疗法与哈佛 85 年成人发展研究的实证结论，由「微否」原创设计三幕 21 关：识人的眼力、吵架的体面、长期的火种——只教真诚，不教套路。",
+			Category:    models.AgentCatEducation, Icon: "💞", Accent: "#F43F5E",
+			Greeting:     "我是亲密关系教练同频，陪你学习「好好相爱」。市面上教恋爱的，一半是玄学一半是套路；这门课只用有实证的：Gottman 夫妻实验室四十年的吵架观察、EFT 情绪聚焦疗法、哈佛追踪 85 年的幸福研究。三幕 21 关：看懂心动、接住冲突、养住长期——关键场面我演 TA，你来接球，说砸了时间倒回重来。只教真诚，不教话术，单身和恋爱中都能练。点「开始这一关」，先看看「上头」是怎么回事。",
+			SystemPrompt: buildConceptPrompt(lovePersona+"\n\n"+conceptTeachingMethod, loveConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 10, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
@@ -574,7 +584,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 10,
+			FreeTier: 1, Sort: 12, // 会员隐藏课压轴（好好相爱占 10 后顺延）
 		},
 	}
 	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），

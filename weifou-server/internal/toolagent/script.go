@@ -111,6 +111,7 @@ var courseScripts = map[string]map[string]levelScript{
 	"learn-ai":         learnAIScript,         // 节点图指令对比+找茬（产出课点选化第二门）
 	"spoken-english":   learnEnglishScript,    // 两轮场景裁决+迁移（纯点选、零LLM）
 	"learn-lifedesign": learnLifedesignScript, // 人生设计三幕21关（两段式概念课、零LLM）
+	"learn-love":       learnLoveScript,       // 好好相爱三幕21关（判断关+对手戏混合、零LLM）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。

@@ -44,23 +44,28 @@ func TestTiersLabeled(t *testing.T) {
 	}
 }
 
-// 人生设计课结构守护：三幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
-func TestLifedesignCourseHasThreeActsOfSeven(t *testing.T) {
-	if len(lifedesignConcepts) != 21 {
-		t.Fatalf("人生设计应为 21 关，实际 %d", len(lifedesignConcepts))
-	}
-	counts := map[int]int{}
-	lastOfTier := map[int]seedConcept{}
-	for _, c := range lifedesignConcepts {
-		counts[c.Tier]++
-		lastOfTier[c.Tier] = c
-	}
-	for tier := 1; tier <= 3; tier++ {
-		if counts[tier] != 7 {
-			t.Errorf("人生设计第 %d 幕应为 7 关，实际 %d", tier, counts[tier])
+// 三幕课结构守护（人生设计/好好相爱）：三幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
+func TestThreeActCoursesStructure(t *testing.T) {
+	for name, list := range map[string][]seedConcept{
+		"人生设计": lifedesignConcepts,
+		"好好相爱": loveConcepts,
+	} {
+		if len(list) != 21 {
+			t.Fatalf("%s 应为 21 关，实际 %d", name, len(list))
 		}
-		if !strings.Contains(lastOfTier[tier].Name, "综合关") {
-			t.Errorf("人生设计第 %d 幕末关应为综合关，实际 %s", tier, lastOfTier[tier].Name)
+		counts := map[int]int{}
+		lastOfTier := map[int]seedConcept{}
+		for _, c := range list {
+			counts[c.Tier]++
+			lastOfTier[c.Tier] = c
+		}
+		for tier := 1; tier <= 3; tier++ {
+			if counts[tier] != 7 {
+				t.Errorf("%s 第 %d 幕应为 7 关，实际 %d", name, tier, counts[tier])
+			}
+			if !strings.Contains(lastOfTier[tier].Name, "综合关") {
+				t.Errorf("%s 第 %d 幕末关应为综合关，实际 %s", name, tier, lastOfTier[tier].Name)
+			}
 		}
 	}
 }
