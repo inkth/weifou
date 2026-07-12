@@ -415,6 +415,9 @@ Page({
   pickOption(e) {
     const t = e.currentTarget.dataset.t;
     if (!t || this.data.pending) return;
+    // 英语课（纯点选）：点选即答的同时把这句英文读出来——「选一句就听一句」的自动播放。
+    // 老结构靠跟读 Say 节点自动播；重构去掉 Say 后，改由点选驱动（见 _ask 里 sayLine 兜底）。
+    if (this._englishAudio && this._isEnglishText(t)) this._speak(t);
     // 出招：点选即答，主角向当前关冲一记、对手受击晃动。
     // 复习挑战不打当前关（考的是别处的概念，冲错对象比不冲更违和）。
     if (this._duelOn && !this._reviewing && this.data.currentIndex >= 0) {
