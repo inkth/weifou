@@ -61,7 +61,8 @@ Page({
     const { id, name } = e.currentTarget.dataset;
     const a = (this.data.agents || []).find((x) => x.id === id);
     // 透传 icon/accent：对话页无网时也能立刻画出对的头像+配色骨架
-    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}` });
+    // game=1：修炼页进来的都是课，首帧即套游戏皮，免得加载窗口先闪一下普通聊天顶栏（含「解锁全课」）
+    wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}&game=1` });
   },
 
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },

@@ -7,7 +7,8 @@
       <view class="tb-quota">{{quotaText}}</view>
     </view>
     <view class="tb-act" bindtap="openHistory">历史</view>
-    <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">解锁全课</view>
+    <!-- 会员状态没回来前不亮商业按钮：防其他入口进课程时在加载窗口闪出「解锁全课」 -->
+    <view wx:if="{{!member && !loading}}" class="tb-buy" bindtap="goMembership">解锁全课</view>
   </view>
 
   <!-- 学习页紧凑头部：课程、当前关与历史。地图和属性面板按需展开。 -->

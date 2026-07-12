@@ -109,6 +109,9 @@ Page({
       name: query.name ? decodeURIComponent(query.name) : '',
       icon: query.icon ? decodeURIComponent(query.icon) : '',
       accent: query.accent ? decodeURIComponent(query.accent) : '#7772c8',
+      // 入口已知是课（修炼页带 game=1）就首帧套游戏皮，避免数据回来前闪一下普通聊天顶栏；
+      // 加载完成后仍以主接口布尔为准回正（见 _load）
+      gameSkin: query.game === '1' || this.data.gameSkin,
     });
     try {
       await ensureLogin();
