@@ -329,8 +329,9 @@ const (
 type ToolAgent struct {
 	ID           string    `gorm:"primaryKey;size:32" json:"id"`
 	Slug         string    `gorm:"uniqueIndex;size:48" json:"slug"`
-	Name         string    `gorm:"size:64" json:"name"`
-	Subject      string    `gorm:"size:16" json:"subject"` // 卡片上的「学科路牌」小标签（英语/心理/AI…），直白点出这门课教什么；诗意 Name 当角色、Subject 当路牌
+	Name         string    `gorm:"size:64" json:"name"`    // 能力课程主标题，如「独立判断」
+	Subject      string    `gorm:"size:16" json:"subject"` // 实用学习路牌，如「逻辑思辨」
+	Guide        string    `gorm:"size:48" json:"guide"`   // 课程内闯关搭档，如「明辨·逻辑侦探」
 	Tagline      string    `gorm:"size:128" json:"tagline"`
 	Description  string    `gorm:"type:text" json:"description"`
 	Category     string    `gorm:"size:24;index" json:"category"`

@@ -256,7 +256,7 @@ func (h *Handler) buy(c *gin.Context) error {
 	if err := h.db.Create(&order).Error; err != nil {
 		return httpx.Internal("ORDER_CREATE_FAILED", "下单失败，请稍后重试")
 	}
-	return h.pay.PrepayOrder(c, &order, "微否会员 · "+plan.Name) // 平台自营
+	return h.pay.PrepayOrder(c, &order, "微否全课会员 · "+plan.Name) // 平台自营
 }
 
 // intent 留资意向（多为 iOS 用户：当下不能在小程序内开通，记录意向）。
@@ -325,7 +325,7 @@ func (h *Handler) h5Order(c *gin.Context) error {
 		return httpx.Internal("ORDER_CREATE_FAILED", "下单失败，请稍后重试")
 	}
 	returnURL := reqBaseURL(c) + "/api/membership/h5page?t=" + req.Token + "&paid=1"
-	mwebURL, perr := h.pay.PrepayH5(&order, "微否会员 · "+plan.Name, c.ClientIP(), returnURL)
+	mwebURL, perr := h.pay.PrepayH5(&order, "微否全课会员 · "+plan.Name, c.ClientIP(), returnURL)
 	if perr != nil {
 		return httpx.Internal("WXPAY_H5_FAILED", "下单失败，请稍后重试")
 	}
@@ -411,7 +411,7 @@ const h5Template = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>微否会员</title>
+<title>微否·人类基本功计划</title>
 <style>
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; background:#faf7f2; color:#4a4133; }
@@ -449,15 +449,15 @@ var app = document.getElementById('app');
 function yuan(fen){ return (fen/100).toFixed(2).replace(/\.00$/,''); }
 function render(){
   if (PAID === "1"){
-    app.innerHTML = '<div class="done"><div class="ok">✅</div><div class="t">支付完成</div><div class="s">会员已开通，返回微否小程序即可畅用全部 AI 助手</div></div>';
+    app.innerHTML = '<div class="done"><div class="ok">✅</div><div class="t">支付完成</div><div class="s">全课会员已开通，返回微否小程序即可解锁七条完整能力路径</div></div>';
     return;
   }
   if (isWeChat){
     app.innerHTML = '<div class="overlay"><div class="arr">↗</div><div class="big">请在浏览器中打开</div><div style="margin-top:14px;font-size:14px;opacity:.85">点右上角「···」→「在 Safari / 浏览器打开」，再开通会员</div></div>';
     return;
   }
-  var h = '<div class="hero"><div class="crown">👑</div><div class="title">微否会员</div><div class="sub">一价畅用全部 AI 助手</div></div>';
-  h += '<div class="card"><div class="bf"><i>🗣️</i>全部精选 Agent 畅用</div><div class="bf"><i>∞</i>不限次数，随时开练</div><div class="bf"><i>🆕</i>新上线 Agent 自动包含</div></div>';
+  var h = '<div class="hero"><div class="crown">👑</div><div class="title">人类基本功计划</div><div class="sub">一次订阅，练习 AI 时代依然稀缺的七种能力</div></div>';
+  h += '<div class="card"><div class="bf"><i>🧭</i>解锁七条完整能力路径</div><div class="bf"><i>∞</i>全部进阶关卡与复习挑战</div><div class="bf"><i>🆕</i>后续新增实战课程自动包含</div></div>';
   h += '<div class="plans">';
   for (var i=0;i<PLANS.length;i++){
     var p = PLANS[i]; var d = p.days>0 ? (p.price/100/p.days).toFixed(1) : '';

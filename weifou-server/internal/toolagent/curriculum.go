@@ -36,6 +36,12 @@ type seedConcept struct {
 var tierLabels = map[int]string{1: "入门", 2: "进阶", 3: "大师"}
 var tierOrder = []int{1, 2, 3}
 
+var englishTierLabels = map[int]string{
+	1: "第一幕·日常办事", 2: "第二幕·旅行应急",
+	3: "第三幕·职场协作", 4: "第四幕·商务实战",
+}
+var englishTierOrder = []int{1, 2, 3, 4}
+
 // 学逻辑六幕（能力阶梯：解剖→识谬上→识谬下→读数→断因→立论），每幕结尾一个 Boss 综合找茬关。
 // 64 关不设总进度大分母，分母永远是本幕的 10 上下，靠幕级庆祝保节奏。
 var logicTierLabels = map[int]string{
@@ -63,6 +69,8 @@ var daodejingFullTierOrder = []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
 // tiersFor 取某课程的档位标签与顺序：learn-logic / daodejing 各有六幕专属幕名，其余课程走默认三档。
 func tiersFor(agentSlug string) (map[int]string, []int) {
 	switch agentSlug {
+	case "spoken-english":
+		return englishTierLabels, englishTierOrder
 	case "learn-logic":
 		return logicTierLabels, logicTierOrder
 	case "daodejing":
@@ -74,8 +82,8 @@ func tiersFor(agentSlug string) (map[int]string, []int) {
 }
 
 // curricula：agent slug → 该领域核心概念。SeedConcepts 据此幂等写入 agent_concepts。
-// spoken-english 的「概念」是真实场景关卡：点亮 = 用英语开口把这个场合的核心任务办成。
-// learn-ai 的「概念」是实操任务关：点亮 = 亲手写出给 AI 的指令把任务办成（真动手才点亮）。
+// spoken-english 的「概念」是真实场景关卡：点亮 = 完成表达裁决与场景迁移。
+// learn-ai 的「概念」是点选式实操任务关：点亮 = 在模拟任务中选对指令或核验动作。
 // learn-speaking 的「概念」是对手戏情境关：点亮 = 说出自己的原话把这个场面接住（真开口才点亮）。
 // daodejing 的「概念」是一章一坎：点亮 = 把这一章的思想用到自己的真实处境上（落地才点亮，防玄谈）；
 //
@@ -111,9 +119,8 @@ var curatedContent = map[string]map[string]hookCheck{
 }
 
 // ============================ 英语陪练 · 场景关卡课程表 ============================
-// 「概念」在这门课里 = 真实场合：点亮 = 用英语开口把这个场合的核心任务办成（哪怕磕巴）；
-// 掌握 = 用上目标句式，且导师抛出变体/突发状况时仍能用英语接住。
-// Tier1 生活/旅行（先能活下来），Tier2 职场/面试（再谈得成事）。
+// 「概念」在这门课里 = 真实场合：点亮 = 能辨认自然、得体、能把任务办成的英文回应；
+// 掌握 = 延时复习时，换语料或换场景仍能判断并迁移同一沟通策略。
 
 var englishScenarios = []seedConcept{
 	// —— 生活（Tier 1）——
@@ -124,30 +131,30 @@ var englishScenarios = []seedConcept{
 	{Slug: "ask-directions", Theme: "生活", Tier: 1, Name: "问路指路", Blurb: "问清路线并听懂指引"},
 	{Slug: "phone-booking", Theme: "生活", Tier: 1, Name: "电话预约", Blurb: "电话订位与确认信息"},
 	{Slug: "see-doctor", Theme: "生活", Tier: 1, Name: "看医生", Blurb: "描述症状、听懂医嘱"},
-	// —— 旅行（Tier 1）——
-	{Slug: "flight-checkin", Theme: "旅行", Tier: 1, Name: "机场值机", Blurb: "值机托运、选个好座位"},
-	{Slug: "customs-qa", Theme: "旅行", Tier: 1, Name: "过关问答", Blurb: "从容答上海关三连问"},
-	{Slug: "hotel-checkin", Theme: "旅行", Tier: 1, Name: "酒店入住", Blurb: "办理入住、提出换房要求"},
-	{Slug: "taxi-ride", Theme: "旅行", Tier: 1, Name: "打车出行", Blurb: "说清目的地与路线偏好"},
-	{Slug: "attraction-tickets", Theme: "旅行", Tier: 1, Name: "景点购票", Blurb: "问票价、时间与优惠"},
-	{Slug: "lost-luggage", Theme: "旅行", Tier: 1, Name: "行李丢失", Blurb: "挂失并描述你的行李"},
-	{Slug: "travel-help", Theme: "旅行", Tier: 1, Name: "旅途求助", Blurb: "丢了护照怎么开口求助"},
-	// —— 职场（Tier 2）——
-	{Slug: "work-self-intro", Theme: "职场", Tier: 2, Name: "同事初见", Blurb: "新团队里的自我介绍"},
-	{Slug: "meeting-opinion", Theme: "职场", Tier: 2, Name: "会议表态", Blurb: "赞成、反对与补充意见"},
-	{Slug: "task-handover", Theme: "职场", Tier: 2, Name: "任务交代", Blurb: "口头布置任务并确认理解"},
-	{Slug: "project-present", Theme: "职场", Tier: 2, Name: "项目汇报", Blurb: "开场、过渡与收尾句式"},
-	{Slug: "price-negotiation", Theme: "职场", Tier: 2, Name: "谈判议价", Blurb: "跟供应商体面地砍价"},
-	{Slug: "pantry-smalltalk", Theme: "职场", Tier: 2, Name: "茶水间闲聊", Blurb: "周末、天气与项目近况"},
-	{Slug: "video-call-clarify", Theme: "职场", Tier: 2, Name: "跨国视频会", Blurb: "听不清时优雅地追问"},
-	// —— 面试（Tier 2）——
-	{Slug: "interview-self-intro", Theme: "面试", Tier: 2, Name: "面试自我介绍", Blurb: "答好 Tell me about yourself"},
-	{Slug: "strengths-weaknesses", Theme: "面试", Tier: 2, Name: "优缺点问答", Blurb: "把弱点讲成成长故事"},
-	{Slug: "star-story", Theme: "面试", Tier: 2, Name: "讲一个经历", Blurb: "用 STAR 结构讲成就"},
-	{Slug: "why-us", Theme: "面试", Tier: 2, Name: "为什么选我们", Blurb: "动机题答得真诚不谄媚"},
-	{Slug: "salary-talk", Theme: "面试", Tier: 2, Name: "谈薪资", Blurb: "不吃亏也不失礼地谈钱"},
-	{Slug: "ask-interviewer", Theme: "面试", Tier: 2, Name: "反问面试官", Blurb: "问出水平的三个问题"},
-	{Slug: "mock-full-interview", Theme: "面试", Tier: 2, Name: "全英模拟面", Blurb: "把前面学的串成一整场"},
+	// —— 旅行应急（Tier 2）——
+	{Slug: "flight-checkin", Theme: "旅行", Tier: 2, Name: "机场值机", Blurb: "值机托运、选个好座位"},
+	{Slug: "customs-qa", Theme: "旅行", Tier: 2, Name: "过关问答", Blurb: "从容答上海关三连问"},
+	{Slug: "hotel-checkin", Theme: "旅行", Tier: 2, Name: "酒店入住", Blurb: "办理入住、提出换房要求"},
+	{Slug: "taxi-ride", Theme: "旅行", Tier: 2, Name: "打车出行", Blurb: "说清目的地与路线偏好"},
+	{Slug: "attraction-tickets", Theme: "旅行", Tier: 2, Name: "景点购票", Blurb: "问票价、时间与优惠"},
+	{Slug: "lost-luggage", Theme: "旅行", Tier: 2, Name: "行李丢失", Blurb: "挂失并描述你的行李"},
+	{Slug: "travel-help", Theme: "旅行", Tier: 2, Name: "旅途求助", Blurb: "丢了护照怎么求助"},
+	// —— 职场协作（Tier 3）——
+	{Slug: "work-self-intro", Theme: "职场", Tier: 3, Name: "同事初见", Blurb: "新团队里的自我介绍"},
+	{Slug: "pantry-smalltalk", Theme: "职场", Tier: 3, Name: "茶水间闲聊", Blurb: "周末、天气与项目近况"},
+	{Slug: "video-call-clarify", Theme: "职场", Tier: 3, Name: "跨国视频会", Blurb: "听不清时优雅地追问"},
+	{Slug: "meeting-opinion", Theme: "职场", Tier: 3, Name: "会议表态", Blurb: "赞成、反对与补充意见"},
+	{Slug: "task-handover", Theme: "职场", Tier: 3, Name: "任务交代", Blurb: "口头布置任务并确认理解"},
+	{Slug: "project-present", Theme: "职场", Tier: 3, Name: "项目汇报", Blurb: "开场、过渡与收尾句式"},
+	{Slug: "delay-risk", Theme: "职场", Tier: 3, Name: "延期与风险", Blurb: "说明延期并给补救方案"},
+	// —— 商务实战（Tier 4）——
+	{Slug: "business-networking", Theme: "商务", Tier: 4, Name: "商务初见", Blurb: "寒暄后自然进入正题"},
+	{Slug: "company-product-intro", Theme: "商务", Tier: 4, Name: "介绍产品", Blurb: "用客户价值介绍产品"},
+	{Slug: "needs-discovery", Theme: "商务", Tier: 4, Name: "挖掘需求", Blurb: "问出现状、问题与目标"},
+	{Slug: "solution-proposal", Theme: "商务", Tier: 4, Name: "提出方案", Blurb: "把方案连接到客户需求"},
+	{Slug: "handle-objection", Theme: "商务", Tier: 4, Name: "处理异议", Blurb: "接住价格与周期质疑"},
+	{Slug: "price-negotiation", Theme: "商务", Tier: 4, Name: "报价谈判", Blurb: "用条件交换而非裸降价"},
+	{Slug: "close-next-step", Theme: "商务", Tier: 4, Name: "推进成交", Blurb: "确认共识并锁定下一步"},
 }
 
 // englishContent：英语陪练精编 Hook/Check，28 关全精编。
@@ -168,14 +175,6 @@ var englishContent = map[string]hookCheck{
 	"meeting-opinion": {
 		Hook:  "例会上老板问：\"Any thoughts on the new plan?\"——你部分同意、但担心排期，用英语先肯定再提出顾虑。",
 		Check: "同事的方案你完全不同意。用英语不伤和气地反对，并给出你的替代建议。",
-	},
-	"interview-self-intro": {
-		Hook:  "面试官微笑着说：\"So, tell me about yourself.\"——你有 60 秒，用『现在-过去-未来』结构讲一版英文自我介绍。",
-		Check: "同一个开场，面试官追问：\"Why are you leaving your current job?\"——不抱怨前司，用英语给出得体版本。",
-	},
-	"salary-talk": {
-		Hook:  "HR 问：\"What are your salary expectations?\"——直接报数容易吃亏，用英语先反问薪资范围，再给一个带弹性的回答。",
-		Check: "对方开的数低于你的预期。用英语礼貌地往上谈，至少用一个 \"Based on my experience…\" 式的理由。",
 	},
 	// —— 生活 ——
 	"restaurant-order": {
@@ -248,33 +247,41 @@ var englishContent = map[string]hookCheck{
 		Hook:  "跨国例会上对方声音断断续续，你只听到一半。用英语礼貌打断，请对方重复关键部分。",
 		Check: "你还是没听清那个截止日期。用 \"Just to confirm, did you say…?\" 向对方确认，并提议会后邮件补一份纪要。",
 	},
-	// —— 面试 ——
-	"strengths-weaknesses": {
-		Hook:  "面试官问：\"What would you say is your biggest weakness?\"——别说「我太追求完美」。用英语讲一个真实的弱点，加上你正在怎么改进。",
-		Check: "紧接着：\"And your greatest strength?\"——用英语讲一个优势，并配一个 30 秒的小例子，不空喊口号。",
+	"delay-risk": {
+		Hook:  "项目周五交付，但关键接口至少还要两天。老板问：\"Are we still on track?\"——别装没事，也别只报坏消息，选一句把影响和方案都说清。",
+		Check: "换个场景：客户可能晚一天收到报告。哪句既承担责任，又给出新的明确时间？",
 	},
-	"star-story": {
-		Hook:  "面试官说：\"Tell me about a time you solved a difficult problem.\"——用 STAR 四步（情境-任务-行动-结果）讲一段你的真实经历。",
-		Check: "同样一段「解决难题」的经历，下面哪种讲法最稳、最不露怯？",
+	// —— 商务实战 ——
+	"business-networking": {
+		Hook:  "行业活动上，一位潜在客户看了眼你的胸牌：\"So, what brings you here?\"——用一句话介绍自己，再把话题自然递给对方。",
+		Check: "寒暄两轮后，你想进入业务正题。哪句既不突兀，也不继续空聊？",
 	},
-	"why-us": {
-		Hook:  "面试官问：\"So, why do you want to join us?\"——不吹捧、不空泛，用英语给出两个具体理由：一个关于这家公司，一个关于你自己。",
-		Check: "追问来了：\"You could get that at other companies too, no?\"——用英语接住，把理由落到只有这家才有的点上。",
+	"company-product-intro": {
+		Hook:  "客户问：\"What exactly does your product do?\"——不要堆功能，用『帮助谁＋解决什么问题』说明价值。",
+		Check: "客户说自己最关心效率。哪句能把产品功能翻译成对方关心的结果？",
 	},
-	"ask-interviewer": {
-		Hook:  "面试尾声：\"Do you have any questions for me?\"——千万别说 No。用英语问一个显水平的问题：关于团队、挑战或成长空间。",
-		Check: "面试最后一分钟「你有什么问题问我」，下面哪种接法最加分？",
+	"needs-discovery": {
+		Hook:  "第一次需求会，客户只说：\"We want something more efficient.\"——别急着推产品，先问出现状和最大问题。",
+		Check: "客户讲完一大段需求。哪句能复述确认，而不是直接假设自己已经懂了？",
 	},
-	"mock-full-interview": {
-		Hook:  "终极关：一场全英模拟面，我来演面试官——开场白、压力题、反问收尾三关连走，前六关练过的句子这一场全用得上。点「开始这一关」，推门进场。",
-		Check: "整场面试里最难的那道压力题，下面哪种接法真正立得住？",
+	"solution-proposal": {
+		Hook:  "你已经听完客户需求，现在轮到提方案。用『基于你刚才说的＋我们建议＋带来的结果』开场。",
+		Check: "客户最担心切换系统影响业务。哪句方案回应真正连接到了这个顾虑？",
+	},
+	"handle-objection": {
+		Hook:  "客户皱眉：\"Your price is much higher than the other quote.\"——不要立刻降价，也不要硬顶，先问清比较范围。",
+		Check: "客户改口说真正担心的是上线周期。哪句先确认顾虑，再给出可谈的选项？",
+	},
+	"close-next-step": {
+		Hook:  "方案、价格都谈得差不多，客户说：\"This looks promising.\"——不要只回 Great，用一句话把兴趣推进成明确下一步。",
+		Check: "会议结束前，哪句能同时确认责任人、动作和时间，避免『回头联系』不了了之？",
 	},
 }
 
 // ============================ 学心理 · 精编钩子与检验题 ============================
 // 钩子＝可直接开口的生活场景问题（制造好奇缺口，不剧透答案）；
 // 检验题＝应用/迁移型（换一个场景让学员自己用，答对才配得上「点亮」）。
-// 综合关（每章末的 Boss）＝用本章多个概念对一个真实情境做完整分析，对应英语课的 mock-full-interview。
+// 综合关（每章末的 Boss）＝用本章多个概念对一个真实情境做完整分析，对应英语课的商务综合关。
 
 var psychologyContent = map[string]hookCheck{
 	// —— 第1章 大脑的出厂设置 ——
@@ -1327,8 +1334,8 @@ var marketingConcepts = []seedConcept{
 }
 
 // ============================ 会用AI · 两幕 28 关 ============================
-// 「概念」在这门课里 = 实操任务关：点亮 = 学员亲手写出给 AI 的指令（或亲手核验 AI 的说法）把任务办成；
-// 掌握 = 产出质量过硬（指令含目标/背景/格式等要素），且教练抛出变体任务时仍能接住。
+// 「概念」在这门课里 = 点选式实操任务关：点亮 = 学员在模拟任务中选对指令或核验动作；
+// 掌握 = 延迟复习时仍能在陌生变体中选对关键要素与下一步。全课程纯点选，不要求用户输入。
 // 第一幕·入门（提问的手艺 → 日常跑腿：让 AI 听懂人话）；第二幕·进阶（拆活的艺术 → 别被AI忽悠：
 // 把活交出去、还不被糊弄）。大师幕（人机分工）留待第二期。
 // 策展红线：不绑具体 AI 产品与模型名（内容不随版本折旧）、不收「万能咒语」式 prompt 玄学、
@@ -1467,7 +1474,7 @@ var aiContent = map[string]hookCheck{
 	},
 	"ask-source": {
 		Hook:  "AI 说「研究表明，每天走一万步能延寿五年」——先别转发家庭群。追问一句：「哪个研究？谁做的？发在哪？」看它是交出实底，还是开始含糊。现在就试。",
-		Check: "AI 给了你一条带出处的说法，下一步怎么办？说出核验出处的两个动作——以及为什么「它给出了出处」本身还不算数（出处也可能是编的）。",
+		Check: "AI 给了你一条带出处的说法，下一步怎么办？选出核验出处的两个动作——以及为什么「它给出了出处」本身还不算数（出处也可能是编的）。",
 	},
 	"ai-blindspots": {
 		Hook:  "能写诗能编程的 AI，光靠自己（不联网、不调工具）却会在意想不到的地方翻车：硬数一个单词有几个字母、问它昨晚的球赛比分，都可能一本正经地答错——不是偷懒，是那块它天生没长。你能说出它先天不擅长的三类活吗？猜猜看。",
@@ -1475,7 +1482,7 @@ var aiContent = map[string]hookCheck{
 	},
 	"privacy-redline": {
 		Hook:  "让 AI 改合同、看体检报告、分析客户名单，都好使——但你想过这些东西发出去之后去了哪吗？喂之前先问自己一句：这要是被陌生人看到，要紧吗？来定你自己的红线。",
-		Check: "这四样哪些能直接喂：自己的辞职信草稿、带全名电话的客户表、公司未发布的产品文档、你的体检指标？逐样给出处理办法（直接喂/化名打码再喂/绝不喂）。",
+		Check: "这四样该怎么分级处理：自己的普通文字、带全名电话的客户表、公司未发布的产品文档、健康指标？选择直接使用、最小化并脱敏、或按规定禁止上传。",
 	},
 	"cross-check": {
 		Hook:  "医生说的病你会再挂个专家号确认，AI 说的事呢？重要决定别单靠一张嘴：换个问法再问一遍、让它「说说反方观点」、再拿搜索对一遍——三条路，现在挑一条练。",
@@ -2476,12 +2483,17 @@ func reviewPick(db *gorm.DB, userID, agentID string, limit int, onlyDue bool) []
 		return nil
 	}
 	now := time.Now()
+	litDays, masteredDays := reviewDueLitDays, reviewDueMasteredDays
+	var agent models.ToolAgent
+	if db.Select("slug").First(&agent, "id = ?", agentID).Error == nil && agent.Slug == "spoken-english" {
+		litDays = 1 // 新场景次日先复习；掌握后每 7 天回访一次（7、14、21...）。
+	}
 	var ids []string
 	for i := range ucs {
 		if onlyDue {
-			days := reviewDueLitDays
+			days := litDays
 			if ucs[i].Level >= 2 {
-				days = reviewDueMasteredDays
+				days = masteredDays
 			}
 			if now.Sub(ucs[i].UpdatedAt) < time.Duration(days)*24*time.Hour {
 				continue
@@ -2721,11 +2733,11 @@ const conceptAssessPrompt = `你是「概念掌握判定器」。下面给你一
 - 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。` + verdictRule + `
 只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>","verdict":"right|wrong|"}`
 
-// englishAssessPrompt：英语陪练的判定语义——「概念」是场景关卡，点亮的标准是真开口。
-const englishAssessPrompt = `你是「口语场景通关判定器」。下面给你一份英语口语场景关卡清单（每行格式 slug|场景名），以及学员与教练的一轮对话。判断这一轮里学员在清单中哪些场景上**真的用英语开口完成了核心任务**，以及是否**达到掌握水平**。
+// englishAssessPrompt：LLM 兜底路径的场景反应判定语义；主课程由确定性脚本直接判定。
+const englishAssessPrompt = `你是「英语场景反应判定器」。下面给你一份英语场景关卡清单，以及学员与教练的一轮对话。判断学员在哪些场景完成了核心表达判断，以及是否达到迁移水平。
 规则：
-- touched（=点亮）：学员本轮提交了该场景的核心英文表达——用英语点了单、答了海关、做了自我介绍等（**点选教练给的示范答案，或自己开口，都算**；哪怕有语法错误或磕巴）。全程说中文、或只回「好/OK」的，**不算**。只放清单里确实存在的 slug，没有就给空数组。
-- mastered（=掌握）：学员不仅完成任务，还用上了该场景的目标句式，且在教练抛出变体或突发状况（换个说法、单被做错、被追问）时仍能用英语接住（必须也在 touched 里）。把握不准就别放。
+- touched（=点亮）：学员完成了该场景的核心英文表达判断或任务回应。
+- mastered（=掌握）：学员在换语料、换信息或突发状况中仍能迁移同一沟通策略（必须也在 touched 里）。
 - 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。
 只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>"}`
 

@@ -6,14 +6,14 @@ Page({
   data: {
     loading: true,
     profileId: null,
-    agentEntry: false, // AI 工具箱入口（iOS 隐藏，见 utils/entries）
+    agentEntry: false, // 人类基本功计划入口（iOS 隐藏，见 utils/entries）
   },
 
   async onShow() {
     this.setData({ loading: true });
     try {
       await ensureLogin();
-      // 拉「我的助理」+ 入口可见性（决定 AI 工具箱入口是否出现，iOS 隐藏）。
+      // 拉「我的助理」+ 入口可见性（决定人类基本功计划入口是否出现，iOS 隐藏）。
       const [me] = await Promise.all([
         request({ url: '/user/me' }),
         loadEntries(),
@@ -28,7 +28,7 @@ Page({
     }
   },
 
-  // AI 工具箱（平台预设的付费工具 Agent，如学英语 / 面试）
+  // 人类基本功计划（平台自编的闯关式能力课程）
   goAgents() {
     wx.navigateTo({ url: '/pages/agents/index' });
   },

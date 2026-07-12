@@ -1,7 +1,7 @@
 <view class="wrap">
   <view class="head">
-    <view class="h-title">AI 工具箱</view>
-    <view class="h-sub">挑一门技能，先免费体验，会员畅用全部</view>
+    <view class="h-title">人类基本功计划</view>
+    <view class="h-sub">AI 越强，人的基本功越重要</view>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>
@@ -11,7 +11,7 @@
   <block wx:else>
     <view class="mbr-banner {{isMember ? 'on' : ''}}" bindtap="goMembership">
       <view class="ic ic-crown mb-crown"></view>
-      <text class="mb-text">{{isMember ? '会员有效中 · 全部畅用' : '开通会员 · 一价畅用全部'}}</text>
+      <text class="mb-text">{{isMember ? '全课会员有效中 · 七条路径畅用' : '加入计划 · 解锁全部能力路径'}}</text>
       <text class="mb-arrow" wx:if="{{!isMember}}">去开通 ›</text>
     </view>
 
@@ -28,6 +28,7 @@
         <view class="body">
           <view class="name">{{item.name}}</view>
           <view class="tagline">{{item.tagline}}</view>
+          <view class="guide" wx:if="{{item.guide}}">{{item.subject}} · 闯关搭档 {{item.guide}}</view>
           <view class="meta" wx:if="{{item.status}}">
             <text class="status status-{{item.statusKind}}">{{item.status}}</text>
           </view>

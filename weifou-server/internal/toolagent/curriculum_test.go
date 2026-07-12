@@ -40,3 +40,18 @@ func TestTiersLabeled(t *testing.T) {
 		}
 	}
 }
+
+func TestEnglishCourseHasFourActsOfSeven(t *testing.T) {
+	if len(englishScenarios) != 28 {
+		t.Fatalf("英语反应力应为 28 关，实际 %d", len(englishScenarios))
+	}
+	counts := map[int]int{}
+	for _, c := range englishScenarios {
+		counts[c.Tier]++
+	}
+	for tier := 1; tier <= 4; tier++ {
+		if counts[tier] != 7 {
+			t.Errorf("英语第 %d 幕应为 7 关，实际 %d", tier, counts[tier])
+		}
+	}
+}

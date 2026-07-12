@@ -25,7 +25,7 @@
   <view class="actions" wx:if="{{!loading}}">
     <button class="glass-btn primary" bindtap="goOnboarding" wx:if="{{!profileId}}">开始创建我的 AI 分身</button>
     <button class="glass-btn primary" bindtap="goMyProfile" wx:if="{{profileId}}">查看我的 AI 分身</button>
-    <button class="glass-btn" bindtap="goAgents" wx:if="{{agentEntry}}">🧰 AI 工具箱 · 学英语 / 面试</button>
+    <button class="glass-btn" bindtap="goAgents" wx:if="{{agentEntry}}">🧭 人类基本功计划 · 七条能力路径</button>
     <button class="glass-btn" bindtap="goOnboarding" wx:if="{{profileId}}">重新编辑</button>
   </view>
 

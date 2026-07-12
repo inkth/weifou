@@ -7,13 +7,22 @@
       <view class="tb-quota">{{quotaText}}</view>
     </view>
     <view class="tb-act" bindtap="openHistory">历史</view>
-    <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">开通会员</view>
+    <view wx:if="{{!member}}" class="tb-buy" bindtap="goMembership">解锁全课</view>
+  </view>
+
+  <!-- 学习页紧凑头部：课程、当前关与历史。地图和属性面板按需展开。 -->
+  <view wx:if="{{gameSkin && !loading && !errored}}" class="learn-head">
+    <view class="learn-head-main">
+      <view class="learn-course">{{guide || name}}</view>
+      <view class="learn-task">{{lessonTitle}}</view>
+    </view>
+    <view class="learn-progress" bindtap="toggleMap">{{lessonProgress || '学习中'}} {{mapVisible ? '⌃' : '›'}}</view>
+    <view class="learn-more" bindtap="openHistory">···</view>
   </view>
 
   <!-- 游戏皮·横版会走的路（概念课）：角色沿关卡路停在当前关左侧对峙，点亮后走到下一关。舞台=地图合一。
        判断型课程叠「战斗动作层」：点选=出招、点亮=击破、没拿下=对手挑衅（纯 class 动画，不承载信息）。 -->
-  <view wx:if="{{gameSkin && concept && !loading && !errored}}" class="road-stage">
-    <view class="gs-hist" bindtap="openHistory">历史</view>
+  <view wx:if="{{gameSkin && mapVisible && concept && !loading && !errored}}" class="road-stage">
     <!-- 场景·远景（固定不随路，营造纵深）：天空渐变 + 飘云 + accent 远山 -->
     <view class="road-sky" style="--sky-accent: {{accent}};">
       <view class="cloud cloud-a"></view>
@@ -48,17 +57,20 @@
     </scroll-view>
   </view>
 
-  <!-- 游戏皮·静态舞台（英语课等无概念课）：保留原吉祥物画框 -->
-  <view wx:elif="{{gameSkin && !concept && !loading && !errored}}" class="game-stage">
-    <view class="gs-hist" bindtap="openHistory">历史</view>
-    <view class="gs-frame {{pending ? 'busy' : ''}}" style="background: {{accent}}22;">
-      <text class="gs-emoji">{{icon || '🎓'}}</text>
+  <!-- 学习进行中只保留一个小型角色舞台，地图展开时让位。 -->
+  <view wx:if="{{gameSkin && !mapVisible && !loading && !errored}}" class="lesson-stage">
+    <view class="lesson-mascot {{pending ? 'busy' : ''}}">
+      <image wx:if="{{concept}}" class="lesson-mascot-img" src="{{heroImg}}" mode="aspectFit" />
+      <text wx:else class="lesson-stage-emoji">{{icon || '🎓'}}</text>
     </view>
-    <view class="gs-tag">{{name}}</view>
+    <view class="lesson-stage-copy">
+      <view class="lesson-stage-title">{{pending ? '正在理解你的选择' : lessonTitle}}</view>
+      <view class="lesson-stage-sub">{{pending ? '稍等一下' : '本关约 2 分钟'}}</view>
+    </view>
   </view>
 
   <!-- 学习型 Agent：三维段位面板（升级感）。段位只升不降，三维条次次微动。 -->
-  <view wx:if="{{skill}}" class="skill" style="--accent: {{accent}};">
+  <view wx:if="{{gameSkin && mapVisible && skill}}" class="skill" style="--accent: {{accent}};">
     <view class="sk-head">
       <view class="sk-tier">
         <text class="sk-lv">Lv.{{skill.level}}</text>
@@ -87,7 +99,7 @@
   </view>
 
   <!-- 概念型 Agent：分档点亮进度条。头部显示当前正在攻的那一档；点条＝镜头拉回当前关（路即地图，不再弹图鉴层）。 -->
-  <view wx:if="{{concept}}" class="cprog" style="--accent: {{accent}};" bindtap="recenterRoad">
+  <view wx:if="{{gameSkin && mapVisible && concept}}" class="cprog" style="--accent: {{accent}};" bindtap="recenterRoad">
     <view class="cp-head">
       <view class="cp-stat">
         <block wx:if="{{concept.allDone}}"><text class="cp-tier">全部通关</text></block>
@@ -124,35 +136,68 @@
       <text>没能连上，点这里重试</text>
     </view>
 
-    <!-- 角色画框：新粗野拱窗 + 贴纸名牌，在消息流顶部，随对话自然滚走 -->
-    <view wx:else class="astage">
-      <view class="astage-frame {{pending ? 'busy' : ''}}" style="background: {{accent}}22;">
-        <text class="astage-emoji">{{icon}}</text>
-      </view>
-      <view class="astage-tag">{{name}}</view>
-    </view>
+    <block wx:else>
+      <!-- 课程：单张任务卡原地推进，不把完整聊天记录铺在学习流中。 -->
+      <block wx:if="{{gameSkin}}">
+        <view class="lesson-card {{pending ? 'is-pending' : ''}}">
+          <view class="lesson-card-eyebrow">{{lessonProgress || '当前任务'}}</view>
+          <view wx:if="{{lessonChoice}}" class="lesson-choice">
+            <text class="lesson-choice-label">你的选择</text>
+            <text class="lesson-choice-text">{{lessonChoice}}</text>
+          </view>
+          <view wx:if="{{lessonCard}}" class="lesson-content">{{lessonCard.content}}</view>
+          <view wx:else class="lesson-content lesson-empty">准备好后，从下面选一个答案开始。</view>
+          <view wx:if="{{lessonCard.say}}" class="lesson-audio" catchtap="onSpeakSay" data-t="{{lessonCard.say}}" hover-class="say-audio-press" hover-stay-time="0">
+            <text class="say-audio-ic">🔊</text><text>听发音</text>
+          </view>
+          <view wx:if="{{pending}}" class="lesson-thinking"><text></text><text></text><text></text></view>
+        </view>
+        <view wx:if="{{options.length && !pending}}" class="lesson-instruction">选择一个最接近的答案</view>
+      </block>
 
-    <view wx:for="{{messages}}" wx:key="index" id="m{{index}}" class="row row-{{item.role}}">
-      <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
-    </view>
-    <view wx:if="{{pending}}" class="row row-assistant">
-      <view class="bubble bubble-assistant typing">思考中…</view>
-    </view>
+      <!-- 普通 Agent 维持完整聊天流。 -->
+      <block wx:else>
+        <view class="astage">
+          <view class="astage-frame {{pending ? 'busy' : ''}}" style="background: {{accent}}22;">
+            <text class="astage-emoji">{{icon}}</text>
+          </view>
+          <view class="astage-tag">{{name}}</view>
+        </view>
+
+        <block wx:for="{{messages}}" wx:key="index">
+          <view id="m{{index}}" class="row row-{{item.role}}">
+            <view class="bubble bubble-{{item.role}}">{{item.content}}</view>
+          </view>
+          <view wx:if="{{item.say}}" class="row row-assistant say-row">
+            <view class="say-audio" catchtap="onSpeakSay" data-t="{{item.say}}" hover-class="say-audio-press" hover-stay-time="0">
+              <text class="say-audio-ic">🔊</text><text class="say-audio-tx">听发音</text>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{pending}}" class="row row-assistant">
+          <view class="bubble bubble-assistant typing">思考中…</view>
+        </view>
+      </block>
+    </block>
     <view class="msgs-pad"></view>
   </scroll-view>
 
   <!-- 提醒承诺：今日首学后递上「明天叫我」（执行意图；一天只邀一次，模板未配不出现） -->
-  <view wx:if="{{remindState === 'offer'}}" class="remind-bar" bindtap="onRemindTap">
+  <view wx:if="{{remindState === 'offer' && (!gameSkin || (!options.length && !pending))}}" class="remind-bar" bindtap="onRemindTap">
     <text class="remind-text">⏰ 明天这个点叫你继续吗？</text>
     <text class="remind-yes">好啊</text>
   </view>
-  <view wx:elif="{{remindState === 'done'}}" class="remind-bar done">
+  <view wx:elif="{{remindState === 'done' && (!gameSkin || (!options.length && !pending))}}" class="remind-bar done">
     <text class="remind-text">✓ 说定了，明天见</text>
   </view>
 
   <!-- 本轮可点选项：点选即答（全站纯点选、无输入栏）。opts-tail 补齐 iPhone 底部安全区，让点选气泡即底栏 -->
-  <view class="opts opts-tail" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
-    <view class="opt-chip" wx:for="{{options}}" wx:key="*this" data-t="{{item}}" bindtap="pickOption">{{item}}</view>
+  <view class="opts opts-tail {{gameSkin ? 'game-options' : ''}}" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
+    <view class="opt-chip {{item.en ? 'opt-chip-en' : ''}}" wx:for="{{options}}" wx:key="t" data-t="{{item.t}}" bindtap="pickOption">
+      <text wx:if="{{gameSkin}}" class="opt-index">{{index + 1}}</text>
+      <text class="opt-tx">{{item.t}}</text>
+      <text wx:if="{{item.en}}" class="opt-speak" catchtap="onSpeakChip" data-t="{{item.t}}">🔊</text>
+    </view>
   </view>
 
   <!-- 庆祝浮层：升级 / 点亮 / 掌握共用（全屏彩带 + 大字弹簧） -->
@@ -189,8 +234,8 @@
   <view class="drawer-mask" wx:if="{{historyVisible}}" bindtap="closeHistory">
     <view class="drawer" catchtap="noop">
       <view class="drawer-grip"></view>
-      <view class="drawer-title">历史对话</view>
-      <view class="drawer-new" bindtap="newSession">＋ 开启新对话</view>
+      <view class="drawer-title">{{gameSkin ? '学习记录' : '历史对话'}}</view>
+      <view class="drawer-new" bindtap="newSession">{{gameSkin ? '重新开始本课' : '＋ 开启新对话'}}</view>
       <scroll-view scroll-y class="drawer-list">
         <view wx:if="{{!sessions.length}}" class="drawer-empty">还没有历史对话</view>
         <view

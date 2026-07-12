@@ -8,7 +8,7 @@ import (
 
 // 脚本课护城河检查：有剧本的课程，其课程表每一关都必须有完备剧本——
 // 开场点选 2-4 项、检验选项 2-4 项且 Correct 下标合法、每个选项 Label/Reply 非空、
-// Label ≤20 字（点选气泡容量）、Clear/Note 非空、Note ≤18 字（UserConcept.Note 战报）。
+// 短标签 Label ≤20 字、完整英文台词 ≤90 字，Clear/Note 非空、Note ≤18 字（UserConcept.Note 战报）。
 // 同时反向守护：剧本条目不得指向课程表外的 slug（防手误）。
 func TestCourseScriptsComplete(t *testing.T) {
 	for agentSlug, script := range courseScripts {
@@ -76,8 +76,12 @@ func checkOptions(t *testing.T, agentSlug, slug, field string, opts []tapOption)
 			t.Errorf("%s/%s %s[%d] Label/Reply 不得为空", agentSlug, slug, field, i)
 			continue
 		}
-		if n := utf8.RuneCountInString(label); n > 20 {
-			t.Errorf("%s/%s %s[%d] Label 超长（%d>20 字）：%s", agentSlug, slug, field, i, n, label)
+		maxLabel := 20
+		if agentSlug == "spoken-english" && field == "Variants" {
+			maxLabel = 90 // 英语复习题直接复用完整英文回应，不压成中文知识标签。
+		}
+		if n := utf8.RuneCountInString(label); n > maxLabel {
+			t.Errorf("%s/%s %s[%d] Label 超长（%d>%d 字）：%s", agentSlug, slug, field, i, n, maxLabel, label)
 		}
 		// Label 是点选匹配键：同组重复会让 matchIndex 永远命中前者。
 		if labelSeen[label] {
@@ -88,6 +92,29 @@ func checkOptions(t *testing.T, agentSlug, slug, field string, opts []tapOption)
 		switch label {
 		case optNext, optMap, optReviewMore, optBackCourse:
 			t.Errorf("%s/%s %s[%d] Label 撞导航保留词：%s", agentSlug, slug, field, i, label)
+		}
+	}
+}
+
+func TestEnglishReviewUsesTransferVariants(t *testing.T) {
+	for slug, lv := range learnEnglishScript {
+		if len(lv.Nodes) != 3 {
+			t.Errorf("spoken-english/%s 应为裁决+辨析+迁移三轮，实际 %d 轮", slug, len(lv.Nodes))
+			continue
+		}
+		for node, want := range []int{1, 2, NodeClear} {
+			wins := 0
+			for _, o := range lv.Nodes[node].Options {
+				if o.Next == want {
+					wins++
+				}
+			}
+			if wins != 1 {
+				t.Errorf("spoken-english/%s Nodes[%d] 应恰有一个去向 %d，实际 %d", slug, node, want, wins)
+			}
+		}
+		if len(lv.Variants) == 0 {
+			t.Errorf("spoken-english/%s 缺少英文延时迁移题", slug)
 		}
 	}
 }
@@ -105,6 +132,22 @@ func TestCourseScriptsCorrectVaries(t *testing.T) {
 	}
 }
 
+// 《与 AI 共舞》四章都必须有陌生场景迁移题，防复习退化成背原题。
+// 第一阶段要求每章至少两关有变式；后续题库扩充时再提高到逐关覆盖。
+func TestLearnAITransferCoverage(t *testing.T) {
+	covered := map[string]int{}
+	for _, c := range aiConcepts {
+		if len(learnAIScript[c.Slug].Variants) > 0 {
+			covered[c.Theme]++
+		}
+	}
+	for _, theme := range []string{"提问的手艺", "日常跑腿", "拆活的艺术", "别被AI忽悠"} {
+		if covered[theme] < 2 {
+			t.Errorf("learn-ai/%s 迁移题覆盖不足：需至少 2 关，实际 %d", theme, covered[theme])
+		}
+	}
+}
+
 // checkNodes 校验节点图关卡：每个节点要么是点选节点（选项 2-4、Label ≤20 字、Reply 非空、
 // Next 合法），要么是跟读节点（Say/SayOK/SayFail 非空、SayNext 合法）；全图必须存在通关出口。
 func checkNodes(t *testing.T, agentSlug, slug string, nodes []scriptNode) {
@@ -113,6 +156,9 @@ func checkNodes(t *testing.T, agentSlug, slug string, nodes []scriptNode) {
 	hasClear := false
 	for ni, nd := range nodes {
 		if nd.Say != "" {
+			if agentSlug == "spoken-english" {
+				t.Errorf("%s/%s Nodes[%d] 不得使用强制跟读节点：纯点选课程会无入口卡死", agentSlug, slug, ni)
+			}
 			if len(nd.Options) > 0 {
 				t.Errorf("%s/%s Nodes[%d] 跟读节点不得再带 Options", agentSlug, slug, ni)
 			}
@@ -138,9 +184,9 @@ func checkNodes(t *testing.T, agentSlug, slug string, nodes []scriptNode) {
 				continue
 			}
 			// 节点选项是学员的完整台词（原话候选），比概念课的短标签宽；
-			// 英文整句（开口课）按字符计更长，上限放到 60。
-			if n := utf8.RuneCountInString(label); n > 60 {
-				t.Errorf("%s/%s Nodes[%d].Options[%d] Label 超长（%d>60 字）：%s", agentSlug, slug, ni, oi, n, label)
+			// 英文商务台词需要完整承载条件与下一步，上限放到 90；仍防止把整段讲解塞进按钮。
+			if n := utf8.RuneCountInString(label); n > 90 {
+				t.Errorf("%s/%s Nodes[%d].Options[%d] Label 超长（%d>90 字）：%s", agentSlug, slug, ni, oi, n, label)
 			}
 			if labelSeen[label] {
 				t.Errorf("%s/%s Nodes[%d] Label 重复：%s", agentSlug, slug, ni, label)

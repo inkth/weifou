@@ -91,7 +91,7 @@ const (
 
 // courseScripts：agent slug → concept slug → 剧本。有剧本的课程走脚本引擎，其余照旧走 LLM。
 // 迁移判据（2026-07-06 定调）：概念课（检验=判断/找茬）适合脚本化；
-// 产出课（开口/言值/驭手，点亮判据=学员真实产出）保留 LLM——纯点选会杀死课魂。
+// 产出课（英语/沟通/AI，点亮判据=学员真实产出）保留 LLM——纯点选会杀死课魂。
 var courseScripts = map[string]map[string]levelScript{
 	"daodejing-full":   daodejingFullScript,
 	"learn-logic":      learnLogicScript,
@@ -99,7 +99,7 @@ var courseScripts = map[string]map[string]levelScript{
 	"learn-marketing":  learnMarketingScript,
 	"learn-speaking":   learnSpeakingScript, // 节点图对手戏（产出课点选化第一门）
 	"learn-ai":         learnAIScript,       // 节点图指令对比+找茬（产出课点选化第二门）
-	"spoken-english":   learnEnglishScript,  // 节点图剧本对话+ASR跟读（真开口零LLM，收官门）
+	"spoken-english":   learnEnglishScript,  // 两轮场景裁决+迁移（纯点选、零LLM）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。
@@ -228,7 +228,7 @@ func (st *scriptTurn) startLevel(session *models.AgentSession, slug string) erro
 	if st.a.FreeTier > 0 {
 		if !st.member {
 			if c := st.concept(slug); c != nil && c.Tier > st.a.FreeTier {
-				return httpx.BadRequest("MEMBERSHIP_REQUIRED", "第一幕已学完 · 第二幕起开通会员畅用全部")
+				return httpx.BadRequest("MEMBERSHIP_REQUIRED", "第一幕已学完 · 加入人类基本功计划，解锁全部能力路径")
 			}
 		}
 	} else if !st.member && st.a.FreeTrial > 0 && !st.isLit(slug) {
