@@ -171,8 +171,6 @@ Page({
   retry() { this.load(); },
 
   enterCardEditor() {
-    const chief = this.data.chief;
-    if (!chief.hasProfile) { this.editCard(); return; }
     if (!this.data.editing) {
       this.setData({ editing: true });
       wx.showToast({ title: '点名片上的内容即可修改', icon: 'none' });
@@ -181,13 +179,20 @@ Page({
 
   viewPublicCard() {
     const chief = this.data.chief;
-    if (!chief.hasProfile) { this.editCard(); return; }
+    if (!chief.hasProfile) { this.enterCardEditor(); return; }
     wx.navigateTo({ url: `/pages/profile/index?id=${chief.profileId}&mine=1` });
   },
 
-  toggleEditor() {
-    if (!this.data.chief.hasProfile) { this.editCard(); return; }
-    this.setData({ editing: !this.data.editing, editorOpen: false });
+  async toggleEditor() {
+    if (!this.data.editing) {
+      this.setData({ editing: true, editorOpen: false });
+      return;
+    }
+    if (!this.data.chief.hasProfile) {
+      await this.publishNewCard();
+      return;
+    }
+    this.setData({ editing: false, editorOpen: false });
   },
 
   openIdentity() {
@@ -239,6 +244,28 @@ Page({
       if (!tags.length) { wx.showToast({ title: '至少保留一个标签', icon: 'none' }); return; }
       data = { tags };
     } else return;
+    // 新用户先在眼前的示例名片上完成本地编辑，点右上角“完成”时再一次性创建。
+    if (!this.data.chief.hasProfile) {
+      if (kind === 'identity') {
+        const identity = [data.title, data.company, data.city].filter(Boolean).join(' · ');
+        this.setData({
+          'chief.name': data.realName.trim(),
+          'chief.initial': initial(data.realName),
+          'chief.title': data.title.trim(),
+          'chief.company': (data.company || '').trim(),
+          'chief.city': (data.city || '').trim(),
+          'chief.identity': identity,
+          editorOpen: false,
+        });
+      } else if (kind === 'intro') {
+        this.setData({ 'chief.oneLiner': data.oneLiner.trim(), editorOpen: false });
+      } else if (kind === 'tags') {
+        this.setData({ 'chief.tags': data.tags.slice(0, 3), 'chief.allTags': data.tags, editorOpen: false });
+      }
+      wx.showToast({ title: '已放到名片上', icon: 'success' });
+      return;
+    }
+
     this.setData({ savingEditor: true });
     try {
       await request({ url, method: 'PATCH', data });
@@ -253,6 +280,16 @@ Page({
   async choosePortrait(e) {
     if (this.data.savingEditor) return;
     const id = e.currentTarget.dataset.id;
+    if (!this.data.chief.hasProfile) {
+      this.setData({
+        'chief.avatarStyle': id,
+        'chief.portraitUrl': portraitUrl(id, 'new-card'),
+        'chief.cardStyle': cardStyle(id, 'new-card'),
+        editorOpen: false,
+      });
+      wx.showToast({ title: '气质已切换', icon: 'success' });
+      return;
+    }
     this.setData({ savingEditor: true });
     try {
       await request({ url: '/profile/avatar', method: 'PATCH', data: { avatarStyle: id } });
@@ -264,7 +301,45 @@ Page({
   },
 
   editCard() {
-    wx.navigateTo({ url: this.data.chief.hasProfile ? '/pages/settings/index' : '/pages/onboarding/index' });
+    if (!this.data.chief.hasProfile) { this.enterCardEditor(); return; }
+    wx.navigateTo({ url: '/pages/settings/index' });
+  },
+
+  async publishNewCard() {
+    if (this.data.savingEditor) return;
+    const c = this.data.chief;
+    if (!c.title || !c.name || c.name === FALLBACK.chief.name) {
+      wx.showToast({ title: '先点姓名，填写你的身份', icon: 'none' });
+      this.openIdentity();
+      return;
+    }
+    this.setData({ savingEditor: true });
+    wx.showLoading({ title: '正在生成名片…', mask: true });
+    try {
+      await ensureLogin();
+      const created = await request({
+        url: '/profile', method: 'POST', data: {
+          realName: c.name,
+          title: c.title,
+          company: c.company || '',
+          city: c.city || '',
+          strengths: c.oneLiner || (c.allTags || c.tags || []).join('、'),
+          recentWork: '',
+          howToKnow: (c.allTags || c.tags || []).join('、'),
+          avatarStyle: c.avatarStyle || 'gf-meinv',
+          style: '',
+        },
+      });
+      const personaPatch = { oneLiner: c.oneLiner };
+      if ((c.allTags || []).length) personaPatch.tags = c.allTags;
+      await request({ url: '/profile/persona', method: 'PATCH', data: personaPatch }).catch(() => {});
+      wx.hideLoading();
+      this.setData({ editing: false, editorOpen: false });
+      wx.redirectTo({ url: `/pages/profile/index?id=${created.id}&mine=1&fresh=1` });
+    } catch (e) {
+      wx.hideLoading();
+      wx.showToast({ title: e.message || '创建失败', icon: 'none' });
+    } finally { this.setData({ savingEditor: false }); }
   },
 
   portraitError() {
