@@ -44,6 +44,27 @@ func TestTiersLabeled(t *testing.T) {
 	}
 }
 
+// 人生设计课结构守护：三幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
+func TestLifedesignCourseHasThreeActsOfSeven(t *testing.T) {
+	if len(lifedesignConcepts) != 21 {
+		t.Fatalf("人生设计应为 21 关，实际 %d", len(lifedesignConcepts))
+	}
+	counts := map[int]int{}
+	lastOfTier := map[int]seedConcept{}
+	for _, c := range lifedesignConcepts {
+		counts[c.Tier]++
+		lastOfTier[c.Tier] = c
+	}
+	for tier := 1; tier <= 3; tier++ {
+		if counts[tier] != 7 {
+			t.Errorf("人生设计第 %d 幕应为 7 关，实际 %d", tier, counts[tier])
+		}
+		if !strings.Contains(lastOfTier[tier].Name, "综合关") {
+			t.Errorf("人生设计第 %d 幕末关应为综合关，实际 %s", tier, lastOfTier[tier].Name)
+		}
+	}
+}
+
 // 英语课结构守护：四幕各 8 关（7 常规 + 1 全英模拟面 Boss），模拟面必须是每幕末关。
 func TestEnglishCourseHasFourActsOfEight(t *testing.T) {
 	if len(englishScenarios) != 32 {

@@ -68,6 +68,8 @@ func tiersFor(agentSlug string) (map[int]string, []int) {
 		return logicTierLabels, logicTierOrder
 	case "daodejing-full":
 		return daodejingFullTierLabels, daodejingFullTierOrder
+	case "learn-lifedesign":
+		return lifedesignTierLabels, lifedesignTierOrder
 	}
 	return tierLabels, tierOrder
 }
@@ -90,6 +92,7 @@ var curricula = map[string][]seedConcept{
 	"spoken-english":   englishScenarios,
 	"learn-ai":         aiConcepts,
 	"learn-speaking":   speakingConcepts,
+	"learn-lifedesign": lifedesignConcepts,
 	"daodejing-full":   daodejingFullConcepts,
 }
 
@@ -105,6 +108,7 @@ var curatedContent = map[string]map[string]hookCheck{
 	"learn-marketing":  marketingContent,
 	"learn-ai":         aiContent,
 	"learn-speaking":   speakingContent,
+	"learn-lifedesign": lifedesignContent,
 	"daodejing-full":   daodejingFullContent,
 }
 

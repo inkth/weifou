@@ -555,6 +555,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-lifedesign", Name: "设计你的人生", Subject: "人生设计", Guide: "探路·人生设计师",
+			Tagline:     "看清现在、设计可能、选择出发",
+			Description: "AI 能替你干活，却不能替你决定要过什么样的人生。参考斯坦福《人生设计课》(Designing Your Life) 的设计思维工具，由「微否」原创设计三幕 21 关：好时光日志、奥德赛计划、原型访谈——把「这辈子该干什么」拆成本周就能动手的小实验。",
+			Category:    models.AgentCatEducation, Icon: "🧭", Accent: "#F59E0B",
+			Greeting:     "我是人生设计师探路，陪你开始「设计你的人生」。这门课只反对一件事——「想清楚了再活」。我们用设计师的办法：三幕 21 关，先看清现在（四格油表、好时光日志），再设计可能（三版奥德赛计划、原型访谈），最后选择出发（够好就选、失败免疫）。每关一个你身上正发生的场景，挑最贴的答，过了检验关点亮才算真懂。点「开始这一关」，先换上设计师的脑子。",
+			SystemPrompt: buildConceptPrompt(lifedesignPersona+"\n\n"+conceptTeachingMethod, lifedesignConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 9, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
