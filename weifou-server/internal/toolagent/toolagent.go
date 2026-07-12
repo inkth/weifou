@@ -527,9 +527,9 @@ func Seed(db *gorm.DB) {
 		{
 			Slug: "learn-marketing", Name: "让价值流动", Subject: "营销实战", Guide: "破圈·生意军师",
 			Tagline:     "从发现需求，到让人看见、心动、下单",
-			Description: "AI 能批量生产内容，却不能替你决定为谁创造什么价值。生意军师破圈用 48 个真实商业场景，带你从理解需求、定位差异一路走到成交与增长。",
+			Description: "AI 能批量生产内容，却不能替你决定为谁创造什么价值。生意军师破圈用 50 个真实商业场景，带你从理解需求、定位差异一路走到成交与增长。",
 			Category:    models.AgentCatEducation, Icon: "🎯", Accent: "#DC2626",
-			Greeting:     "我是生意军师破圈，陪你学会「让价值流动」。三幕 48 关：把生意想明白、把客人请进门、让生意自己转。走法：每关一个真实商业场景，你来判断怎么卖才对——判对点亮，48 个概念一格格占进你脑子。点「开始这一关」，从用户需求开始。",
+			Greeting:     "我是生意军师破圈，陪你学会「让价值流动」。三幕 50 关：把生意想明白、把客人请进门、让生意自己转。走法：每关一个真实商业场景，你来判断怎么卖才对——判对点亮，50 个概念一格格占进你脑子。点「开始这一关」，从用户需求开始。",
 			SystemPrompt: buildConceptPrompt(marketingPersona+"\n\n"+conceptTeachingMethod, marketingConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 6, // 第一幕免费无限，第二幕起会员
