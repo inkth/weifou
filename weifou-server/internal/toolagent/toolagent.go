@@ -495,10 +495,10 @@ func Seed(db *gorm.DB) {
 	presets := []models.ToolAgent{
 		{
 			Slug: "spoken-english", Name: "连接世界", Subject: "英语反应力", Guide: "应声·场景陪练",
-			Tagline:     "28 个真实场合，听懂、选对、接得住",
-			Description: "AI 时代，语言的价值不只是翻译，而是理解语境、即时回应并与更大的世界建立连接。28 个真实场景，从日常办事、旅行应急到职场协作、商务实战，全程点选练判断与迁移。",
+			Tagline:     "32 个真实场合，听懂、选对、接得住",
+			Description: "AI 时代，语言的价值不只是翻译，而是理解语境、即时回应并与更大的世界建立连接。32 个真实场景，从日常办事、旅行应急到职场协作、商务实战，每幕末一场全英模拟面，全程点选练判断与迁移。",
 			Category:    models.AgentCatEducation, Icon: "🗣️", Accent: "#FB923C",
-			Greeting:     "Hi，我是场景陪练应声，陪你开始「连接世界」。这门课练一件事——英语场景一来，你知道怎么接。28 关分四幕：日常办事、旅行应急、职场协作、商务实战。每关先从三句英文里裁决最自然有效的一句，再换信息或加压迁移；接得住才点亮。点「开始这一关」，先去咖啡馆。",
+			Greeting:     "Hi，我是场景陪练应声，陪你开始「连接世界」。这门课练一件事——英语场景一来，你知道怎么接。32 关分四幕：日常办事、旅行应急、职场协作、商务实战。每关先从三句英文里裁决最自然有效的一句，再换信息或加压迁移；每幕末一场「全英模拟面」——没有中文旁白，先过听力门，再把金句自己拼出来。点「开始这一关」，先去咖啡馆。",
 			SystemPrompt: buildConceptPrompt(spokenEnglishPrompt, englishScenarios),
 			Assess:       false,
 			Concept:      true,

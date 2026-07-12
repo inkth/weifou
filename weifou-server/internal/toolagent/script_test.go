@@ -98,6 +98,35 @@ func checkOptions(t *testing.T, agentSlug, slug, field string, opts []tapOption)
 
 func TestEnglishReviewUsesTransferVariants(t *testing.T) {
 	for slug, lv := range learnEnglishScript {
+		// 全英模拟面（每幕 Boss）：听力门→两轮裁决→拼句两步，五节点单链，逐节点恰一个前进出口。
+		if strings.HasPrefix(slug, "boss-") {
+			if len(lv.Nodes) != 5 {
+				t.Errorf("spoken-english/%s 模拟面应为 5 节点，实际 %d", slug, len(lv.Nodes))
+				continue
+			}
+			if !strings.Contains(lv.Nodes[0].Prompt, listenMark) {
+				t.Errorf("spoken-english/%s 模拟面首节点应为听力门（含 %q）", slug, listenMark)
+			}
+			for ni := range lv.Nodes {
+				want := ni + 1
+				if ni == len(lv.Nodes)-1 {
+					want = NodeClear
+				}
+				wins := 0
+				for _, o := range lv.Nodes[ni].Options {
+					if o.Next == want {
+						wins++
+					}
+				}
+				if wins != 1 {
+					t.Errorf("spoken-english/%s Nodes[%d] 应恰有一个去向 %d，实际 %d", slug, ni, want, wins)
+				}
+			}
+			if len(lv.Variants) == 0 {
+				t.Errorf("spoken-english/%s 缺少延时迁移题", slug)
+			}
+			continue
+		}
 		if len(lv.Nodes) != 3 {
 			t.Errorf("spoken-english/%s 应为裁决+辨析+迁移三轮，实际 %d 轮", slug, len(lv.Nodes))
 			continue

@@ -1,12 +1,21 @@
-// 英语反应力（spoken-english）28 关剧本：日常办事 / 旅行应急 / 职场协作 / 商务实战。
-// 形态 = 两轮纯点选场景对话：第一轮裁决自然、得体、能办成事的表达；第二轮换信息或
-// 加压迁移，仍能接住才点亮。全程零 LLM、零强制录音，确保小程序现有纯点选交互可完成。
+// 英语反应力（spoken-english）32 关剧本：日常办事 / 旅行应急 / 职场协作 / 商务实战，
+// 每幕末一场「全英模拟面」Boss（slug 前缀 boss-，小程序端据此挂 Boss 标记）。
+// 常规关形态 = 两轮纯点选场景对话：第一轮裁决自然、得体、能办成事的表达；第二轮换信息或
+// 加压迁移，仍能接住才点亮。模拟面形态 = 听力门（🎧 只听不看，见 listenMark）→ 两轮全英
+// 裁决（混考本幕语块）→ 拼句两步（把本幕金句自己拼出来）。全程零 LLM、零强制录音。
 // 品质纪律（课魂+测试守护）：
 //   - 错误项的点破要具体到语言点（a/an、时态、语域），不是泛泛「不对」；
 //   - 对方反应先用英文演一句，再中文点破——沉浸不断，教学不糊；
 //   - 通关只代表完成场景迁移；延时复习答对才升「掌握」；
 //   - CheckOpts 供复习挑战（中文判断题，Label ≤20 字）；Clear 带下一关悬念；Note ≤18 字。
 package toolagent
+
+// listenMark 听力门标记行：模拟面第一节点用它引出一句「只播不显」的英文——
+// 小程序端（agent-chat）按同名约定把标记行的下一行隐藏为音频占位，自动朗读、🔊 可重听。
+const listenMark = "🎧 只听不看："
+
+// listenLine 组一段听力门：标记行 + 隐藏英文行。答错的点破里也用它，让学员当场重听。
+func listenLine(en string) string { return listenMark + "\n" + en }
 
 var learnEnglishScript = map[string]levelScript{
 	// ============ 生活 ============
@@ -204,7 +213,7 @@ var learnEnglishScript = map[string]levelScript{
 			{Label: "连声yes道谢就走", Reply: "医嘱是最不能装懂的一段，出门剂量就开始模糊。再想想。"},
 		},
 		Correct: 1,
-		Clear:   "症状说清、医嘱确认、忌口问到——日常办事七关全部点亮。下一幕「旅行应急」，先去机场值机。",
+		Clear:   "症状说清、医嘱确认、忌口问到——日常七关全部点亮。先别松劲：第一幕还剩一场「全英模拟面」，没有中文旁白，全靠你自己。",
 		Note:    "开口把症状说清了",
 	},
 	// ============ 旅行 ============
@@ -401,7 +410,7 @@ var learnEnglishScript = map[string]levelScript{
 			{Label: "让警察现在就送你去", Reply: "帮忙是情分不是义务——命令句把求助聊成对峙。再选。"},
 		},
 		Correct: 0,
-		Clear:   "护照丢了也没慌，求助、问路、问时间全用英语办妥——旅行主题通关。下一关进职场：「同事初见」，新同事正朝你走来。",
+		Clear:   "护照丢了也没慌，求助、问路、问时间全用英语办妥。旅行的硬仗还剩一场——「全英模拟面·旅途」：航班取消的那一夜，没有旁白替你翻译。",
 		Note:    "丢了护照没丢开口",
 	},
 	// ============ 职场 ============
@@ -626,7 +635,7 @@ var learnEnglishScript = map[string]levelScript{
 			{Label: "先说一切正常稳住情绪", Reply: "短暂稳住了情绪，却失去了调整窗口。再想想。"},
 		},
 		Correct: 1,
-		Clear:   "延期没有藏，也没有甩锅——你把风险变成了可选择的方案。下一幕走出公司，开始面对客户。",
+		Clear:   "延期没有藏，也没有甩锅——你把风险变成了可选择的方案。出公司之前还有一场「全英模拟面」：紧急视频会已经拉起，没有字幕。",
 		Note:    "把延期说成可选方案",
 	},
 	"business-networking": {
@@ -794,8 +803,263 @@ var learnEnglishScript = map[string]levelScript{
 			{Label: "锁定动作责任人与时间", Reply: "对——商务沟通的终点不是聊得好，而是下一步明确。"},
 		},
 		Correct: 2,
-		Clear:   "从初见、需求、方案、异议到下一步，整场商务沟通被你推进到了可执行的结果。四幕通关！",
+		Clear:   "从初见、需求、方案、异议到下一步，整场商务沟通被你推进到了可执行的结果。终局还剩一场——「全英模拟面·成交」：三十分钟，真刀真枪。",
 		Note:    "把兴趣推进成了行动",
+	},
+	// ============ 全英模拟面（每幕 Boss）============
+	// 五节点单链：听力门 → 两轮全英裁决（混考本幕语块）→ 拼句两步。对方台词零中文旁白，
+	// 点破仍用中文（教学不糊）。init 的三轮改造不碰它们（len!=2），Variants 手写。
+	"boss-daily-life": {
+		Nodes: []scriptNode{
+			{
+				Prompt: "咖啡店里你刚报完取货单号，店员忽然说——\n\n" + listenLine("Sorry, we're out of oat milk today—would soy milk be OK instead?") + "\n\nTA 想告诉你什么？",
+				Options: []nodeOption{
+					{Label: "燕麦奶没了，问豆奶行不行", Reply: "你点点头：\"Sure, soy is fine.\" 店员比了个 OK——TA 说的是：\"Sorry, we're out of oat milk today—would soy milk be OK instead?\" out of（卖完了）和 instead（换成）两个关键词你都抓住了。往下走。", Next: 1},
+					{Label: "今天的拿铁全部售罄了", Reply: "你转身要走，店员赶紧叫住你：\"No no, we have lattes!\" ——卖完的只是燕麦奶。out of 后面跟的那个词才是缺的东西，别把范围听大了。\n\n" + listenLine("Sorry, we're out of oat milk today—would soy milk be OK instead?"), Next: NodeRetry},
+					{Label: "换豆奶要加两美元", Reply: "你掏出钱包，店员摆摆手：\"No extra charge!\" ——整句里没有出现任何数字和钱，would ... be OK instead 是在征求你同意，不是报价。再听一遍。\n\n" + listenLine("Sorry, we're out of oat milk today—would soy milk be OK instead?"), Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "蛋糕盒打开一看，名字挤成了 \"Happy Birthday Lee\"——寿星明明叫 Leo。店员问：\"All good?\" 三句挑一句：",
+				Options: []nodeOption{
+					{Label: "The name is wrong. This is a big problem.", Reply: "店员僵住：\"...I see.\" 改是能改，气氛先冷了——没有缓冲直接定罪，big problem 还把小事说大。指错的开场白永远先给一句 Sorry，咖啡馆那关就是这么赢的。", Next: NodeRetry},
+					{Label: "Em... it's OK, Lee is also a nice name.", Reply: "店员笑着把盒子递了回来——今晚寿星 Leo 要对着 Lee 吹蜡烛。it's OK 在这个场景就是「不用改」，你又把开口的机会让出去了。这单是给朋友的，忍不得。", Next: NodeRetry},
+					{Label: "Sorry, I think the name should be Leo, not Lee—could you fix it?", Reply: "店员凑近一看：\"Oh no, my bad—give me two minutes!\" ——Sorry 缓冲、I think 留余地、说清对错点、could you 提请求：第一关学的指错三件套，换家店照样好使。", Next: 2},
+				},
+			},
+			{
+				Prompt: "路上餐厅来电：\"Hi, this is Bella's Kitchen. About your table for eight tonight—we're overbooked at seven. Could you do six thirty or nine?\" 三句挑一句：",
+				Options: []nodeOption{
+					{Label: "Nine is too late, six thirty is too early... you decide.", Reply: "电话那头等了三秒：\"So... which one, sir?\" ——两个都嫌、再把决定推回去，等于没接这通电话。订位要给确定答案，电话预约那关就栽过这个坑。", Next: NodeRetry},
+					{Label: "Six thirty works. It's under Leo—and could we get a table by the window?", Reply: "\"Six thirty, party of eight, under Leo, window table—all set!\" ——确定时间、报上订位名、顺手提要求，三要素一口气闭环，电话语域稳稳的。", Next: 3},
+					{Label: "We are eight persons, we want six thirty, no problem?", Reply: "接线员听懂了，但记录卡了一下——口语说 eight people 或 a table for eight，persons 是法律文书里的词；no problem? 也不是确认句，确认要说 six thirty works 或 is that OK?。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "晚上聚会，一位没见过的客人朝你举了举杯。该你开口了——把破冰这句拼出来，先选上半句：",
+				Options: []nodeOption{
+					{Label: "Hi, I'm Lin—Leo and I work together.", Reply: "对方笑着碰了下杯：\"Oh nice!\" ——名字加一句「你和寿星的关系」，破冰上半句信息刚刚好。接着把话头抛回去。", Next: 4},
+					{Label: "Hello, my name is called Lin, 28 years old.", Reply: "对方礼貌地眨了眨眼——is called 是给物件和绰号用的，自报姓名就是 I'm Lin；寒暄一开口就报年龄，也像在念简历。轻一点，短一点。", Next: NodeRetry},
+					{Label: "Sorry, my English is not good, but hello.", Reply: "对方赶紧安慰你：\"You're doing great!\" ——话题瞬间从「认识你」变成「救你」。自贬开场是老毛病了，初次寒暄那关就点过它：破冰不需要道歉。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "下半句——把话头抛回去：",
+				Options: []nodeOption{
+					{Label: "Do you know me?", Reply: "对方愣了一下：\"...Should I?\" ——这句像在质问对方认不认识你。把话头抛回去，问的应该是 TA 和这场聚会的联系。", Next: NodeRetry},
+					{Label: "I am a designer, my job is very busy.", Reply: "对方点头听完，接不上话——你把话头留在了自己身上，对话的球没有过网。破冰下半句的任务只有一个：递一个 TA 能接的问题。", Next: NodeRetry},
+					{Label: "How do you know Leo?", Reply: "\"College roommates—he never told you about the guitar story?\" 对方打开了话匣子——How do you know... 一出手，话题自己往前跑。全英一整天，你一个人扛下来了。", Next: NodeClear},
+				},
+			},
+		},
+		CheckOpts: []tapOption{
+			{Label: "没听清就先点头应付过去", Reply: "装懂是听力最大的敌人——out of 没抓住，连豆奶都换不成。再想想。"},
+			{Label: "抓关键词，错了就体面指出", Reply: "对——听抓 out of/instead，指错用 Sorry 三件套：一整天的场面全靠这两手。"},
+			{Label: "名字写错了将就一下算了", Reply: "寿星对着别人的名字吹蜡烛——该开口时的忍，代价都在后头。再选。"},
+		},
+		Correct: 1,
+		Variants: []checkVariant{
+			{
+				Ask: "延时迁移：超市自助结账机好像多扣了钱，店员走过来：\"What seems to be the problem?\" 哪句接得住？",
+				Opts: []tapOption{
+					{Label: "Sorry, I think the machine double-charged me—could you check?", Reply: "对——Sorry 缓冲、I think 留余地、说清问题、could you 提请求：指错三件套在哪儿都好使。"},
+					{Label: "Your machine is broken. Give my money back now.", Reply: "没缓冲、直接定罪加命令——钱能退回来，你也成了全店最凶的客人。"},
+					{Label: "Nothing... maybe it's my fault, never mind.", Reply: "多扣的钱就这么认了？maybe my fault 加 never mind，求助被你自己撤回了。"},
+				},
+				Correct: 0,
+			},
+		},
+		Clear: "听力门、指错、订位、破冰——没有一句中文旁白，你全接住了。第一幕全英通关！第二幕「旅行应急」的机场广播，语速可比店员快多了。",
+		Note:  "全英扛完了一整天",
+	},
+	"boss-travel-storm": {
+		Nodes: []scriptNode{
+			{
+				Prompt: "广播只播一遍——\n\n" + listenLine("Flight 782 to Boston has been cancelled due to weather. Please proceed to the service desk for rebooking and a hotel voucher.") + "\n\n广播说了什么？",
+				Options: []nodeOption{
+					{Label: "航班延误两小时，原地等通知", Reply: "你在座位上坐了十分钟，抬头一看，队伍已经排到了门口——cancelled 是取消，不是 delayed 延误；proceed to the service desk 是让你去柜台，不是等。\n\n" + listenLine("Flight 782 to Boston has been cancelled due to weather. Please proceed to the service desk for rebooking and a hotel voucher."), Next: NodeRetry},
+					{Label: "航班取消，去柜台改签、领酒店券", Reply: "你抓起背包直奔柜台，排进了前十——TA 说的是：\"Flight 782 has been cancelled... rebooking and a hotel voucher.\" cancelled（取消）、rebooking（改签）、voucher（酒店券）三个关键词全中。信息就是先机。", Next: 1},
+					{Label: "登机口换了，要去新柜台登机", Reply: "你冲到新登机口，屏幕上一片红色的 CANCELLED——广播里根本没有 gate（登机口）这个词。抓词别脑补，再听一遍。\n\n" + listenLine("Flight 782 to Boston has been cancelled due to weather. Please proceed to the service desk for rebooking and a hotel voucher."), Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "柜台前地勤飞快敲着键盘：\"I can put you on the 6 a.m. flight, that's the earliest.\" 三句挑一句：",
+				Options: []nodeOption{
+					{Label: "6 a.m. works. Does the voucher cover dinner too? And could I get an aisle seat?", Reply: "\"Dinner's included—and aisle seat, done.\" ——接受方案的同时把该问的问清、该要的要到：值机那关学的「先拿信息再提条件」，深夜也不忘。", Next: 2},
+					{Label: "OK... whatever you can do. Anything is fine.", Reply: "地勤十秒钟打完票把你打发走了——座位中间、晚饭没提。whatever 在柜台等于弃权，这是超售谈判那关就交过的学费。", Next: NodeRetry},
+					{Label: "6 a.m.?! You must give me business class for tonight!", Reply: "地勤面无表情：\"I'm afraid that's not possible, sir.\" ——must 加感叹号是命令不是谈判；开口要的东西超出对方权限，只会把本来能拿的也谈丢。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "凌晨的酒店前台翻了半天电脑：\"Sorry, I don't see any reservation under your name.\" 三句挑一句：",
+				Options: []nodeOption{
+					{Label: "Impossible! The airline already pay you!", Reply: "前台的笑容降了温：\"Sir, I checked twice.\" ——Impossible 开头是指控，pay 也该是过去式 paid。冲前台发火最亏：弄丢记录的不是 TA，能捞你的正是 TA。", Next: NodeRetry},
+					{Label: "Oh... OK, sorry, I go find another hotel.", Reply: "你拖着箱子走向凌晨的大街——酒店券还在手里攥着呢。查无记录不等于没有房，一句确认都没问就撤，这一夜输给了自己的「算了」。", Next: NodeRetry},
+					{Label: "Hmm, the airline booked it—here's the voucher. Could you check under 'Flight 782'?", Reply: "前台接过券一敲回车：\"Ah, there it is—under the airline's block. My apologies!\" ——不指控、给凭证、递新的查询线索：把问题当谜题一起解，房卡就到手了。", Next: 3},
+				},
+			},
+			{
+				Prompt: "早上八点，行李果然没跟上航班。柜台问：\"Can you describe your bag?\" 把这句拼出来，先选上半句：",
+				Options: []nodeOption{
+					{Label: "You lost my box in the airplane—", Reply: "工作人员笔尖一顿：\"A... box?\" ——行李箱是 suitcase，box 是纸箱；You lost 开头也先定了罪。上半句要说清「什么东西、出了什么事」。", Next: NodeRetry},
+					{Label: "My suitcase didn't make the connection—", Reply: "工作人员开始录入：\"Go on.\" ——didn't make the connection（没赶上转机）一词说清事故，suitcase 也用对了。接着给特征。", Next: 4},
+					{Label: "I lose my baggage yesterday night—", Reply: "丢是已经发生的事，要用过去式 lost；「昨晚」是 last night，yesterday night 是中式拼法。两个小坑，护照那关都踩过。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "下半句——给出让人认得出的特征：",
+				Options: []nodeOption{
+					{Label: "it is big size, blue color, very expensive.", Reply: "big size、blue color 都是中式冗余——big 和 blue 自己就够了；very expensive 放在描述里也不如一个具体特征有用。行李丢失那关讲过的。", Next: NodeRetry},
+					{Label: "it's a large blue one with a red ribbon on the handle.", Reply: "\"Large, blue, red ribbon—we'll call you the moment it lands.\" ——尺寸、颜色、独有特征一句排齐，几百个蓝箱子里就能认出你这只。", Next: NodeClear},
+					{Label: "it's my bag, you will know when you see it.", Reply: "工作人员苦笑：\"They all look alike, sir.\" ——「见到就认识」帮不了任何人，寻回和理赔全靠你嘴里的特征清单。", Next: NodeRetry},
+				},
+			},
+		},
+		CheckOpts: []tapOption{
+			{Label: "广播没听清，跟着人流走", Reply: "人流去的是出口，你的改签柜台在另一头——关键词才是路标。再想想。"},
+			{Label: "查无记录就自认倒霉换酒店", Reply: "券在手里就有凭证——给线索请对方再查，比深夜满街找房强得多。再选。"},
+			{Label: "抓关键词行动，拿凭证沟通", Reply: "对——cancelled/voucher 定方向，凭证加线索解僵局：应急夜全靠这两板斧。"},
+		},
+		Correct: 2,
+		Variants: []checkVariant{
+			{
+				Ask: "延时迁移：地铁广播 \"This train terminates at the next stop due to a signal failure. Please change to Line 4.\" 你该？",
+				Opts: []tapOption{
+					{Label: "下一站下车，换乘四号线", Reply: "对——terminates（到此为止）加 change to Line 4（换乘），两个关键词就是行动指南。"},
+					{Label: "列车快到站了，坐着别动", Reply: "terminate 是「终止运行」不是「快到了」——坐过站的都是没抓住这个词的。"},
+					{Label: "信号故障，全线停运回家吧", Reply: "广播给了明确出路：change to Line 4。别把一句坏消息听成世界末日。"},
+				},
+				Correct: 0,
+			},
+		},
+		Clear: "取消的航班、消失的预订、迟到的箱子——一夜三连击全用英语拆完，第二幕全英通关。第三幕进办公室：老板的语速，不会等你。",
+		Note:  "航班取消夜全英自救",
+	},
+	"boss-work-sprint": {
+		Nodes: []scriptNode{
+			{
+				Prompt: "会议刚接通，老板开门见山——\n\n" + listenLine("Quick update, everyone—marketing wants to move the launch up a week, so let's see what that means for each team.") + "\n\n老板宣布了什么？",
+				Options: []nodeOption{
+					{Label: "发布要推迟一周，各组重排期", Reply: "你刚想松口气，屏幕里同事们的表情可不像多了一周——move up 是「提前」，推迟是 push back。方向听反，后面全错。\n\n" + listenLine("Quick update, everyone—marketing wants to move the launch up a week, so let's see what that means for each team."), Next: NodeRetry},
+					{Label: "发布要提前一周，评估各组影响", Reply: "你在本子上写下「-7 天」——TA 说的是 move the launch up a week：move up = 提前，push back = 推迟。这对反义词是无数跨国会议事故的源头，你没踩。", Next: 1},
+					{Label: "市场部要增加一周的营销预算", Reply: "整句没出现 budget——a week 修饰的是 move up 的幅度，不是预算。听力别抓到一个名词就编故事，再来。\n\n" + listenLine("Quick update, everyone—marketing wants to move the launch up a week, so let's see what that means for each team."), Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "老板点名：\"Lin, can your side make it?\" 提前一周，测试时间就不够了。三句挑一句：",
+				Options: []nodeOption{
+					{Label: "No. It's impossible. The schedule is already crazy.", Reply: "会议安静了两秒，老板皱起眉——你说的可能是事实，但 impossible 把门焊死了，crazy 还带着情绪。表异议的黄金句式忘了？先接住，再递顾虑。", Next: NodeRetry},
+					{Label: "We can try—but I'm worried about QA. Could we cut one minor feature to make room?", Reply: "老板身体前倾：\"Interesting—which one?\" ——先接住目标，用 I'm worried about 递出真实风险，还带了个可行方案。会议表态那关的「糖在前药在后」，火线上照样灵。", Next: 2},
+					{Label: "OK boss, no problem, we will do our best!", Reply: "老板满意地跳到下一组——三周后测试爆雷时，今天这句 no problem 就是追责的第一条证据。会上不说的风险，返工时要加倍还。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "会议结束前老板补了一句：\"Sarah's on leave this week—Lin, can you cover her client calls?\" 三句挑一句：",
+				Options: []nodeOption{
+					{Label: "Sure, I will handle everything, don't worry!", Reply: "接得爽快，锅也接得整齐——Sarah 的客户要改合同价你也「handle」吗？不划边界的承诺，出了岔子全算你的。任务交代那关的红线公式呢？", Next: NodeRetry},
+					{Label: "Sure. I'll use my judgment on routine calls—but pricing goes to you first, right?", Reply: "\"Exactly. Thanks, Lin.\" ——接下任务的同时把红线划清：日常你定、报价找老板。授权公式反过来用，保护的是接活的人。", Next: 3},
+					{Label: "Em... I am very busy... maybe you find other people?", Reply: "老板环视一圈没人接话，气氛僵住——推掉可以，但 maybe you find other people 是把问题扔回给全组。要推，也该给一个具体困难加一个替代人选。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "散会前轮到你收尾。把这句「靠谱的承诺」拼出来，先选上半句：",
+				Options: []nodeOption{
+					{Label: "I will try my best to send the timeline soon,", Reply: "try my best 和 soon 都测不了、追不上——听着努力，其实什么都没承诺。承诺要能被日历验证。", Next: NodeRetry},
+					{Label: "You will get the timeline when it is ready,", Reply: "when it's ready 把主动权攥在自己手里，像在打发人。承诺的主语是 I，期限是具体的星期几。", Next: NodeRetry},
+					{Label: "I'll send the updated timeline by Thursday,", Reply: "确定的动作、确定的期限——I'll do X by Y 是职场信用的基本句型。接着补上另一半。", Next: 4},
+				},
+			},
+			{
+				Prompt: "下半句——把风险也兜住：",
+				Options: []nodeOption{
+					{Label: "and I hope everything will be fine.", Reply: "hope 不是计划——风险不会因为祈祷改道。这半句该说的是你会「做什么」来兜住它。", Next: NodeRetry},
+					{Label: "and I'll flag any risks early.", Reply: "\"Perfect—that's how I like it run.\" 老板合上电脑——动作、期限、风险预警，一句话三个承诺全部可验证。这场会你不只听懂了，还把事扛住了。", Next: NodeClear},
+					{Label: "and please don't change the plan again.", Reply: "当众要求老板「别再改计划」——方向可以争，但这句的语气是抱怨不是收尾。把控制不了的放下，把控制得了的说清。", Next: NodeRetry},
+				},
+			},
+		},
+		CheckOpts: []tapOption{
+			{Label: "听清方向，表态先糖后药", Reply: "对——move up 定方向，先接住再 I'm worried about：跨国会议的两根救命稻草。"},
+			{Label: "没听懂也先答 no problem", Reply: "方向都没听清就应承，三周后爆雷时没人记得你今天的爽快。再想想。"},
+			{Label: "接活就该大包大揽显担当", Reply: "不划红线的担当是接锅——报价类的事永远先过老板。再选。"},
+		},
+		Correct: 0,
+		Variants: []checkVariant{
+			{
+				Ask: "延时迁移：客户邮件说 \"Can we push the demo back to Friday?\" ——TA 想把演示怎么样？",
+				Opts: []tapOption{
+					{Label: "推迟到周五", Reply: "对——push back = 推迟，和 move up（提前）正好一对。这对词，搞反一次就够记一辈子。"},
+					{Label: "提前到周五", Reply: "提前是 move up 或 bring forward——push back 是往后推。方向反了，会议室就空了。"},
+					{Label: "取消这次演示", Reply: "取消是 cancel 或 call off——push back 只是挪时间，单子还在。"},
+				},
+				Correct: 0,
+			},
+		},
+		Clear: "听懂方向、递出顾虑、划清红线、给出承诺——全英会议四件套齐活，第三幕通关。最后一幕是谈判桌：那里每个词都带着价签。",
+		Note:  "全英例会稳稳扛住",
+	},
+	"boss-business-deal": {
+		Nodes: []scriptNode{
+			{
+				Prompt: "客户落座就抛出一句——\n\n" + listenLine("Honestly, we got burned by a long rollout last time, so speed matters more to us than price.") + "\n\nTA 真正在意的是什么？",
+				Options: []nodeOption{
+					{Label: "TA 嫌你们的报价太贵了", Reply: "你刚要解释价格，客户摆了摆手——TA 明明说了 speed matters more than price：比起价格更在意速度。销售听力第一课：别用自己的心虚补对方的台词。\n\n" + listenLine("Honestly, we got burned by a long rollout last time, so speed matters more to us than price."), Next: NodeRetry},
+					{Label: "上次上线周期太长吃了亏，最在意速度", Reply: "你在心里画了重点——TA 说的是 got burned by a long rollout（被漫长上线坑过）、speed over price（速度重于价格）。客户把命门主动递过来了，就看你接不接得住。", Next: 1},
+					{Label: "上次合作烧坏了设备，要求赔偿", Reply: "got burned 是「吃过亏、栽过跟头」的习语，不是真着火——习语听字面，谈判就跑偏了。再听一遍。\n\n" + listenLine("Honestly, we got burned by a long rollout last time, so speed matters more to us than price."), Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "命门在「速度」。哪句能把 TA 的需求挖到可交付的深度？",
+				Options: []nodeOption{
+					{Label: "Don't worry! We are the fastest in this industry, trust me.", Reply: "客户礼貌地笑了笑，身体向后靠——上一家也是这么说的。空口的「最快」治不了吃过亏的人，能治的是具体的问题和数字。", Next: NodeRetry},
+					{Label: "Our product has 47 functions, let me show you one by one.", Reply: "客户看了一眼手表——TA 在意的是速度，你掏出的是功能清单。介绍产品那关教过：客户买的不是功能，是自己问题的答案。", Next: NodeRetry},
+					{Label: "What does 'fast' look like for you—and what slowed things down last time?", Reply: "客户掰着手指讲了十分钟——「fast 对你们意味着什么」把形容词逼成数字，「上次卡在哪」把伤疤变成需求清单。挖掘需求那关的两把铲子，一次用全。", Next: 2},
+				},
+			},
+			{
+				Prompt: "聊透了，客户抛出最后一压：\"Your quote is still 20% higher than the others. Meet them, and we'll sign today.\" 三句挑一句：",
+				Options: []nodeOption{
+					{Label: "OK, OK, 20% off. We really want to work with you.", Reply: "客户心里已经开了香槟——sign today 一晃，你就把两成利润裸送了。「今天就签」是谈判话术里最经典的钩子，咬钩之前先想想：急的到底是谁？", Next: NodeRetry},
+					{Label: "Cheaper tools will burn you again, just like last time.", Reply: "客户脸色沉了下来——拿人家的伤疤当谈判筹码，句句戳心。贬低对手加恐吓客户，嘴上赢了，单子输了。", Next: NodeRetry},
+					{Label: "What if we put a 30-day rollout guarantee in the contract—would the price work then?", Reply: "客户和同事对视了一眼：\"...That's interesting.\" ——不降价，把 TA 最在意的「速度」写进合同当筹码：报价谈判那关的 what if 换筹码，打在了听力关挖出的命门上。", Next: 3},
+				},
+			},
+			{
+				Prompt: "火候到了。把锁定下一步的这句拼出来，先选上半句：",
+				Options: []nodeOption{
+					{Label: "Please think about it and call us anytime.", Reply: "客户点头微笑收起名片——anytime 的意思通常是 never。方向盘整个交给了对方，两周的犹豫又要续费了。", Next: NodeRetry},
+					{Label: "Shall we schedule a technical review with both teams next week?", Reply: "\"Tuesday works for us.\" ——把「有兴趣」推进成「有日程」：具体动作、双方团队、明确时间范围，推进成交那关的标准起手。", Next: 4},
+					{Label: "So, can you sign the contract right now?", Reply: "客户刚从「有点兴趣」走到「可以细聊」，你直接把笔递了过去——动作超过火候，压力会把人压跑。下一步要和成熟度匹配。", Next: NodeRetry},
+				},
+			},
+			{
+				Prompt: "下半句——把球留在自己手里：",
+				Options: []nodeOption{
+					{Label: "We will wait for your good news.", Reply: "「等好消息」——没有动作、没有责任人、没有时间，三无收尾，单子在等待中冷掉。", Next: NodeRetry},
+					{Label: "You should discuss inside and give us the answer quickly.", Reply: "should 加 quickly 是在给客户下指令——收尾的球要留在自己手里：我发什么、什么时候发，让对方只需要点头。", Next: NodeRetry},
+					{Label: "I'll send the revised proposal with the 30-day guarantee by Thursday.", Reply: "\"Looking forward to it.\" 握手，成局——动作（发修订方案）、内容（30 天保证）、期限（周四），收尾一句话三个钉子。三十分钟，全英文，你把一单谈到了下一步。", Next: NodeClear},
+				},
+			},
+		},
+		CheckOpts: []tapOption{
+			{Label: "客户压价就赶紧降两成", Reply: "sign today 是钩子——裸降两成，利润没了，尊重也没了。再想想。"},
+			{Label: "多介绍功能显得更专业", Reply: "TA 在意的是速度，功能清单只会消耗耐心——先挖需求。再选。"},
+			{Label: "听出命门，拿保证换价格", Reply: "对——听力挖出 speed 这个命门，30 天保证写进合同当筹码：一环扣一环。"},
+		},
+		Correct: 2,
+		Variants: []checkVariant{
+			{
+				Ask: "延时迁移：客户说 \"We're a bit hesitant—the last vendor overpromised.\" 哪句接得最稳？",
+				Opts: []tapOption{
+					{Label: "That's fair. What did they promise that didn't happen?", Reply: "对——先接住情绪，再把「被放过的鸽子」挖成需求清单：吃过亏的客户最吃这一套。"},
+					{Label: "We are different, we never overpromise, believe us!", Reply: "每个 overpromise 的供应商都说过这句——空保证治不了被空保证伤过的人。"},
+					{Label: "Their price is low because their quality is low.", Reply: "贬低前任供应商，等于说客户当初眼光差——这句赢不了任何东西。"},
+				},
+				Correct: 0,
+			},
+		},
+		Clear: "听懂弦外之音、问出真需求、用保证换价格、把兴趣钉成日程——四幕三十二关全部通关！从点一杯拿铁到谈下一单生意，这条路你是全英文走完的。",
+		Note:  "全英谈成了一单",
 	},
 }
 

@@ -132,6 +132,7 @@ var englishScenarios = []seedConcept{
 	{Slug: "ask-directions", Theme: "生活", Tier: 1, Name: "问路指路", Blurb: "问清路线并听懂指引"},
 	{Slug: "phone-booking", Theme: "生活", Tier: 1, Name: "电话预约", Blurb: "电话订位与确认信息"},
 	{Slug: "see-doctor", Theme: "生活", Tier: 1, Name: "看医生", Blurb: "描述症状、听懂医嘱"},
+	{Slug: "boss-daily-life", Theme: "生活", Tier: 1, Name: "全英模拟面·日常", Blurb: "聚会筹备，一镜到底全英过"},
 	// —— 旅行应急（Tier 2）——
 	{Slug: "flight-checkin", Theme: "旅行", Tier: 2, Name: "机场值机", Blurb: "值机托运、选个好座位"},
 	{Slug: "customs-qa", Theme: "旅行", Tier: 2, Name: "过关问答", Blurb: "从容答上海关三连问"},
@@ -140,6 +141,7 @@ var englishScenarios = []seedConcept{
 	{Slug: "attraction-tickets", Theme: "旅行", Tier: 2, Name: "景点购票", Blurb: "问票价、时间与优惠"},
 	{Slug: "lost-luggage", Theme: "旅行", Tier: 2, Name: "行李丢失", Blurb: "挂失并描述你的行李"},
 	{Slug: "travel-help", Theme: "旅行", Tier: 2, Name: "旅途求助", Blurb: "丢了护照怎么求助"},
+	{Slug: "boss-travel-storm", Theme: "旅行", Tier: 2, Name: "全英模拟面·旅途", Blurb: "航班取消夜，全英文自救"},
 	// —— 职场协作（Tier 3）——
 	{Slug: "work-self-intro", Theme: "职场", Tier: 3, Name: "同事初见", Blurb: "新团队里的自我介绍"},
 	{Slug: "pantry-smalltalk", Theme: "职场", Tier: 3, Name: "茶水间闲聊", Blurb: "周末、天气与项目近况"},
@@ -148,6 +150,7 @@ var englishScenarios = []seedConcept{
 	{Slug: "task-handover", Theme: "职场", Tier: 3, Name: "任务交代", Blurb: "口头布置任务并确认理解"},
 	{Slug: "project-present", Theme: "职场", Tier: 3, Name: "项目汇报", Blurb: "开场、过渡与收尾句式"},
 	{Slug: "delay-risk", Theme: "职场", Tier: 3, Name: "延期与风险", Blurb: "说明延期并给补救方案"},
+	{Slug: "boss-work-sprint", Theme: "职场", Tier: 3, Name: "全英模拟面·职场", Blurb: "紧急视频会，听懂再扛事"},
 	// —— 商务实战（Tier 4）——
 	{Slug: "business-networking", Theme: "商务", Tier: 4, Name: "商务初见", Blurb: "寒暄后自然进入正题"},
 	{Slug: "company-product-intro", Theme: "商务", Tier: 4, Name: "介绍产品", Blurb: "用客户价值介绍产品"},
@@ -156,11 +159,29 @@ var englishScenarios = []seedConcept{
 	{Slug: "handle-objection", Theme: "商务", Tier: 4, Name: "处理异议", Blurb: "接住价格与周期质疑"},
 	{Slug: "price-negotiation", Theme: "商务", Tier: 4, Name: "报价谈判", Blurb: "用条件交换而非裸降价"},
 	{Slug: "close-next-step", Theme: "商务", Tier: 4, Name: "推进成交", Blurb: "确认共识并锁定下一步"},
+	{Slug: "boss-business-deal", Theme: "商务", Tier: 4, Name: "全英模拟面·成交", Blurb: "三十分钟，谈到下一步"},
 }
 
-// englishContent：英语陪练精编 Hook/Check，28 关全精编。
+// englishContent：英语陪练精编 Hook/Check，32 关全精编（含每幕末的全英模拟面）。
 // Hook＝把学员直接丢进情境的开场任务（带一句英文触发语）；Check＝变体/突发状况，接得住才算掌握。
 var englishContent = map[string]hookCheck{
+	// —— 全英模拟面（每幕 Boss）——
+	"boss-daily-life": {
+		Hook:  "全英模拟面开考。今晚是好友 Leo 的生日聚会，筹备全归你：取蛋糕、改订位、接住陌生客人的寒暄——从这里起没有中文旁白，对面只说英文。第一道是听力，竖起耳朵。",
+		Check: "模拟面复盘：全英的一整天里，把每个场面救回来的是哪个习惯？",
+	},
+	"boss-travel-storm": {
+		Hook:  "全英模拟面第二场。晚上十点的候机厅，广播突然响了——接下来的一夜，改签、住店、追行李全靠你自己，没有中文旁白，也没人替你开口。先听广播说了什么。",
+		Check: "模拟面复盘：航班取消的那一夜，让你翻盘的是哪套打法？",
+	},
+	"boss-work-sprint": {
+		Hook:  "全英模拟面第三场。周一早上，海外老板突然拉起紧急视频会，语速不慢，还点了你的名。这一场从听懂开始，到把事扛下来结束——没有字幕。",
+		Check: "模拟面复盘：那场没有字幕的紧急会议，你靠什么全身而退？",
+	},
+	"boss-business-deal": {
+		Hook:  "全英模拟面终场。展会最后一天，犹豫了两周的客户约你半小时收尾——听懂弦外之音、问对问题、扛住压价、锁定下一步。这一单落不落，就看这三十分钟。",
+		Check: "模拟面复盘：这三十分钟里，真正撬动价格的是什么？",
+	},
 	"cafe-order": {
 		Hook:  "你在纽约一家咖啡馆，店员冲你一笑：\"Hi! What can I get started for you?\"——你想要一杯少糖的燕麦拿铁。别用中文，开口试试？",
 		Check: "换个情况：店员把你的单做错了（拿铁做成了美式）。用英语礼貌地指出问题并要求重做。",

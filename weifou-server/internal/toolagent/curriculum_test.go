@@ -1,6 +1,9 @@
 package toolagent
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // 六门完备课的护城河检查：每个概念都必须有精编 Hook+Check，且精编条目不得指向不存在的概念（防 slug 手误）。
 func TestCuratedContentComplete(t *testing.T) {
@@ -41,17 +44,23 @@ func TestTiersLabeled(t *testing.T) {
 	}
 }
 
-func TestEnglishCourseHasFourActsOfSeven(t *testing.T) {
-	if len(englishScenarios) != 28 {
-		t.Fatalf("英语反应力应为 28 关，实际 %d", len(englishScenarios))
+// 英语课结构守护：四幕各 8 关（7 常规 + 1 全英模拟面 Boss），模拟面必须是每幕末关。
+func TestEnglishCourseHasFourActsOfEight(t *testing.T) {
+	if len(englishScenarios) != 32 {
+		t.Fatalf("英语反应力应为 32 关，实际 %d", len(englishScenarios))
 	}
 	counts := map[int]int{}
+	lastOfTier := map[int]seedConcept{}
 	for _, c := range englishScenarios {
 		counts[c.Tier]++
+		lastOfTier[c.Tier] = c
 	}
 	for tier := 1; tier <= 4; tier++ {
-		if counts[tier] != 7 {
-			t.Errorf("英语第 %d 幕应为 7 关，实际 %d", tier, counts[tier])
+		if counts[tier] != 8 {
+			t.Errorf("英语第 %d 幕应为 8 关，实际 %d", tier, counts[tier])
+		}
+		if !strings.HasPrefix(lastOfTier[tier].Slug, "boss-") {
+			t.Errorf("英语第 %d 幕末关应为全英模拟面（slug 前缀 boss-），实际 %s", tier, lastOfTier[tier].Slug)
 		}
 	}
 }

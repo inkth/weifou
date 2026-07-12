@@ -21,6 +21,11 @@ const ROAD_LEAD = 0.33;
 // 主角站当前关左侧这个距离处对峙（不再踩在关卡上）——关卡即对手，出招才有的放矢
 const HERO_GAP = 80;
 
+// 听力门标记（与服务端 script_learn_english.go 的 listenMark 同一约定）：
+// 英语课消息里该标记行的下一行英文「只播不显」——正文遮成占位，自动朗读，🔊 可重听。
+const LISTEN_MARK = '🎧 只听不看：';
+const LISTEN_MASK = '▂ ▂ ▂ ▂ ▂ ▂ ▂ ▂';
+
 // 战斗动作层只给判断型课程（题型=看穿一个说法，关卡天然是对手）。
 // 开口（英语）是开口练习、知常（道德经）调性不合，都保持纯行走舞台。
 const DUEL_SLUGS = {
@@ -530,8 +535,8 @@ Page({
       }
       this.setData(patch);
       this._scrollEnd();
-      // 英语课：新回合若带「示范句」（跟读目标），自动朗读一遍——学员先听发音再开口
-      const sayLine = this._extractSay(data.answer);
+      // 英语课：新回合若带「示范句」（跟读目标）或「听力门」（只听不看），自动朗读一遍
+      const sayLine = this._extractSay(data.answer) || this._extractListen(data.answer);
       if (sayLine) this._speak(sayLine);
       // 战斗动作层第二拍（第一拍「出招」在 pickOption 即时播完）。按服务端 verdict 分派：
       // 点亮＝击破 > 答错＝反击+装死诈尸 > 答对未拿下＝对手挑衅还站着 > 教学轮＝安静。
@@ -677,10 +682,35 @@ Page({
     return (content.slice(pos + mlen).split('\n')[0] || '').trim();
   },
 
+  // 听力门：找到「🎧 只听不看：」标记行，其下一行英文即隐藏音频句。非英语课/无标记返回空串。
+  _extractListen(content) {
+    if (!this._englishAudio || !content) return '';
+    const lines = content.split('\n');
+    for (let i = lines.length - 2; i >= 0; i--) {
+      if (lines[i].trim() === LISTEN_MARK) return (lines[i + 1] || '').trim();
+    }
+    return '';
+  },
+
+  // 听力门遮罩：把每个标记行的下一行英文换成占位——只能听，不能看。
+  _maskListen(content) {
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (lines[i].trim() === LISTEN_MARK) lines[i + 1] = LISTEN_MASK;
+    }
+    return lines.join('\n');
+  },
+
   // 给助手消息挂上 say（示范句），供气泡下方渲染🔊「听发音」。非英语课原样返回。
+  // 消息带听力门时：正文遮住英文原句，原句挂到 say（🔊 即「重听」）。
   _decorateMsgs(list) {
     if (!this._englishAudio) return list || [];
-    return (list || []).map((m) => (m.role === 'assistant' ? { ...m, say: this._extractSay(m.content) } : m));
+    return (list || []).map((m) => {
+      if (m.role !== 'assistant') return m;
+      const listen = this._extractListen(m.content);
+      if (listen) return { ...m, content: this._maskListen(m.content), say: listen };
+      return { ...m, say: this._extractSay(m.content) };
+    });
   },
 
   _siPlugin() {
