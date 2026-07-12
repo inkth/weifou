@@ -7,13 +7,16 @@
 package toolagent
 
 import (
+	"encoding/json"
 	"math/rand/v2"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"weifou-server/internal/deepseek"
 	"weifou-server/internal/httpx"
 	"weifou-server/internal/idgen"
 	"weifou-server/internal/membership"
@@ -62,18 +65,24 @@ func attachVariants(script map[string]levelScript, variants map[string][]checkVa
 	}
 }
 
-// scriptNode 对手戏的一个节点。两种节点：
+// scriptNode 对手戏的一个节点。三种节点：
 //   - 点选节点（Options 非空）：Prompt 是场面推进/对方加压的话（节点 0 可空——Hook 已含开场），
 //     学员从 Options 挑一句「自己的原话」，Reply 里对方的反应把后果演出来；
 //   - 跟读节点（Say 非空，开口课用）：学员按住麦克风读出 Say 这句，ASR 转写与之模糊匹配，
 //     命中回 SayOK 并走 SayNext，未中回 SayFail 再试（不罚）。
+//   - 产出节点（Free 非空，产出课的章末大关用）：给一个没练过的迁移场面，学员用「自己的原话」
+//     打字/语音说出去（识别≠产出——现实里没人递三句候选，这一拍把点选学到的真正落到嘴上）。
+//     LLM 按课程 rubric（freeJudgeRubrics）判定：通过 = 直升「已掌握」；不过 = 点出方向再试（不罚）；
+//     判定服务失败或学员点「先欠着」= 正常点亮通关，绝不因 AI 不可用卡住主流程。
 type scriptNode struct {
-	Prompt  string
-	Options []nodeOption
-	Say     string // 跟读目标句（非空 = 跟读节点，Options 置空）
-	SayOK   string // 跟读命中的回应
-	SayFail string // 未命中的鼓励语（引擎会自动补「再读一遍」提示）
-	SayNext int    // 跟读命中后的去向（NodeClear 或节点下标）
+	Prompt   string
+	Options  []nodeOption
+	Say      string // 跟读目标句（非空 = 跟读节点，Options 置空）
+	SayOK    string // 跟读命中的回应
+	SayFail  string // 未命中的鼓励语（引擎会自动补「再读一遍」提示）
+	SayNext  int    // 跟读命中后的去向（NodeClear 或节点下标）
+	Free     string // 产出题面（非空 = 产出节点，Options/Say 置空）：迁移场面 + 开口指令
+	FreeNext int    // 产出完成后的去向（NodeClear 或节点下标）
 }
 
 // nodeOption 对手戏选项：Label = 学员的原话候选（≤20 字），Reply = 对方的预写反应 + 教练点破。
@@ -90,8 +99,9 @@ const (
 )
 
 // courseScripts：agent slug → concept slug → 剧本。有剧本的课程走脚本引擎，其余照旧走 LLM。
-// 迁移判据（2026-07-06 定调）：概念课（检验=判断/找茬）适合脚本化；
-// 产出课（开口/言值/驭手，点亮判据=学员真实产出）保留 LLM——纯点选会杀死课魂。
+// 迁移判据（2026-07-06 定调，2026-07-12 补完）：概念课（检验=判断/找茬）适合脚本化；
+// 产出课（开口/言值/驭手，点亮判据=学员真实产出）先点选化保流畅，再用产出节点（Free）保课魂——
+// 识别≠产出，章末大关的最后一拍必须留给学员自己的原话（跳过不罚，判过直升掌握）。
 var courseScripts = map[string]map[string]levelScript{
 	"daodejing-full":   daodejingFullScript,
 	"learn-logic":      learnLogicScript,
@@ -117,6 +127,7 @@ const (
 	optMap        = "回地图挑一关"
 	optReviewMore = "再来一题"
 	optBackCourse = "回到课程"
+	optFreeSkip   = "这句先欠着，直接过关" // 产出节点的点选兜底：不逼开口，但欠着的话记在心上
 )
 
 // scriptedChat 脚本课的一轮。session 的用户消息已入库；这里推进状态机、存回复、组装响应
@@ -125,7 +136,7 @@ func (h *Handler) scriptedChat(c *gin.Context, a *models.ToolAgent, session *mod
 	auth := middleware.Current(c)
 	member := membership.IsActive(h.db, auth.UserID)
 
-	st := &scriptTurn{h: h, a: a, script: script, userID: auth.UserID, member: member, remaining: -1}
+	st := &scriptTurn{h: h, a: a, script: script, userID: auth.UserID, openid: auth.Openid, member: member, remaining: -1}
 	if !member {
 		// 非会员每轮都回真实试读余额（前端显示「剩 N 次」；-1 只留给会员）。
 		// 本轮若开新关，startLevel 里扣减后会覆盖成新值。
@@ -192,6 +203,7 @@ type scriptTurn struct {
 	a      *models.ToolAgent
 	script map[string]levelScript
 	userID string
+	openid string // 产出节点的 LLM 判定语要过 msg_sec_check，与主聊天路径同一道闸
 	member bool
 
 	answer      string
@@ -270,8 +282,15 @@ func (st *scriptTurn) enterNode(session *models.AgentSession, lv levelScript, re
 	if nd.Say != "" {
 		parts = append(parts, "🎙️ 按住麦克风，读出这句：\n"+nd.Say)
 	}
+	if nd.Free != "" {
+		parts = append(parts, "✍️ "+nd.Free)
+	}
 	st.answer = strings.Join(parts, "\n\n")
-	st.options = nodeLabels(nd.Options)
+	if nd.Free != "" {
+		st.options = []string{optFreeSkip}
+	} else {
+		st.options = nodeLabels(nd.Options)
+	}
 	session.ScriptStage = stageNode
 	session.ScriptNode = next
 }
@@ -294,6 +313,10 @@ func (st *scriptTurn) onNode(session *models.AgentSession, content string) {
 		}
 		return
 	}
+	if nd.Free != "" {
+		st.onFreeNode(session, lv, slug, nd, content)
+		return
+	}
 	idx := matchNodeIndex(nd.Options, content)
 	if idx < 0 {
 		st.answer = "这一关是对手戏——挑一句你的原话："
@@ -314,11 +337,60 @@ func (st *scriptTurn) onNode(session *models.AgentSession, content string) {
 
 // leaveNode 按去向离开当前节点：通关点亮或进入下一节点（越界按通关处理，防剧本手误卡死）。
 func (st *scriptTurn) leaveNode(session *models.AgentSession, lv levelScript, slug, reply string, next int) {
+	st.leaveNodeAt(session, lv, slug, reply, next, 1)
+}
+
+// leaveNodeAt 带档位的离开：产出节点判定通过时 target=2（真开口直升「已掌握」）。
+func (st *scriptTurn) leaveNodeAt(session *models.AgentSession, lv levelScript, slug, reply string, next, target int) {
 	if next == NodeClear || next < 0 || next >= len(lv.Nodes) {
-		st.clearLevel(session, slug, reply)
+		st.clearLevel(session, slug, reply, target)
 		return
 	}
 	st.enterNode(session, lv, reply, next)
+}
+
+// onFreeNode 产出节点：学员用自己的原话接住迁移场面。判定通过 = 直升已掌握；
+// 不过 = 点方向再试（不罚，可随时点选兜底）；判定服务失败 = 收下原话正常点亮——
+// 产出关的门坎在「开口」，不在「被 AI 打分」，AI 不可用绝不拦学员的路。
+func (st *scriptTurn) onFreeNode(session *models.AgentSession, lv levelScript, slug string, nd scriptNode, content string) {
+	if content == optFreeSkip {
+		st.leaveNodeAt(session, lv, slug,
+			"行，先欠着。真场面来了之前，随时回来把这句说出口——自己说过一遍的话，才真正长在你身上。",
+			nd.FreeNext, 1)
+		return
+	}
+	if utf8.RuneCountInString(content) < 6 {
+		st.answer = "把整句原话打出来——就当 TA 此刻真在屏幕对面，三五个字撑不起一个场面。"
+		st.options = []string{optFreeSkip}
+		return
+	}
+	rubric := freeJudgeRubrics[st.a.Slug]
+	if rubric == "" {
+		st.leaveNodeAt(session, lv, slug, "这句我收下了——真开口比说得完美更值钱。", nd.FreeNext, 1)
+		return
+	}
+	pass, note, err := st.h.judgeFreeSay(rubric, nd.Free, content)
+	if err != nil {
+		st.leaveNodeAt(session, lv, slug, "这句我收下了——真开口比说得完美更值钱。", nd.FreeNext, 1)
+		return
+	}
+	// 判定语是 LLM 产出，与主聊天路径同一道安全闸；不过闸就丢弃，退回预写语。
+	if note != "" && !st.h.security.CheckText(note, st.openid) {
+		note = ""
+	}
+	if pass {
+		reply := "🎯 这句是你自己的了。"
+		if note != "" {
+			reply = "🎯 " + note
+		}
+		st.leaveNodeAt(session, lv, slug, reply, nd.FreeNext, 2)
+		return
+	}
+	if note == "" {
+		note = "差一口气——想想这句在三把尺子上塌了哪把：事办成了吗？关系稳住了吗？自己掉价没有？"
+	}
+	st.answer = note + "\n\n⏪ 时间倒回，换个说法再说一遍："
+	st.options = []string{optFreeSkip}
 }
 
 // onTap 开场点选：命中 → 预写回应 + 进检验关；未命中（自由输入兜底）→ 温和收回点选。
@@ -350,19 +422,24 @@ func (st *scriptTurn) onCheck(session *models.AgentSession, content string) {
 		st.options = shuffledLabels(lv.CheckOpts)
 		return
 	}
-	st.clearLevel(session, slug, lv.CheckOpts[idx].Reply)
+	st.clearLevel(session, slug, lv.CheckOpts[idx].Reply, 1)
 }
 
 // clearLevel 通关点亮 + 收尾导航（两段式检验关与节点图共用）。
-func (st *scriptTurn) clearLevel(session *models.AgentSession, slug, reply string) {
+// target=2 走产出节点的「真开口直升已掌握」；其余一律 1（点亮）。
+func (st *scriptTurn) clearLevel(session *models.AgentSession, slug, reply string, target int) {
 	lv := st.script[slug]
 	c := st.concept(slug)
 	name := slug
 	if c != nil {
 		name = c.Name
-		st.light(c, 1, lv.Note)
+		st.light(c, target, lv.Note)
 	}
-	st.answer = reply + "\n\n✨ 「" + name + "」点亮。" + lv.Clear
+	badge := "✨ 「" + name + "」点亮。"
+	if target >= 2 {
+		badge = "🏅 「" + name + "」用你自己的话拿下——直升已掌握。"
+	}
+	st.answer = reply + "\n\n" + badge + lv.Clear
 	if st.nextSlug(slug) != "" {
 		st.options = []string{optNext, optMap}
 	} else {
@@ -461,6 +538,39 @@ func (st *scriptTurn) reviewQuestion(slug string, vi int) (string, []tapOption, 
 		return v.Ask, v.Opts, v.Correct
 	}
 	return st.checkOf(slug), lv.CheckOpts, lv.Correct
+}
+
+// ---------- 产出节点判定（脚本课唯一的 LLM 触点）----------
+
+// freeJudgeRubrics：产出节点的判定口径，按课程配置（rubric 里写清尺子与及格线，输出 JSON）。
+// 有 Free 节点的课程必须在这里登记（TestCourseScriptsComplete 守护），否则产出关只收不判。
+var freeJudgeRubrics = map[string]string{
+	"learn-speaking": speakingFreeJudge,
+}
+
+type freeVerdict struct {
+	Pass bool   `json:"pass"`
+	Note string `json:"note"`
+}
+
+// judgeFreeSay 把「场面 + 学员原话」交给判定器打分。调用方兜底：err 时按通过（不升档）放行。
+func (h *Handler) judgeFreeSay(rubric, scene, words string) (bool, string, error) {
+	raw, err := h.ds.Chat([]deepseek.Message{
+		{Role: "system", Content: rubric},
+		{Role: "user", Content: "场面：" + scene + "\n学员的原话：" + words},
+	}, deepseek.ChatOptions{Temperature: 0, MaxTokens: 150, ResponseFormat: "json_object"})
+	if err != nil {
+		return false, "", err
+	}
+	return parseFreeVerdict(raw)
+}
+
+func parseFreeVerdict(raw string) (bool, string, error) {
+	var v freeVerdict
+	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &v); err != nil {
+		return false, "", err
+	}
+	return v.Pass, clipText(strings.TrimSpace(v.Note), 60), nil
 }
 
 // ---------- 小工具 ----------

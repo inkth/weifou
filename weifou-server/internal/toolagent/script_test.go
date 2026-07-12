@@ -106,12 +106,28 @@ func TestCourseScriptsCorrectVaries(t *testing.T) {
 }
 
 // checkNodes 校验节点图关卡：每个节点要么是点选节点（选项 2-4、Label ≤20 字、Reply 非空、
-// Next 合法），要么是跟读节点（Say/SayOK/SayFail 非空、SayNext 合法）；全图必须存在通关出口。
+// Next 合法），要么是跟读节点（Say/SayOK/SayFail 非空、SayNext 合法），要么是产出节点
+// （Free 非空、FreeNext 合法、不与 Options/Say 混用）；全图必须存在通关出口。
 func checkNodes(t *testing.T, agentSlug, slug string, nodes []scriptNode) {
 	t.Helper()
 	validNext := func(n int) bool { return n == NodeClear || (n >= 0 && n < len(nodes)) }
 	hasClear := false
 	for ni, nd := range nodes {
+		if nd.Free != "" {
+			if len(nd.Options) > 0 || nd.Say != "" {
+				t.Errorf("%s/%s Nodes[%d] 产出节点不得再带 Options/Say", agentSlug, slug, ni)
+			}
+			if !validNext(nd.FreeNext) {
+				t.Errorf("%s/%s Nodes[%d] FreeNext=%d 非法", agentSlug, slug, ni, nd.FreeNext)
+			}
+			if freeJudgeRubrics[agentSlug] == "" {
+				t.Errorf("%s/%s 有产出节点但课程未在 freeJudgeRubrics 登记判定口径", agentSlug, slug)
+			}
+			if nd.FreeNext == NodeClear {
+				hasClear = true
+			}
+			continue
+		}
 		if nd.Say != "" {
 			if len(nd.Options) > 0 {
 				t.Errorf("%s/%s Nodes[%d] 跟读节点不得再带 Options", agentSlug, slug, ni)
@@ -187,6 +203,21 @@ func TestMatchSay(t *testing.T) {
 	// 中文跟读（言值可选用）
 	if !matchSay("这周实在排不开，下次一定到", "这周实在排不开，下次一定到。") {
 		t.Error("中文去标点应命中")
+	}
+}
+
+// 产出节点判定结果解析：正常 JSON、带空白、坏 JSON 三种路径。
+func TestParseFreeVerdict(t *testing.T) {
+	pass, note, err := parseFreeVerdict(` {"pass":true,"note":"事和关系都稳住了"} `)
+	if err != nil || !pass || note != "事和关系都稳住了" {
+		t.Errorf("正常 JSON 解析失败：pass=%v note=%q err=%v", pass, note, err)
+	}
+	pass, note, err = parseFreeVerdict(`{"pass":false,"note":"太软，最后一句松口了"}`)
+	if err != nil || pass || note == "" {
+		t.Errorf("不通过 JSON 解析失败：pass=%v note=%q err=%v", pass, note, err)
+	}
+	if _, _, err = parseFreeVerdict("对不起，我没法输出 JSON"); err == nil {
+		t.Error("坏 JSON 应返回错误（调用方按判定失败放行）")
 	}
 }
 
