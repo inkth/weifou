@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="hd">
+  <view class="hd" style="padding-top:calc({{statusBarH}}px + 16rpx)">
     <view class="hd-title">消息</view>
     <view class="hd-meta" wx:if="{{pendingCount}}">{{pendingCount}} 条待回复</view>
   </view>

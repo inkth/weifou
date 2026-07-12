@@ -24,6 +24,14 @@ Page({
     questions: [],
     pendingCount: 0, // 待你跟进（未亲自答）条数
     canNotify: !!NEW_QUESTION_TMPL_ID, // 新提问订阅模板已配才显示入口（未配静默降级）
+    statusBarH: 20, // 自定义导航：顶部留出状态栏高度，去掉原生白色标题栏
+  },
+
+  onLoad() {
+    try {
+      const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()) || {};
+      this.setData({ statusBarH: info.statusBarHeight || 20 });
+    } catch (e) { /* 兜底默认 20 */ }
   },
 
   onShow() {

@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="hd"><view class="hd-title">我的</view></view>
+  <view class="hd" style="padding-top:calc({{statusBarH}}px + 16rpx)"><view class="hd-title">我的</view></view>
 
   <!-- 分身、名片和分享合并为一张核心资产卡。 -->
   <view wx:if="{{profileId}}" class="clone card">
