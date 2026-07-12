@@ -47,8 +47,9 @@ func TestTiersLabeled(t *testing.T) {
 // 三幕课结构守护（人生设计/好好相爱）：三幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
 func TestThreeActCoursesStructure(t *testing.T) {
 	for name, list := range map[string][]seedConcept{
-		"人生设计": lifedesignConcepts,
-		"好好相爱": loveConcepts,
+		"人生设计":   lifedesignConcepts,
+		"好好相爱":   loveConcepts,
+		"把幸福练出来": happinessConcepts,
 	} {
 		if len(list) != 21 {
 			t.Fatalf("%s 应为 21 关，实际 %d", name, len(list))

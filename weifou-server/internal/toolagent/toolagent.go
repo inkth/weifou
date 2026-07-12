@@ -575,6 +575,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 10, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-happiness", Name: "把幸福练出来", Subject: "幸福科学", Guide: "拾光·幸福教练",
+			Tagline:     "拆穿错觉、纠偏大脑、练对动作",
+			Description: "AI 能优化一切效率，幸福却仍要自己练。参考哈佛 Tal Ben-Shahar 幸福课与耶鲁《The Science of Well-Being》（两校历史选课人数第一）的实证结论，由「微否」原创设计三幕 21 关：先拆穿大脑的幸福错觉，再装上纠偏工具，最后把真正有效的练习排进你的一周——每一关都有实验托底，零鸡汤。",
+			Category:    models.AgentCatEducation, Icon: "🌻", Accent: "#84CC16",
+			Greeting:     "我是幸福教练拾光，陪你「把幸福练出来」。先说清楚：这门课不承诺让你时刻快乐——它只做一件有把握的事，把哈佛和耶鲁两门最火的幸福课里被实验验证过的东西，变成你能练的动作。三幕 21 关：先拆穿幸福的错觉（为什么到手的快乐总缩水），再给大脑纠偏（品味、感恩、间隔六件工具），最后上真正有效的事（善意、连接、时间、身体、心流、敬畏）。每关一个实验一个练习，零鸡汤。点「开始这一关」，先撕一张空头票。",
+			SystemPrompt: buildConceptPrompt(happinessPersona+"\n\n"+conceptTeachingMethod, happinessConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 11, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
