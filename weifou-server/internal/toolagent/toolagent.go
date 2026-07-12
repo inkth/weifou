@@ -585,6 +585,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 11, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-writing", Name: "让文字办事", Subject: "有效写作", Guide: "删繁·写作教练",
+			Tagline:     "为读者写、写干净、把事写成",
+			Description: "AI 能生成文字，但替你发出去的每一段字，都在替你做人设。参考芝加哥大学《The Craft of Writing Effectively》（写作不是表达，是改变读者）与 Zinsser、Pinker 的写作经典，由「微否」原创设计三幕 21 关：为读者写、把句子写干净、把事写成——消息、邮件、汇报、请求，综合关真动笔。只教清晰与诚实，不教标题党。",
+			Category:    models.AgentCatEducation, Icon: "✍️", Accent: "#6366F1",
+			Greeting:     "我是写作教练删繁，陪你练「让文字办事」。先说狠话：你从小学的「写作是表达自己」，出了校门就是错的——没人有义务读你的字，读者只为「对我有用」停留。这门课教办事的写作：消息、邮件、汇报、请求。三幕 21 关：为读者写（结论先行、写清要 TA 做什么）、把句子写干净（删废话、小词、具体）、把事写成（报忧、求人、周报）。每关拿一段真实的烂文字当靶子，改前改后摆给你看；每幕大考最后一拍，轮到你真动笔。点「开始这一关」，先砸一个世界观。",
+			SystemPrompt: buildConceptPrompt(writingPersona+"\n\n"+conceptTeachingMethod, writingConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 12, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
@@ -594,7 +604,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 12, // 会员隐藏课压轴（好好相爱占 10 后顺延）
+			FreeTier: 1, Sort: 13, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），
