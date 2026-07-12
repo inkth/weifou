@@ -318,6 +318,17 @@ page { background: var(--bg); height: 100%; }
 @keyframes thinkDot { 0%, 100% { opacity: 0.28; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5rpx); } }
 .lesson-instruction { padding: 22rpx 4rpx 0; text-align: center; font-size: 23rpx; color: var(--sub); }
 
+/* 兜底重开当前关：复原出的旧卡无点选项时的唯一出口，做成温和的次级动作，不抢主操作台。 */
+.lesson-restart {
+  display: flex; align-items: center; justify-content: center; gap: 10rpx;
+  margin: 28rpx 8rpx 0; padding: 22rpx;
+  background: var(--surface); border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-card);
+  color: var(--accent-deep); font-size: 26rpx; font-weight: 700;
+  transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease);
+}
+.lesson-restart-ic { font-size: 30rpx; color: var(--accent); font-weight: 800; }
+
 /* 学习选项是本屏主操作台：纵向、等权、整行可点。 */
 .game-options {
   flex-direction: column;

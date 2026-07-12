@@ -401,6 +401,7 @@ type AgentMessage struct {
 	SessionID       string    `gorm:"size:32;index:idx_amsg_session_time" json:"sessionId"`
 	Role            string    `gorm:"size:16" json:"role"`
 	Content         string    `gorm:"type:text" json:"content"`
+	Options         string    `gorm:"type:text" json:"-"` // 助手消息剥离下发的点选项（JSON []string）；供历史恢复重现气泡，否则纯点选课复原的卡片没气泡成死局。用户/无项消息为空。
 	SafeCheckStatus string    `gorm:"size:16;default:pending" json:"safeCheckStatus"`
 	CreatedAt       time.Time `gorm:"index:idx_amsg_session_time" json:"createdAt"`
 }

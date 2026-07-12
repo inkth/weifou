@@ -154,6 +154,10 @@
           <view wx:if="{{pending}}" class="lesson-thinking"><text></text><text></text><text></text></view>
         </view>
         <view wx:if="{{options.length && !pending}}" class="lesson-instruction">选择一个最接近的答案</view>
+        <!-- 兜底：复原出的旧卡没有点选项（纯点选无输入栏会成死局）时，给一键重开当前关 -->
+        <view wx:if="{{lessonCard && !options.length && !pending}}" class="lesson-restart" bindtap="restartLevel" hover-class="card-press" hover-stay-time="0">
+          <text class="lesson-restart-ic">↻</text><text>重新开始这一关</text>
+        </view>
       </block>
 
       <!-- 普通 Agent 维持完整聊天流。 -->
