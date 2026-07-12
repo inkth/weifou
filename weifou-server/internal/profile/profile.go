@@ -5,8 +5,10 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"weifou-server/internal/httpx"
@@ -34,6 +36,7 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.POST("/profile/regenerate", auth, httpx.Handle(h.regenerate))
 	rg.GET("/profile/mine", auth, httpx.Handle(h.mine))
 	rg.PATCH("/profile/contact", auth, httpx.Handle(h.updateContact))
+	rg.PATCH("/profile/basic", auth, httpx.Handle(h.updateBasic))
 	rg.PATCH("/profile/avatar", auth, httpx.Handle(h.updateAvatar))
 	rg.PATCH("/profile/persona", auth, httpx.Handle(h.updatePersona))
 	rg.PATCH("/profile/discoverable", auth, httpx.Handle(h.updateDiscoverable))
@@ -376,6 +379,52 @@ type avatarReq struct {
 	AvatarStyle string `json:"avatarStyle" binding:"required"`
 }
 
+type basicReq struct {
+	RealName string `json:"realName"`
+	Title    string `json:"title"`
+	Company  string `json:"company"`
+	City     string `json:"city"`
+}
+
+// updateBasic 给名片的所见即所得编辑器使用，只更新展示字段，不触发整套人设重生成。
+func (h *Handler) updateBasic(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var req basicReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return httpx.BadRequest("INVALID_PARAMS", "参数错误")
+	}
+	req.RealName = strings.TrimSpace(req.RealName)
+	req.Title = strings.TrimSpace(req.Title)
+	req.Company = strings.TrimSpace(req.Company)
+	req.City = strings.TrimSpace(req.City)
+	if req.RealName == "" || req.Title == "" {
+		return httpx.BadRequest("INVALID_PARAMS", "姓名和身份不能为空")
+	}
+	if utf8.RuneCountInString(req.RealName) > 20 || utf8.RuneCountInString(req.Title) > 32 ||
+		utf8.RuneCountInString(req.Company) > 40 || utf8.RuneCountInString(req.City) > 20 {
+		return httpx.BadRequest("INVALID_PARAMS", "内容过长，请精简后再试")
+	}
+	check := strings.Join([]string{req.RealName, req.Title, req.Company, req.City}, "\n")
+	if !h.persona.CheckText(check, auth.Openid) {
+		return httpx.BadRequest("CONTENT_UNSAFE", "内容包含敏感信息，请修改后重试")
+	}
+	var profile models.Profile
+	if err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error; err != nil {
+		return httpx.NotFound("PROFILE_NOT_FOUND", "请先创建你的 AI 分身")
+	}
+	if err := h.db.Model(&profile).Updates(map[string]interface{}{
+		"real_name":  req.RealName,
+		"title":      req.Title,
+		"company":    strPtr(req.Company),
+		"city":       strPtr(req.City),
+		"updated_at": time.Now(),
+	}).Error; err != nil {
+		return httpx.Internal("DB_ERROR", "更新失败")
+	}
+	httpx.OK(c, gin.H{"ok": true})
+	return nil
+}
+
 func (h *Handler) updateAvatar(c *gin.Context) error {
 	auth := middleware.Current(c)
 	var req avatarReq
@@ -398,10 +447,11 @@ func (h *Handler) updateAvatar(c *gin.Context) error {
 }
 
 type personaReq struct {
-	OneLiner   *string `json:"oneLiner"`
-	Greeting   *string `json:"greeting"`
-	Tone       *string `json:"tone"`
-	VoiceStyle *string `json:"voiceStyle"`
+	OneLiner   *string   `json:"oneLiner"`
+	Greeting   *string   `json:"greeting"`
+	Tone       *string   `json:"tone"`
+	VoiceStyle *string   `json:"voiceStyle"`
+	Tags       *[]string `json:"tags"`
 }
 
 // updatePersona 让本人手动微调 AI 人设（开场白/语气/音色/一句话）——人设深度定制。
@@ -441,6 +491,22 @@ func (h *Handler) updatePersona(c *gin.Context) error {
 			return httpx.BadRequest("INVALID_PARAMS", "音色标识过长")
 		}
 		updates["voice_style"] = vs
+	}
+	if req.Tags != nil {
+		if len(*req.Tags) == 0 || len(*req.Tags) > 5 {
+			return httpx.BadRequest("INVALID_PARAMS", "请设置 1–5 个标签")
+		}
+		clean := make([]string, 0, len(*req.Tags))
+		for _, tag := range *req.Tags {
+			tag = strings.TrimSpace(tag)
+			if tag == "" || utf8.RuneCountInString(tag) > 8 {
+				return httpx.BadRequest("INVALID_PARAMS", "每个标签不超过 8 个字")
+			}
+			clean = append(clean, tag)
+			check += tag + "\n"
+		}
+		tagsJSON, _ := json.Marshal(clean)
+		updates["tags"] = datatypes.JSON(tagsJSON)
 	}
 	if len(updates) == 0 {
 		return httpx.BadRequest("INVALID_PARAMS", "无可更新字段")
