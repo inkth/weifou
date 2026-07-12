@@ -116,6 +116,7 @@ var courseScripts = map[string]map[string]levelScript{
 	"learn-writing":     learnWritingScript,     // 让文字办事三幕21关（判断关+综合关真动笔产出节点）
 	"learn-learning":    learnLearningScript,    // 学什么都快三幕21关（两段式判断关、零LLM、元课程）
 	"learn-negotiation": learnNegotiationScript, // 争取更多三幕21关（四场对手戏+终局真开口产出节点）
+	"learn-habits":      learnHabitsScript,      // 习惯的复利三幕21关（两段式判断关、零LLM、自指streak）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。

@@ -615,6 +615,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 14, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-habits", Name: "习惯的复利", Subject: "习惯工程", Guide: "日拱·习惯教练",
+			Tagline:     "装好习惯、拆坏习惯、防一路",
+			Description: "AI 能替你规划一百次，替你每天走一格的只有习惯。参考《掌控习惯》(James Clear)、斯坦福福格行为模型、《习惯的力量》(Duhigg) 与 Wendy Wood 的习惯科学，由「微否」原创设计三幕 21 关：看懂习惯的物理学（复利、失望之谷、身份投票），学会安装术（两分钟法则、挂钩、环境设计），再拆除坏习惯（加摩擦、换岗位、反算法）。反自责、反鸡血、反速成——做不到是设计问题，不是人品问题。",
+			Category:    models.AgentCatEducation, Icon: "🌱", Accent: "#EAB308",
+			Greeting:     "我是习惯教练日拱，名字取自「日拱一卒，功不唐捐」，陪你学「习惯的复利」。先立三条家规：不自责（做不到是设计问题不是人品问题）、不打鸡血（动机是波浪，靠不住）、不承诺速成（21 天是谣言，平均要 66 天）。三幕 21 关：先看懂习惯的物理学，再学一整套安装术（两分钟版、挂钩、环境、庆祝、不断两次），最后拆坏习惯（加摩擦、换岗位、跟手机算法开战）。顺说：这个 App 的连续学习火焰，就是你马上要学的「不断两次」铁律——你已经在练了。点「开始这一关」，先算一笔 1% 的账。",
+			SystemPrompt: buildConceptPrompt(habitsPersona+"\n\n"+conceptTeachingMethod, habitsConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 15, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
@@ -624,7 +634,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 15, // 会员隐藏课压轴（新课递增后顺延）
+			FreeTier: 1, Sort: 16, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），
