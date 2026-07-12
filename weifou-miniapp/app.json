@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/discover/index",
+    "pages/card-editor/index",
     "pages/explore/index",
     "pages/inbox/index",
     "pages/me/index",

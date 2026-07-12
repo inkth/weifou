@@ -1,0 +1,94 @@
+<view class="editor-page">
+  <view wx:if="{{loading}}" class="loading-card skel"></view>
+
+  <block wx:else>
+    <view class="preview-wrap">
+      <view class="preview-label"><text class="preview-live"></text> 实时预览 · 点名片内容也能切换设置</view>
+      <view class="mini-card" style="{{card.cardStyle}}">
+        <view class="card-sky"></view>
+        <view class="card-orbit"></view>
+        <image class="card-character" src="{{card.portraitUrl}}" mode="aspectFill" data-topic="portrait" bindtap="onCardField"/>
+        <view class="card-fade"></view>
+        <view class="card-status">✦ AI SELF</view>
+        <view class="card-copy">
+          <view class="card-name" data-topic="identity" bindtap="onCardField">{{card.realName}} <text class="tap-edit">✎</text></view>
+          <view class="card-role" data-topic="identity" bindtap="onCardField">{{card.identity}}</view>
+          <view class="card-intro" data-topic="intro" bindtap="onCardField">“{{card.oneLiner}}” <text class="tap-edit">✎</text></view>
+          <view class="card-tags" data-topic="tags" bindtap="onCardField">
+            <text class="card-tag" wx:for="{{card.tags}}" wx:key="*this">{{item}}</text>
+            <text class="card-tag card-tag-add">＋</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="dialog-panel">
+      <scroll-view class="topic-tabs" scroll-x show-scrollbar="{{false}}">
+        <view class="topic-row">
+          <view class="topic {{topic === 'identity' ? 'active' : ''}}" data-topic="identity" bindtap="selectTopic">身份</view>
+          <view class="topic {{topic === 'intro' ? 'active' : ''}}" data-topic="intro" bindtap="selectTopic">介绍</view>
+          <view class="topic {{topic === 'tags' ? 'active' : ''}}" data-topic="tags" bindtap="selectTopic">标签</view>
+          <view class="topic {{topic === 'portrait' ? 'active' : ''}}" data-topic="portrait" bindtap="selectTopic">立绘</view>
+          <view class="topic {{topic === 'tone' ? 'active' : ''}}" data-topic="tone" bindtap="selectTopic">AI 语气</view>
+        </view>
+      </scroll-view>
+
+      <view class="ai-row">
+        <view class="ai-avatar">✦</view>
+        <view class="ai-bubble">{{prompts[topic]}}</view>
+      </view>
+
+      <view wx:if="{{topic === 'identity'}}" class="answer-area">
+        <view class="choice-grid">
+          <view class="choice {{card.title === item ? 'selected' : ''}}" wx:for="{{titleOptions}}" wx:key="*this" data-value="{{item}}" bindtap="chooseTitle">{{item}}</view>
+        </view>
+        <view class="input-row">
+          <input class="answer-input" value="{{card.realName}}" maxlength="20" data-key="realName" bindinput="onInput" placeholder="你的名字"/>
+          <input class="answer-input" value="{{card.title}}" maxlength="32" data-key="title" bindinput="onInput" placeholder="或输入具体身份"/>
+        </view>
+        <view class="input-row">
+          <input class="answer-input" value="{{card.company}}" maxlength="40" data-key="company" bindinput="onInput" placeholder="公司 / 团队（选填）"/>
+          <input class="answer-input" value="{{card.city}}" maxlength="20" data-key="city" bindinput="onInput" placeholder="城市（选填）"/>
+        </view>
+      </view>
+
+      <view wx:elif="{{topic === 'intro'}}" class="answer-area">
+        <view class="sentence-choice" wx:for="{{introChoices}}" wx:key="*this" data-value="{{item}}" bindtap="chooseIntro">{{item}}</view>
+        <textarea class="answer-textarea" value="{{card.oneLiner}}" maxlength="80" data-key="oneLiner" bindinput="onInput" auto-height/>
+      </view>
+
+      <view wx:elif="{{topic === 'tags'}}" class="answer-area">
+        <view class="choice-grid">
+          <view class="choice {{item.selected ? 'selected' : ''}}" wx:for="{{tagOptions}}" wx:key="label" data-value="{{item.label}}" bindtap="toggleTag">{{item.selected ? '✓ ' : ''}}{{item.label}}</view>
+        </view>
+        <view class="custom-row">
+          <input class="answer-input custom-input" value="{{customTag}}" maxlength="8" bindinput="onCustomTag" bindconfirm="addCustomTag" confirm-type="done" placeholder="添加自己的标签"/>
+          <view class="add-tag" bindtap="addCustomTag">添加</view>
+        </view>
+      </view>
+
+      <view wx:elif="{{topic === 'portrait'}}" class="answer-area">
+        <scroll-view class="portrait-scroll" scroll-x show-scrollbar="{{false}}">
+          <view class="portrait-row">
+            <view class="portrait-item {{card.avatarStyle === item.id ? 'selected' : ''}}" wx:for="{{portraitOptions}}" wx:key="id" data-value="{{item.id}}" bindtap="choosePortrait">
+              <view class="portrait-thumb" style="{{item.style}}"><image wx:if="{{item.previewUrl}}" src="{{item.previewUrl}}" mode="aspectFill"/><text wx:else>✦</text></view>
+              <view class="portrait-label">{{item.name}}</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view wx:elif="{{topic === 'tone'}}" class="answer-area tone-list">
+        <view class="tone-item {{card.toneId === item.id ? 'selected' : ''}}" wx:for="{{toneOptions}}" wx:key="id" data-value="{{item.id}}" bindtap="chooseTone">
+          <view><view class="tone-name">{{item.label}}</view><view class="tone-desc">{{item.desc}}</view></view>
+          <view class="tone-check">{{card.toneId === item.id ? '✓' : ''}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="save-bar">
+      <view class="save-note">{{existing ? '修改会同步到对外名片' : '发布后即可分享给朋友'}}</view>
+      <button class="save-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="save">{{existing ? '保存修改' : '发布名片'}}</button>
+    </view>
+  </block>
+</view>

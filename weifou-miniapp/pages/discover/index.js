@@ -171,10 +171,7 @@ Page({
   retry() { this.load(); },
 
   enterCardEditor() {
-    if (!this.data.editing) {
-      this.setData({ editing: true });
-      wx.showToast({ title: '点名片上的内容即可修改', icon: 'none' });
-    }
+    wx.navigateTo({ url: '/pages/card-editor/index' });
   },
 
   viewPublicCard() {
@@ -184,15 +181,7 @@ Page({
   },
 
   async toggleEditor() {
-    if (!this.data.editing) {
-      this.setData({ editing: true, editorOpen: false });
-      return;
-    }
-    if (!this.data.chief.hasProfile) {
-      await this.publishNewCard();
-      return;
-    }
-    this.setData({ editing: false, editorOpen: false });
+    wx.navigateTo({ url: '/pages/card-editor/index' });
   },
 
   openIdentity() {
@@ -301,8 +290,7 @@ Page({
   },
 
   editCard() {
-    if (!this.data.chief.hasProfile) { this.enterCardEditor(); return; }
-    wx.navigateTo({ url: '/pages/settings/index' });
+    wx.navigateTo({ url: '/pages/card-editor/index' });
   },
 
   async publishNewCard() {
