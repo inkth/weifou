@@ -119,11 +119,6 @@
 .tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 18rpx; }
 .tag-item { padding: 6rpx 15rpx; border-radius: 999rpx; color: rgba(255,255,255,.75); background: rgba(255,255,255,.075); border: 1rpx solid rgba(255,255,255,.12); font-size: 19rpx; }
 .tag-edit { color: #e1cfa8; border-color: rgba(225,207,168,.34); }
-.card-actions { display: flex; gap: 12rpx; margin-top: 24rpx; }
-.preview-btn { flex: 1; height: 72rpx; padding: 0 24rpx; display: flex; align-items: center; justify-content: space-between; border-radius: 22rpx; color: #25332d; background: #f0eadb; font-size: 23rpx; font-weight: 800; }
-.action-arrow { font-size: 30rpx; font-weight: 500; }
-.share-btn { width: 72rpx; height: 72rpx; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 22rpx; color: #f2ecdd; background: rgba(255,255,255,.10); border: 1rpx solid rgba(255,255,255,.16); font-size: 35rpx; }
-
 .editor-guide { display: flex; align-items: center; gap: 16rpx; margin: 22rpx 7rpx 0; padding: 19rpx 22rpx; border-radius: 23rpx; color: #f8f3e7; background: #26362f; box-shadow: 0 15rpx 35rpx rgba(38,54,47,.16); animation: guideIn .25s ease-out; }
 .guide-pulse { width: 14rpx; height: 14rpx; flex: 0 0 auto; border-radius: 50%; background: #d9c18d; box-shadow: 0 0 0 8rpx rgba(217,193,141,.13); animation: onlinePulse 2s infinite; }
 .guide-title { display: block; font-size: 22rpx; font-weight: 800; }

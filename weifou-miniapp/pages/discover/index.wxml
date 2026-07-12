@@ -43,7 +43,7 @@
       <view class="stage-head">
         <view class="live-pill {{chief.online ? '' : 'draft'}}">
           <text class="live-dot"></text>
-          {{chief.online ? 'AI 分身在线' : '示例名片'}}
+          {{chief.online ? 'AI 分身在线' : '编辑名片'}}
         </view>
         <view class="card-no">NO. {{chief.cardNo}}</view>
       </view>
@@ -69,13 +69,6 @@
           <view wx:if="{{editing}}" class="tag-item tag-edit">＋ 修改</view>
         </view>
 
-        <view class="card-actions">
-          <view class="preview-btn" catchtap="viewPublicCard">
-            <text>{{chief.hasProfile ? '看看别人眼中的我' : '设置成我的名片'}}</text>
-            <text class="action-arrow">↗</text>
-          </view>
-          <button class="share-btn" wx:if="{{chief.hasProfile}}" open-type="share" catchtap="noop" aria-label="分享名片">⌁</button>
-        </view>
       </view>
     </view>
 
