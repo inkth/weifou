@@ -1,11 +1,9 @@
 // 预设动态形象库。
 // type:
 //   'css'(默认)  — 纯样式渐变 + 首字 + WXSS 动效（零资源、合规）
-//   'lottie'     — 播放 Lottie 动画（lottie 字段给 json 来源）；加载失败自动回退到 css 渲染
 //   'image'      — 静态图形象（如古风插画），支持按对话状态切表情图；图加载失败回退 css
 // css 动效 anim: 'flow'(渐变流动) | 'pulse'(呼吸缩放) | 'shine'(高光扫过)
-// lottie 字段：http(s) 开头 → 远程拉取（建议放腾讯云 COS）；否则视为小程序包内路径（如 /assets/lottie/x.json）
-// 注意：colors 对 lottie/image 预设仍要填，作为未配置/加载失败时的回退色。
+// 注意：colors 对 image 预设仍要填，作为未配置/加载失败时的回退色。
 //
 // image 形象示例（古风男女）——把图放 assets/avatars/ 或 COS，按下方格式加进 PRESETS：
 //   { id:'gf-her', name:'青衣', type:'image',
@@ -29,54 +27,16 @@ const PRESETS = [
   //   ⚠️ 单图 ~2.8MB，上线务必改 COS（images 里写 https 链接）；本地测试用包内路径即可。
   { id: 'gf-meinv', name: '古风美女', type: 'image', images: { idle: '/assets/avatars/gf-meinv_idle.webp' }, colors: ['#9aa7c4', '#d8c7e0'] },
 
-  // ↓ Lottie 动态形象示例槽位：把设计师导出的 .json 放到 assets/lottie/ 或 COS，
-  //   填好 lottie 字段后即生效；未提供时自动按 colors 回退为 css 渐变形象。
-  { id: 'lottie-spark', name: '闪耀', type: 'lottie', lottie: '/assets/lottie/spark.json', colors: ['#f59e0b', '#ec4899'], anim: 'shine' },
-  { id: 'lottie-wave', name: '波动', type: 'lottie', lottie: '/assets/lottie/wave.json', colors: ['#0ea5e9', '#22d3ee'], anim: 'flow' },
+  // ↓ 历史 Lottie 示例槽位（Lottie 运行时已移除）。id 可能已被用户选中存库，
+  //   保留条目按 css 渐变渲染（此前因无人加载动画数据，实际也一直走 css 回退，视觉无变化）。
+  { id: 'lottie-spark', name: '闪耀', colors: ['#f59e0b', '#ec4899'], anim: 'shine' },
+  { id: 'lottie-wave', name: '波动', colors: ['#0ea5e9', '#22d3ee'], anim: 'flow' },
 ];
 
 // 默认全屏立绘（所有场景统一的立绘背景）。暂时全员共用 gf-meinv 这一张；
 // 将来做成可选立绘库时，每人 profile 自带 image 形象即覆盖此默认——只改这一处。
 const _meinv = PRESETS.find((p) => p.id === 'gf-meinv');
 const DEFAULT_LIHE = (_meinv && _meinv.images && _meinv.images.idle) || '/assets/avatars/gf-meinv_idle.webp';
-
-// 本地打包 Lottie 数据登记表：把 json 放 assets/lottie/ 后，在此静态 require 登记。
-// ⚠️ 微信 require 只解析 .js 模块，require('*.json') 会抛 "module ...json.js is not defined"。
-// 用 try 包裹：取不到则该项为 null，loadLottieData 自动回退 css/远程，绝不让模块加载崩溃
-// （lottie 预设只是示例槽位；要真用本地 json 可改 readFileSync 或放 COS 远程）。
-function _tryRequireJson(path) {
-  try { return require(path); } catch (e) { return null; }
-}
-const LOTTIE_DATA = {
-  'lottie-spark': _tryRequireJson('../assets/lottie/spark.json'),
-  'lottie-wave': _tryRequireJson('../assets/lottie/wave.json'),
-};
-
-// 取 Lottie 动画数据：优先本地登记表 → 其次远程 http(s)（建议 COS）。
-// 取不到时 reject，组件据此回退到 css 形象。
-function loadLottieData(preset) {
-  return new Promise((resolve, reject) => {
-    if (!preset || preset.type !== 'lottie') return reject(new Error('not lottie'));
-    if (LOTTIE_DATA[preset.id]) return resolve(LOTTIE_DATA[preset.id]);
-    const src = preset.lottie || '';
-    if (/^https?:/i.test(src)) {
-      wx.request({
-        url: src,
-        success: (r) => {
-          if (r.statusCode !== 200 || !r.data) return reject(new Error('bad status'));
-          let data = r.data;
-          if (typeof data === 'string') {
-            try { data = JSON.parse(data); } catch (e) { return reject(e); }
-          }
-          resolve(data);
-        },
-        fail: reject,
-      });
-    } else {
-      reject(new Error('no lottie source'));
-    }
-  });
-}
 
 // 温度档（弹性体系核心，定义见 docs/design-tokens.md）。
 // 把 4 种沟通风格归到 3 档；一档同时建议 头像气质(look/渐变) + 文案语气(tone)。
@@ -147,4 +107,4 @@ function initial(name) {
   return n[0].toUpperCase();
 }
 
-module.exports = { PRESETS, TONES, DEFAULT_TONE, DEFAULT_LIHE, toneForStyle, tierForPreset, getPreset, pickDefault, initial, hashStr, loadLottieData };
+module.exports = { PRESETS, TONES, DEFAULT_TONE, DEFAULT_LIHE, toneForStyle, tierForPreset, getPreset, pickDefault, initial, hashStr };
