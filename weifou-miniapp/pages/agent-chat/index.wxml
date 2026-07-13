@@ -11,109 +11,57 @@
     <view wx:if="{{!member && !loading}}" class="tb-buy" bindtap="goMembership">解锁全课</view>
   </view>
 
-  <!-- 学习页紧凑头部：课程、当前关与历史。地图和属性面板按需展开。 -->
-  <view wx:if="{{gameSkin && !loading && !errored}}" class="learn-head">
-    <view class="learn-head-main">
-      <view class="learn-course">{{guide || name}}</view>
-      <view class="learn-task">{{lessonTitle}}</view>
+  <!-- 数字人陪学舞台：人物负责讲述与倾听，进度只作为次级信息按需展开。 -->
+  <view
+    wx:if="{{gameSkin && !loading && !errored}}"
+    class="lesson-stage {{mentorPhase === 'thinking' ? 'is-thinking' : ''}} {{mentorSpeaking ? 'is-speaking' : ''}} mentor-phase-{{mentorPhase}} feedback-{{answerFeedback}} mentor-motion-{{mentorMotion}}"
+    style="--stage-accent: {{accent}};"
+  >
+    <view class="lesson-stage-ambience">
+      <view class="mentor-glow"></view>
+      <view class="mentor-line mentor-line-a"></view>
+      <view class="mentor-line mentor-line-b"></view>
     </view>
-    <view class="learn-progress" bindtap="toggleMap">{{lessonProgress || '学习中'}} {{mapVisible ? '⌃' : '›'}}</view>
-    <view class="learn-more" bindtap="openHistory">···</view>
-  </view>
 
-  <!-- 游戏皮·横版会走的路（概念课）：角色沿关卡路停在当前关左侧对峙，点亮后走到下一关。舞台=地图合一。
-       判断型课程叠「战斗动作层」：点选=出招、点亮=击破、没拿下=对手挑衅（纯 class 动画，不承载信息）。 -->
-  <view wx:if="{{gameSkin && mapVisible && concept && !loading && !errored}}" class="road-stage">
-    <!-- 场景·远景（固定不随路，营造纵深）：天空渐变 + 飘云 + accent 远山 -->
-    <view class="road-sky" style="--sky-accent: {{accent}};">
-      <view class="cloud cloud-a"></view>
-      <view class="cloud cloud-b"></view>
-      <view class="road-hills"></view>
-    </view>
-    <scroll-view class="road-scroll" scroll-x scroll-left="{{roadScrollLeft}}" scroll-with-animation="{{roadAnim}}" show-scrollbar="{{false}}">
-      <view class="road-track" style="width: {{trackWidth}}rpx;">
-        <!-- 场景·前景（随路 1:1，宽=轨道全宽）：草地基底，路与节点坐其上 -->
-        <view class="road-ground" style="width: {{trackWidth}}rpx;"></view>
-        <!-- 居中横带路（草地上的小径） -->
-        <view class="road-line"></view>
-        <!-- 幕旗 checkpoint：浮在该幕首节点上方，不打断路 -->
-        <view wx:for="{{roadSections}}" wx:key="key" wx:for-item="s" class="road-flag tone-{{s.tone}}" style="left: {{s.flagX}}rpx;">{{s.tier}}·{{s.theme}}</view>
-        <!-- 关卡节点：绝对定位按 rx（left=圆心） -->
-        <view
-          wx:for="{{nodes}}" wx:key="slug" wx:for-item="n"
-          class="rnode {{n.state}} {{n.memberLocked ? 'mlock' : ''}} {{n.boss ? 'boss' : ''}} {{duelIdx === n.idx ? foeAct : ''}}"
-          style="left: {{n.rx}}rpx;"
-          bindtap="openCard" data-slug="{{n.slug}}"
-        >
-          <view wx:if="{{n.state === 'current'}}" class="rnode-pulse"></view>
-          <image wx:if="{{n.icon}}" class="rnode-img" src="{{n.icon}}" mode="aspectFit" />
-          <text wx:else class="rnode-face">{{n.emoji}}</text>
-          <view wx:if="{{n.memberLocked}}" class="rnode-lock">🔐</view>
-        </view>
-        <!-- 角色「负鼠」：覆盖在路上，translateX 平移到当前关对峙位。姿势切图、位移交 CSS -->
-        <view class="hero {{walking ? 'walk' : ''}} {{heroAct}}" style="transform: translateX({{heroX}}rpx);">
-          <image class="hero-img" src="{{heroImg}}" mode="aspectFit" />
-        </view>
-      </view>
-    </scroll-view>
-  </view>
-
-  <!-- 学习进行中只保留一个小型角色舞台，地图展开时让位。 -->
-  <view wx:if="{{gameSkin && !mapVisible && !loading && !errored}}" class="lesson-stage">
-    <view class="lesson-mascot {{pending ? 'busy' : ''}}">
-      <image wx:if="{{concept}}" class="lesson-mascot-img" src="{{heroImg}}" mode="aspectFit" />
-      <text wx:else class="lesson-stage-emoji">{{icon || '🎓'}}</text>
-    </view>
     <view class="lesson-stage-copy">
-      <view class="lesson-stage-title">{{pending ? '正在理解你的选择' : lessonTitle}}</view>
-      <view class="lesson-stage-sub">{{pending ? '稍等一下' : '本关约 2 分钟'}}</view>
+      <view class="lesson-stage-kicker">
+        <view class="lesson-live-dot"></view>
+        <text>{{mentorIdleHint ? '还在陪你' : (answerFeedback === 'right' ? '回答正确' : (answerFeedback === 'wrong' ? '一起看看' : (mentorSpeaking ? '正在讲解' : (mentorPhase === 'listening' ? '我听到了' : (mentorPhase === 'thinking' ? '正在思考' : 'AI 陪学·已就绪')))))}}</text>
+      </view>
+      <view class="lesson-stage-title">{{mentorIdleHint ? '不用着急，想好再选' : (answerFeedback === 'right' ? '对，关键就在这里' : (answerFeedback === 'wrong' ? '这个选择很自然' : (mentorPhase === 'listening' ? '收到你的选择' : (mentorPhase === 'thinking' ? '我在整理背后的原因' : lessonTitle))))}}</view>
+      <view class="lesson-stage-sub">{{mentorIdleHint ? '我会在这里等你。' : (answerFeedback === 'right' ? '你已经抓住了这一步。' : (answerFeedback === 'wrong' ? '这里还有一个容易忽略的条件。' : (mentorPhase === 'listening' ? '让我看一下它和关键条件的关系。' : (mentorPhase === 'thinking' ? '稍等一下，马上和你说。' : '选择之后，我会告诉你为什么。'))))}}</view>
+      <view class="lesson-stage-actions">
+        <view wx:if="{{lessonCard && lessonCard.content}}" class="mentor-voice {{mentorSpeaking ? 'playing' : ''}} {{mentorPaused ? 'paused' : ''}}" catchtap="onSpeakMentor" data-t="{{lessonCard.content}}" data-say="{{lessonCard.say}}" hover-class="mentor-action-press" hover-stay-time="0">
+          <view class="mentor-voice-icon"><text></text><text></text><text></text></view>
+          <text>{{mentorSpeaking ? '暂停' : (mentorPaused ? '继续' : '播放讲解')}}</text>
+        </view>
+        <view
+          wx:if="{{lessonCard && lessonCard.content}}"
+          class="mentor-mute {{voiceMuted ? 'is-muted' : ''}}"
+          catchtap="onToggleMute"
+          aria-role="button"
+          aria-label="{{voiceMuted ? '取消静音' : '静音'}}"
+          hover-class="mentor-action-press"
+          hover-stay-time="0"
+        >
+          <text>{{voiceMuted ? '🔇' : '🔊'}}</text>
+        </view>
+        <view wx:if="{{concept || skill}}" class="lesson-stage-progress" catchtap="toggleMap" hover-class="mentor-action-press" hover-stay-time="0">
+          <text>{{lessonProgress || '学习进度'}}</text><text class="lesson-stage-chevron">›</text>
+        </view>
+      </view>
     </view>
-  </view>
 
-  <!-- 学习型 Agent：三维段位面板（升级感）。段位只升不降，三维条次次微动。 -->
-  <view wx:if="{{gameSkin && mapVisible && skill}}" class="skill" style="--accent: {{accent}};">
-    <view class="sk-head">
-      <view class="sk-tier">
-        <text class="sk-lv">Lv.{{skill.level}}</text>
-        <text class="sk-name">{{skill.levelName}}</text>
-      </view>
-      <view wx:if="{{skill.assessed === 0}}" class="sk-hint">用英文开口，我来给你定级 →</view>
-      <view wx:elif="{{skill.note}}" class="sk-note">{{skill.note}}</view>
+    <view class="lesson-stage-person">
+      <view class="mentor-speaking-ring"></view>
+      <!-- idle 常驻做底层：变体帧盖在其上切换，过渡半透明期露出的是本人而非背景，否则每次切帧透底闪烁 -->
+      <image class="lesson-mentor-img mentor-img-idle is-visible" src="{{mentorPortraits.idle}}" mode="aspectFit" />
+      <image class="lesson-mentor-img mentor-img-blink {{!mentorSpeaking && mentorPose === 'blink' ? 'is-visible' : ''}}" src="{{mentorPortraits.blink}}" mode="aspectFit" />
+      <image class="lesson-mentor-img mentor-img-glance {{!mentorSpeaking && mentorPose === 'glance' ? 'is-visible' : ''}}" src="{{mentorPortraits.glance}}" mode="aspectFit" />
+      <image class="lesson-mentor-img mentor-img-mouth {{mentorSpeaking && mentorMouth === 'small' ? 'is-visible' : ''}}" src="{{mentorPortraits.speakSmall}}" mode="aspectFit" />
+      <image class="lesson-mentor-img mentor-img-mouth {{mentorSpeaking && mentorMouth === 'wide' ? 'is-visible' : ''}}" src="{{mentorPortraits.speakWide}}" mode="aspectFit" />
+      <image class="lesson-mentor-img mentor-img-mouth {{mentorSpeaking && mentorMouth === 'round' ? 'is-visible' : ''}}" src="{{mentorPortraits.speakRound}}" mode="aspectFit" />
     </view>
-    <view class="sk-bars">
-      <view class="sk-bar">
-        <text class="sk-bl">流利</text>
-        <view class="sk-track"><view class="sk-fill" style="width: {{skill.fluency}}%;"></view></view>
-        <text class="sk-bv">{{skill.fluency}}</text>
-      </view>
-      <view class="sk-bar">
-        <text class="sk-bl">准确</text>
-        <view class="sk-track"><view class="sk-fill" style="width: {{skill.accuracy}}%;"></view></view>
-        <text class="sk-bv">{{skill.accuracy}}</text>
-      </view>
-      <view class="sk-bar">
-        <text class="sk-bl">表达</text>
-        <view class="sk-track"><view class="sk-fill" style="width: {{skill.expression}}%;"></view></view>
-        <text class="sk-bv">{{skill.expression}}</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- 概念型 Agent：分档点亮进度条。头部显示当前正在攻的那一档；点条＝镜头拉回当前关（路即地图，不再弹图鉴层）。 -->
-  <view wx:if="{{gameSkin && mapVisible && concept}}" class="cprog" style="--accent: {{accent}};" bindtap="recenterRoad">
-    <view class="cp-head">
-      <view class="cp-stat">
-        <block wx:if="{{concept.allDone}}"><text class="cp-tier">全部通关</text></block>
-        <block wx:else>
-          <text class="cp-tier">{{concept.cur.tier}}</text>
-          <text class="cp-num">{{concept.cur.lit}}</text><text class="cp-tot">/{{concept.cur.total}}</text>
-        </block>
-        <text class="cp-all">· 共点亮 {{concept.lit}}/{{concept.total}}</text>
-      </view>
-      <view wx:if="{{reviewDue > 0}}" class="cp-review" catchtap="startReview">🔁 复习 {{reviewDue}}</view>
-      <view wx:else class="cp-note">{{concept.note || '回到当前关 ›'}}</view>
-    </view>
-    <view class="cp-track"><view class="cp-fill" style="width: {{concept.curPct}}%;"></view></view>
   </view>
 
   <scroll-view class="msgs" scroll-y scroll-into-view="{{scrollTo}}" scroll-with-animation>
@@ -140,10 +88,10 @@
     <block wx:else>
       <!-- 课程：单张任务卡原地推进，不把完整聊天记录铺在学习流中。 -->
       <block wx:if="{{gameSkin}}">
-        <view class="lesson-card {{pending ? 'is-pending' : ''}}">
+        <view class="lesson-card {{pending ? 'is-pending' : ''}} feedback-{{answerFeedback}}">
           <view class="lesson-card-eyebrow">{{lessonProgress || '当前任务'}}</view>
-          <view wx:if="{{lessonChoice}}" class="lesson-choice">
-            <text class="lesson-choice-label">你的选择</text>
+          <view wx:if="{{lessonChoice}}" class="lesson-choice feedback-{{answerFeedback}}">
+            <text class="lesson-choice-label">{{answerFeedback === 'right' ? '✓ 你的选择' : '你的选择'}}</text>
             <text class="lesson-choice-text">{{lessonChoice}}</text>
           </view>
           <view wx:if="{{lessonCard}}" class="lesson-content">{{lessonCard.content}}</view>
@@ -156,7 +104,7 @@
         <view wx:if="{{options.length && !pending}}" class="lesson-instruction">选择一个最接近的答案</view>
         <!-- 兜底：复原出的旧卡没有点选项（纯点选无输入栏会成死局）时，给一键重开当前关 -->
         <view wx:if="{{lessonCard && !options.length && !pending}}" class="lesson-restart" bindtap="restartLevel" hover-class="card-press" hover-stay-time="0">
-          <text class="lesson-restart-ic">↻</text><text>重新开始这一关</text>
+          <text class="lesson-restart-ic">↻</text><text>重新学习这一节</text>
         </view>
       </block>
 
@@ -202,6 +150,76 @@
       <text wx:if="{{gameSkin}}" class="opt-index">{{index + 1}}</text>
       <text class="opt-tx">{{item.t}}</text>
       <text wx:if="{{item.en}}" class="opt-speak" catchtap="onSpeakChip" data-t="{{item.t}}">🔊</text>
+    </view>
+  </view>
+
+  <!-- 课程地图：从底部临时展开，当前学习内容保留在背景中。 -->
+  <view class="drawer-mask course-map-mask" wx:if="{{gameSkin && mapVisible}}" bindtap="toggleMap">
+    <view class="course-map-drawer {{nodes.length ? 'has-nodes' : ''}}" catchtap="noop" style="--accent: {{accent}};">
+      <view class="drawer-grip"></view>
+      <view class="course-map-head">
+        <view>
+          <view class="course-map-title">课程地图</view>
+          <view class="course-map-sub">{{lessonProgress || '学习进度'}}</view>
+        </view>
+        <view class="course-map-close" catchtap="toggleMap" hover-class="mentor-action-press" hover-stay-time="0">收起</view>
+      </view>
+
+      <view class="course-voice-setting">
+        <view class="course-voice-setting-copy">
+          <view class="course-voice-setting-title">自动播放讲解</view>
+          <view class="course-voice-setting-sub">进入课程和切换讲解时自动播放</view>
+        </view>
+        <switch checked="{{voiceAutoPlay}}" bindchange="onToggleVoiceAutoPlay" color="{{accent}}" />
+      </view>
+
+      <view wx:if="{{skill}}" class="skill course-map-skill">
+        <view class="sk-head">
+          <view class="sk-tier">
+            <text class="sk-lv">当前阶段</text>
+            <text class="sk-name">{{skill.levelName}}</text>
+          </view>
+          <view wx:if="{{skill.assessed === 0}}" class="sk-hint">用英文开口，我来给你定级 →</view>
+          <view wx:elif="{{skill.note}}" class="sk-note">{{skill.note}}</view>
+        </view>
+        <view class="sk-bars">
+          <view class="sk-bar"><text class="sk-bl">流利</text><view class="sk-track"><view class="sk-fill" style="width: {{skill.fluency}}%;"></view></view><text class="sk-bv">{{skill.fluency}}</text></view>
+          <view class="sk-bar"><text class="sk-bl">准确</text><view class="sk-track"><view class="sk-fill" style="width: {{skill.accuracy}}%;"></view></view><text class="sk-bv">{{skill.accuracy}}</text></view>
+          <view class="sk-bar"><text class="sk-bl">表达</text><view class="sk-track"><view class="sk-fill" style="width: {{skill.expression}}%;"></view></view><text class="sk-bv">{{skill.expression}}</text></view>
+        </view>
+      </view>
+
+      <view wx:if="{{concept}}" class="cprog course-map-progress">
+        <view class="cp-head">
+          <view class="cp-stat">
+            <block wx:if="{{concept.allDone}}"><text class="cp-tier">课程已完成</text></block>
+            <block wx:else><text class="cp-tier">{{concept.cur.tier}}</text><text class="cp-num">{{concept.cur.lit}}</text><text class="cp-tot">/{{concept.cur.total}}</text></block>
+            <text class="cp-all">· 已掌握 {{concept.lit}}/{{concept.total}}</text>
+          </view>
+          <view wx:if="{{reviewDue > 0}}" class="cp-review" catchtap="startReview">🔁 复习 {{reviewDue}}</view>
+          <view wx:else class="cp-note">{{concept.note || '当前学习阶段'}}</view>
+        </view>
+        <view class="cp-track"><view class="cp-fill" style="width: {{concept.curPct}}%;"></view></view>
+      </view>
+
+      <scroll-view wx:if="{{nodes.length}}" scroll-y class="course-map-list">
+        <view
+          wx:for="{{nodes}}"
+          wx:key="slug"
+          class="course-map-node {{item.state}} {{item.memberLocked ? 'mlock' : ''}}"
+          bindtap="openCard"
+          data-slug="{{item.slug}}"
+          hover-class="course-map-node-press"
+          hover-stay-time="0"
+        >
+          <view class="course-map-node-num">{{item.num}}</view>
+          <view class="course-map-node-copy">
+            <view class="course-map-node-name">{{item.name}}</view>
+            <view class="course-map-node-sub">{{item.state === 'mastered' ? '已掌握' : (item.state === 'lit' ? '已点亮' : (item.state === 'current' ? '正在学习' : (item.state === 'available' ? '下一节' : '未解锁')))}}</view>
+          </view>
+          <view class="course-map-node-mark">{{item.memberLocked ? '🔐' : item.emoji}}</view>
+        </view>
+      </scroll-view>
     </view>
   </view>
 

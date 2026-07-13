@@ -26,6 +26,9 @@ const HERO_GAP = 80;
 const LISTEN_MARK = '🎧 只听不看：';
 const LISTEN_MASK = '▂ ▂ ▂ ▂ ▂ ▂ ▂ ▂';
 
+// 课程语音偏好跨课程保留；首次默认自动播放，但只在用户主动进入学习页后触发。
+const VOICE_PREFS_KEY = 'weifou_lesson_voice_prefs';
+
 // 战斗动作层只给判断型课程（题型=看穿一个说法，关卡天然是对手）。
 // 开口（英语）是开口练习、知常（道德经）调性不合，都保持纯行走舞台。
 const DUEL_SLUGS = {
@@ -42,6 +45,16 @@ const MASCOT = {
   win:   '/assets/mascot/possum_win.webp',
   dead:  '/assets/mascot/possum_dead.webp',
   think: '/assets/mascot/possum_think.webp',
+};
+
+// 同一数字人的低帧率待机状态。全部预加载后只切透明度，避免眼神切换时闪白。
+const MENTOR_PORTRAITS = {
+  idle: '/assets/avatars/course-mentor-idle-v2-540.webp',
+  blink: '/assets/avatars/course-mentor-blink-540.webp',
+  glance: '/assets/avatars/course-mentor-glance-540.webp',
+  speakSmall: '/assets/avatars/course-mentor-speak-small-540.webp',
+  speakWide: '/assets/avatars/course-mentor-speak-wide-540.webp',
+  speakRound: '/assets/avatars/course-mentor-speak-round-540.webp',
 };
 
 Page({
@@ -69,7 +82,7 @@ Page({
     skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
     concept: null,        // 概念型 Agent 的点亮进度（null/enabled=false 时不展示）
     gameSkin: false,      // 学习课（有段位或点亮进度）套「游戏事件卡」皮：固定舞台+事件卡流+底部点选；分身聊天保持原样
-    mapVisible: false,    // 学习中默认收起地图；点击紧凑进度头才展开
+    mapVisible: false,    // 学习中默认收起课程地图；点击进度后以底部抽屉展开
     lessonCard: null,     // 单卡学习：当前助手任务/反馈，不再把整段聊天铺在屏幕上
     lessonChoice: '',     // 本轮用户选择，作为卡片内的轻量上下文
     lessonTitle: '当前练习',
@@ -92,9 +105,22 @@ Page({
     foeAct: '',           // 对手动作：'hit' 受击 / 'taunt' 挑衅（答对未拿下）/ 'strike' 反击（答错）/ 'down' 被击破
     duelIdx: -1,          // 对手＝哪个节点（通常=currentIndex；击破瞬间锁旧关，防状态翻转后丢动画）
     heroImg: MASCOT.idle, // 负鼠当前姿势图（由 _pose 按 动作>走路>思考>待机 的优先级算出）
+    mentorSpeaking: false,// 数字人语音播放状态，只驱动轻量口播反馈
+    mentorPaused: false,  // 语音被用户暂停，与播放结束分开，供“继续”操作
+    voiceAutoPlay: true,  // 新讲解默认自动播放（跨课程持久化）
+    voiceMuted: false,    // 静音仅影响课程语音，不阻断答题与课程进度
+    answerFeedback: '',   // '' / right / wrong：原位短反馈，不叠全屏庆祝
+    mentorPose: 'idle',   // idle / blink / glance：待机时低频切换
+    mentorMotion: '',     // '' / shift：长时等待时的轻微重心调整
+    mentorPhase: 'idle',  // idle / listening / thinking / speaking / affirm / reassure
+    mentorMouth: 'closed',// closed / small / wide / round：按朗读文本节奏驱动嘴型
+    mentorIdleHint: false,// 45 秒无操作后仅出现一次的安静提示
+    mentorPortraits: MENTOR_PORTRAITS,
   },
 
   async onLoad(query) {
+    this._pageDestroyed = false;
+    this._pageVisible = true;
     const id = query.id;
     if (!id) {
       this.setData({ loading: false });
@@ -108,6 +134,7 @@ Page({
     // 从闯关地图点关进来：记下目标关卡，数据就绪后自动开课
     this._targetConcept = query.concept || '';
     this._autoStart = query.auto === '1';
+    const voicePrefs = this._readVoicePrefs();
     // 跳转参数带上就先用：name（顶栏）、icon/accent（骨架外壳配色），无网也能画出「像样的空页」
     this.setData({
       id,
@@ -117,6 +144,8 @@ Page({
       // 入口已知是课（修炼页带 game=1）就首帧套游戏皮，避免数据回来前闪一下普通聊天顶栏；
       // 加载完成后仍以主接口布尔为准回正（见 _load）
       gameSkin: query.game === '1' || this.data.gameSkin,
+      voiceAutoPlay: voicePrefs.autoPlay,
+      voiceMuted: voicePrefs.muted,
     });
     try {
       await ensureLogin();
@@ -172,7 +201,7 @@ Page({
         lessonCard: lesson.card,
         lessonChoice: lesson.choice,
         lessonTitle: d.guide || d.name || '当前练习',
-        lessonProgress: sk && sk.enabled ? `Lv.${sk.level || 1}` : '',
+        lessonProgress: sk && sk.enabled ? `阶段 ${sk.level || 1}` : '',
         options: restoredOptions,
         currentSessionId,
         sessions: this._decorate(sessions || []),
@@ -186,11 +215,12 @@ Page({
         loading: false,
       });
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
-      // 战斗动作层开关：按 slug 门控（详情接口必回 slug）
-      this._duelOn = !!DUEL_SLUGS[d.slug];
+      // 课程页改为数字人陪学，不再触发对峙/战斗表演。
+      this._duelOn = false;
       this._scrollEnd();
       // 概念课：铺横版路，角色停当前关，镜头瞬移定位（首屏不见滚动飞入）
       if (cp && cp.enabled) this._applyRoad(cp, false);
+      let openingRound = false;
       if (this._autoStart && this._targetConcept) {
         // 兼容旧入口（带 concept&auto=1）：新开一段直接开该关
         this._autoStart = false;
@@ -198,12 +228,19 @@ Page({
           messages: this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [],
           currentSessionId: '',
         });
+        openingRound = true;
         this._ask('开始这一关', undefined, this._targetConcept);
       } else if (cp && cp.enabled && !currentSessionId && this.data.currentIndex >= 0) {
         // 秒开当前关：无历史会话时自动开场（有会话则续，上面已载入，不重复烧额度）
         const cur = this._roadNodes && this._roadNodes[this.data.currentIndex];
-        if (cur && !cur.memberLocked) this._ask('开始这一关', undefined, cur.slug);
+        if (cur && !cur.memberLocked) {
+          openingRound = true;
+          this._ask('开始这一关', undefined, cur.slug);
+        }
       }
+      // 有新开场请求时由 _ask 播新讲解；续学时则播当前卡片，不重复抢音频。
+      if (!openingRound && this.data.gameSkin && lesson.card) this._autoSpeakLesson(lesson.card);
+      setTimeout(() => this._startMentorIdle(true), 0);
     } catch (e) {
       // 白屏止血：不再只弹 toast，改为页内「重试」态（errored），点了重来
       this.setData({ loading: false, errored: true });
@@ -223,10 +260,13 @@ Page({
 
   // 庆祝浮层只用于升级 / 掌握 / 通关里程碑，普通点亮保持安静。
   _celebrate(payload) {
+    this._stopMentorIdle(true);
     if (this._celebTimer) clearTimeout(this._celebTimer);
     wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
     this.setData({ celebrate: payload || null });
-    this._celebTimer = setTimeout(() => this.setData({ celebrate: null }), 2400);
+    this._celebTimer = setTimeout(() => {
+      this.setData({ celebrate: null }, () => this._startMentorIdle(true));
+    }, 2400);
   },
 
   // 概念进度装饰：挑出「当前正在攻的档」(第一个未点满的档，都满则最后一档) 给头部进度条用。
@@ -259,8 +299,8 @@ Page({
       heroX: ROAD_PAD + idx * ROAD_STEP - HERO_GAP,
       roadAnim: !!animate,
       roadScrollLeft: this._roadLeft(idx),
-      lessonTitle: nodes[idx] ? nodes[idx].name : '全部完成',
-      lessonProgress: nodes.length ? `第 ${Math.min(idx + 1, nodes.length)} / ${nodes.length} 关` : '',
+      lessonTitle: nodes[idx] ? nodes[idx].name : '课程已完成',
+      lessonProgress: nodes.length ? `第 ${Math.min(idx + 1, nodes.length)} / ${nodes.length} 节` : '',
     });
   },
 
@@ -286,8 +326,9 @@ Page({
 
   toggleMap() {
     const visible = !this.data.mapVisible;
+    if (visible) this._stopMentorIdle(true);
     this.setData({ mapVisible: visible }, () => {
-      if (visible && this.data.concept) this.recenterRoad();
+      if (!visible) this._startMentorIdle(true);
     });
   },
 
@@ -452,7 +493,9 @@ Page({
     if (!t || this.data.pending) return;
     // 英语课（纯点选）：点选即答的同时把这句英文读出来——「选一句就听一句」的自动播放。
     // 老结构靠跟读 Say 节点自动播；重构去掉 Say 后，改由点选驱动（见 _ask 里 sayLine 兜底）。
-    if (this._englishAudio && this._isEnglishText(t)) this._speak(t);
+    if (this._englishAudio && this._isEnglishText(t) && this.data.voiceAutoPlay && !this.data.voiceMuted) {
+      this._speak(t);
+    }
     // 出招：点选即答，主角向当前关冲一记、对手受击晃动。
     // 复习挑战不打当前关（考的是别处的概念，冲错对象比不冲更违和）。
     if (this._duelOn && !this._reviewing && this.data.currentIndex >= 0) {
@@ -464,19 +507,31 @@ Page({
 
   async _ask(content, mode, concept) {
     if (!content || this.data.pending) return;
+    this._stopMentorIdle(true);
+    this._clearMentorThinkTimer();
     const visibleChoice = (content === '开始这一关' || content === '开始复习挑战') ? '' : content;
     const askedMessages = this.data.messages.concat({ role: 'user', content });
     this.setData({
       pending: true,
+      answerFeedback: '',
+      mentorPhase: 'listening',
+      mentorPose: 'idle',
       options: [],
       messages: askedMessages,
       lessonChoice: visibleChoice,
       // 出招动作未播完时不抢姿势（_pose 里动作压过 pending），播完自然落到挠头
       heroImg: this._pose(this.data.heroAct, this.data.walking, true),
     });
+    // 先用一个很短的“我听到了”身体反馈承接点击，再进入思考，避免点击后人物立即僵住。
+    this._mentorThinkTimer = setTimeout(() => {
+      if (!this._pageDestroyed && this.data.pending) {
+        this.setData({ mentorPhase: 'thinking', mentorPose: 'glance' });
+      }
+    }, 320);
     this._scrollEnd();
     try {
       const data = await chatAgent(this.data.id, content, this.data.currentSessionId, mode, concept);
+      this._clearMentorThinkTimer();
       const member = !!data.member;
       const remaining = member ? this.data.remaining : data.remaining;
       const answerMsg = this._decorateMsgs([{ role: 'assistant', content: data.answer }])[0];
@@ -492,12 +547,16 @@ Page({
         currentSessionId: data.sessionId || this.data.currentSessionId,
         options: this._toOpts(data.options),
         pending: false,
+        mentorPhase: data.verdict === 'right' ? 'affirm' : (data.verdict === 'wrong' ? 'reassure' : 'idle'),
+        mentorPose: 'idle',
         heroImg: this._pose(this.data.heroAct, this.data.walking, false),
       };
+      let milestone = false;
       // 学习型 Agent：更新三维段位，升级时弹庆祝浮层
       if (data.skill) {
         patch.skill = { enabled: true, ...data.skill };
         if (data.levelUp) {
+          milestone = true;
           this._celebrate({ up: '升级！', name: data.skill.levelName, sub: '你的英语又上了一个台阶' });
         }
       }
@@ -508,9 +567,11 @@ Page({
         const mastered = data.newlyMastered || [];
         const lit = data.newlyLit || [];
         if (cleared.length) {
-          this._celebrate({ up: '打通一档！', name: `${cleared[0]}篇`, sub: `你已通关「${cleared[0]}」——继续下一档` });
+          milestone = true;
+          this._celebrate({ up: '完成阶段', name: `${cleared[0]}篇`, sub: `你已完成「${cleared[0]}」，继续下一阶段` });
         } else if (mastered.length) {
-          this._celebrate({ up: '掌握！', name: mastered[0], sub: mastered.length > 1 ? `x${mastered.length} 连击！${mastered.length} 个概念你已能讲透` : '你已经能自己讲透它了' });
+          milestone = true;
+          this._celebrate({ up: '已掌握', name: mastered[0], sub: mastered.length > 1 ? `${mastered.length} 个概念你已经能说清楚` : '你已经能自己说清楚了' });
         }
         // 横版路增量点亮 + 角色前进（只 patch 变化的节点，不整表重建，防闪 & 省 setData 体积）
         if (this._roadNodes && this._roadNodes.length) {
@@ -540,12 +601,12 @@ Page({
               rn[ni].state = 'current';
               patch.currentIndex = ni;
               patch.lessonTitle = rn[ni].name;
-              patch.lessonProgress = `第 ${ni + 1} / ${rn.length} 关`;
+              patch.lessonProgress = `第 ${ni + 1} / ${rn.length} 节`;
               this._walkDest = ni;
             } else {
               patch.currentIndex = -1; // 全通关：角色停末关
-              patch.lessonTitle = '全部完成';
-              patch.lessonProgress = `${rn.length} / ${rn.length} 关`;
+              patch.lessonTitle = '课程已完成';
+              patch.lessonProgress = `${rn.length} / ${rn.length} 节`;
               this._walkDest = rn.length - 1;
             }
           }
@@ -557,17 +618,32 @@ Page({
         if (data.streak.freeze) {
           wx.showToast({ title: '自动补签，连续没断 🔥', icon: 'none' });
         } else if (STREAK_MILESTONES.indexOf(days) >= 0) {
+          milestone = true;
           this._celebrate({ up: '连续学习', name: `${days} 天`, sub: '能把学习变成习惯的人是少数，你在其中' });
         }
         if (LEARN_REMIND_TMPL_ID && !this.data.remindState && !this._remindAskedToday()) {
           patch.remindState = 'offer';
         }
       }
+      // 普通答对只在原位给一次认可式微庆祝；里程碑已有完整庆祝，不双重叠加。
+      if (!milestone && data.verdict === 'right') patch.answerFeedback = 'right';
+      else if (data.verdict === 'wrong') patch.answerFeedback = 'wrong';
       this.setData(patch);
+      if (patch.answerFeedback) {
+        if (this._feedbackTimer) clearTimeout(this._feedbackTimer);
+        if (patch.answerFeedback === 'right') {
+          wx.vibrateShort && wx.vibrateShort({ type: 'light' });
+        }
+        this._feedbackTimer = setTimeout(() => {
+          const feedbackPatch = { answerFeedback: '' };
+          if (!this.data.mentorSpeaking) feedbackPatch.mentorPhase = 'idle';
+          this.setData(feedbackPatch, () => this._startMentorIdle(true));
+        }, 1200);
+      }
       this._scrollEnd();
-      // 英语课：新回合若带「示范句」（跟读目标）或「听力门」（只听不看），自动朗读一遍
-      const sayLine = this._extractSay(data.answer) || this._extractListen(data.answer);
-      if (sayLine) this._speak(sayLine);
+      // 新卡片默认播讲解；英语课优先播示范句/听力句，避免中英文两段争抢。
+      this._autoSpeakLesson(data.answer);
+      setTimeout(() => this._startMentorIdle(!patch.answerFeedback), 0);
       // 战斗动作层第二拍（第一拍「出招」在 pickOption 即时播完）。按服务端 verdict 分派：
       // 点亮＝击破 > 答错＝反击+装死诈尸 > 答对未拿下＝对手挑衅还站着 > 教学轮＝安静。
       // verdict 为空（讲解/开场/模型拿不准）时不演戏——舞台宁可静，也不要每轮乱晃。
@@ -603,9 +679,10 @@ Page({
         }
       }
     } catch (e) {
+      this._clearMentorThinkTimer();
       this._answerTurn = false;
       this._duelWin = null;
-      this.setData({ pending: false, heroImg: this._pose(this.data.heroAct, this.data.walking, false) });
+      this.setData({ pending: false, mentorPhase: 'idle', mentorPose: 'idle', heroImg: this._pose(this.data.heroAct, this.data.walking, false) }, () => this._startMentorIdle(true));
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
           title: '第一幕已学完',
@@ -630,14 +707,16 @@ Page({
   // —— 多会话 ——
   // 新开一段：清回开场白、清空 currentSessionId，下一条消息会创建新会话
   newSession() {
+    this._stopMentorIdle(true);
     this._reviewing = false;
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     const lesson = this._lessonFocus(messages);
-    this.setData({ messages, lessonCard: lesson.card, lessonChoice: '', currentSessionId: '', historyVisible: false, options: [], mapVisible: false });
+    this.setData({ messages, lessonCard: lesson.card, lessonChoice: '', currentSessionId: '', historyVisible: false, options: [], mapVisible: false }, () => this._startMentorIdle(true));
     this._scrollEnd();
   },
 
   async openHistory() {
+    this._stopMentorIdle(true);
     this.setData({ historyVisible: true });
     try {
       const sessions = await agentSessions(this.data.id);
@@ -646,7 +725,7 @@ Page({
   },
 
   closeHistory() {
-    this.setData({ historyVisible: false });
+    this.setData({ historyVisible: false }, () => this._startMentorIdle(true));
   },
 
   noop() {},
@@ -655,7 +734,7 @@ Page({
     const sid = e.currentTarget.dataset.id;
     if (!sid) return;
     if (sid === this.data.currentSessionId) {
-      this.setData({ historyVisible: false });
+      this.setData({ historyVisible: false }, () => this._startMentorIdle(true));
       return;
     }
     this._reviewing = false;
@@ -671,24 +750,51 @@ Page({
         currentSessionId: sid,
         options: [],
         mapVisible: false,
-      });
+      }, () => this._startMentorIdle(true));
       this._scrollEnd();
     } catch (err) {
+      this._startMentorIdle(true);
       wx.showToast({ title: '加载失败', icon: 'none' });
     }
   },
 
   onUnload() {
+    this._pageDestroyed = true;
+    this._pageVisible = false;
+    this._clearMentorIdleTimers();
+    this._clearMentorThinkTimer();
+    this._stopMentorMouth(false);
+    this._ttsRequestId = (this._ttsRequestId || 0) + 1;
     if (this._celebTimer) clearTimeout(this._celebTimer);
+    if (this._feedbackTimer) clearTimeout(this._feedbackTimer);
     if (this._walkTimer) clearTimeout(this._walkTimer);
     if (this._duelTimer) clearTimeout(this._duelTimer);
     if (this._walkDelay) clearTimeout(this._walkDelay);
     if (this._audio) { this._audio.destroy(); this._audio = null; }
   },
 
+  // 页面被其他页覆盖时不在后台继续讲，回来后由用户点“继续”。
+  onShow() {
+    this._pageVisible = true;
+    if (this.data.pending) {
+      this.setData({ mentorPhase: 'thinking', mentorPose: 'glance' });
+      return;
+    }
+    setTimeout(() => this._startMentorIdle(true), 0);
+  },
+
+  onHide() {
+    this._pageVisible = false;
+    this._clearMentorIdleTimers();
+    this._clearMentorThinkTimer();
+    this._stopMentorMouth(false);
+    this._ttsRequestId = (this._ttsRequestId || 0) + 1;
+    if (this._audio && this.data.mentorSpeaking) this._audio.pause();
+  },
+
   // ============ 英语课 · 英文朗读（TTS） ============
   // 只在开口课（spoken-english）启用：英文选项句可点🔊听，跟读示范句自动播 + 可重播。
-  // 语音走微信同声传译插件 WechatSI 的 textToSpeech（en_US），零成本、与 onboarding 的 ASR 同插件。
+  // 语音走微信同声传译插件 WechatSI 的 textToSpeech（en_US），零成本、与同插件 ASR 配合使用。
 
   // 一个字符串是否「该配朗读」：纯英文（无汉字）且含字母。检验/复习的中文点选项天然排除。
   _isEnglishText(s) {
@@ -752,32 +858,300 @@ Page({
   _audioCtx() {
     if (!this._audio) {
       const a = wx.createInnerAudioContext();
-      a.obeyMuteSwitch = false; // 语言课：静音键也要能听发音
+      // 默认自动播放仍必须尊重 iOS 系统静音开关。
+      a.obeyMuteSwitch = true;
+      a.onPlay(() => {
+        if (this._pageDestroyed) return;
+        this._stopMentorIdle(true);
+        this.setData({ mentorSpeaking: true, mentorPaused: false, mentorPhase: 'speaking', mentorPose: 'idle' }, () => {
+          this._startMentorMouth(this._spokenText);
+        });
+      });
+      a.onPause(() => {
+        if (!this._pageDestroyed) this._settleMentorVoice(true);
+      });
+      a.onStop(() => {
+        if (!this._pageDestroyed) this._settleMentorVoice(false);
+      });
+      a.onEnded(() => {
+        if (!this._pageDestroyed) this._settleMentorVoice(false);
+      });
+      a.onError(() => {
+        if (!this._pageDestroyed) this._settleMentorVoice(false);
+      });
       this._audio = a;
     }
     return this._audio;
   },
 
-  // 朗读一句英文：TTS 合成临时音频 → innerAudioContext 播放。按文本缓存 filename，重播不再走网络。
-  _speak(text) {
+  // TTS 合成临时音频 → innerAudioContext 播放。英语示范与中文数字人共用缓存和播放状态。
+  _speak(text, lang, options) {
     const clean = (text || '').trim();
     if (!clean) return;
+    const voiceLang = lang || 'en_US';
+    const cacheKey = `${voiceLang}:${clean}`;
+    const manual = !!(options && options.manual);
+    if (this.data.voiceMuted && !manual) return;
+    if (manual && this.data.voiceMuted) {
+      this.setData({ voiceMuted: false });
+      this._saveVoicePrefs({ muted: false });
+    }
+    const requestId = (this._ttsRequestId || 0) + 1;
+    this._ttsRequestId = requestId;
+    this._audioKey = cacheKey;
+    this._spokenText = clean;
     this._ttsCache = this._ttsCache || {};
-    const play = (src) => { const a = this._audioCtx(); a.stop(); a.src = src; a.play(); };
-    if (this._ttsCache[clean]) { play(this._ttsCache[clean]); return; }
+    const play = (src) => {
+      if (requestId !== this._ttsRequestId || this.data.voiceMuted || this._pageVisible === false) return;
+      const a = this._audioCtx();
+      a.stop();
+      a.src = src;
+      a.play();
+    };
+    if (this._ttsCache[cacheKey]) { play(this._ttsCache[cacheKey]); return; }
     const plugin = this._siPlugin();
     if (!plugin || !plugin.textToSpeech) { wx.showToast({ title: '朗读暂不可用', icon: 'none' }); return; }
     plugin.textToSpeech({
-      lang: 'en_US', tts: true, content: clean,
-      success: (res) => { const f = res && res.filename; if (f) { this._ttsCache[clean] = f; play(f); } },
-      fail: () => { wx.showToast({ title: '朗读失败，再试一次', icon: 'none' }); },
+      lang: voiceLang, tts: true, content: clean,
+      success: (res) => { const f = res && res.filename; if (f) { this._ttsCache[cacheKey] = f; play(f); } },
+      fail: () => {
+        if (requestId === this._ttsRequestId) wx.showToast({ title: '朗读失败，再试一次', icon: 'none' });
+      },
     });
   },
 
+  // 数字人只讲当前卡片的前两个短句，避免把长文整段念成「AI 主播」。
+  _mentorExcerpt(text) {
+    const clean = String(text || '').replace(/[🎧🔊]/g, '').replace(/\s+/g, ' ').trim();
+    const short = clean.split(/[。！？]/).filter(Boolean).slice(0, 2).join('。');
+    return short.length > 72 ? `${short.slice(0, 72)}。` : short;
+  },
+
+  // InnerAudioContext 不提供实时音素/振幅数据，因此用朗读文本生成带停顿的嘴型节奏；
+  // 标点闭口，元音与常见汉字按字符稳定映射到三种开口形态，避免机械的两帧循环。
+  _mouthFrameFor(char) {
+    if (!char || /[\s，。！？、,.!?;；:：]/.test(char)) return 'closed';
+    if (/[oOuUwW]/.test(char)) return 'round';
+    if (/[aAeEiI]/.test(char)) return 'wide';
+    const frames = ['small', 'wide', 'round', 'small'];
+    return frames[char.charCodeAt(0) % frames.length];
+  },
+
+  _startMentorMouth(text) {
+    this._stopMentorMouth(false);
+    const speech = String(text || '').trim() || '正在讲解';
+    this._mentorMouthCursor = 0;
+    const tick = () => {
+      if (this._pageDestroyed || !this.data.mentorSpeaking) return;
+      const char = speech[this._mentorMouthCursor % speech.length];
+      this._mentorMouthCursor += 1;
+      const frame = this._mouthFrameFor(char);
+      this.setData({ mentorMouth: frame });
+      const pause = frame === 'closed';
+      this._mentorMouthTimer = setTimeout(tick, pause ? this._idleDelay(170, 260) : this._idleDelay(92, 145));
+    };
+    tick();
+  },
+
+  _stopMentorMouth(updateView) {
+    if (this._mentorMouthTimer) clearTimeout(this._mentorMouthTimer);
+    this._mentorMouthTimer = null;
+    if (updateView !== false && !this._pageDestroyed && this.data.mentorMouth !== 'closed') {
+      this.setData({ mentorMouth: 'closed' });
+    }
+  },
+
+  _settleMentorVoice(paused) {
+    this._stopMentorMouth(false);
+    const feedback = this.data.answerFeedback;
+    const phase = feedback === 'right' ? 'affirm' : (feedback === 'wrong' ? 'reassure' : 'idle');
+    this.setData({
+      mentorSpeaking: false,
+      mentorPaused: !!paused,
+      mentorMouth: 'closed',
+      mentorPhase: phase,
+      mentorPose: 'idle',
+    }, () => this._startMentorIdle(true));
+  },
+
+  // ============ 数字人待机生命感 ============
+  _idleDelay(min, max) {
+    return Math.round(min + Math.random() * (max - min));
+  },
+
+  _canMentorIdle() {
+    const d = this.data;
+    return !this._pageDestroyed && this._pageVisible !== false && d.gameSkin && !d.loading && !d.errored &&
+      !d.pending && !d.mentorSpeaking && !d.mapVisible && !d.historyVisible &&
+      !d.celebrate && !d.answerFeedback;
+  },
+
+  _clearMentorIdleTimers() {
+    [
+      '_mentorBlinkTimer', '_mentorBlinkReturnTimer', '_mentorGlanceTimer',
+      '_mentorGlanceReturnTimer', '_mentorShiftTimer', '_mentorShiftReturnTimer',
+      '_mentorHintTimer', '_mentorHintReturnTimer',
+    ].forEach((key) => {
+      if (this[key]) clearTimeout(this[key]);
+      this[key] = null;
+    });
+  },
+
+  _clearMentorThinkTimer() {
+    if (this._mentorThinkTimer) clearTimeout(this._mentorThinkTimer);
+    this._mentorThinkTimer = null;
+  },
+
+  _stopMentorIdle(clearHint) {
+    this._clearMentorIdleTimers();
+    const patch = { mentorPose: 'idle', mentorMotion: '' };
+    if (clearHint) patch.mentorIdleHint = false;
+    this.setData(patch);
+  },
+
+  // resetClock=true 表示用户刚有操作，45 秒安静提示重新计时。
+  _startMentorIdle(resetClock) {
+    this._clearMentorIdleTimers();
+    if (!this._canMentorIdle()) return;
+    if (resetClock) {
+      this._mentorHintShown = false;
+      this.setData({ mentorPose: 'idle', mentorMotion: '', mentorPhase: 'idle', mentorIdleHint: false });
+    }
+    this._scheduleMentorBlink();
+    this._scheduleMentorGlance();
+    this._scheduleMentorShift();
+    if (!this._mentorHintShown) {
+      this._mentorHintTimer = setTimeout(() => {
+        if (!this._canMentorIdle() || !this.data.options.length) return;
+        this._mentorHintShown = true;
+        this.setData({ mentorIdleHint: true });
+        this._mentorHintReturnTimer = setTimeout(() => {
+          this.setData({ mentorIdleHint: false });
+        }, 6000);
+      }, 45000);
+    }
+  },
+
+  _scheduleMentorBlink(delay) {
+    this._mentorBlinkTimer = setTimeout(() => {
+      if (!this._canMentorIdle()) return;
+      if (this.data.mentorPose !== 'idle') {
+        this._scheduleMentorBlink(900);
+        return;
+      }
+      this.setData({ mentorPose: 'blink' });
+      this._mentorBlinkReturnTimer = setTimeout(() => {
+        if (!this._canMentorIdle()) return;
+        this.setData({ mentorPose: 'idle' });
+        // 少量双眨眼打破机械节拍，但不让它成为可预测的循环。
+        if (Math.random() < 0.14) {
+          this._mentorBlinkTimer = setTimeout(() => {
+            if (!this._canMentorIdle() || this.data.mentorPose !== 'idle') return;
+            this.setData({ mentorPose: 'blink' });
+            this._mentorBlinkReturnTimer = setTimeout(() => {
+              if (this._canMentorIdle()) this.setData({ mentorPose: 'idle' });
+              this._scheduleMentorBlink();
+            }, 130);
+          }, 170);
+        } else {
+          this._scheduleMentorBlink();
+        }
+      }, 140);
+    }, typeof delay === 'number' ? delay : this._idleDelay(3000, 7000));
+  },
+
+  _scheduleMentorGlance() {
+    this._mentorGlanceTimer = setTimeout(() => {
+      if (!this._canMentorIdle()) return;
+      if (this.data.mentorPose !== 'idle') {
+        this._scheduleMentorGlance();
+        return;
+      }
+      this.setData({ mentorPose: 'glance' });
+      this._mentorGlanceReturnTimer = setTimeout(() => {
+        if (this._canMentorIdle()) this.setData({ mentorPose: 'idle' });
+        this._scheduleMentorGlance();
+      }, this._idleDelay(1400, 2300));
+    }, this._idleDelay(8000, 20000));
+  },
+
+  _scheduleMentorShift() {
+    this._mentorShiftTimer = setTimeout(() => {
+      if (!this._canMentorIdle()) return;
+      this.setData({ mentorMotion: 'shift' });
+      this._mentorShiftReturnTimer = setTimeout(() => {
+        this.setData({ mentorMotion: '' });
+        this._scheduleMentorShift();
+      }, 2400);
+    }, this._idleDelay(15000, 30000));
+  },
+
+  _readVoicePrefs() {
+    try {
+      const saved = wx.getStorageSync(VOICE_PREFS_KEY) || {};
+      return { autoPlay: saved.autoPlay !== false, muted: !!saved.muted };
+    } catch (e) {
+      return { autoPlay: true, muted: false };
+    }
+  },
+
+  _saveVoicePrefs(patch) {
+    const next = {
+      autoPlay: patch && typeof patch.autoPlay === 'boolean' ? patch.autoPlay : this.data.voiceAutoPlay,
+      muted: patch && typeof patch.muted === 'boolean' ? patch.muted : this.data.voiceMuted,
+    };
+    try { wx.setStorageSync(VOICE_PREFS_KEY, next); } catch (e) {}
+  },
+
+  // 自动播放只走课程讲解；手动“听发音”始终保留为用户可用的明确操作。
+  _autoSpeakLesson(card) {
+    if (!this.data.gameSkin || !this.data.voiceAutoPlay || this.data.voiceMuted || this._pageVisible === false || !card) return;
+    const content = typeof card === 'string' ? card : (card.content || '');
+    const sayLine = (typeof card === 'object' && card.say) || this._extractSay(content) || this._extractListen(content);
+    if (sayLine) this._speak(sayLine);
+    else this._speak(this._mentorExcerpt(content), 'zh_CN');
+  },
+
+  onToggleVoiceAutoPlay(e) {
+    const autoPlay = !!e.detail.value;
+    this.setData({ voiceAutoPlay: autoPlay });
+    this._saveVoicePrefs({ autoPlay });
+  },
+
+  onToggleMute() {
+    this._stopMentorIdle(true);
+    const muted = !this.data.voiceMuted;
+    this.setData({ voiceMuted: muted, mentorPaused: false });
+    this._saveVoicePrefs({ muted });
+    if (muted) {
+      this._ttsRequestId = (this._ttsRequestId || 0) + 1;
+      if (this._audio) this._audio.stop();
+    }
+    setTimeout(() => this._startMentorIdle(true), 0);
+  },
+
   // 选项上的🔊：只朗读，不作答（catchtap 拦截，不触发 pickOption）
-  onSpeakChip(e) { this._speak(e.currentTarget.dataset.t); },
+  onSpeakChip(e) { this._speak(e.currentTarget.dataset.t, undefined, { manual: true }); },
   // 气泡下方的🔊：重播这一关的示范句
-  onSpeakSay(e) { this._speak(e.currentTarget.dataset.t); },
+  onSpeakSay(e) { this._speak(e.currentTarget.dataset.t, undefined, { manual: true }); },
+  // 舞台数字人：播放中点击暂停；同一段已暂停则继续；静音时主动点播会同时取消静音。
+  onSpeakMentor(e) {
+    this._stopMentorIdle(true);
+    const content = e.currentTarget.dataset.t || '';
+    const sayLine = e.currentTarget.dataset.say || this._extractSay(content) || this._extractListen(content);
+    const text = sayLine || this._mentorExcerpt(content);
+    const lang = sayLine ? 'en_US' : 'zh_CN';
+    const key = `${lang}:${text}`;
+    if (this.data.mentorSpeaking && this._audio) {
+      this._audio.pause();
+      return;
+    }
+    if (this.data.mentorPaused && this._audio && (this._audioKey === key || this.data.pending)) {
+      this._audio.play();
+      return;
+    }
+    this._speak(text, lang, { manual: true });
+  },
 
   goMembership() {
     wx.navigateTo({ url: '/pages/membership/index' });

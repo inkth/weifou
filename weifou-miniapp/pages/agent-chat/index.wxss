@@ -27,6 +27,82 @@ page { background: var(--bg); height: 100%; }
 .di-sub { font-size: 24rpx; color: var(--sub); margin-top: 6rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .di-time { font-size: 22rpx; color: var(--faint); margin-top: 6rpx; }
 
+/* 课程地图：保持主学习界面在背景，以底部抽屉承载总览和跳转。 */
+.course-map-drawer {
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0 28rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-radius: var(--r-3xl) var(--r-3xl) 0 0;
+  box-shadow: var(--shadow-pop);
+  animation: courseMapUp .26s var(--ease-out);
+}
+.course-map-drawer.has-nodes { height: 80vh; }
+@keyframes courseMapUp { from { transform: translateY(14%); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
+.course-map-head { display: flex; align-items: center; justify-content: space-between; padding: 2rpx 4rpx 20rpx; }
+.course-map-title { color: var(--ink); font-size: 32rpx; font-weight: 800; }
+.course-map-sub { margin-top: 4rpx; color: var(--sub); font-size: 21rpx; }
+.course-map-close { padding: 12rpx 16rpx; color: var(--accent-deep); font-size: 24rpx; font-weight: 700; }
+.course-voice-setting {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 16rpx;
+  padding: 18rpx 22rpx;
+  background: var(--surface-sunken);
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-lg);
+}
+.course-voice-setting-copy { flex: 1 1 auto; min-width: 0; }
+.course-voice-setting-title { color: var(--ink); font-size: 26rpx; font-weight: 750; }
+.course-voice-setting-sub { margin-top: 5rpx; color: var(--sub); font-size: 21rpx; line-height: 1.4; }
+.course-map-skill, .course-map-progress {
+  margin-bottom: 16rpx;
+  padding: 20rpx 22rpx;
+  background: var(--surface-sunken);
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-lg);
+}
+.course-map-list { flex: 1 1 auto; min-height: 0; padding-bottom: 8rpx; }
+.course-map-node {
+  display: flex;
+  align-items: center;
+  min-height: 104rpx;
+  margin-bottom: 12rpx;
+  padding: 16rpx 18rpx;
+  box-sizing: border-box;
+  background: var(--fill);
+  border: var(--bw-thin) solid transparent;
+  border-radius: var(--r-lg);
+  transition: transform .1s var(--ease), opacity .1s var(--ease);
+}
+.course-map-node.current { background: var(--accent-soft); border-color: var(--accent); box-shadow: var(--shadow-hair); }
+.course-map-node.available { background: var(--surface); border-color: var(--accent); }
+.course-map-node.mastered, .course-map-node.lit { background: var(--surface); border-color: var(--border); }
+.course-map-node.locked, .course-map-node.mlock { opacity: .58; }
+.course-map-node-press { transform: scale(.985); opacity: .82; }
+.course-map-node-num {
+  flex: 0 0 auto;
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-deep);
+  font-size: 22rpx;
+  font-weight: 800;
+  background: var(--surface);
+  border-radius: 50%;
+}
+.course-map-node.current .course-map-node-num { color: var(--on-accent); background: var(--accent); }
+.course-map-node-copy { flex: 1 1 auto; min-width: 0; margin-left: 16rpx; }
+.course-map-node-name { overflow: hidden; color: var(--ink); font-size: 27rpx; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.course-map-node-sub { margin-top: 5rpx; color: var(--sub); font-size: 21rpx; }
+.course-map-node-mark { flex: 0 0 auto; margin-left: 16rpx; font-size: 31rpx; line-height: 1; }
+
 .msgs { flex: 1 1 auto; min-height: 0; padding: 24rpx 28rpx 0; box-sizing: border-box; }
 
 /* —— 角色画框（消息流顶部，随对话滚走）：人物拱窗 + 状态名牌 —— */
@@ -208,71 +284,188 @@ page { background: var(--bg); height: 100%; }
 .say-audio-ic { font-size: 28rpx; }
 
 /* ===================================================================== */
-/* 游戏事件卡皮肤（.game）：学习课专用——固定舞台 + 事件卡流 + 底部点选主操作台。 */
+/* 课程专注布局（内部仍沿用 .game 类名以避免改动路由与会话判定）。 */
 /* 分身/工具聊天无 skill/concept，gameSkin=false，不进此分支，样式完全不受影响。 */
 /* ===================================================================== */
 .page.game { background: var(--paper); }
 
-/* 专注学习头：一行课程身份、一行当前任务，地图与历史退到右侧。 */
-.learn-head {
+/* 数字人陪学舞台：像一次面对面讲解，不再呈现游戏场景与角色对峙。 */
+.lesson-stage {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
-  gap: 16rpx;
-  padding: 20rpx 28rpx 18rpx;
-  background: var(--surface);
-  border-bottom: 1rpx solid var(--line);
+  align-items: stretch;
+  min-height: 272rpx;
+  margin: 14rpx 24rpx 4rpx;
+  padding: 30rpx 24rpx 26rpx 30rpx;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--ink);
+  background: linear-gradient(118deg, #ffffff 0%, #f7f6fc 54%, #eff3fa 100%);
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-lift);
+  transform: translateZ(0);
 }
-.learn-head-main { flex: 1 1 auto; min-width: 0; }
-.learn-course { font-size: 22rpx; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.learn-task { margin-top: 2rpx; font-size: 30rpx; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.learn-progress {
-  flex: 0 0 auto;
-  padding: 10rpx 16rpx;
-  color: var(--accent-deep);
-  background: var(--accent-soft);
+.lesson-stage-ambience { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.mentor-glow {
+  position: absolute;
+  width: 330rpx; height: 330rpx;
+  right: -70rpx; top: -48rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,195,235,.56) 0%, rgba(185,221,237,.24) 48%, transparent 72%);
+}
+.mentor-line { position: absolute; height: 1rpx; background: linear-gradient(90deg, transparent, rgba(79,74,139,.17), transparent); transform-origin: center; }
+.mentor-line-a { width: 310rpx; right: -28rpx; top: 92rpx; transform: rotate(-18deg); }
+.mentor-line-b { width: 260rpx; right: -42rpx; top: 150rpx; transform: rotate(16deg); }
+.lesson-stage-copy {
+  position: relative; z-index: 3;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 410rpx;
+  padding-top: 2rpx;
+}
+.lesson-stage-kicker { display: flex; align-items: center; gap: 11rpx; font-size: 20rpx; font-weight: 700; color: var(--accent-deep); letter-spacing: 1rpx; }
+.lesson-live-dot {
+  width: 10rpx; height: 10rpx;
+  border-radius: 50%;
+  background: var(--stage-accent);
+  box-shadow: 0 0 0 7rpx rgba(119, 114, 200, 0.12);
+}
+.lesson-stage-title {
+  display: -webkit-box;
+  margin-top: 18rpx;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 34rpx;
+  line-height: 1.24;
+  font-weight: 800;
+  letter-spacing: -0.6rpx;
+  color: var(--ink);
+}
+.lesson-stage-sub { margin-top: 12rpx; max-width: 350rpx; font-size: 22rpx; line-height: 1.5; color: var(--ink-2); }
+.lesson-stage-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12rpx; max-width: 380rpx; margin-top: 22rpx; }
+.mentor-voice, .lesson-stage-progress {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9rpx;
+  min-height: 52rpx;
+  padding: 0 17rpx;
+  box-sizing: border-box;
   border-radius: var(--r-md);
-  font-size: 22rpx;
+  font-size: 21rpx;
   font-weight: 700;
 }
-.learn-more {
+.mentor-voice { color: var(--on-accent); background: var(--accent-deep); }
+.mentor-voice.playing { background: var(--accent-strong); }
+.mentor-voice.paused { color: var(--accent-deep); background: var(--accent-soft); }
+.mentor-mute {
   flex: 0 0 auto;
-  width: 56rpx;
-  height: 56rpx;
+  width: 52rpx;
+  height: 52rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   color: var(--ink-2);
-  font-size: 28rpx;
+  font-size: 24rpx;
+  background: rgba(255,255,255,.82);
+  border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-md);
 }
-
-/* 小型角色舞台：负责陪伴和状态，不再占据半屏。 */
-.lesson-stage {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 16rpx 32rpx;
-  background: linear-gradient(100deg, var(--accent-soft), var(--surface) 72%);
-  border-bottom: 1rpx solid var(--line);
+.mentor-mute.is-muted { color: var(--accent-deep); background: var(--accent-soft); border-color: rgba(119,114,200,.28); }
+.lesson-stage-progress { color: var(--ink-2); background: rgba(255,255,255,.82); border: var(--bw-thin) solid var(--border); }
+.lesson-stage-chevron { margin-left: 1rpx; color: var(--accent-deep); font-size: 28rpx; line-height: 1; }
+.mentor-action-press { opacity: .82; transform: scale(.985); }
+.mentor-voice-icon { display: flex; align-items: center; gap: 3rpx; width: 20rpx; height: 22rpx; }
+.mentor-voice-icon text { width: 3rpx; height: 8rpx; border-radius: var(--r-full); background: currentColor; }
+.mentor-voice-icon text:nth-child(2) { height: 16rpx; }
+.mentor-voice-icon text:nth-child(3) { height: 11rpx; }
+.mentor-voice.playing .mentor-voice-icon text { animation: mentorWave .72s ease-in-out infinite; }
+.mentor-voice.playing .mentor-voice-icon text:nth-child(2) { animation-delay: .12s; }
+.mentor-voice.playing .mentor-voice-icon text:nth-child(3) { animation-delay: .24s; }
+.lesson-stage-person {
+  position: absolute;
+  z-index: 2;
+  right: -12rpx;
+  bottom: -88rpx;
+  width: 292rpx;
+  height: 390rpx;
+  pointer-events: none;
+  transform-origin: 50% 86%;
+  animation: mentorBreathe 4.8s ease-in-out infinite;
 }
-.lesson-mascot {
-  flex: 0 0 auto;
-  width: 88rpx;
-  height: 88rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
+.lesson-mentor-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity .08s ease-out;
 }
-.lesson-mascot.busy { animation: lessonBreathe 1.4s ease-in-out infinite; }
-.lesson-mascot-img { width: 86rpx; height: 86rpx; }
-.lesson-stage-emoji { font-size: 48rpx; line-height: 1; }
-.lesson-stage-copy { flex: 1 1 auto; min-width: 0; }
-.lesson-stage-title { font-size: 27rpx; font-weight: 750; color: var(--ink); }
-.lesson-stage-sub { margin-top: 4rpx; font-size: 22rpx; color: var(--sub); }
-@keyframes lessonBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.lesson-mentor-img.is-visible { opacity: 1; }
+.mentor-img-blink { transition-duration: .035s; }
+.mentor-img-mouth { transition-duration: .025s; }
+.mentor-speaking-ring { position: absolute; left: 50%; top: 60rpx; width: 180rpx; height: 180rpx; transform: translateX(-50%); border-radius: 50%; border: 1rpx solid rgba(119,114,200,.18); opacity: 0; }
+.lesson-stage.mentor-phase-listening .lesson-live-dot { animation: mentorHear .52s var(--ease-out) both; }
+.lesson-stage.mentor-phase-listening .lesson-stage-person { animation: mentorAcknowledge .62s var(--ease-out) both; }
+.lesson-stage.is-thinking .lesson-live-dot { animation: mentorPulse 1.15s ease-in-out infinite; }
+.lesson-stage.is-thinking .lesson-stage-person { animation: mentorListen 2.2s ease-in-out infinite; }
+.lesson-stage.is-speaking .mentor-speaking-ring { animation: mentorRing 1.4s ease-out infinite; }
+.lesson-stage.mentor-phase-speaking .lesson-stage-person { animation: mentorSpeakBody 3.4s ease-in-out infinite; }
+.lesson-stage.mentor-phase-reassure .lesson-stage-person { animation: mentorReassure .9s var(--ease-out) both; }
+.lesson-stage.mentor-motion-shift .lesson-stage-person { animation: mentorShift 2.4s ease-in-out both; }
+.lesson-stage.feedback-right { animation: stageApprove 1.15s ease-out both; }
+.lesson-stage.feedback-right .lesson-live-dot { background: #4f9d78; box-shadow: 0 0 0 7rpx rgba(79,157,120,.14); }
+.lesson-stage.feedback-right .lesson-stage-kicker { color: #34775a; }
+.lesson-stage.feedback-right .mentor-glow { animation: mentorGlowApprove 1.1s ease-out both; }
+.lesson-stage.feedback-right .lesson-stage-person { animation: mentorNod .8s var(--ease-out) both; }
+.lesson-stage.feedback-wrong { border-color: rgba(211,154,74,.28); }
+.lesson-stage.feedback-wrong .lesson-live-dot { background: #d39a4a; box-shadow: 0 0 0 7rpx rgba(211,154,74,.12); }
+.lesson-stage.feedback-wrong .lesson-stage-kicker { color: #93682f; }
+@keyframes mentorBreathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3rpx) scale(1.004); } }
+@keyframes mentorHear { 0% { transform: scale(.75); opacity: .45; } 60% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: .9; } }
+@keyframes mentorAcknowledge {
+  0% { transform: translateY(0) rotate(0); }
+  42% { transform: translateY(5rpx) rotate(-.55deg); }
+  100% { transform: translateY(1rpx) rotate(0); }
+}
+@keyframes mentorListen { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(2rpx) rotate(-.6deg); } }
+@keyframes mentorSpeakBody {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  36% { transform: translateY(-2rpx) rotate(.18deg); }
+  70% { transform: translateY(1rpx) rotate(-.16deg); }
+}
+@keyframes mentorReassure {
+  0% { transform: translateY(0) rotate(0); }
+  45% { transform: translateY(2rpx) rotate(-.7deg); }
+  100% { transform: translateY(0) rotate(-.2deg); }
+}
+@keyframes mentorShift {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  35% { transform: translate(-3rpx, 2rpx) rotate(-.35deg); }
+  72% { transform: translate(-1rpx, -1rpx) rotate(.18deg); }
+}
+@keyframes mentorPulse { 0%, 100% { opacity: .45; transform: scale(.86); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes mentorRing { 0% { opacity: .45; transform: translateX(-50%) scale(.86); } 100% { opacity: 0; transform: translateX(-50%) scale(1.32); } }
+@keyframes mentorWave { 0%, 100% { transform: scaleY(.65); } 50% { transform: scaleY(1.15); } }
+@keyframes stageApprove {
+  0% { border-color: var(--border); box-shadow: var(--shadow-lift); }
+  28% { border-color: rgba(79,157,120,.46); box-shadow: 0 18rpx 54rpx rgba(79,157,120,.15); }
+  100% { border-color: rgba(79,157,120,.24); box-shadow: var(--shadow-lift); }
+}
+@keyframes mentorGlowApprove {
+  0% { opacity: .72; transform: scale(.92); }
+  38% { opacity: 1; transform: scale(1.1); background: radial-gradient(circle, rgba(167,221,191,.62) 0%, rgba(185,221,237,.26) 48%, transparent 72%); }
+  100% { opacity: .84; transform: scale(1); }
+}
+@keyframes mentorNod {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  32% { transform: translateY(7rpx) rotate(-1deg); }
+  62% { transform: translateY(1rpx) rotate(.35deg); }
+}
 
 /* 单张学习卡：当前任务、选择和反馈在原位更新。 */
 .lesson-card {
@@ -285,6 +478,8 @@ page { background: var(--bg); height: 100%; }
   animation: cardRise 0.28s var(--ease-out) both;
 }
 .lesson-card.is-pending { border-color: rgba(119, 114, 200, 0.28); }
+.lesson-card.feedback-right { border-color: rgba(79,157,120,.26); }
+.lesson-card.feedback-wrong { border-color: rgba(211,154,74,.22); }
 .lesson-card-eyebrow { font-size: 21rpx; font-weight: 700; color: var(--accent-deep); letter-spacing: 1rpx; }
 .lesson-choice {
   display: flex;
@@ -297,6 +492,12 @@ page { background: var(--bg); height: 100%; }
 }
 .lesson-choice-label { flex: 0 0 auto; font-size: 21rpx; color: var(--accent-deep); }
 .lesson-choice-text { flex: 1 1 auto; font-size: 25rpx; font-weight: 650; color: var(--accent-ink); line-height: 1.45; }
+.lesson-choice.feedback-right { background: rgba(79,157,120,.10); box-shadow: inset 0 0 0 1rpx rgba(79,157,120,.24); animation: choiceConfirm .75s var(--ease-out) both; }
+.lesson-choice.feedback-right .lesson-choice-label { color: #34775a; font-weight: 800; }
+.lesson-choice.feedback-right .lesson-choice-text { color: #285e47; }
+.lesson-choice.feedback-wrong { background: rgba(211,154,74,.09); box-shadow: inset 0 0 0 1rpx rgba(211,154,74,.18); }
+.lesson-choice.feedback-wrong .lesson-choice-label { color: #93682f; }
+@keyframes choiceConfirm { 0% { transform: scale(.985); } 45% { transform: scale(1.008); } 100% { transform: scale(1); } }
 .lesson-content { margin-top: 22rpx; font-size: 29rpx; color: var(--ink); line-height: 1.72; white-space: pre-wrap; word-break: break-word; }
 .lesson-empty { color: var(--sub); }
 .lesson-audio {
