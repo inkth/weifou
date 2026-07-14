@@ -652,6 +652,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 16, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-dating", Name: "约会科学与关系判断", Subject: "清醒去爱", Guide: "知遇·约会教练",
+			Tagline:     "认识自我、判断关系、清醒地开始与结束",
+			Description: "以行为科学与依恋理论为基础，系统学习恋爱开始之前的判断与行动：认识自己带进关系的模式，在心动中保持判断，把约会真正付诸行动，并在该决断时体面决断。参考 Logan Ury（Hinge 关系科学）、《Attached》依恋理论、西北大学 Marriage 101 与 Eastwick/Finkel 的关系科学研究，四幕 28 关——只教真诚，不教搭讪话术。",
+			Category:    models.AgentCatEducation, Icon: "💘", Accent: "#F97316",
+			Greeting:     "我是约会教练知遇，陪你练习「约会科学与关系判断」。先说清楚这门课不做什么：不教搭讪话术、不做红娘、不保证脱单——它教的是恋爱开始之前的全部功课。四幕 28 关：先认识带去恋爱的自己（你的倾向、依恋、脚本），再练心动中保持判断（滤镜、火花、红绿旗），然后把约会真正约起来（开场、邀请、初见全是对手戏——我演对面那个人，说砸了时间倒回重来），最后学会决断（关系确认、大题对表、体面结束）。在一起之后的功课，交给隔壁的亲密关系课。点「开始这一关」，先测测你是哪种约会倾向。",
+			SystemPrompt: buildConceptPrompt(datingPersona+"\n\n"+conceptTeachingMethod, datingConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 17, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "道家哲学与人生智慧", Subject: "在变化中安顿自己", Guide: "知常·老子向导",
 			Tagline:     "理解《老子》的思想、处世与实践",
 			Description: "以马王堆帛书本《老子》为基础，逐章理解道、德、无为、不争与柔弱等核心思想。九幕 81 章不止于文本解释，而是将古典哲学带回当代人的选择、关系与自我安顿。",
@@ -661,7 +671,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 17, // 会员隐藏课压轴（新课递增后顺延）
+			FreeTier: 1, Sort: 18, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 课程保留名单采用物理清理：不再软退役（enabled=false 保留行+进度），

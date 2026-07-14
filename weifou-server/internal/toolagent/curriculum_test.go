@@ -76,6 +76,27 @@ func TestThreeActCoursesStructure(t *testing.T) {
 	}
 }
 
+// 约会课结构守护：四幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
+func TestDatingCourseFourActsOfSeven(t *testing.T) {
+	if len(datingConcepts) != 28 {
+		t.Fatalf("清醒去爱应为 28 关，实际 %d", len(datingConcepts))
+	}
+	counts := map[int]int{}
+	lastOfTier := map[int]seedConcept{}
+	for _, c := range datingConcepts {
+		counts[c.Tier]++
+		lastOfTier[c.Tier] = c
+	}
+	for tier := 1; tier <= 4; tier++ {
+		if counts[tier] != 7 {
+			t.Errorf("清醒去爱第 %d 幕应为 7 关，实际 %d", tier, counts[tier])
+		}
+		if !strings.Contains(lastOfTier[tier].Name, "综合关") {
+			t.Errorf("清醒去爱第 %d 幕末关应为综合关，实际 %s", tier, lastOfTier[tier].Name)
+		}
+	}
+}
+
 // 英语课结构守护：四幕各 8 关（7 常规 + 1 全英模拟面 Boss），模拟面必须是每幕末关。
 func TestEnglishCourseHasFourActsOfEight(t *testing.T) {
 	if len(englishScenarios) != 32 {
