@@ -119,6 +119,7 @@ var courseScripts = map[string]map[string]levelScript{
 	"learn-habits":      learnHabitsScript,      // 习惯的复利三幕21关（两段式判断关、零LLM、自指streak）
 	"learn-business":    learnBusinessScript,    // 看懂生意三幕21关（两段式判断关、零LLM、老板视角）
 	"learn-dating":      learnDatingScript,      // 清醒去爱四幕28关（判断关+六场对手戏+资料真动笔/初见真开口）
+	"learn-meditation":  learnMeditationScript,  // 把心练稳三幕21关（两段式判断关、零LLM、真练习）
 }
 
 // 脚本课阶段（存 AgentSession.ScriptStage）。

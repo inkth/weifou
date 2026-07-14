@@ -662,6 +662,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 17, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-meditation", Name: "正念冥想与注意力训练", Subject: "把心练稳", Guide: "安住·正念教练",
+			Tagline:     "训练注意力、调节情绪、安顿日常",
+			Description: "以正念减压课程（MBSR）与冥想神经科学为基础，系统训练注意力的觉察与回归：观呼吸、身体扫描、情绪标签化、冲动冲浪与 RAIN 流程，再把练习带进行走、倾听与睡前的日常。参考卡巴金 MBSR、Davidson《Altered Traits》、哈佛「走神的心」研究与 Tara Brach 的 RAIN 方法，三幕 21 关——不玄谈、不承诺疗效，每关落到当天能练的小剂量动作。",
+			Category:    models.AgentCatEducation, Icon: "🧘", Accent: "#3B82F6",
+			Greeting:     "我是正念教练安住，陪你练「正念冥想与注意力训练」。先立三条家规：不玄谈（每一关都有实验托底——冥想是注意力训练，不是玄学）、不承诺疗效（练的是长期特质，不是十分钟见效；长期失眠或情绪问题请就医，练习不替代治疗）、不逼你久坐（两分钟起步，坐不住可以走着练）。三幕 21 关：先看清这颗心（走神的 47%、呼吸锚、两分钟正坐），再和情绪过招（贴标签、冲动冲浪、RAIN 四步），最后把日子过成练习（刷牙、走路、听人说话都是道场）。这门课知识很薄、练习很厚——每关都落到一个当天能练的动作。点「开始这一关」，先看一个哈佛的走神实验。",
+			SystemPrompt: buildConceptPrompt(meditationPersona+"\n\n"+conceptTeachingMethod, meditationConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 18, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "道家哲学与人生智慧", Subject: "在变化中安顿自己", Guide: "知常·老子向导",
 			Tagline:     "理解《老子》的思想、处世与实践",
 			Description: "以马王堆帛书本《老子》为基础，逐章理解道、德、无为、不争与柔弱等核心思想。九幕 81 章不止于文本解释，而是将古典哲学带回当代人的选择、关系与自我安顿。",
@@ -671,7 +681,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 18, // 会员隐藏课压轴（新课递增后顺延）
+			FreeTier: 1, Sort: 19, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 课程保留名单采用物理清理：不再软退役（enabled=false 保留行+进度），
