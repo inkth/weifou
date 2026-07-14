@@ -1,14 +1,28 @@
-const { request, clearToken } = require('../../utils/request');
+const { request } = require('../../utils/request');
 const { ensureLogin } = require('../../utils/auth');
 const { loadEntries, entryVisible } = require('../../utils/entries');
+const { learningSummary } = require('../../utils/agent');
+const { status: membershipStatus } = require('../../utils/membership');
 
-// 我的 = 管自己：我的分身（资产 / 收益入口）+ 会员 + 付费往来 + 设置 + 合规位。全内向，天然非社交。
+function expiryText(value) {
+  if (!value) return '';
+  const parts = String(value).slice(0, 10).split('-');
+  if (parts.length !== 3) return '';
+  return `${Number(parts[0])}年${Number(parts[1])}月${Number(parts[2])}日`;
+}
+
+// 我的 = 学习控制中心：继续学习 + 成长摘要 + 会员状态 + 账户服务。
 Page({
   data: {
     loading: true,
     profileId: null,
     realName: '',
-    memberEntry: true,
+    nameInitial: '我',
+    showMembership: true,
+    isMember: false,
+    expiresText: '',
+    summary: { streak: { days: 0, best: 0, todayDone: false }, mastered: 0, learningCourses: 0 },
+    currentCourse: null,
     statusBarH: 20, // 自定义导航：顶部留出状态栏高度，去掉原生白色标题栏
   },
 
@@ -31,11 +45,22 @@ Page({
     try {
       await ensureLogin();
       await loadEntries();
-      const me = await request({ url: '/user/me' }).catch(() => ({}));
+      const [me, summary, membership] = await Promise.all([
+        request({ url: '/user/me' }).catch(() => ({})),
+        learningSummary().catch(() => null),
+        membershipStatus().catch(() => ({ isMember: false })),
+      ]);
+      const isMember = !!membership.isMember;
+      const memberEntry = entryVisible('membership', true);
       this.setData({
         profileId: me.profileId || null,
         realName: me.realName || '',
-        memberEntry: entryVisible('membership', true),
+        nameInitial: (me.realName || '我').trim().slice(0, 1) || '我',
+        showMembership: memberEntry || isMember,
+        isMember,
+        expiresText: expiryText(membership.expiresAt),
+        summary: summary || this.data.summary,
+        currentCourse: (summary && summary.current) || null,
         loading: false,
       });
     } catch (e) {
@@ -44,44 +69,28 @@ Page({
   },
 
   goMyProfile() {
-    if (!this.data.profileId) return;
+    if (!this.data.profileId) {
+      this.goCardEditor();
+      return;
+    }
     wx.navigateTo({ url: `/pages/profile/index?id=${this.data.profileId}&mine=1` });
   },
-  // 创建与编辑统一走对话式 onboarding（已无表单页）
-  goOnboarding() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
+  continueLearning() {
+    const course = this.data.currentCourse;
+    if (!course || !course.id) {
+      this.goSkills();
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/agent-chat/index?id=${course.id}&name=${encodeURIComponent(course.name || '')}&accent=${encodeURIComponent(course.accent || '')}&icon=${encodeURIComponent(course.icon || '')}&game=1`,
+    });
+  },
+  goSkills() { wx.switchTab({ url: '/pages/explore/index' }); },
+  goCardEditor() { wx.navigateTo({ url: '/pages/card-editor/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
   // 名片夹：我交换过名片的人（点开直接问对方分身）
   goConnections() { wx.navigateTo({ url: '/pages/connections/index' }); },
-  // 记忆管理 = 分身记住的关于你的资料（KnowledgeItem），对外回答时会用上
-  goMemory() { wx.navigateTo({ url: '/pages/memory/index' }); },
   goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },
-
-  logout() {
-    wx.showModal({
-      title: '退出登录',
-      content: '确定要退出当前账号吗？',
-      success: (r) => {
-        if (r.confirm) {
-          clearToken();
-          wx.reLaunch({ url: '/pages/index/index' });
-        }
-      },
-    });
-  },
-
-  // 预览：主人看看自己这张活名片被问的样子
-  goQabox() {
-    if (!this.data.profileId) return;
-    wx.navigateTo({
-      url: `/pages/qabox/index?profileId=${this.data.profileId}&realName=${encodeURIComponent(this.data.realName || '')}`,
-    });
-  },
-
-  // 生成海报：可贴到朋友圈 / 线下的活名片物料（含二维码）
-  goPoster() {
-    if (!this.data.profileId) return;
-    wx.navigateTo({ url: `/pages/poster/index?profileId=${this.data.profileId}` });
-  },
 
   // 分享活名片：落到 chat（会说话的你）—— 别人点开能直接问你、和你聊，而不只是看一段简介。
   onShareAppMessage() {
@@ -89,7 +98,7 @@ Page({
     const name = this.data.realName || '';
     return {
       title: name ? `这是 ${name} 的 AI 分身，有事直接问 TA 👋` : '这是我的 AI 分身，有事直接问 TA 👋',
-      path: id ? `/pages/chat/index?profileId=${id}` : '/pages/index/index',
+      path: id ? `/pages/chat/index?profileId=${id}` : '/pages/discover/index',
     };
   },
 });

@@ -8,8 +8,8 @@
 // 防刷：
 //   - 每个被邀人一生只能绑定一位推荐人（先到先得），且绑定时必须尚无已支付会员订单；
 //   - 自邀（同账号 / 同 unionid）拒绝；
-//   - 推荐人奖励过退款窗口（7 天）后由定时任务发放，期间退款则作废；
-//   - 被邀人加赠随首单立即发（退款时整单会员时长本身即失去意义，不单独追回）。
+//   - 推荐人奖励经过 7 天观察期后由定时任务发放；
+//   - 被邀人加赠随首单立即发。
 package referral
 
 import (
@@ -25,8 +25,8 @@ import (
 	"weifou-server/internal/models"
 )
 
-// RefundWindowDays 推荐人奖励的解锁等待期（覆盖退款窗口）。
-const RefundWindowDays = 7
+// RewardHoldDays 推荐人奖励的解锁观察期。
+const RewardHoldDays = 7
 
 // planReward 各套餐的双边奖励天数（按 plan slug 配置；未列出的套餐不产生奖励）。
 type planReward struct {
@@ -153,7 +153,7 @@ func (h *Handler) OnMembershipPaid(order *models.Order) {
 	if h.db.First(&binding, "invitee_user_id = ?", inviteeID).Error != nil {
 		return // 非受邀用户
 	}
-	// 每个被邀人一生只产生一笔奖励（防同人反复首购刷奖，退款重买也不再触发）。
+	// 每个被邀人一生只产生一笔奖励，防止同一用户反复购买刷奖。
 	var existed int64
 	h.db.Model(&models.ReferralReward{}).Where("invitee_user_id = ?", inviteeID).Count(&existed)
 	if existed > 0 {
@@ -175,7 +175,7 @@ func (h *Handler) OnMembershipPaid(order *models.Order) {
 		ID: idgen.New(), OrderID: order.ID,
 		InviterUserID: binding.InviterUserID, InviteeUserID: inviteeID,
 		PlanSlug: plan.Slug, InviterDays: rw.InviterDays, InviteeDays: rw.InviteeDays,
-		Status: models.ReferralRewardPending, UnlockAt: paidAt.AddDate(0, 0, RefundWindowDays),
+		Status: models.ReferralRewardPending, UnlockAt: paidAt.AddDate(0, 0, RewardHoldDays),
 	}
 	if err := h.db.Create(&reward).Error; err != nil {
 		return // 撞 OrderID 唯一索引 = 回调重放，幂等退出
@@ -187,24 +187,13 @@ func (h *Handler) OnMembershipPaid(order *models.Order) {
 		binding.InviterUserID, inviteeID, plan.Slug, rw.InviteeDays, rw.InviterDays)
 }
 
-// GrantDueRewards 发放已过退款窗口的推荐人奖励（定时任务调用）。
-// 订单已退款（处理中/成功）则作废该笔奖励。
+// GrantDueRewards 发放已过观察期的推荐人奖励（定时任务调用）。
 func (h *Handler) GrantDueRewards() {
 	var due []models.ReferralReward
 	h.db.Where("status = ? AND unlock_at <= ?", models.ReferralRewardPending, time.Now()).
 		Limit(100).Find(&due)
 	for i := range due {
 		r := due[i]
-		var refunded int64
-		h.db.Model(&models.Refund{}).
-			Where("order_id = ? AND status IN ?", r.OrderID, []string{models.RefundProcessing, models.RefundSuccess}).
-			Count(&refunded)
-		if refunded > 0 {
-			h.db.Model(&models.ReferralReward{}).Where("id = ? AND status = ?", r.ID, models.ReferralRewardPending).
-				Update("status", models.ReferralRewardCancelled)
-			log.Printf("[referral] 订单已退款，奖励作废 reward=%s order=%s", r.ID, r.OrderID)
-			continue
-		}
 		// 先占坑再发放：状态条件更新保证并发/重启下只发一次。
 		res := h.db.Model(&models.ReferralReward{}).Where("id = ? AND status = ?", r.ID, models.ReferralRewardPending).
 			Updates(map[string]interface{}{"status": models.ReferralRewardGranted, "granted_at": time.Now()})

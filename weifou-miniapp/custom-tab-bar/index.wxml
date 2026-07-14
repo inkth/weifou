@@ -10,5 +10,6 @@
       <view class="ic ic-{{item.icon}} tab-ic"></view>
     </view>
     <view class="tab-label">{{item.text}}</view>
+    <view class="active-dot"></view>
   </view>
 </view>

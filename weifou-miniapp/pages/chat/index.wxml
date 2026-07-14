@@ -44,22 +44,18 @@
         <view class="bubble">{{item.content}}</view>
       </view>
 
-      <!-- 裂变线索降为一行，不打断对话。 -->
-      <view wx:if="{{item.action === 'create-own' || item.action === 'create-own-strong'}}" id="msg-{{index}}" class="sys-link own-hook" bindtap="goCreateOwn">
-        我也建一个 AI 分身 ›
-      </view>
     </block>
   </scroll-view>
 
   <!-- 选项区：开场动画结束后引导问题淡入；行动入口在首轮回答后才出现，开场聚焦"开始聊" -->
   <view class="choices {{startersRevealed ? 'revealed' : ''}}" wx:if="{{!pending && startersRevealed}}">
     <view wx:if="{{starters.length && !answeredOnce}}" class="choices-hint muted">你可以这样开始 ↓</view>
-    <!-- 开场引导问题：本轮有成交阶梯选项时让位（更贴上下文），下一轮无选项时回归 -->
+    <!-- 开场引导问题：本轮有上下文选项时让位，下一轮无选项时回归 -->
     <block wx:if="{{!options.length}}">
       <view class="chip q note-{{index % 3}}" wx:for="{{starters}}" wx:key="*this" bindtap="pickStarter" data-q="{{item}}">{{item}}</view>
     </block>
 
-    <!-- 成交阶梯选项：每轮回答后分身现编的下一步，点选即发（全程点选，无自由输入；换不到就「换一批」） -->
+    <!-- 每轮回答后分身现编的下一步，点选即发（换不到就「换一批」） -->
     <view class="chip q note-{{index % 3}}" wx:for="{{options}}" wx:key="*this" bindtap="pickOption" data-q="{{item}}">{{item}}</view>
 
     <!-- 每次只给一个最相关的关系行动；其他资料从顶部身份头进入。 -->
@@ -116,7 +112,7 @@
     </view>
   </view>
 
-  <!-- 成交庆祝浮层：约/留话达成时弹一次（全屏彩带 + 大字弹簧），2.4s 自动收起 -->
+  <!-- 行动完成反馈（全屏彩带 + 大字弹簧），2.4s 自动收起 -->
   <view wx:if="{{celebrate}}" class="celebrate">
     <view class="confetti">
       <view class="cf cf-1"></view><view class="cf cf-2"></view><view class="cf cf-3"></view>

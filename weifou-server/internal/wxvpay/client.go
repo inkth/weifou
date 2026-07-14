@@ -1,23 +1,21 @@
 // Package wxvpay 实现微信小程序「虚拟支付」(wx.requestVirtualPayment) 的服务端配合逻辑。
 // 纯标准库自实现，风格对齐 internal/wxpay（不引第三方支付库，便于审计）。
 //
-// 为什么独立成一套（而非扩展 wxpay）：虚拟支付与微信支付 V3 是两个体系——
-//   微信支付 V3：商户号 + 商户证书 + prepay_id + profitsharing 分账；
-//                用于「真人服务」(consult) 与「赠予」(tip)，iOS 对真实服务豁免 IAP。
-//   虚拟支付   ：米大师 offerId + AppKey + 用户 session_key 双签名；iOS 自动走苹果 IAP。
-//                用于「虚拟商品」(会员)；2026-04 起微信强制此类必须走虚拟支付，
-//                旧 JSAPI / 外部 H5 判违规。不可分账（故真人 consult 不迁此通道）。
+// 为什么独立成一套（而非扩展 wxpay）：虚拟支付与微信支付 V3 是两个体系。
+// 虚拟支付使用米大师 offerId、AppKey 与用户 session_key 双签名，承载会员虚拟权益。
 //
 // 签名（对齐官方虚拟支付签名规则）：
-//   前端拉起 ：paySig    = HMAC_SHA256(AppKey,     "requestVirtualPayment&" + signData)
-//             signature = HMAC_SHA256(sessionKey, signData)
-//   服务端接口：pay_sig   = HMAC_SHA256(AppKey,     uri + "&" + body)
-//             signature = HMAC_SHA256(sessionKey, body)
+//
+//	前端拉起 ：paySig    = HMAC_SHA256(AppKey,     "requestVirtualPayment&" + signData)
+//	          signature = HMAC_SHA256(sessionKey, signData)
+//	服务端接口：pay_sig   = HMAC_SHA256(AppKey,     uri + "&" + body)
+//	          signature = HMAC_SHA256(sessionKey, body)
 //
 // ⚠️ 落地前需用官方文档 / 开通后控制台校准：
-//   ① signData 的键名与序列化要求；② xpay 各接口确切 path；
-//   ③ productId 来自米大师后台「上传 / 发布商品」；
-//   ④ 发货回调走小程序「消息推送」(xpay_goods_deliver_notify，EncodingAESKey 加密)。
+//
+//	① signData 的键名与序列化要求；② xpay 各接口确切 path；
+//	③ productId 来自米大师后台「上传 / 发布商品」；
+//	④ 发货回调走小程序「消息推送」(xpay_goods_deliver_notify，EncodingAESKey 加密)。
 package wxvpay
 
 import (

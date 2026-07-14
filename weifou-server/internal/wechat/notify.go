@@ -3,7 +3,6 @@ package wechat
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,13 +22,12 @@ type SubscribeService struct {
 	hc              *http.Client
 	newQuestionTmpl string
 	answeredTmpl    string
-	refundedTmpl    string
 	leadTmpl        string
 	learnRemindTmpl string
 	miniState       string
 }
 
-func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refundedTmpl, leadTmpl, learnRemindTmpl, miniState string) *SubscribeService {
+func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, leadTmpl, learnRemindTmpl, miniState string) *SubscribeService {
 	if miniState == "" {
 		miniState = "formal"
 	}
@@ -38,7 +36,6 @@ func NewSubscribeService(login *LoginClient, newQuestionTmpl, answeredTmpl, refu
 		hc:              &http.Client{Timeout: 8 * time.Second},
 		newQuestionTmpl: newQuestionTmpl,
 		answeredTmpl:    answeredTmpl,
-		refundedTmpl:    refundedTmpl,
 		leadTmpl:        leadTmpl,
 		learnRemindTmpl: learnRemindTmpl,
 		miniState:       miniState,
@@ -94,8 +91,6 @@ func (s *SubscribeService) send(openid, templateID, page string, data map[string
 	}
 }
 
-func yuan(fen int) string { return fmt.Sprintf("%.2f", float64(fen)/100) + "元" }
-
 // clip 截断到 n 个字符（thing 类型上限 20）。
 func clip(s string, n int) string {
 	r := []rune(s)
@@ -108,13 +103,12 @@ func clip(s string, n int) string {
 	return string(r[:n-1]) + "…"
 }
 
-// NotifyNewQuestion 通知主人「有新的付费提问」。
-// 模板字段顺序：thing1=提问内容  amount2=金额  time3=回答截止时间
-func (s *SubscribeService) NotifyNewQuestion(openid, question string, amountFen int, deadline time.Time, page string) {
+// NotifyNewQuestion 通知主人「有新的提问」。
+// 模板字段顺序：thing1=提问内容  time2=提问时间
+func (s *SubscribeService) NotifyNewQuestion(openid, question string, askedAt time.Time, page string) {
 	s.send(openid, s.newQuestionTmpl, page, map[string]string{
-		"thing1":  clip(question, 20),
-		"amount2": yuan(amountFen),
-		"time3":   deadline.Format("2006-01-02 15:04"),
+		"thing1": clip(question, 20),
+		"time2":  askedAt.Format("2006-01-02 15:04"),
 	})
 }
 
@@ -128,17 +122,7 @@ func (s *SubscribeService) NotifyAnswered(openid, hostName, answer string, answe
 	})
 }
 
-// NotifyRefunded 通知访客「提问已退款」。
-// 模板字段顺序：thing1=提问内容  amount2=退款金额  thing3=退款原因
-func (s *SubscribeService) NotifyRefunded(openid, question string, amountFen int, reason, page string) {
-	s.send(openid, s.refundedTmpl, page, map[string]string{
-		"thing1":  clip(question, 20),
-		"amount2": yuan(amountFen),
-		"thing3":  clip(reason, 20),
-	})
-}
-
-// NotifyNewLead 通知主人「有新访客线索」。免费线索是比付费提问更高频的"有人找你"信号。
+// NotifyNewLead 通知主人「有新访客线索」。
 // 模板字段顺序：thing1=留言内容  thing2=访客  time3=留言时间
 func (s *SubscribeService) NotifyNewLead(openid, note, visitorName string, at time.Time, page string) {
 	s.send(openid, s.leadTmpl, page, map[string]string{

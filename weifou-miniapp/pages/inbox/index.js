@@ -117,7 +117,7 @@ Page({
     const id = this.data.profileId;
     return {
       title: '匿名问问我的 AI 分身 👀',
-      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/index/index',
+      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/discover/index',
     };
   },
 });

@@ -275,11 +275,10 @@ func (h *Handler) publicByID(profileID string) (gin.H, error) {
 	}, nil
 }
 
-// trustFor 聚合社会证明信号（全部派生自既有交易数据，无新表/无埋点）：
-// 付费咨询过 TA 的人数、已答提问数、平均回答时长、答复率。
-// 冷启动数字过小时由前端隐藏，仅保留"答不上全额退"保障文案。
+// trustFor 聚合社会证明信号（全部派生自免费问答数据，无新表/无埋点）：
+// 获得本人回答的访客人数、已答提问数、平均回答时长、答复率。
 func (h *Handler) trustFor(profileID string) gin.H {
-	// 已答付费提问的提问人数（去重）
+	// 获得本人回答的访客人数（去重）
 	var answeredAskers int64
 	h.db.Model(&models.AsyncQuestion{}).
 		Where("profile_id = ? AND status = ?", profileID, models.AsyncAnswered).
@@ -304,10 +303,10 @@ func (h *Handler) trustFor(profileID string) gin.H {
 	}
 
 	return gin.H{
-		"consultedPeople": answeredAskers,
-		"answeredCount":   answeredCount,
-		"avgAnswerHours":  math.Round(avgHours*10) / 10,
-		"repliedRate":     repliedRate,
+		"answeredPeople": answeredAskers,
+		"answeredCount":  answeredCount,
+		"avgAnswerHours": math.Round(avgHours*10) / 10,
+		"repliedRate":    repliedRate,
 	}
 }
 

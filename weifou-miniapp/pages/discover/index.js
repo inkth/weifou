@@ -24,19 +24,9 @@ const FALLBACK = {
     profileId: '',
     avatarUrl: '',
     avatarStyle: DEFAULT_PRESET_ID,
-    cardNo: '0001',
     stats: null,
   },
 };
-
-function greet() {
-  const h = new Date().getHours();
-  if (h < 6) return '夜深了';
-  if (h < 11) return '上午好';
-  if (h < 14) return '中午好';
-  if (h < 18) return '下午好';
-  return '晚上好';
-}
 
 function identityLine(profile) {
   return [profile.title, profile.company, profile.city].filter(Boolean).join(' · ') || '一张会说话的 AI 名片';
@@ -60,13 +50,6 @@ function cardStage(avatarStyle, profileId) {
   };
 }
 
-function cardNo(profileId) {
-  const source = String(profileId || '1');
-  let sum = 0;
-  for (let i = 0; i < source.length; i++) sum = (sum * 31 + source.charCodeAt(i)) % 10000;
-  return (`0000${sum || 1}`).slice(-4);
-}
-
 const PORTRAIT_OPTIONS = PRESETS.map((p) => ({
   id: p.id,
   name: p.name,
@@ -77,7 +60,6 @@ const PORTRAIT_OPTIONS = PRESETS.map((p) => ({
 Page({
   data: {
     statusBarH: 20,
-    greeting: '你好',
     chief: FALLBACK.chief,
     loading: true,
     loaded: false,
@@ -106,7 +88,6 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
-    this.setData({ greeting: greet() });
     this._loadCard();
   },
 
@@ -156,7 +137,6 @@ Page({
           profileId: primary.profileId,
           hasProfile: true,
           online: true,
-          cardNo: cardNo(primary.profileId),
         },
         loading: false,
         loaded: true,
@@ -182,7 +162,6 @@ Page({
       profileId: primary.profileId,
       avatarUrl: profile.avatarUrl || '',
       avatarStyle: profile.avatarStyle || DEFAULT_PRESET_ID,
-      cardNo: cardNo(primary.profileId),
       stats: stats ? [
         { n: stats.pv || 0, label: '浏览' },
         { n: stats.uv || 0, label: '访客' },

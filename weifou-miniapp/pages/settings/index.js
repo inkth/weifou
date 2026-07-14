@@ -50,7 +50,7 @@ Page({
   },
 
   goEdit() {
-    wx.navigateTo({ url: '/pages/onboarding/index' });
+    wx.navigateTo({ url: '/pages/card-editor/index' });
   },
 
   async regenerate() {
@@ -77,7 +77,7 @@ Page({
       success: (r) => {
         if (r.confirm) {
           clearToken();
-          wx.reLaunch({ url: '/pages/index/index' });
+          wx.reLaunch({ url: '/pages/discover/index' });
         }
       },
     });

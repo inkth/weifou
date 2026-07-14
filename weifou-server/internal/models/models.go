@@ -225,8 +225,6 @@ const (
 
 	OrderPending   = "pending"
 	OrderPaid      = "paid"
-	OrderRefunding = "refunding"
-	OrderRefunded  = "refunded"
 	OrderClosed    = "closed"
 )
 
@@ -236,18 +234,11 @@ type Order struct {
 	Type          string     `gorm:"size:16" json:"type"`
 	Status        string     `gorm:"size:16;default:pending;index:idx_order_status_time" json:"status"`
 	Amount        int        `json:"amount"`
-	ProfileID     string     `gorm:"size:32" json:"profileId"`
 	PayerOpenid   string     `gorm:"size:64;index:idx_order_payer" json:"payerOpenid"`
 	PayerUserID   *string    `gorm:"size:32" json:"payerUserId,omitempty"`
-	PayeeUserID   string     `gorm:"size:32;index:idx_order_payee" json:"payeeUserId"`
-	DurationMin   *int       `json:"durationMin,omitempty"`
-	SlotID        *string    `gorm:"uniqueIndex;size:32" json:"slotId,omitempty"`
-	ScheduledAt   *time.Time `json:"scheduledAt,omitempty"`
-	Message       *string    `gorm:"type:text" json:"message,omitempty"`
-	Source        string     `gorm:"size:16;default:profile;index" json:"source"` // 成交来源：profile / chat_card
-	AgentID       *string    `gorm:"size:32" json:"agentId,omitempty"`            // OrderAgent：购买的工具 Agent
-	PlanID        *string    `gorm:"size:32" json:"planId,omitempty"`             // OrderMembership：购买的会员套餐
-	Platform      string     `gorm:"size:16" json:"platform"`                     // 下单端 ios/android/devtools（iOS 虚拟支付红线分流/兜底）
+	AgentID       *string    `gorm:"size:32" json:"agentId,omitempty"` // OrderAgent：购买的工具 Agent
+	PlanID        *string    `gorm:"size:32" json:"planId,omitempty"`  // OrderMembership：购买的会员套餐
+	Platform      string     `gorm:"size:16" json:"platform"`          // 下单端 ios/android/devtools（iOS 虚拟支付红线分流/兜底）
 	PrepayID      *string    `gorm:"size:128" json:"prepayId,omitempty"`
 	TransactionID *string    `gorm:"size:64" json:"transactionId,omitempty"`
 	PaidAt        *time.Time `json:"paidAt,omitempty"`
@@ -295,29 +286,9 @@ type AsyncQuestion struct {
 
 func (AsyncQuestion) TableName() string { return "async_questions" }
 
-const (
-	RefundProcessing = "processing"
-	RefundSuccess    = "success"
-	RefundFail       = "fail"
-)
-
-type Refund struct {
-	ID          string    `gorm:"primaryKey;size:32" json:"id"`
-	OrderID     string    `gorm:"size:32;index" json:"orderId"`
-	OutRefundNo string    `gorm:"uniqueIndex;size:64" json:"outRefundNo"`
-	Amount      int       `json:"amount"`
-	Reason      *string   `gorm:"size:128" json:"reason,omitempty"`
-	Status      string    `gorm:"size:16;default:processing" json:"status"`
-	RefundID    *string   `gorm:"size:64" json:"refundId,omitempty"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-func (Refund) TableName() string { return "refunds" }
-
 // ========== AI 工具 Agent（平台预设、付费使用的虚拟商品；与"代表真人的对外助理"并存） ==========
 //
-// 与对外助理的本质差异：ToolAgent 不绑定任何真人 Profile，平台是卖家（无真人 payee、不分账）。
+// 与对外助理的本质差异：ToolAgent 不绑定任何真人 Profile，平台是卖家。
 // 卖的是 AI 生成内容=虚拟商品，受 iOS 虚拟支付红线约束（仅 Android 端可购买，见 clientcfg）。
 
 const (
@@ -488,7 +459,7 @@ type LearnReminder struct {
 
 func (LearnReminder) TableName() string { return "learn_reminders" }
 
-// ========== 会员（一价解锁全部工具 Agent；虚拟商品，平台自营、不分账） ==========
+// ========== 会员（一价解锁全部工具 Agent；虚拟商品，平台自营） ==========
 
 // Membership 账号级会员状态（一人一条）。ExpiresAt 之前为有效会员，工具 Agent 畅用。
 // 渠道无关：微信支付 / 将来的 H5 / 支付宝 都往这条状态叠加（续费顺延）。
@@ -533,7 +504,7 @@ func (MembershipLead) TableName() string { return "membership_leads" }
 // ========== 好友邀请返奖（推荐好友开通会员，双边送会员时长） ==========
 //
 // 合规边界：奖励只挂「好友完成支付」不挂分享动作（微信利诱分享红线）；
-// 只做一级（推荐人→好友）、只送时长不返现金；奖励过退款窗口后由定时任务发放。
+// 只做一级（推荐人→好友）、只送时长不返现金；奖励过观察期后由定时任务发放。
 
 // ReferralBinding 邀请绑定：被邀人首次通过邀请链接进入会员页时写入（每人只绑一次，先到先得）。
 // 只在被邀人尚无已支付会员订单时允许绑定；奖励发放后保留作历史归因。
@@ -547,9 +518,8 @@ type ReferralBinding struct {
 func (ReferralBinding) TableName() string { return "referral_bindings" }
 
 const (
-	ReferralRewardPending   = "pending"   // 推荐人奖励等退款窗口结束
-	ReferralRewardGranted   = "granted"   // 已发放
-	ReferralRewardCancelled = "cancelled" // 订单退款，奖励作废
+	ReferralRewardPending   = "pending" // 推荐人奖励等待观察期结束
+	ReferralRewardGranted   = "granted" // 已发放
 )
 
 // ReferralReward 一笔成功邀请的奖励账目（每个被邀人一生只产生一条）。
@@ -579,7 +549,6 @@ func AllModels() []interface{} {
 		&Visit{}, &Event{}, &ChatSession{}, &ChatMessage{},
 		&Order{},
 		&AsyncQuestion{},
-		&Refund{},
 		&ToolAgent{}, &AgentEntitlement{}, &AgentPin{}, &AgentSession{}, &AgentMessage{}, &AgentSkill{},
 		&AgentConcept{}, &UserConcept{}, &LearnStreak{}, &LearnReminder{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},

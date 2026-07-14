@@ -34,22 +34,12 @@ WX_MOBILE_APPSECRET=xxxxxxxx        # 移动应用 AppSecret
 - `applicationId` 须与开放平台移动应用登记的**包名**一致
 - 签名证书的 **MD5/SHA** 须登记到开放平台（debug/release 各一套）
 
-## M3 · 微信支付（fluwx pay）— 待商户号绑定移动应用 AppID
+## M3 · 会员支付
 
-- 商户号（现小程序在用）需在微信支付后台**绑定移动应用 AppID**，开通 APP 支付
-- 后端 `internal/wxpay` 需新增 `/v3/pay/transactions/app` 下单与 App 调起签名（M3 实现）
+- 会员属于虚拟权益，iOS 与 Android 分别接入平台允许的支付方式。
+- 后端 `/api/config/entries` 统一控制未配置支付渠道时的入口可见性。
 
-## M4 · TRTC 与权限 — 待集成 tencent_rtc_sdk
+## M4 · 上架
 
-### iOS（Info.plist）
-- `NSCameraUsageDescription` = 用于音视频咨询通话
-- `NSMicrophoneUsageDescription` = 用于音视频咨询通话
-- 如需锁屏续话：Background Modes 勾选 `audio`
-- `NSPhotoLibraryAddUsageDescription` = 保存分享海报（poster 页）
-
-### Android（android/app/src/main/AndroidManifest.xml）
-- `CAMERA`、`RECORD_AUDIO`、`MODIFY_AUDIO_SETTINGS`、`INTERNET`、`BLUETOOTH_CONNECT`
-
-## M5 · 上架
-- iOS Privacy Manifest（含 fluwx / TRTC 第三方 SDK 域名与数据类型）
-- 打赏入口 iOS 端隐藏（已由 `core/platform/entry_gate.dart` 控制，后端 `X-Platform` 兜底）
+- iOS Privacy Manifest 应覆盖实际使用的登录、网络和分享 SDK。
+- `NSPhotoLibraryAddUsageDescription` 用于保存分享海报。

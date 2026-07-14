@@ -67,7 +67,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		appLoginClient = wechat.NewLoginClient(cfg.WxMobileAppID, cfg.WxMobileSecret)
 	}
 	security := wechat.NewSecurityService(loginClient)
-	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeRefundedTmpl, cfg.SubscribeLeadTmpl, cfg.SubscribeLearnRemindTmpl, cfg.SubscribeMiniState)
+	subscribe := wechat.NewSubscribeService(loginClient, cfg.SubscribeNewQuestionTmpl, cfg.SubscribeAnsweredTmpl, cfg.SubscribeLeadTmpl, cfg.SubscribeLearnRemindTmpl, cfg.SubscribeMiniState)
 	// 学习提醒承诺发送循环（模板未配时内部直接 no-op 不启动）
 	toolagent.StartLearnRemindLoop(db, subscribe)
 	ds := deepseek.New(cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel)
@@ -119,7 +119,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH:  clientcfg.NewHandler(vpayClient.Ready()),
 		uploadH:     upload.NewHandler(uploadStore, publicHost+"/api/uploads", cfg.JWTSecret),
-		scheduler:   tasks.NewScheduler(db, paymentH, referralH, cfg.OrderTimeoutMin, cfg.CallGraceMin),
+		scheduler:   tasks.NewScheduler(db, paymentH, referralH, cfg.OrderTimeoutMin),
 	}
 	return a
 }

@@ -6,6 +6,7 @@ page { background: var(--bg); }
 .crown { font-size: 72rpx; color: var(--accent-strong); }
 .h-title { margin-top: 10rpx; font-size: 46rpx; font-weight: 800; color: var(--accent-ink); letter-spacing: -0.5rpx; }
 .h-sub { margin-top: 8rpx; font-size: 27rpx; color: var(--accent-deep); }
+.h-note { margin-top: 12rpx; font-size: 21rpx; font-weight: 600; color: var(--accent-deep); letter-spacing: 0.5rpx; opacity: 0.82; }
 
 .state { padding: 100rpx 0; text-align: center; color: var(--sub); font-size: 28rpx; }
 

@@ -39,11 +39,12 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/agents", auth, httpx.Handle(h.list))
 	rg.GET("/agents/mine", auth, httpx.Handle(h.mine))
 	rg.GET("/agents/detail/:id", auth, httpx.Handle(h.detail))
-	rg.GET("/agents/sessions/:id", auth, httpx.Handle(h.sessionList)) // :id = agentId → 我的历史会话
-	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))    // :id = sessionId → 该会话消息
-	rg.GET("/agents/skill/:id", auth, httpx.Handle(h.skill))          // :id = agentId → 我在该学习型 Agent 的三维段位
-	rg.GET("/agents/concepts/:id", auth, httpx.Handle(h.concepts))    // :id = agentId → 我在该概念型 Agent 的点亮进度
-	rg.GET("/agents/streak", auth, httpx.Handle(h.streakInfo))        // 连续学习天数（全局一条）
+	rg.GET("/agents/sessions/:id", auth, httpx.Handle(h.sessionList))         // :id = agentId → 我的历史会话
+	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))            // :id = sessionId → 该会话消息
+	rg.GET("/agents/skill/:id", auth, httpx.Handle(h.skill))                  // :id = agentId → 我在该学习型 Agent 的三维段位
+	rg.GET("/agents/concepts/:id", auth, httpx.Handle(h.concepts))            // :id = agentId → 我在该概念型 Agent 的点亮进度
+	rg.GET("/agents/streak", auth, httpx.Handle(h.streakInfo))                // 连续学习天数（全局一条）
+	rg.GET("/agents/learning-summary", auth, httpx.Handle(h.learningSummary)) // 我的页：最近课程 + 全局成长摘要
 	rg.POST("/agents/:id/chat", auth, httpx.Handle(h.chat))
 	rg.POST("/agents/:id/remind", auth, httpx.Handle(h.remind)) // 学习提醒承诺（订阅消息授权后落账）
 }
@@ -510,152 +511,152 @@ func Seed(db *gorm.DB) {
 	}
 	presets := []models.ToolAgent{
 		{
-			Slug: "spoken-english", Name: "连接世界", Subject: "英语反应力", Guide: "应声·场景陪练",
-			Tagline:     "32 个真实场合，听懂、选对、接得住",
-			Description: "AI 时代，语言的价值不只是翻译，而是理解语境、即时回应并与更大的世界建立连接。32 个真实场景，从日常办事、旅行应急到职场协作、商务实战，每幕末一场全英模拟面，全程点选练判断与迁移。",
+			Slug: "spoken-english", Name: "真实场景英语沟通", Subject: "连接世界", Guide: "应声·场景陪练",
+			Tagline:     "在真实语境中训练听懂、回应与协作",
+			Description: "从日常生活、旅行应急到职场与商务，在 32 个真实场景中系统训练听辨、即时回应与跨文化沟通能力。课程采用情境任务、表达判断和迁移检验，让英语从“知道怎么说”变成“现场接得住”。",
 			Category:    models.AgentCatEducation, Icon: "🗣️", Accent: "#FB923C",
-			Greeting:     "Hi，我是场景陪练应声，陪你开始「连接世界」。这门课练一件事——英语场景一来，你知道怎么接。32 关分四幕：日常办事、旅行应急、职场协作、商务实战。每关先从三句英文里裁决最自然有效的一句，再换信息或加压迁移；每幕末一场「全英模拟面」——没有中文旁白，先过听力门，再把金句自己拼出来。点「开始这一关」，先去咖啡馆。",
+			Greeting:     "Hi，我是场景陪练应声，陪你开始「真实场景英语沟通」。这门课练一件事——英语场景一来，你知道怎么接。32 关分四幕：日常办事、旅行应急、职场协作、商务实战。每关先从三句英文里裁决最自然有效的一句，再换信息或加压迁移；每幕末一场「全英模拟面」——没有中文旁白，先过听力门，再把金句自己拼出来。点「开始这一关」，先去咖啡馆。",
 			SystemPrompt: buildConceptPrompt(spokenEnglishPrompt, englishScenarios),
 			Assess:       false,
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 1, // 第一幕日常办事免费，旅行/职场/商务为会员内容
 		},
 		{
-			Slug: "learn-psychology", Name: "看见人心", Subject: "实用心理", Guide: "知心·心理向导",
-			Tagline:     "看清情绪、经营关系、识破套路",
-			Description: "觉察，是 AI 时代仍然稀缺的人类基本功。看清自己、经营关系、看穿套路——心理向导知心陪你走过三幕 80 关，把心理学用到每天真实发生的事里。",
+			Slug: "learn-psychology", Name: "应用心理学", Subject: "看见人心", Guide: "知心·心理向导",
+			Tagline:     "理解自我、关系与社会影响",
+			Description: "围绕情绪、人格、关系与社会影响，理解个体行为背后的心理机制。三幕 80 关以日常情境和综合分析为核心，帮助你把心理学用于认识自己、经营关系与识别影响。",
 			Category:    models.AgentCatEducation, Icon: "🧠", Accent: "#EC4899",
-			Greeting:     "嗨，我是心理向导知心，陪你开始「看见人心」。三幕 80 关：看清自己、经营关系、看穿套路，每章结尾一个综合关。走法：每关一个贴身场景，你挑最像自己的答，过了检验关点亮才算真懂。点「开始这一关」，先看看大脑的出厂设置。",
+			Greeting:     "嗨，我是心理向导知心，陪你开始「应用心理学」。三幕 80 关：看清自己、经营关系、看穿套路，每章结尾一个综合关。走法：每关一个贴身场景，你挑最像自己的答，过了检验关点亮才算真懂。点「开始这一关」，先看看大脑的出厂设置。",
 			SystemPrompt: buildConceptPrompt(psychologyPersona+"\n\n"+conceptTeachingMethod, psychologyConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 4, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-logic", Name: "独立判断", Subject: "逻辑思辨", Guide: "明辨·逻辑侦探",
-			Tagline:     "拆话术、辨数字、断因果",
-			Description: "答案随手可得，独立判断反而更珍贵。从拆论证、识谬误到读数字、查信源、断因果，逻辑侦探明辨带你六幕闯关，每幕结尾一场 Boss 找茬战。",
+			Slug: "learn-logic", Name: "批判性思维与论证", Subject: "独立判断", Guide: "明辨·逻辑侦探",
+			Tagline:     "分析论证、辨别证据、形成可靠判断",
+			Description: "系统训练论证分析、谬误识别、数据解读、信源核验与因果推理。六幕 68 关从拆解一个说法开始，逐步建立面对复杂信息时独立、审慎且可解释的判断能力。",
 			Category:    models.AgentCatEducation, Icon: "🧩", Accent: "#0EA5E9",
-			Greeting:     "我是逻辑侦探明辨，陪你练成「独立判断」。六幕 68 关：拆论证、识谬误、读数字、查信源、断因果、立论辩护，每幕结尾一场 Boss 找茬战。规矩：每关给你一个说法或场面，你来判断哪里站得住、哪里塌了——判对才点亮。点「开始这一关」，上解剖台。",
+			Greeting:     "我是逻辑侦探明辨，陪你学习「批判性思维与论证」。六幕 68 关：拆论证、识谬误、读数字、查信源、断因果、立论辩护，每幕结尾一场 Boss 找茬战。规矩：每关给你一个说法或场面，你来判断哪里站得住、哪里塌了——判对才点亮。点「开始这一关」，上解剖台。",
 			SystemPrompt: buildConceptPrompt(logicPersona+"\n\n"+conceptTeachingMethod, logicConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 5, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-marketing", Name: "让价值流动", Subject: "营销实战", Guide: "破圈·生意军师",
-			Tagline:     "从发现需求，到让人看见、心动、下单",
-			Description: "AI 能批量生产内容，却不能替你决定为谁创造什么价值。生意军师破圈用 50 个真实商业场景，带你从理解需求、定位差异一路走到成交与增长。",
+			Slug: "learn-marketing", Name: "营销战略与增长", Subject: "让价值流动", Guide: "破圈·生意军师",
+			Tagline:     "从需求洞察、市场定位到成交增长",
+			Description: "从用户需求、价值主张与市场定位出发，延伸到内容传播、成交设计与持续增长。50 个真实商业场景帮助你建立完整的营销判断框架，让价值被看见、被理解并被选择。",
 			Category:    models.AgentCatEducation, Icon: "🎯", Accent: "#DC2626",
-			Greeting:     "我是生意军师破圈，陪你学会「让价值流动」。三幕 50 关：把生意想明白、把客人请进门、让生意自己转。走法：每关一个真实商业场景，你来判断怎么卖才对——判对点亮，50 个概念一格格占进你脑子。点「开始这一关」，从用户需求开始。",
+			Greeting:     "我是生意军师破圈，陪你学习「营销战略与增长」。三幕 50 关：把生意想明白、把客人请进门、让生意自己转。走法：每关一个真实商业场景，你来判断怎么卖才对——判对点亮，50 个概念一格格占进你脑子。点「开始这一关」，从用户需求开始。",
 			SystemPrompt: buildConceptPrompt(marketingPersona+"\n\n"+conceptTeachingMethod, marketingConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 6, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-ai", Name: "与智能共事", Subject: "AI 实战", Guide: "合拍·AI 搭档",
-			Tagline:     "会提问、会拆活，也会核验答案",
-			Description: "AI 时代最重要的不是背指令，而是把智能真正变成协作者。参考 Andrej Karpathy 等 AI 教育者对大模型工作方式的公开讲解，由「微否」原创设计 28 关点选实战。",
+			Slug: "learn-ai", Name: "生成式 AI 协作", Subject: "与智能共事", Guide: "合拍·AI 搭档",
+			Tagline:     "定义任务、设计工作流并核验结果",
+			Description: "理解生成式 AI 的能力边界，学习定义任务、拆解工作、组织上下文、迭代结果与核验事实。28 个实战任务不训练提示词背诵，而是训练把 AI 变成可靠协作者的工作方法。",
 			Category:    models.AgentCatEducation, Icon: "🤖", Accent: "#8B5CF6",
-			Greeting:     "我是 AI 搭档合拍，陪你学会「与智能共事」。28 关全是纯点选实操：每关一个真活，你从几种看似可行的做法里作判断——不同选择会带来怎样的 AI 产出，当场演给你看；后半程反过来，教你从漂亮回答里揪出未经核实的说法。不背咒语，只练判断。点「开始这一关」。",
+			Greeting:     "我是 AI 搭档合拍，陪你学习「生成式 AI 协作」。28 关全是纯点选实操：每关一个真活，你从几种看似可行的做法里作判断——不同选择会带来怎样的 AI 产出，当场演给你看；后半程反过来，教你从漂亮回答里揪出未经核实的说法。不背咒语，只练判断。点「开始这一关」。",
 			SystemPrompt: buildConceptPrompt(learnAIPrompt, aiConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 7, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-speaking", Name: "让关系成事", Subject: "沟通实战", Guide: "言值·沟通教练",
-			Tagline:     "立场说清、事情推进、关系稳住",
-			Description: "AI 可以替你写一句话，却不能替你承担真实关系里的分寸。沟通教练言值把你放进 28 个躲不掉的场面：拒绝、提要求、道歉、应对难缠的人，事办成、关系稳住、自己不掉价，才算过关。",
+			Slug: "learn-speaking", Name: "高效沟通与协作", Subject: "让关系成事", Guide: "言值·沟通教练",
+			Tagline:     "清晰表达、推进协作并处理冲突",
+			Description: "围绕拒绝、请求、反馈、道歉与冲突处理，训练真实关系中的表达与协作能力。28 个高频场景要求你同时守住立场、推进事情并维护关系，让沟通产生可持续的结果。",
 			Category:    models.AgentCatEducation, Icon: "💬", Accent: "#06B6D4",
-			Greeting:     "我是沟通教练言值，陪你练习「让关系成事」。人一生吃的亏，一半是话没说到位：不会拒、不敢要、道歉变辩解、饭局把天聊死。我这儿 28 个场面全是你躲不掉的——我演对方，你从几句原话里挑一句说出去，后果当场演给你看，说砸了能时间倒回重说；每章大关的最后一拍，轮到你用自己的原话收尾。事办成、关系稳、人不掉价，才算过关。点「开始这一关」，先接住那条深夜借钱的消息。",
+			Greeting:     "我是沟通教练言值，陪你练习「高效沟通与协作」。人一生吃的亏，一半是话没说到位：不会拒、不敢要、道歉变辩解、饭局把天聊死。我这儿 28 个场面全是你躲不掉的——我演对方，你从几句原话里挑一句说出去，后果当场演给你看，说砸了能时间倒回重说；每章大关的最后一拍，轮到你用自己的原话收尾。事办成、关系稳、人不掉价，才算过关。点「开始这一关」，先接住那条深夜借钱的消息。",
 			SystemPrompt: buildConceptPrompt(learnSpeakingPrompt, speakingConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 8, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-lifedesign", Name: "设计你的人生", Subject: "人生设计", Guide: "探路·人生设计师",
-			Tagline:     "看清现在、设计可能、选择出发",
-			Description: "AI 能替你干活，却不能替你决定要过什么样的人生。参考斯坦福《人生设计课》(Designing Your Life) 的设计思维工具，由「微否」原创设计三幕 21 关：好时光日志、奥德赛计划、原型访谈——把「这辈子该干什么」拆成本周就能动手的小实验。",
+			Slug: "learn-lifedesign", Name: "人生设计与职业探索", Subject: "设计你的人生", Guide: "探路·人生设计师",
+			Tagline:     "探索可能、验证选择并开始行动",
+			Description: "运用设计思维探索人生与职业可能，通过好时光日志、奥德赛计划、原型访谈和小型实验，把抽象迷茫转化为可以观察、验证和调整的行动方案。",
 			Category:    models.AgentCatEducation, Icon: "🧭", Accent: "#F59E0B",
-			Greeting:     "我是人生设计师探路，陪你开始「设计你的人生」。这门课只反对一件事——「想清楚了再活」。我们用设计师的办法：三幕 21 关，先看清现在（四格油表、好时光日志），再设计可能（三版奥德赛计划、原型访谈），最后选择出发（够好就选、失败免疫）。每关一个你身上正发生的场景，挑最贴的答，过了检验关点亮才算真懂。点「开始这一关」，先换上设计师的脑子。",
+			Greeting:     "我是人生设计师探路，陪你开始「人生设计与职业探索」。这门课只反对一件事——「想清楚了再活」。我们用设计师的办法：三幕 21 关，先看清现在（四格油表、好时光日志），再设计可能（三版奥德赛计划、原型访谈），最后选择出发（够好就选、失败免疫）。每关一个你身上正发生的场景，挑最贴的答，过了检验关点亮才算真懂。点「开始这一关」，先换上设计师的脑子。",
 			SystemPrompt: buildConceptPrompt(lifedesignPersona+"\n\n"+conceptTeachingMethod, lifedesignConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 9, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-love", Name: "好好相爱", Subject: "亲密关系", Guide: "同频·亲密关系教练",
-			Tagline:     "看懂心动、接住冲突、养住长期",
-			Description: "AI 越强，真实的亲密关系越珍贵。参考 Gottman 夫妻实验室四十年观察研究、EFT 情绪聚焦疗法与哈佛 85 年成人发展研究的实证结论，由「微否」原创设计三幕 21 关：识人的眼力、吵架的体面、长期的火种——只教真诚，不教套路。",
+			Slug: "learn-love", Name: "亲密关系心理学", Subject: "好好相爱", Guide: "同频·亲密关系教练",
+			Tagline:     "理解吸引、冲突与长期关系",
+			Description: "基于亲密关系研究与循证实践，理解吸引、依恋、冲突修复和长期联结的心理机制。三幕 21 关只训练真实、尊重且可持续的关系能力，不教授操纵与话术套路。",
 			Category:    models.AgentCatEducation, Icon: "💞", Accent: "#F43F5E",
-			Greeting:     "我是亲密关系教练同频，陪你学习「好好相爱」。市面上教恋爱的，一半是玄学一半是套路；这门课只用有实证的：Gottman 夫妻实验室四十年的吵架观察、EFT 情绪聚焦疗法、哈佛追踪 85 年的幸福研究。三幕 21 关：看懂心动、接住冲突、养住长期——关键场面我演 TA，你来接球，说砸了时间倒回重来。只教真诚，不教话术，单身和恋爱中都能练。点「开始这一关」，先看看「上头」是怎么回事。",
+			Greeting:     "我是亲密关系教练同频，陪你学习「亲密关系心理学」。市面上教恋爱的，一半是玄学一半是套路；这门课只用有实证的：Gottman 夫妻实验室四十年的吵架观察、EFT 情绪聚焦疗法、哈佛追踪 85 年的幸福研究。三幕 21 关：看懂心动、接住冲突、养住长期——关键场面我演 TA，你来接球，说砸了时间倒回重来。只教真诚，不教话术，单身和恋爱中都能练。点「开始这一关」，先看看「上头」是怎么回事。",
 			SystemPrompt: buildConceptPrompt(lovePersona+"\n\n"+conceptTeachingMethod, loveConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 10, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-happiness", Name: "把幸福练出来", Subject: "幸福科学", Guide: "拾光·幸福教练",
-			Tagline:     "拆穿错觉、纠偏大脑、练对动作",
-			Description: "AI 能优化一切效率，幸福却仍要自己练。参考哈佛 Tal Ben-Shahar 幸福课与耶鲁《The Science of Well-Being》（两校历史选课人数第一）的实证结论，由「微否」原创设计三幕 21 关：先拆穿大脑的幸福错觉，再装上纠偏工具，最后把真正有效的练习排进你的一周——每一关都有实验托底，零鸡汤。",
+			Slug: "learn-happiness", Name: "幸福科学与生活实践", Subject: "把幸福练出来", Guide: "拾光·幸福教练",
+			Tagline:     "理解幸福机制并设计有效行动",
+			Description: "以积极心理学和行为研究为基础，识别大脑对幸福的系统性误判，学习品味、感恩、连接、心流等经过研究检验的实践，并把有效行动设计进真实的一周。",
 			Category:    models.AgentCatEducation, Icon: "🌻", Accent: "#84CC16",
-			Greeting:     "我是幸福教练拾光，陪你「把幸福练出来」。先说清楚：这门课不承诺让你时刻快乐——它只做一件有把握的事，把哈佛和耶鲁两门最火的幸福课里被实验验证过的东西，变成你能练的动作。三幕 21 关：先拆穿幸福的错觉（为什么到手的快乐总缩水），再给大脑纠偏（品味、感恩、间隔六件工具），最后上真正有效的事（善意、连接、时间、身体、心流、敬畏）。每关一个实验一个练习，零鸡汤。点「开始这一关」，先撕一张空头票。",
+			Greeting:     "我是幸福教练拾光，陪你学习「幸福科学与生活实践」。先说清楚：这门课不承诺让你时刻快乐——它只做一件有把握的事，把幸福研究中被实验验证过的发现，变成你能练的动作。三幕 21 关：先拆穿幸福的错觉（为什么到手的快乐总缩水），再给大脑纠偏（品味、感恩、间隔六件工具），最后上真正有效的事（善意、连接、时间、身体、心流、敬畏）。每关一个实验一个练习，零鸡汤。点「开始这一关」，先撕一张空头票。",
 			SystemPrompt: buildConceptPrompt(happinessPersona+"\n\n"+conceptTeachingMethod, happinessConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 11, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-writing", Name: "让文字办事", Subject: "有效写作", Guide: "删繁·写作教练",
-			Tagline:     "为读者写、写干净、把事写成",
-			Description: "AI 能生成文字，但替你发出去的每一段字，都在替你做人设。参考芝加哥大学《The Craft of Writing Effectively》（写作不是表达，是改变读者）与 Zinsser、Pinker 的写作经典，由「微否」原创设计三幕 21 关：为读者写、把句子写干净、把事写成——消息、邮件、汇报、请求，综合关真动笔。只教清晰与诚实，不教标题党。",
+			Slug: "learn-writing", Name: "专业写作与有效表达", Subject: "让文字办事", Guide: "删繁·写作教练",
+			Tagline:     "围绕读者、目标与行动组织文字",
+			Description: "以读者、目标和行动为中心，系统训练信息结构、清晰表达与说服性写作。课程覆盖消息、邮件、汇报与请求等工作场景，通过改写和真实输出，让文字准确、可信并推动事情发生。",
 			Category:    models.AgentCatEducation, Icon: "✍️", Accent: "#6366F1",
-			Greeting:     "我是写作教练删繁，陪你练「让文字办事」。先说狠话：你从小学的「写作是表达自己」，出了校门就是错的——没人有义务读你的字，读者只为「对我有用」停留。这门课教办事的写作：消息、邮件、汇报、请求。三幕 21 关：为读者写（结论先行、写清要 TA 做什么）、把句子写干净（删废话、小词、具体）、把事写成（报忧、求人、周报）。每关拿一段真实的烂文字当靶子，改前改后摆给你看；每幕大考最后一拍，轮到你真动笔。点「开始这一关」，先砸一个世界观。",
+			Greeting:     "我是写作教练删繁，陪你练「专业写作与有效表达」。先说狠话：你从小学的「写作是表达自己」，出了校门就是错的——没人有义务读你的字，读者只为「对我有用」停留。这门课教办事的写作：消息、邮件、汇报、请求。三幕 21 关：为读者写（结论先行、写清要 TA 做什么）、把句子写干净（删废话、小词、具体）、把事写成（报忧、求人、周报）。每关拿一段真实的烂文字当靶子，改前改后摆给你看；每幕大考最后一拍，轮到你真动笔。点「开始这一关」，先砸一个世界观。",
 			SystemPrompt: buildConceptPrompt(writingPersona+"\n\n"+conceptTeachingMethod, writingConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 12, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-learning", Name: "学什么都快", Subject: "学习科学", Guide: "开窍·学习教练",
-			Tagline:     "拆假学习、装引擎、跑起来",
-			Description: "AI 时代知识随手可得，会学的人和假学的人差距反而更大。参考 Coursera 史上最多人学过的《Learning How to Learn》与《认知天性》等学习科学实证，由「微否」原创设计三幕 21 关：拆穿假学习（流畅错觉、检索、间隔）、给大脑装引擎（番茄、组块、睡眠）、把学习跑起来（刻意练习、反馈、AI 陪练）。这是一门元课程：学完它，你学任何东西都更快——包括这里的其他课。",
+			Slug: "learn-learning", Name: "学习科学与知识迁移", Subject: "学什么都快", Guide: "开窍·学习教练",
+			Tagline:     "改善记忆、练习、反馈与迁移",
+			Description: "基于学习科学的核心发现，掌握检索练习、间隔重复、交错练习、刻意练习与反馈机制。课程帮助你建立能够长期记忆、主动提取并迁移到新场景的个人学习系统。",
 			Category:    models.AgentCatEducation, Icon: "🎓", Accent: "#14B8A6",
-			Greeting:     "我是学习教练开窍，陪你练成「学什么都快」。先交个底：这门课不教速成魔法，只教被实验反复验证的方法——检索练习、间隔重复、交错练习、刻意练习，顺手辟掉几个害人的迷思（学习风格、一万小时、熬夜等于努力）。三幕 21 关：先拆穿假学习，再给大脑装引擎，最后把学习跑起来。它是门元课程：学完它，你在这里学英语、学心理、学任何课都会更快——连这个 App 的复习挑战是什么原理，你都会看穿。点「开始这一关」，先拆学习最大的骗局。",
+			Greeting:     "我是学习教练开窍，陪你学习「学习科学与知识迁移」。先交个底：这门课不教速成魔法，只教被实验反复验证的方法——检索练习、间隔重复、交错练习、刻意练习，顺手辟掉几个害人的迷思（学习风格、一万小时、熬夜等于努力）。三幕 21 关：先拆穿假学习，再给大脑装引擎，最后把学习跑起来。它是门元课程：学完它，你在这里学英语、学心理、学任何课都会更快——连这个 App 的复习挑战是什么原理，你都会看穿。点「开始这一关」，先拆学习最大的骗局。",
 			SystemPrompt: buildConceptPrompt(learningPersona+"\n\n"+conceptTeachingMethod, learningConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 13, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-negotiation", Name: "争取更多", Subject: "谈判实战", Guide: "有底·谈判教练",
-			Tagline:     "上桌有清单、桌上有招法、难局能守身",
-			Description: "AI 能替你查行情，替你上桌开口的永远是你。参考哈佛谈判项目（Getting to Yes）、沃顿最受欢迎谈判课（Getting More）与 FBI 谈判专家的方法，由「微否」原创设计三幕 21 关：换一副谈判脑、桌上的招法、难局与守身——砍价、加薪、房租、大单，四场对手戏真刀真枪。只教真诚的谈判：可以不说全部，不能说假的。",
+			Slug: "learn-negotiation", Name: "谈判策略与影响力", Subject: "争取更多", Guide: "有底·谈判教练",
+			Tagline:     "分析利益、设计策略并推动共识",
+			Description: "围绕利益、替代方案、锚定、提问、让步与离场，建立合作式谈判的完整框架。砍价、加薪、房租与商业合作四类对手戏，让策略在真实压力下接受检验。",
 			Category:    models.AgentCatEducation, Icon: "🤝", Accent: "#D946EF",
-			Greeting:     "我是谈判教练有底，陪你练「争取更多」。先记住一句：底气来自底牌，不来自嗓门。这门课把哈佛、沃顿和 FBI 谈判专家的方法搬进你的日常：三幕 21 关——先换一副谈判脑（利益、底牌、锚、对方的世界），再学桌上的招法（校准提问、不等价交换、搬标准），最后练难局与守身（接脏招、让步的舞步、敢于离场）。四场对手戏我演对方：二手砍价、加薪谈判、房租保卫战、大单终局——说砸了时间倒回，终局最后一拍轮到你真开口。只教真诚的谈判，不教套路诈术。点「开始这一关」，先看看你每天错过了多少场谈判。",
+			Greeting:     "我是谈判教练有底，陪你练「谈判策略与影响力」。先记住一句：底气来自底牌，不来自嗓门。这门课把成熟谈判方法搬进你的日常：三幕 21 关——先换一副谈判脑（利益、底牌、锚、对方的世界），再学桌上的招法（校准提问、不等价交换、搬标准），最后练难局与守身（接脏招、让步的舞步、敢于离场）。四场对手戏我演对方：二手砍价、加薪谈判、房租保卫战、大单终局——说砸了时间倒回，终局最后一拍轮到你真开口。只教真诚的谈判，不教套路诈术。点「开始这一关」，先看看你每天错过了多少场谈判。",
 			SystemPrompt: buildConceptPrompt(negotiationPersona+"\n\n"+conceptTeachingMethod, negotiationConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 14, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-habits", Name: "习惯的复利", Subject: "习惯工程", Guide: "日拱·习惯教练",
-			Tagline:     "装好习惯、拆坏习惯、防一路",
-			Description: "AI 能替你规划一百次，替你每天走一格的只有习惯。参考《掌控习惯》(James Clear)、斯坦福福格行为模型、《习惯的力量》(Duhigg) 与 Wendy Wood 的习惯科学，由「微否」原创设计三幕 21 关：看懂习惯的物理学（复利、失望之谷、身份投票），学会安装术（两分钟法则、挂钩、环境设计），再拆除坏习惯（加摩擦、换岗位、反算法）。反自责、反鸡血、反速成——做不到是设计问题，不是人品问题。",
+			Slug: "learn-habits", Name: "行为设计与习惯改变", Subject: "习惯的复利", Guide: "日拱·习惯教练",
+			Tagline:     "用环境、摩擦与反馈改变行为",
+			Description: "结合行为模型与习惯研究，理解行为发生的条件，并运用环境设计、两分钟法则、习惯挂钩、摩擦与反馈系统，建立好习惯、调整坏习惯，让改变不再依赖意志力。",
 			Category:    models.AgentCatEducation, Icon: "🌱", Accent: "#EAB308",
-			Greeting:     "我是习惯教练日拱，名字取自「日拱一卒，功不唐捐」，陪你学「习惯的复利」。先立三条家规：不自责（做不到是设计问题不是人品问题）、不打鸡血（动机是波浪，靠不住）、不承诺速成（21 天是谣言，平均要 66 天）。三幕 21 关：先看懂习惯的物理学，再学一整套安装术（两分钟版、挂钩、环境、庆祝、不断两次），最后拆坏习惯（加摩擦、换岗位、跟手机算法开战）。顺说：这个 App 的连续学习火焰，就是你马上要学的「不断两次」铁律——你已经在练了。点「开始这一关」，先算一笔 1% 的账。",
+			Greeting:     "我是习惯教练日拱，名字取自「日拱一卒，功不唐捐」，陪你学习「行为设计与习惯改变」。先立三条家规：不自责（做不到是设计问题不是人品问题）、不打鸡血（动机是波浪，靠不住）、不承诺速成（21 天是谣言，平均要 66 天）。三幕 21 关：先看懂习惯的物理学，再学一整套安装术（两分钟版、挂钩、环境、庆祝、不断两次），最后拆坏习惯（加摩擦、换岗位、跟手机算法开战）。顺说：这个 App 的连续学习火焰，就是你马上要学的「不断两次」铁律——你已经在练了。点「开始这一关」，先算一笔 1% 的账。",
 			SystemPrompt: buildConceptPrompt(habitsPersona+"\n\n"+conceptTeachingMethod, habitsConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 15, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "learn-business", Name: "看懂生意", Subject: "商业思维", Guide: "掌柜·商业教练",
-			Tagline:     "算得清、守得住、放得大",
-			Description: "AI 能帮你干活，但生意值不值得干、凭什么是你、怎么越做越轻，得老板自己想明白。参考《The Personal MBA》、巴菲特与芒格的经营智慧、波特竞争战略与 Naval 的杠杆论，由「微否」原创设计三幕 21 关：生意的算法（两本账、单模型、保本点）、战略与护城河（凭什么抄不走）、杠杆与系统（从你养它到它养你）。例子全是奶茶店、摆摊、私房菜的身边账——和营销课是兄弟课：那边教卖出去，这边教看明白。",
+			Slug: "learn-business", Name: "商业基础与战略思维", Subject: "看懂生意", Guide: "掌柜·商业教练",
+			Tagline:     "理解模型、战略、优势与增长杠杆",
+			Description: "从利润、现金流、单位经济模型与保本点，到竞争优势、战略选择、杠杆与系统，建立判断一门生意是否成立、为何成立以及如何持续发展的商业框架。",
 			Category:    models.AgentCatEducation, Icon: "🧮", Accent: "#C2410C",
-			Greeting:     "我是商业教练掌柜，陪你练「看懂生意」。先说明白：营销课教你把东西卖出去，我教你把生意看明白——这门生意值不值得干、账怎么算、凭什么别人抄不走、怎么从你养它变成它养你。三幕 21 关：生意的算法（利润与现金、一单的模型、保本点）、战略与护城河（巴菲特那条河怎么挖）、杠杆与系统（四种杠杆、先活着再赢）。例子全是身边的：奶茶店、摆摊、私房菜；在打工也一样用——你就是一人公司。丑话说在前：我不荐股、不聊投资理财，只算生意的账。点「开始这一关」，先看生意的公式。",
+			Greeting:     "我是商业教练掌柜，陪你练「商业基础与战略思维」。先说明白：营销课教你把东西卖出去，我教你把生意看明白——这门生意值不值得干、账怎么算、凭什么别人抄不走、怎么从你养它变成它养你。三幕 21 关：生意的算法（利润与现金、一单的模型、保本点）、战略与护城河（巴菲特那条河怎么挖）、杠杆与系统（四种杠杆、先活着再赢）。例子全是身边的：奶茶店、摆摊、私房菜；在打工也一样用——你就是一人公司。丑话说在前：我不荐股、不聊投资理财，只算生意的账。点「开始这一关」，先看生意的公式。",
 			SystemPrompt: buildConceptPrompt(businessPersona+"\n\n"+conceptTeachingMethod, businessConcepts),
 			Concept:      true,
 			FreeTrial:    5, FreeTier: 1, Sort: 16, // 第一幕免费无限，第二幕起会员
 		},
 		{
-			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
-			Tagline:     "学会取舍、进退与自处",
-			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
+			Slug: "daodejing-full", Name: "道家哲学与人生智慧", Subject: "在变化中安顿自己", Guide: "知常·老子向导",
+			Tagline:     "理解《老子》的思想、处世与实践",
+			Description: "以马王堆帛书本《老子》为基础，逐章理解道、德、无为、不争与柔弱等核心思想。九幕 81 章不止于文本解释，而是将古典哲学带回当代人的选择、关系与自我安顿。",
 			Category:    models.AgentCatEducation, Icon: "📜", Accent: "#0F766E",
-			Greeting:     "我是老子向导知常，陪你学习「在变化中安顿自己」。这门是《老子》帛书全本——按帛书本的原貌，德经在前、道经在后，八十一章一章一章读过去。不开背经课，不跟你玄谈，只用老子的每一句，照你自己正过的坎。读原文、挑答案、过检验关，点亮才算读过。点「开始这一关」，从德经第一章走起。",
+			Greeting:     "我是老子向导知常，陪你学习「道家哲学与人生智慧」。这门是《老子》帛书全本——按帛书本的原貌，德经在前、道经在后，八十一章一章一章读过去。不开背经课，不跟你玄谈，只用老子的每一句，照你自己正过的坎。读原文、挑答案、过检验关，点亮才算读过。点「开始这一关」，从德经第一章走起。",
 			SystemPrompt: buildConceptPrompt(daodejingFullPrompt, daodejingFullConcepts),
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
@@ -663,7 +664,7 @@ func Seed(db *gorm.DB) {
 			FreeTier: 1, Sort: 17, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
-	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），
+	// 课程保留名单采用物理清理：不再软退役（enabled=false 保留行+进度），
 	// 而是物理删除 presets 保留名单之外的所有工具 Agent——连行带子数据（含用户进度 user_concepts）
 	// 与创作型产出表一并铲平，不留痕迹。以 presets 的 slug 集合为唯一保留名单，幂等、自维护：
 	// 今后任何课程只需从 presets 移除，下次启动即被自动清除。

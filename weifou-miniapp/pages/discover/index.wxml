@@ -3,10 +3,7 @@
   <view class="ambient ambient-b"></view>
 
   <view class="topbar" style="padding-top:{{statusBarH}}px">
-    <view>
-      <view class="brand-row"><text class="brand-star">✦</text><text>WEIFOU</text><text class="brand-cn">微否</text></view>
-      <view class="greeting">{{greeting}}，<text class="greeting-strong">{{chief.hasProfile ? '你的 AI 分身正在接待来访' : '你的 AI 分身已就位'}}</text></view>
-    </view>
+    <view class="brand-row"><text class="brand-star">✦</text><text>WEIFOU</text><text class="brand-cn">微否</text></view>
     <view class="settings-btn {{editing ? 'editing' : ''}}" hover-class="settings-btn-press" bindtap="toggleEditor">
       <view class="settings-dot"></view>
       <text>{{editing ? '完成' : (chief.hasProfile ? '编辑' : '开始')}}</text>
@@ -46,7 +43,6 @@
         <image wx:if="{{chief.portraitFrames.blink}}" class="character character-blink {{portraitPose === 'blink' ? 'is-visible' : ''}}" src="{{chief.portraitFrames.blink}}" mode="aspectFit" data-pose="blink" binderror="portraitError"/>
         <image wx:if="{{chief.portraitFrames.glance}}" class="character character-glance {{portraitPose === 'glance' ? 'is-visible' : ''}}" src="{{chief.portraitFrames.glance}}" mode="aspectFit" data-pose="glance" binderror="portraitError"/>
       </view>
-      <view wx:if="{{!chief.hasProfile && chief.portraitKind === 'illustration'}}" class="companion-bubble">你好，我已经准备好替你介绍自己啦。</view>
       <view wx:if="{{editing}}" class="edit-hit portrait-hit" catchtap="openPortrait"><text class="edit-pencil">✎</text> 换立绘</view>
       <view class="stage-vignette"></view>
 
@@ -55,15 +51,10 @@
           <text class="live-dot"></text>
           {{chief.online ? 'AI 分身在线' : 'AI 分身已就位'}}
         </view>
-        <view class="stage-identity-meta">
-          <view class="card-no">NO. {{chief.cardNo}}</view>
-          <view wx:if="{{chief.portraitKind === 'illustration'}}" class="portrait-kind">虚拟形象 · 可随时切换</view>
-        </view>
       </view>
 
       <view class="identity-copy">
         <view class="identity-main" bindtap="openIdentity">
-          <view class="identity-kicker">MY DIGITAL SELF</view>
           <view class="person-name">{{chief.name}}</view>
           <view class="person-role">{{chief.identity}}</view>
           <view wx:if="{{editing}}" class="inline-edit">✎ 点此修改身份</view>
@@ -71,9 +62,8 @@
 
         <view class="quote" bindtap="openIntro"><text class="quote-mark">“</text>{{chief.oneLiner}}<text wx:if="{{editing}}" class="tiny-edit"> ✎</text></view>
 
-        <view class="tags" wx:if="{{chief.tags.length}}" bindtap="openTags">
-          <view class="tag-item" wx:for="{{chief.tags}}" wx:key="*this">{{item}}</view>
-          <view wx:if="{{editing}}" class="tag-item tag-edit">＋ 修改</view>
+        <view class="tags tags-edit-only" wx:if="{{editing}}" bindtap="openTags">
+          <view class="tag-item tag-edit">＋ 修改标签</view>
         </view>
 
         <view class="stage-actions">
@@ -84,7 +74,9 @@
             <button class="stage-cta stage-share" open-type="share" catchtap="noop">
               <text>分享名片</text><text class="stage-cta-arrow">↗</text>
             </button>
-            <button class="stage-cta stage-preview" catchtap="viewPublicCard">访客视角</button>
+            <view class="stage-preview-link" hover-class="stage-preview-link-press" catchtap="viewPublicCard">
+              <text>查看访客视角</text><text class="stage-preview-arrow">→</text>
+            </view>
           </block>
         </view>
 
@@ -102,17 +94,7 @@
       <view class="quick-edit" bindtap="openTags">标签</view>
     </view>
 
-    <view wx:if="{{!chief.hasProfile}}" class="setup-panel" hover-class="setup-panel-press" bindtap="startCardSetup">
-      <view class="setup-step">01</view>
-      <view class="setup-copy">
-        <view class="setup-title">完善你的名片</view>
-        <view class="setup-sub">补充名字、身份和一句介绍，就可以分享</view>
-        <view class="setup-progress"><view class="setup-progress-bar"></view></view>
-      </view>
-      <view class="setup-arrow">›</view>
-    </view>
-
-    <view class="insight" wx:elif="{{chief.stats}}">
+    <view class="insight" wx:if="{{chief.stats}}">
       <view class="insight-label">分身接待记录</view>
       <view class="hstat" wx:for="{{chief.stats}}" wx:key="label">
         <text class="hstat-n">{{item.n}}</text>

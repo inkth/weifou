@@ -39,8 +39,6 @@ type Config struct {
 	WxPayPlatformCert   string
 	WxPayNotifyURL      string
 	OrderTimeoutMin     int
-	CallEarlyJoinMin    int
-	CallGraceMin        int
 
 	// 微信小程序虚拟支付（虚拟商品=会员；iOS 自动走苹果 IAP，2026-04 起强制接入）。
 	// appID 复用 WxAppID（同一小程序）；offerId/appKey 来自开通虚拟支付后的米大师控制台。
@@ -48,16 +46,9 @@ type Config struct {
 	WxvAppKey  string
 	WxvSandbox bool
 
-	// TRTC
-	TRTCSdkAppID int
-	TRTCSecret   string
-	TRTCSigExp   int
-
-	// 付费异步咨询
-	AsyncQSLAHours           int    // 主人作答时限（小时），超时自动退款
-	SubscribeNewQuestionTmpl string // 订阅消息模板：新付费提问→主人
+	// 免费问答与线索通知
+	SubscribeNewQuestionTmpl string // 订阅消息模板：新提问→主人
 	SubscribeAnsweredTmpl    string // 订阅消息模板：已回答→访客
-	SubscribeRefundedTmpl    string // 订阅消息模板：已退款→访客
 	SubscribeLeadTmpl        string // 订阅消息模板：新访客线索→主人
 	SubscribeLearnRemindTmpl string // 订阅消息模板：学习提醒（明天叫我继续）→学员
 	SubscribeMiniState       string // formal / trial / developer
@@ -68,7 +59,7 @@ type Config struct {
 	MpToken   string // 服务号消息回调校验 token（公众平台配明文/兼容模式）
 	H5BaseURL string // 服务端构造 H5 链接的公网基址（服务号推送无 request 上下文）
 
-	// 文件上传 / 静态服务（当前：付费提问语音回答，存本地盘命名卷；未来可换 COS）
+	// 文件上传 / 静态服务（当前：问答箱语音回答，存本地盘命名卷；未来可换 COS）
 	UploadDir  string // 容器内可写目录（挂 docker 命名卷持久化）
 	PublicHost string // 生成公开 URL 的公网基址；空则回落 AppBaseURL
 }
@@ -129,21 +120,13 @@ func Load() *Config {
 		WxPayPlatformCert:   os.Getenv("WXPAY_PLATFORM_CERT_PATH"),
 		WxPayNotifyURL:      os.Getenv("WXPAY_NOTIFY_URL"),
 		OrderTimeoutMin:     getInt("ORDER_TIMEOUT_MIN", 15),
-		CallEarlyJoinMin:    getInt("CALL_EARLY_JOIN_MIN", 5),
-		CallGraceMin:        getInt("CALL_GRACE_MIN", 15),
 
 		WxvOfferID: os.Getenv("WXV_OFFER_ID"),
 		WxvAppKey:  os.Getenv("WXV_APP_KEY"),
 		WxvSandbox: getBool("WXV_SANDBOX", false),
 
-		TRTCSdkAppID: getInt("TRTC_SDK_APPID", 0),
-		TRTCSecret:   os.Getenv("TRTC_SECRET_KEY"),
-		TRTCSigExp:   getInt("TRTC_SIG_EXPIRE", 86400),
-
-		AsyncQSLAHours:           getInt("ASYNCQ_SLA_HOURS", 48),
 		SubscribeNewQuestionTmpl: os.Getenv("WX_SUBSCRIBE_NEW_QUESTION_TMPL_ID"),
 		SubscribeAnsweredTmpl:    os.Getenv("WX_SUBSCRIBE_ANSWERED_TMPL_ID"),
-		SubscribeRefundedTmpl:    os.Getenv("WX_SUBSCRIBE_REFUNDED_TMPL_ID"),
 		SubscribeLeadTmpl:        os.Getenv("WX_SUBSCRIBE_LEAD_TMPL_ID"),
 		SubscribeLearnRemindTmpl: os.Getenv("WX_SUBSCRIBE_LEARN_REMIND_TMPL_ID"),
 		SubscribeMiniState:       getEnv("WX_SUBSCRIBE_STATE", "formal"),

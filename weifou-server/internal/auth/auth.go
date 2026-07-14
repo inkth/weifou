@@ -85,7 +85,7 @@ func (h *Handler) loginHandler(c *gin.Context) error {
 		return err
 	}
 
-	// JWT 携带「当前端」openid，保证 JSAPI 支付 payer / 同端 RTC 匹配正确。
+	// JWT 携带「当前端」openid，保证 JSAPI 支付 payer 与访客身份归因正确。
 	endOpenid := session.Openid
 	token, err := h.issueToken(user.ID, endOpenid)
 	if err != nil {

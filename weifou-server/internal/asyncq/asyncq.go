@@ -35,8 +35,8 @@ func NewHandler(db *gorm.DB, engine *answer.Engine, security *wechat.SecuritySer
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	auth := middleware.JWTAuth(h.jwtSecret)
 	rg.POST("/async-question", auth, httpx.Handle(h.create))
-	rg.POST("/async-question/qabox", auth, httpx.Handle(h.qaboxAsk))             // 问答箱：AI 即答 + 入库供主人围观
-	rg.POST("/async-question/:id/escalate", auth, httpx.Handle(h.escalate))     // 访客把 AI 已答的问题升温为「请本人亲自回答」
+	rg.POST("/async-question/qabox", auth, httpx.Handle(h.qaboxAsk))        // 问答箱：AI 即答 + 入库供主人围观
+	rg.POST("/async-question/:id/escalate", auth, httpx.Handle(h.escalate)) // 访客把 AI 已答的问题升温为「请本人亲自回答」
 	rg.POST("/async-question/:id/answer", auth, httpx.Handle(h.answer))
 	rg.GET("/async-question/host", auth, httpx.Handle(h.hostList))
 	rg.GET("/async-question/mine", auth, httpx.Handle(h.myList))
@@ -102,7 +102,7 @@ func (h *Handler) notifyHostNewQuestion(q *models.AsyncQuestion) {
 	if host.WxMpOpenid != nil && *host.WxMpOpenid != "" {
 		openid = *host.WxMpOpenid
 	}
-	h.subscribe.NotifyNewQuestion(openid, q.Question, 0, time.Now(), "pages/inbox/index")
+	h.subscribe.NotifyNewQuestion(openid, q.Question, time.Now(), "pages/inbox/index")
 }
 
 // ---------- 访客：问答箱（AI 即答 + 主人围观） ----------

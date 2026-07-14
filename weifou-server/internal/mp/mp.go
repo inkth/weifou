@@ -130,7 +130,7 @@ func (h *Handler) pushMembership(mpOpenid string) {
 	if err != nil {
 		return
 	}
-	h.sendText(mpOpenid, "加入「微否·人类基本功计划」，解锁七条完整能力路径 👉\n"+link+"\n\n在浏览器打开此链接完成开通，开通后回小程序自动解锁。")
+	h.sendText(mpOpenid, "加入「微否·人类基本功计划」，解锁 15 门完整课程与能力路径 👉\n"+link+"\n\n在浏览器打开此链接完成开通，开通后回小程序自动解锁。")
 }
 
 // matchAccount 服务号 openid → unionid → 微否 User。返回 (userID, 该用户的锚点 openid)。

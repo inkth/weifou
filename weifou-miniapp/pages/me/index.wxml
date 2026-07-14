@@ -1,47 +1,105 @@
 <view class="page">
-  <view class="hd" style="padding-top:calc({{statusBarH}}px + 16rpx)"><view class="hd-title">我的</view></view>
+  <view class="ambient ambient-a"></view>
+  <view class="ambient ambient-b"></view>
 
-  <!-- 分身、名片和分享合并为一张核心资产卡。 -->
-  <view wx:if="{{profileId}}" class="clone card">
-    <view class="clone-top" bindtap="goMyProfile">
-      <view class="clone-ava"><view class="ic ic-bot"></view></view>
-      <view class="clone-id">
-        <view class="clone-name">{{realName ? realName + ' 的 AI 分身' : '我的 AI 分身'}}</view>
-        <view class="clone-sub">会说话的个人名片 · 随时在线</view>
+  <view class="hd" style="padding-top:calc({{statusBarH}}px + 16rpx)">
+    <view class="hd-title">我的</view>
+    <view class="hd-sub">你的学习、成长与权益</view>
+  </view>
+
+  <block wx:if="{{loading}}">
+    <view class="learn-skeleton skel"></view>
+    <view class="summary-skeleton skel"></view>
+    <view class="member-skeleton skel"></view>
+  </block>
+
+  <block wx:else>
+    <!-- 第一优先级：回到最近一门课，而不是重复展示首页名片。 -->
+    <view class="learn-card" bindtap="continueLearning">
+      <view class="learn-glow"></view>
+      <block wx:if="{{currentCourse}}">
+        <view class="learn-eyebrow">继续学习</view>
+        <view class="course-head">
+          <view class="course-icon">{{currentCourse.icon}}</view>
+          <view class="course-copy">
+            <view class="course-meta">{{currentCourse.subject}} · {{currentCourse.guide}}</view>
+            <view class="course-name">{{currentCourse.name}}</view>
+            <view class="course-tagline">{{currentCourse.tagline}}</view>
+          </view>
+        </view>
+        <view wx:if="{{currentCourse.total > 0}}" class="progress-row">
+          <text>已点亮 {{currentCourse.lit}} / {{currentCourse.total}}</text>
+          <text>{{currentCourse.progressPercent}}%</text>
+        </view>
+        <view wx:if="{{currentCourse.total > 0}}" class="progress-track">
+          <view class="progress-fill" style="width:{{currentCourse.progressPercent}}%"></view>
+        </view>
+        <view class="learn-cta"><text>继续学习</text><text class="learn-arrow">→</text></view>
+      </block>
+
+      <block wx:else>
+        <view class="learn-eyebrow">人类基本功计划</view>
+        <view class="empty-course-title">从一项真正想练的能力开始</view>
+        <view class="empty-course-sub">15 门研究驱动课程，把知识从“知道”练成“会用”</view>
+        <view class="learn-cta"><text>选择第一门课</text><text class="learn-arrow">→</text></view>
+      </block>
+    </view>
+
+    <!-- 只呈现属于用户自己的积累，不复制技能课程目录。 -->
+    <view class="growth-card">
+      <view class="growth-item">
+        <view class="growth-number">{{summary.streak.days || 0}}</view>
+        <view class="growth-label">连续学习</view>
       </view>
-      <view class="ic ic-chevron clone-arrow"></view>
+      <view class="growth-divider"></view>
+      <view class="growth-item">
+        <view class="growth-number">{{summary.mastered || 0}}</view>
+        <view class="growth-label">掌握概念</view>
+      </view>
+      <view class="growth-divider"></view>
+      <view class="growth-item">
+        <view class="growth-number">{{summary.learningCourses || 0}}</view>
+        <view class="growth-label">学过课程</view>
+      </view>
     </view>
-    <view class="clone-acts">
-      <view class="clone-act" bindtap="goMyProfile"><view class="ic ic-user ca-ic"></view><text>主页</text></view>
-      <button class="clone-act" open-type="share"><view class="ic ic-compose ca-ic"></view><text>分享</text></button>
-      <view class="clone-act" bindtap="goOnboarding"><view class="ic ic-edit ca-ic"></view><text>编辑</text></view>
-    </view>
-  </view>
 
-  <!-- 功能入口 -->
-  <view class="group">
-    <view class="cell" bindtap="goConnections">
-      <view class="ic ic-user cell-ic cell-ic-accent"></view><text class="cell-label">名片夹</text><view class="ic ic-chevron cell-arrow"></view>
+    <!-- 会员页负责套餐与成交，这里仅展示当前权益状态。 -->
+    <view wx:if="{{showMembership}}" class="membership-card {{isMember ? 'is-member' : ''}}" bindtap="goMembership">
+      <view class="membership-icon"><view class="ic ic-crown"></view></view>
+      <view class="membership-copy">
+        <view class="membership-title">{{isMember ? '全课会员' : '免费体验已开启'}}</view>
+        <view wx:if="{{isMember}}" class="membership-sub">15 门完整课程与复习挑战已解锁<text wx:if="{{expiresText}}"> · 至 {{expiresText}}</text></view>
+        <view wx:else class="membership-sub">每门课第一幕可免费学习，开通后解锁完整路径</view>
+      </view>
+      <view class="membership-action">{{isMember ? '管理' : '查看权益'}} <text>›</text></view>
     </view>
-    <view class="cell" wx:if="{{memberEntry}}" bindtap="goMembership">
-      <view class="ic ic-crown cell-ic cell-ic-accent"></view><text class="cell-label">会员</text><view class="ic ic-chevron cell-arrow"></view>
-    </view>
-    <view class="cell" bindtap="goMemory">
-      <view class="ic ic-edit cell-ic cell-ic-accent"></view><text class="cell-label">分身记忆</text><view class="ic ic-chevron cell-arrow"></view>
-    </view>
-  </view>
 
-  <view class="group">
-    <view class="cell" bindtap="goSettings">
-      <view class="ic ic-settings cell-ic"></view><text class="cell-label">设置</text><view class="ic ic-chevron cell-arrow"></view>
+    <view class="section-label">账户与服务</view>
+    <view class="group">
+      <view class="cell" bindtap="goMyProfile">
+        <view class="identity-icon"><text>{{nameInitial}}</text><view class="identity-ai">AI</view></view>
+        <view class="cell-copy">
+          <view class="cell-label">{{realName ? realName + ' 的 AI 名片' : '我的 AI 名片'}}</view>
+          <view class="cell-sub">{{profileId ? '在线 · 在首页查看与分享' : '尚未创建 · 去完善资料'}}</view>
+        </view>
+        <view class="ic ic-chevron cell-arrow"></view>
+      </view>
+      <view class="cell" bindtap="goConnections">
+        <view class="cell-icon"><view class="ic ic-user"></view></view>
+        <view class="cell-copy"><view class="cell-label">名片夹</view><view class="cell-sub">查看交换过名片的人</view></view>
+        <view class="ic ic-chevron cell-arrow"></view>
+      </view>
+      <view class="cell" bindtap="goSettings">
+        <view class="cell-icon"><view class="ic ic-settings"></view></view>
+        <view class="cell-copy"><view class="cell-label">设置</view><view class="cell-sub">资料、隐私与账号管理</view></view>
+        <view class="ic ic-chevron cell-arrow"></view>
+      </view>
     </view>
-  </view>
 
-  <!-- 合规位（AIGC 必备：备案 / 协议） -->
-  <view class="legal">
-    <view class="brand-sign">微否 · 每个人的 AI 分身</view>
-    <view>大模型服务已依法备案 · 内容由 AI 生成</view>
-    <view class="legal-links"><text>用户协议</text><text class="dot">·</text><text>隐私政策</text></view>
-    <view class="logout-link" bindtap="logout">退出登录</view>
-  </view>
+    <view class="legal">
+      <view>微否 · 每个人的 AI 分身</view>
+      <view class="legal-line">大模型服务已依法备案 · 内容由 AI 生成</view>
+      <view class="legal-links"><text>用户协议</text><text class="dot">·</text><text>隐私政策</text></view>
+    </view>
+  </block>
 </view>

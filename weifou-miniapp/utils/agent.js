@@ -56,6 +56,11 @@ function learnStreak() {
   return request({ url: '/agents/streak' });
 }
 
+// “我的”页一次性学习摘要：最近课程、连续天数、累计掌握与已学课程数。
+function learningSummary() {
+  return request({ url: '/agents/learning-summary' });
+}
+
 // 学习提醒承诺：订阅消息授权成功后落账，服务端明天这个点发一条提醒。
 function remindLearn(agentId) {
   return request({ url: `/agents/${agentId}/remind`, method: 'POST', data: {} });
@@ -76,5 +81,5 @@ function listVisitors() {
 
 module.exports = {
   listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts,
-  chatAgent, learnStreak, remindLearn, pinAgent, unpinAgent, listVisitors,
+  chatAgent, learnStreak, learningSummary, remindLearn, pinAgent, unpinAgent, listVisitors,
 };

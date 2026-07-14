@@ -88,6 +88,6 @@ ssh -i server.pem ubuntu@101.35.215.28 'cd /opt/weifou-server && \
 
 ## 上线前仍需补的密钥（当前为空，服务可启动但对应功能未启用）
 
-`WX_APPID/SECRET`、`WX_MOBILE_APPID/SECRET`、`DEEPSEEK_API_KEY`、`WXPAY_*`(+证书放 certs/)、`TRTC_*`、`COS_*`。
+`WX_APPID/SECRET`、`WX_MOBILE_APPID/SECRET`、`DEEPSEEK_API_KEY`、会员支付配置与 `COS_*`。
 客户端 API base 也需切到 `https://api.weifou.com/api`（小程序 `utils/config.js` 仍是 localhost；
 Flutter 用 `--dart-define=API_BASE=https://api.weifou.com/api`）。

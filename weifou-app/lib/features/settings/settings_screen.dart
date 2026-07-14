@@ -6,7 +6,6 @@ import '../../data/api/profile_api.dart';
 import '../../data/models/profile.dart';
 
 /// 设置页（首版）：联系方式与可见性、形象标识。
-/// 付费咨询开关/定价随咨询功能一起推迟。
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -35,10 +34,12 @@ class _SettingsForm extends ConsumerStatefulWidget {
 }
 
 class _SettingsFormState extends ConsumerState<_SettingsForm> {
-  late final TextEditingController _wechat =
-      TextEditingController(text: widget.profile.contactWechat ?? '');
-  late final TextEditingController _phone =
-      TextEditingController(text: widget.profile.contactPhone ?? '');
+  late final TextEditingController _wechat = TextEditingController(
+    text: widget.profile.contactWechat ?? '',
+  );
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.profile.contactPhone ?? '',
+  );
   late bool _visible = widget.profile.contactVisible;
   late bool _discoverable = widget.profile.discoverable;
   bool _saving = false;
@@ -53,20 +54,24 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref.read(profileApiProvider).updateContact(
+      await ref
+          .read(profileApiProvider)
+          .updateContact(
             wechat: _wechat.text.trim(),
             phone: _phone.text.trim(),
             visible: _visible,
           );
       ref.invalidate(myProfileProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('已保存')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已保存')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('保存失败：$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('保存失败：$e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -78,8 +83,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Text('联系方式',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          '联系方式',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 12),
         TextField(
           controller: _wechat,
@@ -101,8 +108,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('对访客公开联系方式'),
-          subtitle: const Text('关闭后访客看不到你的微信/手机',
-              style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+          subtitle: const Text(
+            '关闭后访客看不到你的微信/手机',
+            style: TextStyle(color: AppTheme.sub, fontSize: 12),
+          ),
           value: _visible,
           onChanged: (v) => setState(() => _visible = v),
         ),
@@ -112,13 +121,17 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           child: Text(_saving ? '保存中…' : '保存'),
         ),
         const Divider(height: 48),
-        const Text('人物广场',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          '人物广场',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('公开到人物广场'),
-          subtitle: const Text('开启后他人可在广场发现你的 AI 分身；关闭则仅靠分享链接访问',
-              style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+          subtitle: const Text(
+            '开启后他人可在广场发现你的 AI 分身；关闭则仅靠分享链接访问',
+            style: TextStyle(color: AppTheme.sub, fontSize: 12),
+          ),
           value: _discoverable,
           onChanged: (v) async {
             final messenger = ScaffoldMessenger.of(context);

@@ -64,7 +64,7 @@
     <button class="btn-accent" bindtap="goChat">{{isMine ? '试聊我的 AI 分身' : '和 ' + profile.realName + ' 的 AI 聊聊'}}</button>
 
     <view class="secondary-actions" wx:if="{{!isMine}}">
-      <button class="action-link" bindtap="exchangeCard">{{connected ? '已交换' : (hasOwnProfile ? '交换名片' : '建名片交换')}}</button>
+      <button wx:if="{{hasOwnProfile}}" class="action-link" bindtap="exchangeCard">{{connected ? '已交换' : '交换名片'}}</button>
       <button class="action-link" bindtap="onContact" wx:if="{{profile.contactVisible}}">联系本人</button>
       <button class="action-link" open-type="share">分享</button>
     </view>
@@ -76,8 +76,6 @@
     </view>
   </view>
 
-  <!-- 裂变：访客视图的平台线索（克制、不抢主人的转化场景） -->
-  <view class="brand-foot muted" wx:if="{{!isMine}}" bindtap="goCreateOwn">微否 · 让你的 AI 分身替你先聊 ›</view>
 </view>
 
 <view wx:if="{{!profile && !loading}}" class="empty muted">主页不存在或加载失败</view>

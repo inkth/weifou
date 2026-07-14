@@ -229,58 +229,6 @@
 }
 .bubble.dim { color: var(--sub); }
 
-/* 对话内成交卡片 */
-.offer-card {
-  background: var(--surface);
-  border: var(--bw-thin) solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 24rpx;
-  margin: 0 0 24rpx;
-  box-shadow: var(--shadow-card);
-}
-.offer-title {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: var(--ink);
-  margin-bottom: 18rpx;
-}
-.offer-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
-}
-.slot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18rpx 22rpx;
-  border-radius: var(--r-md);
-  background: var(--fill);
-  border: var(--bw-thin) solid transparent;
-  transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
-}
-.slot.sel {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-.slot-time { font-size: 28rpx; color: var(--ink); }
-.slot-meta { font-size: 24rpx; color: var(--sub); }
-.offer-btn {
-  margin-top: 20rpx;
-  height: 80rpx;
-  line-height: 80rpx;
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: var(--r-md);
-  font-size: 28rpx;
-  font-weight: 700;
-  box-shadow: var(--shadow-accent);
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
-}
-.offer-btn:active { transform: scale(0.985); background: var(--accent-strong); }
-.offer-btn[disabled] { opacity: 0.4; box-shadow: none; }
-
 .sys-link {
   align-self: flex-start;
   margin: -8rpx 0 24rpx;
@@ -338,37 +286,6 @@
 }
 .reshuffle { margin-left: auto; padding-left: 12rpx; padding-right: 12rpx; font-size: 24rpx; }
 
-/* 成交阶梯进度条：聊→问→约，走过的段落用蓝紫点亮。 */
-.stage-rail {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  padding: 14rpx 24rpx;
-  background: var(--surface);
-  border-top: var(--bw-thin) solid var(--border);
-}
-.rail-node {
-  width: 42rpx;
-  height: 42rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22rpx;
-  color: var(--ink-2);
-  background: var(--surface);
-  border: var(--bw-thin) solid var(--border);
-  transition: transform 0.3s var(--ease), background 0.3s var(--ease), color 0.3s var(--ease);
-}
-.rail-node.done { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-soft); }
-.rail-node.on {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
-  font-weight: 700;
-  transform: scale(1.08);
-}
 .rail-line { width: 44rpx; height: 4rpx; border-radius: 2rpx; background: var(--border); transition: background 0.3s var(--ease); }
 .rail-line.done { background: var(--accent); }
 
@@ -449,14 +366,9 @@
 .sheet-pay { margin-top: 8rpx; background: var(--accent); color: var(--on-accent); border-radius: var(--r-md); padding: 24rpx 0; text-align: center; font-size: 30rpx; font-weight: 800; box-shadow: var(--shadow-accent); transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
 .sheet-pay:active { transform: scale(0.985); background: var(--accent-strong); }
 .sheet-pay[disabled] { opacity: 0.45; box-shadow: none; }
-.slot-list { margin: 24rpx 0; max-height: 600rpx; overflow-y: auto; }
 .sheet-empty { text-align: center; padding: 48rpx 0; color: var(--sub); font-size: 26rpx; }
-.slot-pick { padding: 24rpx; background: var(--fill); border: 1rpx solid var(--border); border-radius: 16rpx; margin-bottom: 16rpx; }
-.slot-pick.on { background: var(--accent-soft); border-color: var(--accent); }
-.sp-time { font-size: 30rpx; font-weight: 600; color: var(--ink); }
-.sp-meta { font-size: 24rpx; color: var(--sub); margin-top: 6rpx; }
 
-/* —— 成交庆祝浮层（复用课程事件卡）：约/留话达成时全屏彩带 + 大字弹簧 —— */
+/* —— 行动完成反馈：全屏彩带 + 大字弹簧 —— */
 .celebrate { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
 .celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
 .celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }

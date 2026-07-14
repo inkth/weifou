@@ -96,15 +96,13 @@ Page({
 
   askAnother() { this.setData({ asked: '', answer: '', qid: '', gap: false, escalated: false }); },
 
-  // 病毒转化：访客也去建一个自己的分身（拉新闭环的关键一跳）。
-  goCreate() { wx.navigateTo({ url: '/pages/onboarding/index' }); },
   goMyClone() { wx.switchTab({ url: '/pages/discover/index' }); },
 
   onShareAppMessage() {
     const id = this.data.profileId;
     return {
       title: `匿名问问 ${this.data.realName} 的 AI 分身 👀`,
-      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/index/index',
+      path: id ? `/pages/qabox/index?profileId=${id}` : '/pages/discover/index',
     };
   },
   onShareTimeline() {

@@ -58,7 +58,7 @@ Page({
 
     if (isMine) {
       try {
-        // 只用到访问/访客/问答三项计数；打赏下线后收入项不再展示
+        // 只用到访问、访客、问答三项计数
         const stats = await request({ url: '/visit/stats/mine' });
         this.setData({ stats });
       } catch (e) {}
@@ -82,7 +82,7 @@ Page({
   async fetchProfile() {
     try {
       const data = await request({ url: `/profile/${this.data.profileId}` });
-      this.setData({ profile: data, loading: false, trustLine: buildTrustLine(data.trust, 'consulted') });
+      this.setData({ profile: data, loading: false, trustLine: buildTrustLine(data.trust, 'profile') });
       this._applyStageTheme();
     } catch (e) {
       this.setData({ loading: false });
@@ -130,10 +130,10 @@ Page({
     wx.showToast({ title: '已开启来访通知', icon: 'success' });
   },
 
-  // 交换名片：站内连接（不导流微信）。有自己分身 → 互进名片夹；没有 → 引导创建（裂变）。
+  // 交换名片：仅在双方都有可用名片时提供。
   async exchangeCard() {
     if (this.data.isMine || this.data.connected || this._connecting) return;
-    if (!this.data.hasOwnProfile) { this.goCreateOwn(); return; }
+    if (!this.data.hasOwnProfile) { wx.showToast({ title: '当前无法交换名片', icon: 'none' }); return; }
     this._connecting = true;
     try {
       await ensureLogin();
@@ -141,17 +141,11 @@ Page({
       this.setData({ connected: true });
       wx.showToast({ title: r.already ? '已在名片夹里' : '已交换名片', icon: 'success' });
     } catch (e) {
-      if (e.code === 'NO_PROFILE') { this.goCreateOwn(); return; }
+      if (e.code === 'NO_PROFILE') { wx.showToast({ title: '当前无法交换名片', icon: 'none' }); return; }
       wx.showToast({ title: e.message || '交换失败', icon: 'none' });
     } finally {
       this._connecting = false;
     }
-  },
-
-  // 裂变：访客页脚 → 对话式创建自己的助理（带来源归因；已有主页会自动进入编辑态）
-  goCreateOwn() {
-    track('own_hook_click', this.data.profileId, 'profile');
-    wx.navigateTo({ url: `/pages/onboarding/index?ref=${this.data.profileId}` });
   },
 
   goPoster() {

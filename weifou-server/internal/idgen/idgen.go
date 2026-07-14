@@ -15,7 +15,7 @@ func New() string {
 	return ts + hex.EncodeToString(b)
 }
 
-// WithPrefix 生成带业务前缀的单号（如订单号、退款号）。
+// WithPrefix 生成带业务前缀的单号（如订单号）。
 func WithPrefix(prefix string) string {
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	b := make([]byte, 4)

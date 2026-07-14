@@ -12,9 +12,11 @@
 
 | 路径 | 说明 |
 |------|------|
-| `pages/index/index` | 首页：未创建引导创建，已创建跳转主页 |
-| `pages/create/index` | 创建/编辑表单（基础信息 + 3 问） |
-| `pages/generating/index` | 生成过场（路由占位，目前 create 同步阻塞） |
+| `pages/discover/index` | 首页名片与接待状态 |
+| `pages/card-editor/index` | 已有名片的编辑页 |
+| `pages/explore/index` | 能力学习路径 |
+| `pages/inbox/index` | 访客提问收件箱 |
+| `pages/me/index` | 个人服务与设置入口 |
 | `pages/profile/index` | 主页（自/他视图共用） |
 | `pages/chat/index` | AI 问答 |
 | `pages/poster/index` | 海报合成（canvas） |

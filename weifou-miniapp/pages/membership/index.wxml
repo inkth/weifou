@@ -2,7 +2,8 @@
   <view class="hero">
     <view class="ic ic-crown crown"></view>
     <view class="h-title">人类基本功计划</view>
-    <view class="h-sub">一次订阅，练习 AI 时代依然稀缺的七种能力</view>
+    <view class="h-sub">15 门面向 AI 时代的核心能力课程</view>
+    <view class="h-note">经典研究 · 真实场景 · AI 陪练 · 迁移检验</view>
   </view>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>
@@ -20,7 +21,7 @@
     </view>
 
     <view class="benefits">
-      <view class="bf"><view class="ic ic-apps bf-ic"></view>解锁七条完整能力路径</view>
+      <view class="bf"><view class="ic ic-apps bf-ic"></view>解锁 15 门完整课程与能力路径</view>
       <view class="bf"><text class="bf-ic">∞</text>全部进阶关卡与复习挑战</view>
       <view class="bf"><view class="ic ic-sparkle bf-ic"></view>后续新增实战课程自动包含</view>
     </view>

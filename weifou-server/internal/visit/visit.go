@@ -120,10 +120,8 @@ func (h *Handler) stats(c *gin.Context) error {
 		Where("chat_sessions.profile_id = ? AND chat_messages.role = ?", profile.ID, models.RoleUser).
 		Count(&askCount)
 
-	// C2C 收费（打赏）已下线，主人侧无收入项；income* 恒为 0，仅保留键位兼容老客户端。
 	httpx.OK(c, gin.H{
 		"profileId": profile.ID, "pv": pv, "uv": uv, "askCount": askCount,
-		"incomeGross": 0, "incomeMonth": 0, "incomeNet": 0,
 	})
 	return nil
 }

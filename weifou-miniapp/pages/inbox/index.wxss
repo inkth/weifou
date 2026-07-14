@@ -1,8 +1,13 @@
 /* 消息：安静的高密度接待列表，状态只用少量蓝紫和功能色。 */
-.page { padding: 24rpx 32rpx 200rpx; }
-.hd { display: flex; align-items: baseline; justify-content: space-between; padding: 14rpx 0 24rpx; }
-.hd-title { font-size: 48rpx; font-weight: 800; color: var(--ink); letter-spacing: -1rpx; }
-.hd-meta { font-size: 24rpx; color: var(--accent-deep); }
+.page { min-height: 100vh; padding: 24rpx 32rpx 200rpx; background: radial-gradient(circle at 100% 0, rgba(201,195,235,.22), transparent 520rpx), var(--bg); }
+.hd { display: flex; align-items: flex-end; justify-content: space-between; padding: 18rpx 2rpx 34rpx; }
+.hd-kicker { margin-bottom: 10rpx; color: var(--accent); font-size: 18rpx; line-height: 1; letter-spacing: 3rpx; font-weight: 800; }
+.hd-title { font-size: 50rpx; line-height: 1.15; font-weight: 800; color: var(--ink); letter-spacing: -1rpx; }
+.hd-sub { margin-top: 10rpx; color: var(--ink-2); font-size: 22rpx; }
+.hd-meta { display: flex; align-items: center; gap: 9rpx; margin-bottom: 4rpx; padding: 8rpx 14rpx; border-radius: var(--r-full); color: var(--sub); background: rgba(255,255,255,.64); border: 1rpx solid var(--border); font-size: 20rpx; font-weight: 650; }
+.hd-meta-dot { width: 8rpx; height: 8rpx; border-radius: 50%; background: var(--success); }
+.hd-meta.has-pending { color: var(--accent-deep); background: var(--accent-soft); border-color: transparent; }
+.hd-meta.has-pending .hd-meta-dot { background: var(--accent); box-shadow: 0 0 0 5rpx rgba(119,114,200,.11); }
 
 .muted { color: var(--sub); }
 .tip { font-size: 24rpx; margin-bottom: 20rpx; line-height: 1.5; }
@@ -56,7 +61,7 @@
   background: var(--surface);
   border: var(--bw-thin) solid var(--border);
   border-radius: var(--r-xl);
-  padding: 28rpx;
+  padding: 26rpx 28rpx 24rpx;
   margin-bottom: 20rpx;
   box-shadow: var(--shadow-card);
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
@@ -65,9 +70,17 @@
 /* 访客点名要本人亲自答：蓝紫描边提优先级 */
 .card.urgent { border-color: var(--accent); }
 
-.lead-head { display: flex; justify-content: space-between; align-items: baseline; }
-.lead-name { font-size: 28rpx; font-weight: 800; color: var(--ink); }
+.lead-head { display: flex; justify-content: space-between; align-items: center; }
+.lead-person { display: flex; align-items: center; gap: 13rpx; }
+.lead-avatar { display: flex; align-items: center; justify-content: center; width: 48rpx; height: 48rpx; border-radius: 16rpx; color: var(--accent-deep); background: var(--accent-soft); font-size: 20rpx; font-weight: 800; }
+.lead-name { font-size: 25rpx; font-weight: 750; color: var(--ink-2); }
 
-.q { font-size: 30rpx; font-weight: 700; color: var(--ink); line-height: 1.5; margin-top: 8rpx; }
+.q { font-size: 30rpx; font-weight: 700; color: var(--ink); line-height: 1.55; margin-top: 20rpx; }
 .meta { font-size: 22rpx; margin-top: 12rpx; }
-.status.todo { color: var(--accent); font-weight: 600; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18rpx; padding-top: 17rpx; border-top: 1rpx solid var(--line); }
+.card-foot .meta { margin-top: 0; }
+.status { display: flex; align-items: center; gap: 9rpx; color: var(--sub); }
+.status-dot { width: 8rpx; height: 8rpx; border-radius: 50%; background: var(--success); }
+.status.todo { color: var(--accent-deep); font-weight: 650; }
+.status.todo .status-dot { background: var(--accent); }
+.reply-link { color: var(--accent-deep); font-size: 22rpx; font-weight: 750; }

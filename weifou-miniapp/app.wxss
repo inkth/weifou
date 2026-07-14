@@ -89,7 +89,7 @@ page {
   --scrim: rgba(0, 0, 0, 0.5);          /* 模态弹层黑底 */
   --scrim-soft: rgba(35, 34, 56, 0.30); /* 抽屉/温和遮罩 */
 
-  /* —— 沉浸天空渐变（新用户 demo / onboarding / 学习舞台背景；改天空皮就改这里）—— */
+  /* —— 沉浸天空渐变（名片演示 / 学习舞台背景；改天空皮就改这里）—— */
   --sky-1: #e2dff5;
   --sky-2: #e2f0f6;
   --grad-sky: linear-gradient(165deg, var(--sky-1) 0%, var(--sky-2) 46%, var(--bg) 100%);

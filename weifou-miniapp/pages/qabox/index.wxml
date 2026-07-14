@@ -56,18 +56,10 @@
 
       <button class="qb-again" bindtap="askAnother">再问一个 →</button>
 
-      <!-- 病毒转化钩子 -->
-      <view class="qb-cta">
-        <block wx:if="{{!hasOwnClone}}">
-          <view class="qb-cta-title">也给自己建一个 AI 分身？</view>
-          <view class="qb-cta-sub muted">让你的分身替你接待、回答、被人匿名问 —— 30 秒搞定。</view>
-          <button class="btn-primary qb-cta-btn" bindtap="goCreate">30 秒建我的分身</button>
-        </block>
-        <block wx:else>
-          <view class="qb-cta-title">你也有自己的分身</view>
-          <view class="qb-cta-sub muted">把你的问答箱分享出去，看看谁来问你。</view>
-          <button class="btn-primary qb-cta-btn" bindtap="goMyClone">去我的分身</button>
-        </block>
+      <view class="qb-cta" wx:if="{{hasOwnClone}}">
+        <view class="qb-cta-title">你也有自己的分身</view>
+        <view class="qb-cta-sub muted">把你的问答箱分享出去，看看谁来问你。</view>
+        <button class="btn-primary qb-cta-btn" bindtap="goMyClone">去我的分身</button>
       </view>
     </block>
   </block>

@@ -5,7 +5,7 @@ function buildTrustLine(trust, who) {
   if (!trust) return '';
   const verb = who === 'asked' ? '问过 TA' : '找 TA 问过';
   const parts = [];
-  if (trust.consultedPeople >= 3) parts.push(`已有 ${trust.consultedPeople} 人${verb}`);
+  if (trust.answeredPeople >= 3) parts.push(`已有 ${trust.answeredPeople} 人${verb}`);
   if (trust.answeredCount >= 3 && trust.avgAnswerHours > 0) {
     const h = trust.avgAnswerHours;
     const t = h < 1 ? `${Math.max(1, Math.round(h * 60))} 分钟` : `${Math.round(h)} 小时`;

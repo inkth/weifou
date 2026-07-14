@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 
-/// AI 问答返回。首版忽略 consult 成交卡片（card），随咨询功能一起推迟。
+/// AI 问答返回。
 class ChatAnswer {
   ChatAnswer({required this.sessionId, required this.answer});
 
@@ -43,10 +43,9 @@ class ChatApi {
 
   /// POST /chat/:profileId/ask —— 需登录。提问限 200 字。
   Future<ChatAnswer> ask(String profileId, String content) async {
-    final data = await _ref.read(dioClientProvider).post(
-      '/chat/$profileId/ask',
-      data: {'content': content},
-    );
+    final data = await _ref
+        .read(dioClientProvider)
+        .post('/chat/$profileId/ask', data: {'content': content});
     final map = Map<String, dynamic>.from(data as Map);
     return ChatAnswer(
       sessionId: map['sessionId'] as String,
@@ -59,8 +58,9 @@ class ChatApi {
     final data = await _ref.read(dioClientProvider).get('/chat/sessions/mine');
     final list = (data as List?) ?? const [];
     return list
-        .map((e) =>
-            ChatSessionItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map(
+          (e) => ChatSessionItem.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
         .toList();
   }
 }

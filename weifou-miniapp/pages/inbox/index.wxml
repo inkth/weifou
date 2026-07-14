@@ -1,7 +1,11 @@
 <view class="page">
   <view class="hd" style="padding-top:calc({{statusBarH}}px + 16rpx)">
-    <view class="hd-title">消息</view>
-    <view class="hd-meta" wx:if="{{pendingCount}}">{{pendingCount}} 条待回复</view>
+    <view>
+      <view class="hd-kicker">AI RECEPTION</view>
+      <view class="hd-title">消息</view>
+      <view class="hd-sub">分身接住的每一次来访，都在这里</view>
+    </view>
+    <view class="hd-meta {{pendingCount ? 'has-pending' : ''}}"><text class="hd-meta-dot"></text>{{pendingCount ? pendingCount + ' 条待回复' : '已全部处理'}}</view>
   </view>
 
   <!-- 真网络失败：可重试条（不把「挂了」伪装成「没消息」） -->
@@ -37,11 +41,11 @@
         data-status="{{item.status}}"
       >
         <view class="lead-head">
-          <text class="lead-name">匿名访客</text>
+          <view class="lead-person"><view class="lead-avatar">访</view><text class="lead-name">匿名访客</text></view>
           <text class="meta muted">{{item.timeText}}</text>
         </view>
         <view class="q">{{item.question}}</view>
-        <view class="meta status {{item.needsReply ? 'todo' : ''}}">{{item.statusText}}{{item.needsReply ? ' ›' : ''}}</view>
+        <view class="card-foot"><view class="meta status {{item.needsReply ? 'todo' : ''}}"><text class="status-dot"></text>{{item.statusText}}</view><text wx:if="{{item.needsReply}}" class="reply-link">去回复 ›</text></view>
       </view>
     </view>
   </block>

@@ -2,12 +2,6 @@ import 'dart:io' show Platform;
 
 /// 付费入口类型。
 enum PayEntry {
-  /// 打赏：纯赠予、不解锁任何权益。iOS 合规灰区，首版隐藏。
-  tip,
-
-  /// 付费咨询：真人一对一服务，App Store 指南 3.1.3(e) 允许第三方支付。
-  consult,
-
   /// 虚拟权益类（解锁数字内容/额度等）：iOS 必须走 IAP，故隐藏。预留。
   virtualGoods,
 }
@@ -22,8 +16,6 @@ class EntryGate {
 
   /// 各入口在 iOS / Android 的默认可见性。
   static const Map<PayEntry, ({bool ios, bool android})> _defaults = {
-    PayEntry.tip: (ios: false, android: true),
-    PayEntry.consult: (ios: true, android: true),
     PayEntry.virtualGoods: (ios: false, android: true),
   };
 

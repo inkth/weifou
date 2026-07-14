@@ -325,7 +325,7 @@ func (h *Handler) ask(c *gin.Context) error {
 		h.recordGap(profileID, content)
 	}
 
-	// options：分身沿成交阶梯现编的可点选项；stage：当前阶梯（display-only）。suggestions 保留兼容。
+	// options：分身现编的可点选项；stage：当前访客意向阶段。suggestions 保留兼容。
 	httpx.OK(c, gin.H{"sessionId": session.ID, "answer": finalAnswer, "options": options, "stage": stage, "suggestions": result.Suggestions})
 	return nil
 }
@@ -334,7 +334,7 @@ type reoptionsReq struct {
 	Exclude []string `json:"exclude"` // 已展示过的选项，换一批时要求避开
 }
 
-// reoptions 换一批：不产生新对话轮、不写库，只基于当前会话最近一轮另生成一组可点选项（复用成交阶梯 prompt + exclude）。
+// reoptions 换一批：不产生新对话轮、不写库，只基于当前会话最近一轮另生成一组可点选项。
 func (h *Handler) reoptions(c *gin.Context) error {
 	auth := middleware.Current(c)
 	profileID := c.Param("profileId")

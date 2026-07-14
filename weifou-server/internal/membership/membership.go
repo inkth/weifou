@@ -1,5 +1,5 @@
 // Package membership 实现账号级会员：一价解锁全部工具 Agent。
-// 卖的是 AI 服务=虚拟商品，平台自营、不分账，受 iOS 虚拟支付红线约束：
+// 卖的是 AI 服务=虚拟商品，平台自营，受 iOS 虚拟支付红线约束：
 //   - 小程序：仅 Android 端可开通（buy 对 iOS 兜底拒单）；
 //   - iOS / 跨端：走 H5 收银（外部 Safari 的 H5支付，不被 Apple 抽成）——
 //     小程序登录态换「交接令牌」h5-link → 外部浏览器打开 h5page → h5/order 下单。
@@ -177,7 +177,8 @@ func (h *Handler) vpayOrder(c *gin.Context) error {
 
 // vpayNotify 虚拟支付发货回调（小程序「消息推送」xpay_goods_deliver_notify）。
 // ⚠️ TODO：补 signature(sha1) 校验 + 加密模式 AES-CBC 解密（对齐 mp 模块明文/兼容降级风格；
-//    虚拟支付若强制加密模式，需用小程序消息推送 EncodingAESKey 解密）。当前按明文/兼容解析。
+//
+//	虚拟支付若强制加密模式，需用小程序消息推送 EncodingAESKey 解密）。当前按明文/兼容解析。
 func (h *Handler) vpayNotify(c *gin.Context) {
 	if c.Request.Method == "GET" {
 		c.String(200, c.Query("echostr")) // 配置消息推送 URL 时的接入校验
@@ -449,15 +450,15 @@ var app = document.getElementById('app');
 function yuan(fen){ return (fen/100).toFixed(2).replace(/\.00$/,''); }
 function render(){
   if (PAID === "1"){
-    app.innerHTML = '<div class="done"><div class="ok">✅</div><div class="t">支付完成</div><div class="s">全课会员已开通，返回微否小程序即可解锁七条完整能力路径</div></div>';
+    app.innerHTML = '<div class="done"><div class="ok">✅</div><div class="t">支付完成</div><div class="s">全课会员已开通，返回微否小程序即可解锁 15 门完整课程与能力路径</div></div>';
     return;
   }
   if (isWeChat){
     app.innerHTML = '<div class="overlay"><div class="arr">↗</div><div class="big">请在浏览器中打开</div><div style="margin-top:14px;font-size:14px;opacity:.85">点右上角「···」→「在 Safari / 浏览器打开」，再开通会员</div></div>';
     return;
   }
-  var h = '<div class="hero"><div class="crown">👑</div><div class="title">人类基本功计划</div><div class="sub">一次订阅，练习 AI 时代依然稀缺的七种能力</div></div>';
-  h += '<div class="card"><div class="bf"><i>🧭</i>解锁七条完整能力路径</div><div class="bf"><i>∞</i>全部进阶关卡与复习挑战</div><div class="bf"><i>🆕</i>后续新增实战课程自动包含</div></div>';
+  var h = '<div class="hero"><div class="crown">👑</div><div class="title">人类基本功计划</div><div class="sub">15 门面向 AI 时代的核心能力课程</div></div>';
+  h += '<div class="card"><div class="bf"><i>🧭</i>解锁 15 门完整课程与能力路径</div><div class="bf"><i>∞</i>全部进阶关卡与复习挑战</div><div class="bf"><i>🆕</i>后续新增实战课程自动包含</div></div>';
   h += '<div class="plans">';
   for (var i=0;i<PLANS.length;i++){
     var p = PLANS[i]; var d = p.days>0 ? (p.price/100/p.days).toFixed(1) : '';

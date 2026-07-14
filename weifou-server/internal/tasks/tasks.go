@@ -18,20 +18,19 @@ type Scheduler struct {
 	referral        *referral.Handler
 	cron            *cron.Cron
 	orderTimeoutMin int
-	graceMin        int
 }
 
-func NewScheduler(db *gorm.DB, pay *payment.Handler, ref *referral.Handler, orderTimeoutMin, graceMin int) *Scheduler {
+func NewScheduler(db *gorm.DB, pay *payment.Handler, ref *referral.Handler, orderTimeoutMin int) *Scheduler {
 	return &Scheduler{
 		db: db, payment: pay, referral: ref, cron: cron.New(),
-		orderTimeoutMin: orderTimeoutMin, graceMin: graceMin,
+		orderTimeoutMin: orderTimeoutMin,
 	}
 }
 
 func (s *Scheduler) Start() {
 	// 每分钟关闭超时未支付订单
 	s.cron.AddFunc("@every 1m", s.closeTimeoutOrders)
-	// 每 10 分钟发放已过退款窗口的邀请奖励
+	// 每 10 分钟发放已过观察期的邀请奖励
 	s.cron.AddFunc("@every 10m", s.referral.GrantDueRewards)
 	s.cron.Start()
 	log.Println("[tasks] cron started")

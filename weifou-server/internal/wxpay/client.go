@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -72,11 +71,6 @@ func (c *Client) Ready() bool {
 }
 
 func (c *Client) AppID() string { return c.appID }
-
-// notifyBase 用于推导退款/分账回调地址（与 payment/notify 同域名）
-func (c *Client) notifyBase() string {
-	return strings.TrimSuffix(c.notifyURL, "/payment/notify")
-}
 
 func loadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	data, err := os.ReadFile(path)
@@ -291,40 +285,6 @@ func (c *Client) CloseOrder(outTradeNo string) error {
 	_, err := c.doV3("POST", fmt.Sprintf("/v3/pay/transactions/out-trade-no/%s/close", outTradeNo),
 		map[string]string{"mchid": c.mchID})
 	return err
-}
-
-// ---------- 退款 ----------
-
-type RefundReq struct {
-	OutTradeNo  string
-	OutRefundNo string
-	Refund      int
-	Total       int
-	Reason      string
-}
-
-type RefundResp struct {
-	RefundID string `json:"refund_id"`
-	Status   string `json:"status"`
-}
-
-func (c *Client) Refund(r RefundReq) (*RefundResp, error) {
-	payload := map[string]interface{}{
-		"out_trade_no":  r.OutTradeNo,
-		"out_refund_no": r.OutRefundNo,
-		"notify_url":    c.notifyBase() + "/payment/refund-notify",
-		"amount":        map[string]interface{}{"refund": r.Refund, "total": r.Total, "currency": "CNY"},
-	}
-	if r.Reason != "" {
-		payload["reason"] = r.Reason
-	}
-	body, err := c.doV3("POST", "/v3/refund/domestic/refunds", payload)
-	if err != nil {
-		return nil, err
-	}
-	var data RefundResp
-	_ = json.Unmarshal(body, &data)
-	return &data, nil
 }
 
 // ---------- 回调验签 + 解密 ----------

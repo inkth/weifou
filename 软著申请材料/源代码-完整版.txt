@@ -37,6 +37,307 @@ class WeifouApp extends ConsumerWidget {
 }
 
 //==================================================================
+// 文件: lib/core/avatar/weifou_avatar.dart
+//==================================================================
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../theme/app_theme.dart';
+
+/// 对话状态，驱动头像的眼/嘴表情（对齐小程序 components/avatar 的 s-idle/thinking/speaking）。
+enum AvatarState { idle, thinking, speaking }
+
+/// 形象预设。与小程序 utils/avatars.js 的 PRESETS 同源维护：
+/// toonLook 非空 = 纯绘制卡通脸（steady/warm/sharp/humorous）；为空 = 渐变 + 首字形象。
+class AvatarPreset {
+  const AvatarPreset(this.id, {this.toonLook, required this.colors});
+  final String id;
+  final String? toonLook;
+  final List<Color> colors;
+}
+
+const Map<String, AvatarPreset> kAvatarPresets = {
+  'aurora': AvatarPreset('aurora',
+      colors: [Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899)]),
+  'ocean': AvatarPreset('ocean', colors: [Color(0xFF0EA5E9), Color(0xFF2563EB)]),
+  'mint': AvatarPreset('mint', colors: [Color(0xFF10B981), Color(0xFF34D399)]),
+  'sunset': AvatarPreset('sunset', colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
+  'graphite':
+      AvatarPreset('graphite', colors: [Color(0xFF374151), Color(0xFF111827)]),
+  'lavender':
+      AvatarPreset('lavender', colors: [Color(0xFF8B5CF6), Color(0xFFC4B5FD)]),
+  'coral': AvatarPreset('coral', colors: [Color(0xFFFB7185), Color(0xFFF43F5E)]),
+  'forest': AvatarPreset('forest', colors: [Color(0xFF16A34A), Color(0xFF065F46)]),
+  'toon-steady': AvatarPreset('toon-steady',
+      toonLook: 'steady', colors: [Color(0xFF475569), Color(0xFF1F2330)]),
+  'toon-warm': AvatarPreset('toon-warm',
+      toonLook: 'warm', colors: [Color(0xFFFB923C), Color(0xFFF43F5E)]),
+  'toon-sharp': AvatarPreset('toon-sharp',
+      toonLook: 'sharp', colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)]),
+  'toon-humorous': AvatarPreset('toon-humorous',
+      toonLook: 'humorous', colors: [Color(0xFF10B981), Color(0xFF22D3EE)]),
+};
+
+int _hashStr(String s) {
+  var h = 0;
+  for (final c in s.codeUnits) {
+    h = (h * 31 + c) & 0x7fffffff;
+  }
+  return h;
+}
+
+/// 取预设；style 为空/未知时按 seed 确定性兜底（与小程序 getPreset 一致）。
+AvatarPreset resolveAvatarPreset(String? style, {String seed = ''}) {
+  final hit = kAvatarPresets[style];
+  if (hit != null) return hit;
+  final keys = kAvatarPresets.keys.toList();
+  return kAvatarPresets[keys[_hashStr(seed) % keys.length]]!;
+}
+
+/// 姓名首字符（中文取首字，英文大写），空名回落「微」。
+String avatarInitial(String? name) {
+  final n = (name ?? '').trim();
+  if (n.isEmpty) return '微';
+  return String.fromCharCode(n.runes.first).toUpperCase();
+}
+
+/// 微否动态形象：会呼吸/漂浮的头像，支持卡通脸三态与渐变首字两种渲染。
+/// active=true（如 AI 正在回应）时呼吸幅度更大、节奏更快。
+class WeifouAvatar extends StatefulWidget {
+  const WeifouAvatar({
+    super.key,
+    required this.style,
+    required this.name,
+    this.size = 64,
+    this.state = AvatarState.idle,
+    this.active = false,
+  });
+
+  final String? style;
+  final String name;
+  final double size;
+  final AvatarState state;
+  final bool active;
+
+  @override
+  State<WeifouAvatar> createState() => _WeifouAvatarState();
+}
+
+class _WeifouAvatarState extends State<WeifouAvatar>
+    with TickerProviderStateMixin {
+  late final AnimationController _alive; // 呼吸 + 漂浮
+  late final AnimationController _blink; // 眨眼
+
+  @override
+  void initState() {
+    super.initState();
+    _alive = AnimationController(vsync: this, duration: _aliveDuration)..repeat(reverse: true);
+    _blink = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 4600))
+      ..repeat();
+  }
+
+  Duration get _aliveDuration => Duration(milliseconds: widget.active ? 1300 : 3100);
+
+  @override
+  void didUpdateWidget(WeifouAvatar old) {
+    super.didUpdateWidget(old);
+    if (old.active != widget.active) {
+      _alive
+        ..duration = _aliveDuration
+        ..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _alive.dispose();
+    _blink.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preset = resolveAvatarPreset(widget.style, seed: widget.name);
+    final s = widget.size;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_alive, _blink]),
+      builder: (_, _) {
+        final phase = math.sin(_alive.value * math.pi); // 0→1→0
+        final scale = 1 + (widget.active ? 0.075 : 0.035) * _alive.value;
+        final dy = -(widget.active ? 7.0 : 4.0) * phase;
+        // 眨眼：4.6s 周期内末段快速合眼
+        final bv = _blink.value;
+        final eyeOpen = bv > 0.93 && bv < 0.985 ? 0.12 : 1.0;
+        return Transform.translate(
+          offset: Offset(0, dy),
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: s,
+              height: s,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: preset.colors,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Color(0x1F000000),
+                      blurRadius: 12,
+                      offset: Offset(0, 6)),
+                ],
+              ),
+              child: preset.toonLook == null
+                  ? Center(
+                      child: Text(
+                        avatarInitial(widget.name),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: s * 0.4,
+                        ),
+                      ),
+                    )
+                  : CustomPaint(
+                      painter: _ToonPainter(
+                        look: preset.toonLook!,
+                        state: widget.state,
+                        eyeOpen: eyeOpen,
+                        talk: phase, // speaking 时嘴开合用
+                      ),
+                    ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 纯绘制卡通脸，几何参数对齐小程序 components/avatar/index.wxss 的 toon-* 规则。
+class _ToonPainter extends CustomPainter {
+  _ToonPainter({
+    required this.look,
+    required this.state,
+    required this.eyeOpen,
+    required this.talk,
+  });
+
+  final String look;
+  final AvatarState state;
+  final double eyeOpen; // 0~1 睁眼程度
+  final double talk; // 0~1 说话开合相位
+
+  static const _white = Colors.white;
+  static const _pupil = AppTheme.ink;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final white = Paint()..color = _white;
+    final pupil = Paint()..color = _pupil;
+
+    final sharp = look == 'sharp';
+    final eyeW = 0.17 * s;
+    final eyeH = (sharp ? 0.17 : 0.22) * s * eyeOpen;
+    final eyeCY = (sharp ? 0.455 : 0.45) * s;
+    final eyeLX = 0.325 * s;
+    final eyeRX = 0.675 * s;
+    final thinking = state == AvatarState.thinking;
+
+    void drawEye(double cx) {
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(cx, eyeCY), width: eyeW, height: eyeH),
+        white,
+      );
+      final py = eyeCY - (thinking ? 0.035 * s : 0);
+      final px = cx + (thinking ? 0.012 * s : 0);
+      canvas.drawCircle(Offset(px, py), 0.038 * s * eyeOpen.clamp(0.25, 1), pupil);
+    }
+
+    drawEye(eyeLX);
+    drawEye(eyeRX);
+
+    // 眉毛：仅犀利显示
+    if (sharp) {
+      final brow = Paint()
+        ..color = _white
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 0.045 * s;
+      _rotLine(canvas, brow, Offset(0.33 * s, 0.27 * s), 0.14 * s, 0.24);
+      _rotLine(canvas, brow, Offset(0.67 * s, 0.27 * s), 0.14 * s, -0.24);
+    }
+
+    // 腮红：warm / humorous 显示
+    if (look == 'warm' || look == 'humorous') {
+      final blush = Paint()..color = _white.withValues(alpha: 0.38);
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(0.20 * s, 0.62 * s),
+              width: 0.14 * s,
+              height: 0.09 * s),
+          blush);
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(0.80 * s, 0.62 * s),
+              width: 0.14 * s,
+              height: 0.09 * s),
+          blush);
+    }
+
+    // 嘴
+    _drawMouth(canvas, s, white);
+  }
+
+  void _rotLine(
+      Canvas canvas, Paint p, Offset center, double len, double angle) {
+    final dx = math.cos(angle) * len / 2;
+    final dy = math.sin(angle) * len / 2;
+    canvas.drawLine(
+        Offset(center.dx - dx, center.dy - dy),
+        Offset(center.dx + dx, center.dy + dy),
+        p);
+  }
+
+  void _drawMouth(Canvas canvas, double s, Paint white) {
+    double w = 0.26 * s, h = 0.13 * s;
+    final cx = 0.5 * s, cy = 0.68 * s;
+    if (look == 'steady') {
+      w = 0.20 * s;
+      h = 0.06 * s;
+    } else if (look == 'humorous') {
+      w = 0.32 * s;
+      h = 0.16 * s;
+    }
+    if (state == AvatarState.thinking) {
+      // 收成小点
+      canvas.drawCircle(Offset(cx, cy), 0.045 * s, white);
+      return;
+    }
+    if (state == AvatarState.speaking) {
+      h = h * (0.5 + talk * 0.9); // 开合
+    }
+    // 微笑：上沿直线 + 下沿外凸的半透镜形
+    final path = Path()
+      ..moveTo(cx - w / 2, cy - h * 0.2)
+      ..quadraticBezierTo(cx, cy + h, cx + w / 2, cy - h * 0.2)
+      ..close();
+    canvas.drawPath(path, white);
+  }
+
+  @override
+  bool shouldRepaint(_ToonPainter old) =>
+      old.look != look ||
+      old.state != state ||
+      old.eyeOpen != eyeOpen ||
+      old.talk != talk;
+}
+
+//==================================================================
 // 文件: lib/core/config/env.dart
 //==================================================================
 /// 全局环境配置。
@@ -294,12 +595,6 @@ import 'dart:io' show Platform;
 
 /// 付费入口类型。
 enum PayEntry {
-  /// 打赏：纯赠予、不解锁任何权益。iOS 合规灰区，首版隐藏。
-  tip,
-
-  /// 付费咨询：真人一对一服务，App Store 指南 3.1.3(e) 允许第三方支付。
-  consult,
-
   /// 虚拟权益类（解锁数字内容/额度等）：iOS 必须走 IAP，故隐藏。预留。
   virtualGoods,
 }
@@ -314,8 +609,6 @@ class EntryGate {
 
   /// 各入口在 iOS / Android 的默认可见性。
   static const Map<PayEntry, ({bool ios, bool android})> _defaults = {
-    PayEntry.tip: (ios: false, android: true),
-    PayEntry.consult: (ios: true, android: true),
     PayEntry.virtualGoods: (ios: false, android: true),
   };
 
@@ -374,7 +667,7 @@ import '../../features/auth/auth_controller.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/chat/chats_screen.dart';
-import '../../features/create/create_screen.dart';
+import '../../features/create/conversational_create_screen.dart';
 import '../../features/create/persona_edit_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/plaza/plaza_screen.dart';
@@ -440,9 +733,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: '/create',
-        name: 'create',
-        builder: (context, state) => const CreateScreen(),
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const ConversationalCreateScreen(),
       ),
       GoRoute(
         path: '/settings',
@@ -545,14 +838,55 @@ class SecureStore {
 //==================================================================
 import 'package:flutter/material.dart';
 
-/// 与小程序 app.wxss 一致的视觉规范：墨黑主色、浅灰底、胶囊按钮。
+/// 与小程序一致的人物编辑感 + 雾蓝紫 AI 气场。
 class AppTheme {
   AppTheme._();
 
-  static const Color ink = Color(0xFF1F2330); // 主色 / 文字
-  static const Color bg = Color(0xFFF5F6FA); // 页面底色
-  static const Color border = Color(0xFFE5E7EC); // 描边
-  static const Color sub = Color(0xFF8A8F9C); // 次要文字
+  // 设计令牌（双端真源见 docs/design-tokens.md）。
+  static const Color ink = Color(0xFF17181C);
+  static const Color ink2 = Color(0xFF5E616D);
+  static const Color sub = Color(0xFF8D909B);
+  static const Color faint = Color(0xFFB5B7C0);
+  static const Color line = Color(0xFFF0F1F5);
+  static const Color border = Color(0xFFE7E8EE);
+  static const Color fill = Color(0xFFF3F4F7);
+  static const Color fillPressed = Color(0xFFECEEF3);
+
+  // —— 表面与底色 ——
+  static const Color bg = Color(0xFFF6F7FB);
+  static const Color surface = Color(0xFFFFFFFF); // 卡片 / 浮层表面
+  static const Color surfaceSunken = Color(0xFFF1F2F7);
+
+  // —— 雾蓝紫品牌与 AI 气场 ——
+  static const Color accent = Color(0xFF7772C8);
+  static const Color accentStrong = Color(0xFF5B569F);
+  static const Color accentDeep = Color(0xFF4F4A8B);
+  static const Color accentSoft = Color(0xFFEFEDFA);
+  static const Color accentInk = Color(0xFF47427D);
+  static const Color mistBlue = Color(0xFFB9DDED);
+  static const Color mistLilac = Color(0xFFC9C3EB);
+  static const Color success = Color(0xFF4F9D78);
+  static const Color warn = Color(0xFFD39A4A);
+  static const Color danger = Color(0xFFD85C68);
+
+  // —— 圆角阶（对应小程序 --r-*）——
+  static const double rSm = 6,
+      rMd = 10,
+      rLg = 13,
+      rXl = 16,
+      r2xl = 20,
+      rFull = 999;
+
+  // —— 柔和空间阴影 ——
+  static const List<BoxShadow> cardShadow = [
+    BoxShadow(color: Color(0x0F222038), blurRadius: 14, offset: Offset(0, 4)),
+  ];
+  static const List<BoxShadow> softShadow = [
+    BoxShadow(color: Color(0x1C5B569F), blurRadius: 19, offset: Offset(0, 6)),
+  ];
+  static const List<BoxShadow> accentShadow = [
+    BoxShadow(color: Color(0x335B569F), blurRadius: 14, offset: Offset(0, 5)),
+  ];
 
   static ThemeData get light {
     final base = ThemeData.light(useMaterial3: true);
@@ -560,31 +894,99 @@ class AppTheme {
       scaffoldBackgroundColor: bg,
       colorScheme: base.colorScheme.copyWith(
         primary: ink,
+        secondary: accent,
+        error: danger,
         surface: Colors.white,
       ),
-      textTheme: base.textTheme.apply(
-        bodyColor: ink,
-        displayColor: ink,
-      ),
+      textTheme: base.textTheme.apply(bodyColor: ink, displayColor: ink),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
+        backgroundColor: bg,
         foregroundColor: ink,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
       ),
-      // 胶囊主按钮（对应 .btn-primary）。
+      cardTheme: CardThemeData(
+        color: surface,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(rXl),
+          side: const BorderSide(color: border),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surface,
+        hintStyle: const TextStyle(color: sub),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(rMd),
+          borderSide: const BorderSide(color: border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(rMd),
+          borderSide: const BorderSide(color: border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(rMd),
+          borderSide: const BorderSide(color: accent, width: 1.4),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: fill,
+        selectedColor: accentSoft,
+        side: const BorderSide(color: border),
+        labelStyle: const TextStyle(color: ink2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rSm)),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        indicatorColor: Colors.transparent,
+        elevation: 0,
+        height: 64,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected) ? accentDeep : sub,
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected) ? accentDeep : sub,
+          ),
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: accent),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? Colors.white : faint,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? accent : fill,
+        ),
+      ),
+      // 通用主按钮使用墨黑，AI 专属行动使用 accentButton。
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: ink,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(50),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(100),
+            borderRadius: BorderRadius.circular(rMd),
           ),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ),
-      // 胶囊幽灵按钮（对应 .btn-ghost）。
+      // 白底细边次按钮。
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: ink,
@@ -592,12 +994,22 @@ class AppTheme {
           minimumSize: const Size.fromHeight(50),
           side: const BorderSide(color: border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(100),
+            borderRadius: BorderRadius.circular(rMd),
           ),
         ),
       ),
     );
   }
+
+  /// AI 强调主按钮样式（对应小程序 .btn-accent）。
+  /// 用法：ElevatedButton(style: AppTheme.accentButton, ...)
+  static final ButtonStyle accentButton = ElevatedButton.styleFrom(
+    backgroundColor: accent,
+    foregroundColor: Colors.white,
+    minimumSize: const Size.fromHeight(50),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rMd)),
+    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+  );
 }
 
 //==================================================================
@@ -661,7 +1073,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 
-/// AI 问答返回。首版忽略 consult 成交卡片（card），随咨询功能一起推迟。
+/// AI 问答返回。
 class ChatAnswer {
   ChatAnswer({required this.sessionId, required this.answer});
 
@@ -702,10 +1114,9 @@ class ChatApi {
 
   /// POST /chat/:profileId/ask —— 需登录。提问限 200 字。
   Future<ChatAnswer> ask(String profileId, String content) async {
-    final data = await _ref.read(dioClientProvider).post(
-      '/chat/$profileId/ask',
-      data: {'content': content},
-    );
+    final data = await _ref
+        .read(dioClientProvider)
+        .post('/chat/$profileId/ask', data: {'content': content});
     final map = Map<String, dynamic>.from(data as Map);
     return ChatAnswer(
       sessionId: map['sessionId'] as String,
@@ -718,8 +1129,9 @@ class ChatApi {
     final data = await _ref.read(dioClientProvider).get('/chat/sessions/mine');
     final list = (data as List?) ?? const [];
     return list
-        .map((e) =>
-            ChatSessionItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map(
+          (e) => ChatSessionItem.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
         .toList();
   }
 }
@@ -808,6 +1220,7 @@ class ProfileInput {
     required this.recentWork,
     required this.howToKnow,
     this.avatarStyle,
+    this.style,
   });
 
   final String realName;
@@ -818,6 +1231,7 @@ class ProfileInput {
   final String recentWork;
   final String howToKnow;
   final String? avatarStyle;
+  final String? style; // 对外沟通风格，白名单见后端 persona.StyleDescriptions
 
   Map<String, dynamic> toJson() => {
         'realName': realName,
@@ -828,7 +1242,66 @@ class ProfileInput {
         'recentWork': recentWork,
         'howToKnow': howToKnow,
         'avatarStyle': ?avatarStyle,
+        'style': ?style,
       };
+}
+
+/// 对话式创建的抽取结果，对应后端 persona.ExtractedProfile。
+class ExtractedProfile {
+  ExtractedProfile({
+    this.realName = '',
+    this.title = '',
+    this.strengths = '',
+    this.recentWork = '',
+    this.howToKnow = '',
+    this.style = '',
+    this.followup = '',
+    this.complete = false,
+  });
+
+  final String realName;
+  final String title;
+  final String strengths;
+  final String recentWork;
+  final String howToKnow;
+  final String style;
+  final String followup;
+  final bool complete;
+
+  factory ExtractedProfile.fromJson(Map<String, dynamic> j) => ExtractedProfile(
+        realName: (j['realName'] ?? '') as String,
+        title: (j['title'] ?? '') as String,
+        strengths: (j['strengths'] ?? '') as String,
+        recentWork: (j['recentWork'] ?? '') as String,
+        howToKnow: (j['howToKnow'] ?? '') as String,
+        style: (j['style'] ?? '') as String,
+        followup: (j['followup'] ?? '') as String,
+        complete: (j['complete'] ?? false) as bool,
+      );
+}
+
+/// 对话式编辑的预填草稿：/profile/mine 的基础字段 + personaInput 原始输入。
+/// Profile 模型只含生成结果（persona），不含这些原始输入，故单独解析原始 map。
+class ProfileDraft {
+  ProfileDraft({
+    required this.realName,
+    required this.title,
+    required this.strengths,
+    required this.recentWork,
+    required this.howToKnow,
+    required this.style,
+    required this.company,
+    required this.city,
+  });
+
+  final String realName;
+  final String title;
+  final String strengths;
+  final String recentWork;
+  final String howToKnow;
+  final String style;
+  final String company;
+  final String city;
 }
 
 /// 主页相关接口。
@@ -850,11 +1323,40 @@ class ProfileApi {
     return Profile.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
+  /// GET /profile/mine（原始）—— 取对话式编辑预填所需的原始输入；未创建返回 null。
+  Future<ProfileDraft?> mineDraft() async {
+    final data = await _ref.read(dioClientProvider).get('/profile/mine');
+    if (data == null) return null;
+    final m = Map<String, dynamic>.from(data as Map);
+    final input = m['personaInput'] is Map
+        ? Map<String, dynamic>.from(m['personaInput'] as Map)
+        : <String, dynamic>{};
+    String s(dynamic v) => (v ?? '').toString();
+    return ProfileDraft(
+      realName: s(m['realName']),
+      title: s(m['title']),
+      strengths: s(input['strengths']),
+      recentWork: s(input['recentWork']),
+      howToKnow: s(input['howToKnow']),
+      style: s(input['style']),
+      company: s(m['company']),
+      city: s(m['city']),
+    );
+  }
+
   /// POST /profile —— 创建/更新主页并同步生成 AI 人格（耗时，调用方需显示加载）。
   Future<Profile> createOrUpdate(ProfileInput input) async {
     final data =
         await _ref.read(dioClientProvider).post('/profile', data: input.toJson());
     return Profile.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  /// POST /profile/extract —— 对话式创建：从对话消息抽取字段 + 自动判定风格，不写库。
+  Future<ExtractedProfile> extract(List<Map<String, String>> messages) async {
+    final data = await _ref
+        .read(dioClientProvider)
+        .post('/profile/extract', data: {'messages': messages});
+    return ExtractedProfile.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
   /// POST /profile/regenerate —— 重新生成 AI 人格。
@@ -1406,11 +1908,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              const Text(
+                '每个人的 AI 分身',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
               const Text(
                 '加微信前，先和我的 AI 聊聊',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.sub, fontSize: 15),
+                style: TextStyle(color: AppTheme.sub, fontSize: 14),
               ),
               const Spacer(),
               ElevatedButton.icon(
@@ -1543,6 +2051,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/avatar/weifou_avatar.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/api/chat_api.dart';
@@ -1606,7 +2115,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     _scrollToEnd();
     try {
-      final ans = await ref.read(chatApiProvider).ask(widget.profileId, content);
+      final ans = await ref
+          .read(chatApiProvider)
+          .ask(widget.profileId, content);
       setState(() => _msgs.add(_Msg(false, ans.answer, animate: true)));
     } on ApiException catch (e) {
       setState(() => _msgs.add(_Msg(false, '（${e.message}）')));
@@ -1630,18 +2141,53 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
-  void _toast(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _toast(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
     final name = widget.profile?.realName ?? 'AI';
-    final showStarters = _starters.isNotEmpty &&
-        _msgs.where((m) => m.fromMe).isEmpty;
+    final showStarters =
+        _starters.isNotEmpty && _msgs.where((m) => m.fromMe).isEmpty;
     return Scaffold(
       appBar: AppBar(title: Text('与 $name 的 AI')),
       body: Column(
         children: [
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, AppTheme.accentSoft],
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: Column(
+              children: [
+                WeifouAvatar(
+                  style: widget.profile?.avatarStyle,
+                  name: name,
+                  size: 64,
+                  active: _sending,
+                  state: _sending ? AvatarState.thinking : AvatarState.idle,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (widget.profile?.title != null)
+                  Text(
+                    widget.profile!.title,
+                    style: const TextStyle(fontSize: 12, color: AppTheme.sub),
+                  ),
+              ],
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               controller: _scroll,
@@ -1654,8 +2200,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
           ),
-          if (showStarters)
-            _StartersBar(starters: _starters, onTap: _send),
+          if (showStarters) _StartersBar(starters: _starters, onTap: _send),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
           _Composer(
             controller: _input,
@@ -1736,7 +2281,7 @@ class _Bubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: me ? AppTheme.ink : Colors.white,
+          color: me ? AppTheme.accent : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: me ? null : Border.all(color: AppTheme.border),
         ),
@@ -1791,8 +2336,7 @@ class _TypewriterTextState extends State<_TypewriterText> {
 
   @override
   Widget build(BuildContext context) {
-    final shown =
-        String.fromCharCodes(widget.text.runes.take(_count));
+    final shown = String.fromCharCodes(widget.text.runes.take(_count));
     return Text(shown, style: widget.style);
   }
 }
@@ -1830,13 +2374,19 @@ class _Composer extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             IconButton.filled(
               onPressed: enabled ? onSend : null,
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.accent,
+                foregroundColor: Colors.white,
+              ),
               icon: const Icon(Icons.send),
             ),
           ],
@@ -1927,65 +2477,418 @@ class ChatsScreen extends ConsumerWidget {
 }
 
 //==================================================================
-// 文件: lib/features/create/create_screen.dart
+// 文件: lib/features/create/conversational_create_screen.dart
 //==================================================================
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/api/profile_api.dart';
 
-/// 创建/编辑 AI 主页。提交后同步生成 AI 人格（耗时），显示生成中动画。
-class CreateScreen extends ConsumerStatefulWidget {
-  const CreateScreen({super.key});
+/// 对话式创建：把原「分步点选」融进对话——AI 逐步引导，结构化项（做什么/接待谁/气质）直接给
+/// 可点「快捷气泡」，点了即答；名字与一句话走输入/语音；也可自由说一段由 /profile/extract 一次
+/// 抽多字段并跳过已答步骤。必填 realName/title/strengths 齐即可上岗。与小程序 pages/onboarding 全面
+/// 对齐：人物在场的雾蓝紫亮场 + 高对比气泡/选项/输入条。
+const _opener =
+    '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
 
-  @override
-  ConsumerState<CreateScreen> createState() => _CreateScreenState();
+const Map<String, String> _styleAvatar = {
+  'steady': 'toon-steady',
+  'warm': 'toon-warm',
+  'sharp': 'toon-sharp',
+  'humorous': 'toon-humorous',
+};
+
+// —— 雾蓝紫亮场（与小程序 onboarding.wxss 同源）——
+const _accent = AppTheme.accent;
+const _accentSoft = AppTheme.accentSoft;
+const _accentBorder = Color(0xFFCCC8E7);
+const _glassFill = Color(0xF2FFFFFF);
+const _glassBorder = AppTheme.border;
+const _aiBubble = Color(0xF7FFFFFF);
+const _aiBorder = AppTheme.border;
+const _userBubble = AppTheme.accent;
+
+// —— 结构化快捷选项（与小程序 pages/onboarding 同源）——
+const _domains = [
+  '顾问·教练',
+  '设计·创意',
+  '开发·技术',
+  '教育·培训',
+  '医美·健康',
+  '法律·财税',
+  '电商·带货',
+  '内容·创作',
+  '生活服务',
+];
+
+class _Audience {
+  const _Audience(this.label, this.hk);
+  final String label; // 气泡显示
+  final String hk; // 写入 howToKnow 的干净取值
 }
 
-class _CreateScreenState extends ConsumerState<CreateScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _realName = TextEditingController();
-  final _title = TextEditingController();
-  final _company = TextEditingController();
-  final _city = TextEditingController();
-  final _strengths = TextEditingController();
-  final _recentWork = TextEditingController();
-  final _howToKnow = TextEditingController();
+const _audiences = [
+  _Audience('找合作', '主要想接待：找合作'),
+  _Audience('想买你服务', '主要想接待：想买我服务的人'),
+  _Audience('同行 · 招募', '主要想接待：同行或想招募我的人'),
+  _Audience('粉丝 · 读者', '主要想接待：我的粉丝或读者'),
+  _Audience('都行', '主要想接待：各种来访者'),
+];
 
-  bool _generating = false;
+class _StyleOpt {
+  const _StyleOpt(this.label, this.value, this.desc);
+  final String label;
+  final String value; // style 白名单 key
+  final String desc;
+}
+
+const _styles = [
+  _StyleOpt('专业冷静', 'steady', '严谨克制 · 先结论'),
+  _StyleOpt('温暖亲和', 'warm', '口语 · 先共情'),
+  _StyleOpt('犀利直接', 'sharp', '一针见血 · 不绕弯'),
+  _StyleOpt('轻松幽默', 'humorous', '有梗 · 不油腻'),
+];
+
+// 引导阶段（与小程序同序）：字段 / 是否必填 / 提问 / 快捷气泡类型
+class _Stage {
+  const _Stage(this.key, this.field, this.required, this.ask, this.chips);
+  final String key;
+  final String field;
+  final bool required;
+  final String ask;
+  final String? chips; // 'domain' | 'audience' | 'style' | null
+}
+
+const _stages = [
+  _Stage('name', 'realName', true, '先问一句——我该怎么称呼你？', null),
+  _Stage('domain', 'title', true, '你主要是做什么的？挑一个最接近的，或直接说～', 'domain'),
+  _Stage('audience', 'howToKnow', false, '主要想接待谁？', 'audience'),
+  _Stage('style', 'style', false, '希望你的 AI 什么气质、说话调？', 'style'),
+  _Stage(
+    'substance',
+    'strengths',
+    true,
+    '最后——你最能帮别人解决的一件事是什么？越具体它越懂你（也可写个代表作）。',
+    null,
+  ),
+];
+
+class _OMsg {
+  _OMsg(this.fromAi, this.text);
+  final bool fromAi;
+  final String text;
+}
+
+class ConversationalCreateScreen extends ConsumerStatefulWidget {
+  const ConversationalCreateScreen({super.key});
+
+  @override
+  ConsumerState<ConversationalCreateScreen> createState() =>
+      _ConversationalCreateScreenState();
+}
+
+class _ConversationalCreateScreenState
+    extends ConsumerState<ConversationalCreateScreen> {
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  final List<_OMsg> _msgs = [];
+
+  bool _thinking = false;
+  bool _submitting = false;
+  bool _canFinish = false;
+  bool _confirmed = false;
+  bool _recording = false;
+  bool _edit = false; // 已有主页 = 编辑态：预填、开场回显、改完即更新
+  bool _initializing = true; // 进入时探测是否已有主页
+
+  final _speech = stt.SpeechToText();
+  bool _speechReady = false;
+
+  // 累积抽取出的字段
+  String _realName = '', _title = '', _strengths = '';
+  String _recentWork = '', _howToKnow = '', _style = '';
+  String _company = '', _city = ''; // 编辑态透传，避免提交被服务端空值清掉
+
+  final Map<String, bool> _asked = {}; // 已问过的阶段（可选项只问一次）
+  final Map<String, bool> _locked = {}; // 经点选确定的字段：后续抽取不再覆盖
+  String? _chipKind; // 当前展示的快捷气泡：domain | audience | style | null
+
+  // 字段名 ↔ 累积变量（供分步引导/抽取合并统一存取）
+  String _fieldValue(String field) {
+    switch (field) {
+      case 'realName':
+        return _realName;
+      case 'title':
+        return _title;
+      case 'strengths':
+        return _strengths;
+      case 'recentWork':
+        return _recentWork;
+      case 'howToKnow':
+        return _howToKnow;
+      case 'style':
+        return _style;
+    }
+    return '';
+  }
+
+  void _setField(String field, String v) {
+    switch (field) {
+      case 'realName':
+        _realName = v;
+        break;
+      case 'title':
+        _title = v;
+        break;
+      case 'strengths':
+        _strengths = v;
+        break;
+      case 'recentWork':
+        _recentWork = v;
+        break;
+      case 'howToKnow':
+        _howToKnow = v;
+        break;
+      case 'style':
+        _style = v;
+        break;
+    }
+  }
+
+  bool _filled(String field) => _fieldValue(field).trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  // 创建/编辑统一走对话：已有主页则预填进入编辑态，否则用创建开场。
+  Future<void> _init() async {
+    try {
+      final d = await ref.read(profileApiProvider).mineDraft();
+      if (!mounted) return;
+      if (d != null) {
+        _edit = true;
+        _realName = d.realName;
+        _title = d.title;
+        _strengths = d.strengths;
+        _recentWork = d.recentWork;
+        _howToKnow = d.howToKnow;
+        _style = d.style;
+        _company = d.company;
+        _city = d.city;
+        _canFinish = true;
+        _confirmed = true;
+        _msgs.add(
+          _OMsg(
+            true,
+            '这是你现在的 AI 主页——${d.realName}｜${d.title}。想更新点什么？换一句话简介、改说话语气、补个最近在做的事……跟我说就行，没提到的都给你留着。改完点「更新主页」。',
+          ),
+        );
+      } else {
+        _msgs.add(_OMsg(true, _opener));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _msgs.add(_OMsg(true, _opener)); // 兜底当创建
+    } finally {
+      if (mounted) setState(() => _initializing = false);
+    }
+  }
 
   @override
   void dispose() {
-    for (final c in [
-      _realName,
-      _title,
-      _company,
-      _city,
-      _strengths,
-      _recentWork,
-      _howToKnow,
-    ]) {
-      c.dispose();
-    }
+    if (_recording) _speech.cancel();
+    _input.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _generating = true);
+  // —— 语音输入（speech_to_text，iOS Speech / Android SpeechRecognizer）——
+  Future<bool> _ensureSpeech() async {
+    if (_speechReady) return true;
+    _speechReady = await _speech.initialize(
+      onStatus: (s) {
+        if ((s == 'done' || s == 'notListening') && mounted && _recording) {
+          _micStop();
+        }
+      },
+      onError: (_) {
+        if (mounted) setState(() => _recording = false);
+      },
+    );
+    return _speechReady;
+  }
+
+  Future<void> _micStart() async {
+    if (_thinking || _submitting || _recording) return;
+    final ok = await _ensureSpeech();
+    if (!ok) {
+      _snack('语音暂不可用，请打字');
+      return;
+    }
+    setState(() => _recording = true);
+    await _speech.listen(
+      onResult: (r) => setState(() {
+        _input.text = r.recognizedWords;
+        _input.selection = TextSelection.collapsed(offset: _input.text.length);
+      }),
+      listenOptions: stt.SpeechListenOptions(
+        localeId: 'zh_CN',
+        partialResults: true,
+        cancelOnError: true,
+      ),
+    );
+  }
+
+  Future<void> _micStop() async {
+    if (!_recording) return;
+    setState(() => _recording = false);
+    await _speech.stop();
+    if (_input.text.trim().isNotEmpty) _send();
+  }
+
+  void _scrollEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(
+          _scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  // 统一推进（与小程序 _afterAnswer 对齐）：算必填齐没 → 找下一个该问的阶段+气泡 → 抛问题。
+  // 须在 setState 内调用（直接改 _msgs/_canFinish/_chipKind）。
+  void _afterAnswer() {
+    final complete =
+        _realName.isNotEmpty && _title.isNotEmpty && _strengths.isNotEmpty;
+    _canFinish = complete;
+
+    // 编辑态：不逐项追问，改了回一句确认，随时可「更新主页」
+    if (_edit) {
+      _chipKind = null;
+      _msgs.add(_OMsg(true, '好，记下了～ 还想改别的就继续说，或点「更新主页」。'));
+      return;
+    }
+
+    if (complete && !_confirmed) {
+      _confirmed = true;
+      _msgs.add(_OMsg(true, '好，我大概了解你了～ 随时点「先上岗」，也能再补两句让我更懂你。'));
+    }
+
+    _Stage? next;
+    for (final s in _stages) {
+      if (!_filled(s.field) && (s.required || !(_asked[s.key] ?? false))) {
+        next = s;
+        break;
+      }
+    }
+    if (next == null) {
+      _chipKind = null;
+      return;
+    }
+    _asked[next.key] = true;
+    _msgs.add(_OMsg(true, next.ask));
+    _chipKind = next.chips;
+  }
+
+  // 点气泡 = 直接填字段 + 记一条用户气泡，不走服务端抽取（快、稳、零误判）
+  void _pickChip(String field, String value, String label) {
+    if (_thinking || _submitting) return;
+    setState(() {
+      _locked[field] = true; // 点选即锁定，避免后续抽取覆盖
+      _msgs.add(_OMsg(false, label));
+      _setField(field, value);
+      _chipKind = null;
+      _afterAnswer();
+    });
+    _scrollEnd();
+  }
+
+  Future<void> _send() async {
+    final v = _input.text.trim();
+    if (v.isEmpty || _thinking || _submitting) return;
+    setState(() {
+      _msgs.add(_OMsg(false, v));
+      _input.clear();
+      _thinking = true;
+    });
+    _scrollEnd();
+    await _extract();
+  }
+
+  Future<void> _extract() async {
+    final messages = _msgs
+        .map((m) => {'role': m.fromAi ? 'ai' : 'me', 'text': m.text})
+        .toList();
     try {
-      final profile = await ref.read(profileApiProvider).createOrUpdate(
+      final res = await ref.read(profileApiProvider).extract(messages);
+      if (!mounted) return;
+      _applyExtract(res);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _thinking = false;
+        _msgs.add(_OMsg(true, '（网络好像有点慢，刚那句再说一遍试试？）'));
+      });
+      _scrollEnd();
+    }
+  }
+
+  void _applyExtract(ExtractedProfile res) {
+    // 合并：已点选锁定的字段保留不动；其余服务端非空则覆盖、空则保留（防 LLM 偶发漏带）
+    String pick(String field, String val) => (_locked[field] ?? false)
+        ? _fieldValue(field)
+        : (val.isNotEmpty ? val : _fieldValue(field));
+    setState(() {
+      _setField('realName', pick('realName', res.realName));
+      _setField('title', pick('title', res.title));
+      _setField('strengths', pick('strengths', res.strengths));
+      _setField('recentWork', pick('recentWork', res.recentWork));
+      _setField('howToKnow', pick('howToKnow', res.howToKnow));
+      _setField('style', pick('style', res.style));
+      _thinking = false;
+      _afterAnswer();
+    });
+    _scrollEnd();
+  }
+
+  Future<void> _finish() async {
+    if (_realName.isEmpty || _title.isEmpty || _strengths.isEmpty) {
+      _snack('还差一点点信息哦');
+      return;
+    }
+    if (_submitting) return;
+    setState(() {
+      _submitting = true;
+      _msgs.add(
+        _OMsg(true, _edit ? '好，这就替你更新主页，稍等几秒 ✨' : '好，我这就替你把主页生成出来，稍等 5–15 秒 ✨'),
+      );
+    });
+    _scrollEnd();
+    try {
+      final profile = await ref
+          .read(profileApiProvider)
+          .createOrUpdate(
             ProfileInput(
-              realName: _realName.text.trim(),
-              title: _title.text.trim(),
-              company: _emptyToNull(_company.text),
-              city: _emptyToNull(_city.text),
-              strengths: _strengths.text.trim(),
-              recentWork: _recentWork.text.trim(),
-              howToKnow: _howToKnow.text.trim(),
+              realName: _realName,
+              title: _title,
+              strengths: _strengths,
+              recentWork: _recentWork,
+              howToKnow: _howToKnow,
+              style: _style.isEmpty ? null : _style,
+              company: _company.isEmpty ? null : _company,
+              city: _city.isEmpty ? null : _city,
+              avatarStyle: _styleAvatar[_style] ?? 'toon-warm',
             ),
           );
       ref.invalidate(myProfileProvider);
@@ -1994,95 +2897,401 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       }
     } on ApiException catch (e) {
       if (mounted) {
-        setState(() => _generating = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
+        setState(() => _submitting = false);
+        _snack(e.message);
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _generating = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('生成失败：$e')));
+        setState(() => _submitting = false);
+        _snack('生成失败：$e');
       }
     }
   }
 
-  String? _emptyToNull(String s) => s.trim().isEmpty ? null : s.trim();
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
-    if (_generating) return const _GeneratingView();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('创建 AI 主页')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            _field(_realName, '姓名', required: true),
-            _field(_title, '职位 / 身份', required: true),
-            _field(_company, '公司 / 机构'),
-            _field(_city, '城市'),
-            _field(_strengths, '专业 / 擅长', required: true, maxLines: 3),
-            _field(_recentWork, '近期作品 / 项目', required: true, maxLines: 3),
-            _field(_howToKnow, '希望别人怎么认识你', required: true, maxLines: 3),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _submit,
-              child: const Text('生成我的 AI 主页'),
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: AppTheme.ink,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
+      body: Stack(
+        children: [
+          // 雾蓝紫亮场兜底。
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFE2DFF5),
+                  Color(0xFFE2F0F6),
+                  Color(0xFFF6F7FB),
+                ],
+                stops: [0, 0.58, 1],
+              ),
             ),
-          ],
-        ),
+            child: SizedBox.expand(),
+          ),
+          // 创建阶段不预设人物形象，只保留安静的 AI 环境光。
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x66FFFFFF),
+                    Color(0x1AFFFFFF),
+                    Color(0x99F6F7FB),
+                    Color(0xF7F6F7FB),
+                  ],
+                  stops: [0, 0.26, 0.62, 1],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: _initializing
+                ? const Center(child: CircularProgressIndicator(color: _accent))
+                : Column(
+                    children: [
+                      const SizedBox(height: kToolbarHeight),
+                      Text(
+                        _edit ? '想更新什么？说一句就改' : '先聊几句，我来替你写主页',
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          shadows: [Shadow(color: Colors.white, blurRadius: 8)],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _edit ? '没提到的都给你留着' : '说一句，或点下方选项都行',
+                        style: const TextStyle(
+                          color: AppTheme.ink2,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scroll,
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          itemCount: _msgs.length + (_thinking ? 1 : 0),
+                          itemBuilder: (_, i) {
+                            if (i >= _msgs.length) return const _TypingBubble();
+                            return _Bubble(msg: _msgs[i]);
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_chipKind != null && !_submitting)
+                              _buildChips(),
+                            if (_canFinish && !_submitting)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _finishChip(),
+                              ),
+                            if (_submitting)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 10),
+                                child: LinearProgressIndicator(
+                                  minHeight: 2,
+                                  color: _accent,
+                                ),
+                              ),
+                            _Composer(
+                              controller: _input,
+                              enabled: !_submitting,
+                              recording: _recording,
+                              onMicStart: _micStart,
+                              onMicStop: _micStop,
+                              onSend: _send,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _field(
-    TextEditingController c,
-    String label, {
-    bool required = false,
-    int maxLines = 1,
-  }) {
+  // 当前阶段的快捷气泡：行业/接待=白底选项；气质=两行卡片。
+  Widget _buildChips() {
+    final List<Widget> chips;
+    switch (_chipKind) {
+      case 'domain':
+        chips = _domains
+            .map((d) => _pill(d, () => _pickChip('title', d, d)))
+            .toList();
+        break;
+      case 'audience':
+        chips = _audiences
+            .map(
+              (a) =>
+                  _pill(a.label, () => _pickChip('howToKnow', a.hk, a.label)),
+            )
+            .toList();
+        break;
+      case 'style':
+        chips = _styles.map(_styleCard).toList();
+        break;
+      default:
+        chips = const [];
+    }
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: c,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: required ? '$label *' : label,
-          border: const OutlineInputBorder(),
-          alignLabelWithHint: true,
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Wrap(spacing: 10, runSpacing: 10, children: chips),
+    );
+  }
+
+  Widget _pill(String label, VoidCallback onTap) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(100),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: _glassFill,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: _glassBorder),
         ),
-        validator: required
-            ? (v) => (v == null || v.trim().isEmpty) ? '请填写$label' : null
-            : null,
+        child: Text(
+          label,
+          style: const TextStyle(color: AppTheme.ink, fontSize: 13),
+        ),
+      ),
+    ),
+  );
+
+  Widget _styleCard(_StyleOpt s) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => _pickChip('style', s.value, s.label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _glassFill,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _glassBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              s.label,
+              style: const TextStyle(
+                color: AppTheme.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              s.desc,
+              style: const TextStyle(color: AppTheme.sub, fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _finishChip() => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(100),
+      onTap: _finish,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+        decoration: BoxDecoration(
+          color: _accentSoft,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: _accentBorder),
+        ),
+        child: Text(
+          _edit ? '更新主页 ›' : '信息够了，先上岗 ›',
+          style: const TextStyle(
+            color: AppTheme.accentInk,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.msg});
+  final _OMsg msg;
+
+  @override
+  Widget build(BuildContext context) {
+    final ai = msg.fromAi;
+    return Align(
+      alignment: ai ? Alignment.centerLeft : Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
+        ),
+        decoration: BoxDecoration(
+          color: ai ? _aiBubble : _userBubble,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(ai ? 6 : 18),
+            bottomRight: Radius.circular(ai ? 18 : 6),
+          ),
+          border: ai ? Border.all(color: _aiBorder) : null,
+        ),
+        child: Text(
+          msg.text,
+          style: TextStyle(
+            color: ai ? AppTheme.ink : Colors.white,
+            height: 1.5,
+          ),
+        ),
       ),
     );
   }
 }
 
-/// 生成中：简单的加载动画（lottie 资源到位后可替换）。
-class _GeneratingView extends StatelessWidget {
-  const _GeneratingView();
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 24),
-            Text('AI 正在生成你的主页…',
-                style: TextStyle(fontSize: 16, color: AppTheme.ink)),
-            SizedBox(height: 8),
-            Text('约需十几秒，请稍候',
-                style: TextStyle(fontSize: 13, color: AppTheme.sub)),
-          ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: _aiBubble,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _aiBorder),
+        ),
+        child: const Text(
+          '正在理解…',
+          style: TextStyle(color: AppTheme.sub, fontSize: 13),
         ),
       ),
+    );
+  }
+}
+
+class _Composer extends StatelessWidget {
+  const _Composer({
+    required this.controller,
+    required this.enabled,
+    required this.recording,
+    required this.onMicStart,
+    required this.onMicStop,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final bool recording;
+  final VoidCallback onMicStart;
+  final VoidCallback onMicStop;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTapDown: enabled ? (_) => onMicStart() : null,
+          onTapUp: (_) => onMicStop(),
+          onTapCancel: onMicStop,
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: recording ? _accentSoft : _glassFill,
+              border: Border.all(
+                color: recording ? _accentBorder : _glassBorder,
+              ),
+            ),
+            child: Icon(
+              Icons.mic,
+              size: 22,
+              color: recording ? AppTheme.accentDeep : AppTheme.ink2,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enabled: enabled && !recording,
+            minLines: 1,
+            maxLines: 4,
+            style: const TextStyle(color: AppTheme.ink),
+            cursorColor: _accent,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => onSend(),
+            decoration: InputDecoration(
+              hintText: recording ? '正在听…松开结束' : '按住麦克风说，或打字',
+              hintStyle: const TextStyle(color: AppTheme.sub),
+              filled: true,
+              fillColor: _glassFill,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: _glassBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: _accent),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: _glassBorder),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: _accent,
+          ),
+          child: IconButton(
+            onPressed: enabled ? onSend : null,
+            icon: const Icon(Icons.arrow_upward, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2241,6 +3450,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/avatar/weifou_avatar.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/api/profile_api.dart';
 import '../../data/models/profile.dart';
@@ -2300,17 +3510,14 @@ class _NoProfile extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 60),
-        const Text('加微信前，先和我的 AI 聊聊',
+        const Text('创建你的 AI 分身',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 12),
-        const Text('创建你的 AI 主页，让别人先认识你',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppTheme.sub)),
         const SizedBox(height: 40),
         ElevatedButton(
-          onPressed: () => context.pushNamed('create'),
-          child: const Text('创建我的 AI 主页'),
+          style: AppTheme.accentButton,
+          onPressed: () => context.pushNamed('onboarding'),
+          child: const Text('和 AI 聊几句，开始创建'),
         ),
       ],
     );
@@ -2337,14 +3544,31 @@ class _HasProfile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(profile.realName,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(profile.title,
-                    style: const TextStyle(color: AppTheme.sub)),
+                Row(
+                  children: [
+                    WeifouAvatar(
+                      style: profile.avatarStyle,
+                      name: profile.realName,
+                      size: 56,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(profile.realName,
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text(profile.title,
+                              style: const TextStyle(color: AppTheme.sub)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 if (profile.persona?.oneLiner != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Text(profile.persona!.oneLiner!,
                       style: const TextStyle(height: 1.5)),
                 ],
@@ -2381,8 +3605,8 @@ class _HasProfile extends StatelessWidget {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           icon: const Icon(Icons.edit_outlined),
-          label: const Text('重填资料·重新生成'),
-          onPressed: () => context.pushNamed('create'),
+          label: const Text('重新编辑资料'),
+          onPressed: () => context.pushNamed('onboarding'),
         ),
       ],
     );
@@ -2835,13 +4059,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/avatar/weifou_avatar.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/api/profile_api.dart';
 import '../../data/models/profile.dart';
 
 /// 按 id 拉取主页（访客视图）。
-final profileProvider =
-    FutureProvider.family<Profile, String>((ref, id) async {
+final profileProvider = FutureProvider.family<Profile, String>((ref, id) async {
   return ref.read(profileApiProvider).findOne(id);
 });
 
@@ -2871,6 +4095,7 @@ class ProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: ElevatedButton.icon(
+              style: AppTheme.accentButton,
               icon: const Icon(Icons.chat_bubble_outline),
               label: Text('和 ${p.realName} 的 AI 聊聊'),
               onPressed: () => context.pushNamed(
@@ -2898,22 +4123,72 @@ class _ProfileBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          profile.realName,
-          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, AppTheme.accentSoft],
+              stops: [0.55, 1],
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.r2xl),
+            border: Border.all(color: AppTheme.border),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  WeifouAvatar(
+                    style: profile.avatarStyle,
+                    name: profile.realName,
+                    size: 72,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profile.realName,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          [
+                            profile.title,
+                            profile.company,
+                            profile.city,
+                          ].where((e) => e != null && e.isNotEmpty).join(' · '),
+                          style: const TextStyle(
+                            color: AppTheme.ink2,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (persona?.oneLiner != null) ...[
+                const SizedBox(height: 20),
+                Text(
+                  persona!.oneLiner!,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    height: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          [profile.title, profile.company, profile.city]
-              .where((e) => e != null && e.isNotEmpty)
-              .join(' · '),
-          style: const TextStyle(color: AppTheme.sub, fontSize: 14),
-        ),
-        if (persona?.oneLiner != null) ...[
-          const SizedBox(height: 20),
-          Text(persona!.oneLiner!,
-              style: const TextStyle(fontSize: 17, height: 1.5)),
-        ],
         if (persona?.tags.isNotEmpty ?? false) ...[
           const SizedBox(height: 16),
           Wrap(
@@ -2931,11 +4206,15 @@ class _ProfileBody extends StatelessWidget {
         ],
         if (persona?.fullIntro != null) ...[
           const SizedBox(height: 24),
-          const Text('关于',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          const Text(
+            '关于',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
-          Text(persona!.fullIntro!,
-              style: const TextStyle(height: 1.6, color: AppTheme.ink)),
+          Text(
+            persona!.fullIntro!,
+            style: const TextStyle(height: 1.6, color: AppTheme.ink),
+          ),
         ],
         const SizedBox(height: 80),
       ],
@@ -2954,7 +4233,6 @@ import '../../data/api/profile_api.dart';
 import '../../data/models/profile.dart';
 
 /// 设置页（首版）：联系方式与可见性、形象标识。
-/// 付费咨询开关/定价随咨询功能一起推迟。
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -2983,10 +4261,12 @@ class _SettingsForm extends ConsumerStatefulWidget {
 }
 
 class _SettingsFormState extends ConsumerState<_SettingsForm> {
-  late final TextEditingController _wechat =
-      TextEditingController(text: widget.profile.contactWechat ?? '');
-  late final TextEditingController _phone =
-      TextEditingController(text: widget.profile.contactPhone ?? '');
+  late final TextEditingController _wechat = TextEditingController(
+    text: widget.profile.contactWechat ?? '',
+  );
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.profile.contactPhone ?? '',
+  );
   late bool _visible = widget.profile.contactVisible;
   late bool _discoverable = widget.profile.discoverable;
   bool _saving = false;
@@ -3001,20 +4281,24 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref.read(profileApiProvider).updateContact(
+      await ref
+          .read(profileApiProvider)
+          .updateContact(
             wechat: _wechat.text.trim(),
             phone: _phone.text.trim(),
             visible: _visible,
           );
       ref.invalidate(myProfileProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('已保存')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已保存')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('保存失败：$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('保存失败：$e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -3026,8 +4310,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Text('联系方式',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          '联系方式',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 12),
         TextField(
           controller: _wechat,
@@ -3049,8 +4335,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('对访客公开联系方式'),
-          subtitle: const Text('关闭后访客看不到你的微信/手机',
-              style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+          subtitle: const Text(
+            '关闭后访客看不到你的微信/手机',
+            style: TextStyle(color: AppTheme.sub, fontSize: 12),
+          ),
           value: _visible,
           onChanged: (v) => setState(() => _visible = v),
         ),
@@ -3060,13 +4348,17 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           child: Text(_saving ? '保存中…' : '保存'),
         ),
         const Divider(height: 48),
-        const Text('人物广场',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          '人物广场',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('公开到人物广场'),
-          subtitle: const Text('开启后他人可在广场发现你的 AI 分身；关闭则仅靠分享链接访问',
-              style: TextStyle(color: AppTheme.sub, fontSize: 12)),
+          subtitle: const Text(
+            '开启后他人可在广场发现你的 AI 分身；关闭则仅靠分享链接访问',
+            style: TextStyle(color: AppTheme.sub, fontSize: 12),
+          ),
           value: _discoverable,
           onChanged: (v) async {
             final messenger = ScaffoldMessenger.of(context);

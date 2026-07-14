@@ -4,11 +4,9 @@ const { track } = require('../../utils/track');
 const { tierForPreset, getPreset, initial } = require('../../utils/avatars');
 const { buildTrustLine } = require('../../utils/trust');
 
-// 成交阶梯顺序：分身下发的 stage 映射成进度条下标（-1=未知/不显示）。
-// 打赏已下线，阶梯收敛到 聊→问→约；旧数据/服务端偶发的 reward 归并到终点 book。
-const STAGE_ORDER = ['chat', 'ask', 'book'];
+// 访客意向阶段：分身下发的 stage 映射成内部下标。
+const STAGE_ORDER = ['chat', 'ask', 'connect'];
 function stageIndex(stage) {
-  if (stage === 'reward') return STAGE_ORDER.indexOf('book');
   return STAGE_ORDER.indexOf(stage);
 }
 
@@ -27,16 +25,16 @@ Page({
     avatarStyle: '',
     oneLiner: '',
     starters: [], // AI 生成的引导问题（点了即移除，避免重复）
-    options: [], // 每轮回答后分身沿成交阶梯现编的可点选项（点选即发，代替打字）
-    stage: '', // 当前成交阶梯 chat|ask|book（分身判定，仅驱动顶部进度条）
+    options: [], // 每轮回答后分身现编的可点选项（点选即发，代替打字）
+    stage: '', // 当前访客意向阶段 chat|ask|connect
     stageIdx: -1, // stage 在 STAGE_ORDER 中的下标，驱动进度条高亮（-1=不显示）
-    stageLabels: ['聊', '问', '约'], // 进度条三段固定文案（打赏已下线）
+    stageLabels: ['聊', '问', '联系'],
     shownOptions: [], // 本会话已展示过的选项，换一批/追问时回传服务端避重
     startersRevealed: false, // 开场动画结束后才淡入引导问题
     answeredOnce: false, // 首轮回答后才出现行动 chips，开场聚焦"开始聊"
     contactAvailable: false,
     asyncAvailable: false, // 是否可向本人提问（免费，AI 即时答 + 本人可异步补一句）
-    trustLine: '', // 信任徽章文案（社会证明，来自既有交易数据；冷启动数字过小时为空）
+    trustLine: '', // 信任徽章文案（社会证明；冷启动数字过小时为空）
     isMine: false, // 主人预览自己的 AI（profile 页透传 mine=1）
     hasOwnProfile: true, // 默认 true：确认是"无主页访客"前不展示裂变钩子
     notFound: false,
@@ -59,11 +57,11 @@ Page({
     connected: false, // 已与主人交换名片（点选连接后置位，chip 变「已交换」）
     // —— 交换名片弹层：连接（关系）+ 可选「捎句话」（意向点选，跳过则纯连接）——
     exchangeVisible: false, exchangeSending: false, exchangeNote: '',
-    exchangePresets: ['想约个时间聊聊', '想合作，请联系我', '对你的服务很感兴趣'],
+    exchangePresets: ['想进一步聊聊', '想合作，请联系我', '对你的服务很感兴趣'],
     // —— 让 TA 找我（无自己分身时的匿名举手，点选代替打字留言）——
     leaveVisible: false, leaveSending: false, leaveNote: '',
-    leavePresets: ['想约个时间聊聊', '对你的服务很感兴趣', '想合作，请联系我', '单纯欣赏，给你点个赞'],
-    celebrate: null, // 成交庆祝浮层：{ up, name, sub }，只在约/留话等终点动作触发，2.4s 自动收起
+    leavePresets: ['想进一步聊聊', '对你的服务很感兴趣', '想合作，请联系我', '单纯欣赏，给你点个赞'],
+    celebrate: null, // 行动完成反馈：{ up, name, sub }，2.4s 自动收起
   },
 
   async onLoad(query) {
@@ -142,7 +140,7 @@ Page({
     if (this._celebTimer) { clearTimeout(this._celebTimer); this._celebTimer = null; }
   },
 
-  // 成交庆祝浮层：约/留话达成时弹一次（复用课程事件卡），2.4s 后自动收起。payload = { up, name, sub }
+  // 行动完成反馈，2.4s 后自动收起。payload = { up, name, sub }
   _celebrate(payload) {
     if (this._celebTimer) clearTimeout(this._celebTimer);
     wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
@@ -220,7 +218,7 @@ Page({
     this.setData({ introState: '', startersRevealed: true });
   },
 
-  // 一次性"欣喜"beat：开场 / 预约成交 / 留资成功时让台上角色轻跳一下
+  // 一次性"欣喜"beat：开场 / 留资成功时让台上角色轻跳一下
   _fireDelight() {
     this.setData({ delight: true });
     if (this._delightTimer) clearTimeout(this._delightTimer);
@@ -390,9 +388,6 @@ Page({
         stageIdx: stageIndex(stage),
         shownOptions: this.data.shownOptions.concat(opts),
       });
-      // 轻线索：访客被第 2 个回答"种草"后，给一条不抢戏的"我也要一个"入口（仅一次）
-      this._answerCount = (this._answerCount || 0) + 1;
-      if (this._answerCount === 2) this._showOwnHook('light');
     } catch (e) {
       this.setData({ pending: false, answeredOnce: true });
       const tip = e.code === 'CHAT_QUOTA_EXCEEDED' ? e.message : e.message || '请求失败';
@@ -400,32 +395,6 @@ Page({
         messages: this.data.messages.concat({ role: 'assistant', content: tip }),
       });
     }
-  },
-
-  // —— 裂变钩子：体验过别人的 Agent → 想要自己的 ——
-  // light：对话中的一行系统线索；strong：目的达成（留资/预约/拿到联系方式）后的身份反转 CTA。
-  // 各只出现一次；主人预览、已有主页的访客一律不展示，绝不打断与 Agent 的核心互动。
-  _showOwnHook(kind) {
-    if (this.data.isMine || this.data.hasOwnProfile) return;
-    if (kind === 'light') {
-      if (this._lightHookShown || this._strongHookShown) return;
-      this._lightHookShown = true;
-      this.setData({
-        messages: this.data.messages.concat({ role: 'system', content: '', action: 'create-own' }),
-      });
-    } else {
-      if (this._strongHookShown) return;
-      this._strongHookShown = true;
-      this.setData({
-        messages: this.data.messages.concat({ role: 'system', content: '', action: 'create-own-strong' }),
-      });
-    }
-    track('own_hook_show', this.data.profileId, kind);
-  },
-
-  goCreateOwn() {
-    track('own_hook_click', this.data.profileId, 'chat');
-    wx.navigateTo({ url: `/pages/onboarding/index?ref=${this.data.profileId}` });
   },
 
   // 行动选项：联系本人（内联弹层）
@@ -442,7 +411,6 @@ Page({
           if (r.confirm) {
             wx.setClipboardData({ data: c.phone || '' });
             this._celebrate({ up: '联系方式', name: '已拿到 ✓', sub: `主动联系 ${this.data.realName}，趁热打铁` });
-            this._showOwnHook('strong');
           }
         },
       });
@@ -485,7 +453,6 @@ Page({
         }),
       });
       this._celebrate({ up: '已举手', name: '送达 ✓', sub: `${this.data.realName} 会亲自看到你` });
-      this._showOwnHook('strong');
     } catch (err) {
       wx.showToast({ title: err.message || '发送失败', icon: 'none' });
     } finally {
@@ -493,10 +460,10 @@ Page({
     }
   },
 
-  // 行动选项：交换名片（站内连接，不导流微信）。有自己分身 → 打开弹层可捎句话；没有 → 引导创建（裂变）。
+  // 行动选项：交换名片（站内连接，不导流微信）。
   openExchange() {
     if (this.data.isMine || this.data.connected) return;
-    if (!this.data.hasOwnProfile) { this.goCreateOwn(); return; } // 先建一个你的分身才能交换
+    if (!this.data.hasOwnProfile) { wx.showToast({ title: '当前无法交换名片', icon: 'none' }); return; }
     this.setData({ exchangeVisible: true, exchangeNote: '' });
   },
   closeExchange() { this.setData({ exchangeVisible: false }); },
@@ -525,9 +492,8 @@ Page({
         }),
       });
       this._celebrate({ up: '交换名片', name: '成功 ✓', sub: withNote ? `${this.data.realName} 会看到你的话` : `${this.data.realName} 进了你的名片夹` });
-      this._showOwnHook('strong');
     } catch (e) {
-      if (e.code === 'NO_PROFILE') { this.setData({ exchangeVisible: false }); this.goCreateOwn(); return; }
+      if (e.code === 'NO_PROFILE') { this.setData({ exchangeVisible: false }); wx.showToast({ title: '当前无法交换名片', icon: 'none' }); return; }
       wx.showToast({ title: e.message || '交换失败', icon: 'none' });
     } finally {
       this.setData({ exchangeSending: false });

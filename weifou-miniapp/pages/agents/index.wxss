@@ -1,8 +1,8 @@
 page { background: var(--bg); }
 .wrap { padding: 24rpx 28rpx 60rpx; }
-.head { padding: 12rpx 4rpx 20rpx; }
+.head { padding: 12rpx 4rpx 26rpx; }
 .h-title { font-size: 44rpx; font-weight: 800; color: var(--ink); letter-spacing: -0.5rpx; }
-.h-sub { margin-top: 8rpx; font-size: 26rpx; color: var(--ink-2); }
+.h-sub { margin-top: 10rpx; max-width: 650rpx; font-size: 25rpx; color: var(--ink-2); line-height: 1.6; }
 
 .state { padding: 80rpx 0; text-align: center; color: var(--sub); font-size: 28rpx; line-height: 1.6; }
 
@@ -16,14 +16,14 @@ page { background: var(--bg); }
 .mb-arrow { font-size: 25rpx; color: var(--pop-butter-ink); font-weight: 600; }
 .mbr-banner.on .mb-arrow { color: var(--on-accent); }
 
-.list { display: flex; flex-direction: column; gap: 20rpx; }
-.card { display: flex; align-items: center; background: var(--surface); border: var(--bw-thin) solid var(--border); border-radius: var(--r-xl); padding: 28rpx 24rpx; box-shadow: var(--shadow-card); }
+.list { display: flex; flex-direction: column; gap: 24rpx; }
+.card { display: flex; align-items: center; min-height: 126rpx; background: var(--surface); border: var(--bw-thin) solid var(--border); border-radius: var(--r-xl); padding: 34rpx 28rpx; box-shadow: var(--shadow-card); }
 .card:active { transform: scale(0.99); background: var(--fill-pressed); }
-.aic { width: 92rpx; height: 92rpx; border-radius: var(--r-md); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48rpx; border: var(--bw-thin) solid var(--border); }
-.body { flex: 1 1 auto; min-width: 0; margin-left: 24rpx; }
-.name { font-size: 32rpx; font-weight: 800; color: var(--ink); }
-.tagline { margin-top: 6rpx; font-size: 25rpx; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.guide { margin-top: 8rpx; font-size: 21rpx; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aic { width: 108rpx; height: 116rpx; border-radius: var(--r-lg); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48rpx; border: var(--bw-thin) solid var(--border); }
+.body { flex: 1 1 auto; min-width: 0; margin-left: 28rpx; }
+.brand { margin-bottom: 7rpx; font-size: 20rpx; font-weight: 650; color: var(--accent-deep); line-height: 1.35; }
+.name { font-size: 31rpx; line-height: 1.35; font-weight: 800; color: var(--ink); }
+.tagline { margin-top: 8rpx; font-size: 24rpx; line-height: 1.5; color: var(--sub); }
 .meta { margin-top: 14rpx; display: flex; align-items: center; }
 .status { font-size: 24rpx; font-weight: 600; }
 .status-member { color: var(--accent-ink); }
