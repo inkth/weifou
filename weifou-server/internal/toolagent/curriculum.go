@@ -84,6 +84,8 @@ func tiersFor(agentSlug string) (map[int]string, []int) {
 		return habitsTierLabels, habitsTierOrder
 	case "learn-business":
 		return businessTierLabels, businessTierOrder
+	case "learn-meditation":
+		return meditationTierLabels, meditationTierOrder
 	}
 	return tierLabels, tierOrder
 }
@@ -114,6 +116,7 @@ var curricula = map[string][]seedConcept{
 	"learn-negotiation": negotiationConcepts,
 	"learn-habits":      habitsConcepts,
 	"learn-business":    businessConcepts,
+	"learn-meditation":  meditationConcepts,
 	"daodejing-full":    daodejingFullConcepts,
 }
 
@@ -137,6 +140,7 @@ var curatedContent = map[string]map[string]hookCheck{
 	"learn-negotiation": negotiationContent,
 	"learn-habits":      habitsContent,
 	"learn-business":    businessContent,
+	"learn-meditation":  meditationContent,
 	"daodejing-full":    daodejingFullContent,
 }
 

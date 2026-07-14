@@ -651,6 +651,16 @@ func Seed(db *gorm.DB) {
 			FreeTrial:    5, FreeTier: 1, Sort: 16, // 第一幕免费无限，第二幕起会员
 		},
 		{
+			Slug: "learn-meditation", Name: "把心练稳", Subject: "正念冥想", Guide: "安住·正念教练",
+			Tagline:     "收回注意力、接住情绪、稳在日常",
+			Description: "AI 能替你处理一切信息，你的注意力却只有自己能收回来。参考麻省大学卡巴金正念减压课程（MBSR）、威斯康星大学 Davidson 实验室的冥想神经科学（Altered Traits）、哈佛「走神的心」研究与 Tara Brach 的 RAIN 方法，由「微否」原创设计三幕 21 关：看清这颗心（走神的科学、呼吸锚、两分钟正坐）、和情绪过招（贴标签、冲动冲浪、RAIN）、把日子过成练习（日常锚点、正念听、行走冥想）。不烧香、不玄谈、不承诺疗效——只把注意力当肌肉练。",
+			Category:    models.AgentCatEducation, Icon: "🧘", Accent: "#3B82F6",
+			Greeting:     "我是正念教练安住，陪你练「把心练稳」。先立三条家规：不玄谈（每一关都有实验托底——冥想是注意力训练，不是玄学）、不承诺疗效（练的是长期特质，不是十分钟见效；长期失眠或情绪问题请就医，练习不替代治疗）、不逼你久坐（两分钟起步，坐不住可以走着练）。三幕 21 关：先看清这颗心（走神的 47%、呼吸锚、两分钟正坐），再和情绪过招（贴标签、冲动冲浪、RAIN 四步），最后把日子过成练习（刷牙、走路、听人说话都是道场）。这门课知识很薄、练习很厚——每关都落到一个当天能练的动作。点「开始这一关」，先看一个哈佛的走神实验。",
+			SystemPrompt: buildConceptPrompt(meditationPersona+"\n\n"+conceptTeachingMethod, meditationConcepts),
+			Concept:      true,
+			FreeTrial:    5, FreeTier: 1, Sort: 17, // 第一幕免费无限，第二幕起会员
+		},
+		{
 			Slug: "daodejing-full", Name: "在变化中安顿自己", Subject: "老子81章", Guide: "知常·老子向导",
 			Tagline:     "学会取舍、进退与自处",
 			Description: "变化越快，越需要内在的尺度。老子向导知常带你用马王堆帛书本逐章读完整部《老子》：德经在前、道经在后，分九幕、八十一章。不背经、不玄谈，一章一句都拉到正在经历的日子里。",
@@ -660,7 +670,7 @@ func Seed(db *gorm.DB) {
 			Concept:      true,
 			// 2026-07-09 统一「幕门控」：非会员第一幕（上德 10 关）免费无限、不计次，
 			// 第二幕起开通会员——与六门完备课一致，全站不再保留「免费体验剩 N 次」计次模型。
-			FreeTier: 1, Sort: 17, // 会员隐藏课压轴（新课递增后顺延）
+			FreeTier: 1, Sort: 18, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
 	// 2026-07-06 产品定调「工具箱只留 7 门核心课程」：不再软退役（enabled=false 保留行+进度），
