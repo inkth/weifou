@@ -15,13 +15,6 @@ import '../../data/api/profile_api.dart';
 const _opener =
     '嗨，我是来帮你建主页的 AI 助理～ 先用一两句话介绍下你自己：你是谁、平时做什么、最能帮别人解决什么问题？想到哪说到哪，也可以按住下方麦克风说。';
 
-const Map<String, String> _styleAvatar = {
-  'steady': 'toon-steady',
-  'warm': 'toon-warm',
-  'sharp': 'toon-sharp',
-  'humorous': 'toon-humorous',
-};
-
 // —— 雾蓝紫亮场（与小程序 onboarding.wxss 同源）——
 const _accent = AppTheme.accent;
 const _accentSoft = AppTheme.accentSoft;
@@ -407,7 +400,7 @@ class _ConversationalCreateScreenState
               style: _style.isEmpty ? null : _style,
               company: _company.isEmpty ? null : _company,
               city: _city.isEmpty ? null : _city,
-              avatarStyle: _styleAvatar[_style] ?? 'toon-warm',
+              avatarStyle: 'healing-girl',
             ),
           );
       ref.invalidate(myProfileProvider);

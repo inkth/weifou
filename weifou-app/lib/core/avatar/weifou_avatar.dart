@@ -10,13 +10,21 @@ enum AvatarState { idle, thinking, speaking }
 /// 形象预设。与小程序 utils/avatars.js 的 PRESETS 同源维护：
 /// toonLook 非空 = 纯绘制卡通脸（steady/warm/sharp/humorous）；为空 = 渐变 + 首字形象。
 class AvatarPreset {
-  const AvatarPreset(this.id, {this.toonLook, required this.colors});
+  const AvatarPreset(this.id,
+      {this.toonLook, this.assetPath, required this.colors});
   final String id;
   final String? toonLook;
+  final String? assetPath;
   final List<Color> colors;
 }
 
 const Map<String, AvatarPreset> kAvatarPresets = {
+  'healing-boy': AvatarPreset('healing-boy',
+      assetPath: 'assets/avatars/healing-boy_idle.webp',
+      colors: [Color(0xFF60705C), Color(0xFFD6BD84)]),
+  'healing-girl': AvatarPreset('healing-girl',
+      assetPath: 'assets/avatars/healing-girl_idle.webp',
+      colors: [Color(0xFFB87468), Color(0xFFEDC8A5)]),
   'aurora': AvatarPreset('aurora',
       colors: [Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899)]),
   'ocean': AvatarPreset('ocean', colors: [Color(0xFF0EA5E9), Color(0xFF2563EB)]),
@@ -46,10 +54,11 @@ int _hashStr(String s) {
   return h;
 }
 
-/// 取预设；style 为空/未知时按 seed 确定性兜底（与小程序 getPreset 一致）。
+/// 空值使用产品默认的治愈女孩；未知历史值仍按 seed 稳定兜底。
 AvatarPreset resolveAvatarPreset(String? style, {String seed = ''}) {
   final hit = kAvatarPresets[style];
   if (hit != null) return hit;
+  if (style == null || style.isEmpty) return kAvatarPresets['healing-girl']!;
   final keys = kAvatarPresets.keys.toList();
   return kAvatarPresets[keys[_hashStr(seed) % keys.length]]!;
 }
@@ -150,7 +159,17 @@ class _WeifouAvatarState extends State<WeifouAvatar>
                       offset: Offset(0, 6)),
                 ],
               ),
-              child: preset.toonLook == null
+              child: preset.assetPath != null
+                  ? ClipOval(
+                      child: Image.asset(
+                        preset.assetPath!,
+                        width: s,
+                        height: s,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                      ),
+                    )
+                  : preset.toonLook == null
                   ? Center(
                       child: Text(
                         avatarInitial(widget.name),

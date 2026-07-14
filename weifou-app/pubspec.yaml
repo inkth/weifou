@@ -77,6 +77,8 @@ flutter:
   # 沉浸式创建页背景立绘（与小程序 onboarding 同款，全端统一皮肤）
   assets:
     - assets/avatars/gf-meinv_idle.webp
+    - assets/avatars/healing-boy_idle.webp
+    - assets/avatars/healing-girl_idle.webp
 
   # To add assets to your application, add an assets section, like this:
   # assets:

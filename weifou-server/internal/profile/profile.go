@@ -60,6 +60,8 @@ type createReq struct {
 	Ref         string `json:"ref"`   // 裂变归因：来源 Agent 的 profileId，仅创建时落库
 }
 
+const defaultAvatarStyle = "healing-girl"
+
 func strPtr(s string) *string {
 	if s == "" {
 		return nil
@@ -74,6 +76,10 @@ func (h *Handler) createOrUpdate(c *gin.Context) error {
 		return httpx.BadRequest("INVALID_PARAMS", "请完整填写信息")
 	}
 	req.Style = persona.NormalizeStyle(req.Style)
+	avatarStyle := strings.TrimSpace(req.AvatarStyle)
+	if avatarStyle == "" {
+		avatarStyle = defaultAvatarStyle
+	}
 
 	var profile models.Profile
 	err := h.db.Where("user_id = ?", auth.UserID).First(&profile).Error
@@ -94,7 +100,7 @@ func (h *Handler) createOrUpdate(c *gin.Context) error {
 			Title:             req.Title,
 			Company:           strPtr(req.Company),
 			City:              strPtr(req.City),
-			AvatarStyle:       req.AvatarStyle,
+			AvatarStyle:       avatarStyle,
 			ReferrerProfileID: referrer,
 			Status:            models.ProfileDraft,
 		}

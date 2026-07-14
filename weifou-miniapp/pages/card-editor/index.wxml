@@ -7,7 +7,15 @@
       <view class="mini-card" style="{{card.cardStyle}}">
         <view class="card-sky"></view>
         <view class="card-orbit"></view>
-        <image class="card-character" src="{{card.portraitUrl}}" mode="aspectFill" data-topic="portrait" bindtap="onCardField"/>
+        <image wx:if="{{card.portraitUrl}}" class="card-character" src="{{card.portraitUrl}}" mode="aspectFill" data-topic="portrait" bindtap="onCardField" binderror="portraitError"/>
+        <view wx:else class="card-character card-character-fallback" data-topic="portrait" bindtap="onCardField">
+          <view class="preview-avatar-orbit"></view>
+          <view class="preview-avatar-core">
+            <image wx:if="{{card.avatarUrl}}" src="{{card.avatarUrl}}" mode="aspectFill"/>
+            <text wx:else>{{card.initial}}</text>
+          </view>
+          <view class="preview-avatar-label">PERSONAL AI</view>
+        </view>
         <view class="card-fade"></view>
         <view class="card-status">✦ AI SELF</view>
         <view class="card-copy">
@@ -28,7 +36,7 @@
           <view class="topic {{topic === 'identity' ? 'active' : ''}}" data-topic="identity" bindtap="selectTopic">身份</view>
           <view class="topic {{topic === 'intro' ? 'active' : ''}}" data-topic="intro" bindtap="selectTopic">介绍</view>
           <view class="topic {{topic === 'tags' ? 'active' : ''}}" data-topic="tags" bindtap="selectTopic">标签</view>
-          <view class="topic {{topic === 'portrait' ? 'active' : ''}}" data-topic="portrait" bindtap="selectTopic">立绘</view>
+          <view class="topic {{topic === 'portrait' ? 'active' : ''}}" data-topic="portrait" bindtap="selectTopic">形象</view>
           <view class="topic {{topic === 'tone' ? 'active' : ''}}" data-topic="tone" bindtap="selectTopic">AI 语气</view>
         </view>
       </scroll-view>
@@ -87,8 +95,8 @@
     </view>
 
     <view class="save-bar">
-      <view class="save-note">{{existing ? '修改会同步到对外名片' : '发布后即可分享给朋友'}}</view>
-      <button class="save-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="save">{{existing ? '保存修改' : '发布名片'}}</button>
+      <view class="save-note">{{existing ? '修改会同步到对外名片' : '完成后即可分享并接待来访'}}</view>
+      <button class="save-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="save">{{existing ? '保存修改' : '生成我的名片'}}</button>
     </view>
   </block>
 </view>

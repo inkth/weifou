@@ -1,6 +1,8 @@
 const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
-const { PRESETS, getPreset, DEFAULT_LIHE } = require('../../utils/avatars');
+const {
+  PRESETS, getPreset, portraitStage, initial, DEFAULT_PRESET_ID,
+} = require('../../utils/avatars');
 
 const TITLES = ['顾问·教练', '设计·创意', '开发·技术', '教育·培训', '内容·创作', '品牌·营销', '法律·财税', '生活服务'];
 const TAGS = ['策略思考', '内容创作', '品牌增长', '产品设计', '技术开发', '职业成长', '创业实践', '长期主义'];
@@ -18,11 +20,6 @@ function portraitOptions() {
     previewUrl: (p.type === 'image' && p.images && p.images.idle) || '',
     style: `background:linear-gradient(145deg, ${(p.colors && p.colors[0]) || '#66776f'}, ${(p.colors && p.colors[1]) || '#d9c18d'});`,
   }));
-}
-
-function portraitFor(id, seed) {
-  const p = getPreset(id, seed);
-  return (p.type === 'image' && p.images && p.images.idle) || DEFAULT_LIHE;
 }
 
 function styleFor(id, seed) {
@@ -57,11 +54,12 @@ Page({
     topic: 'identity',
     card: {
       realName: '你的名字', title: '', company: '', city: '',
+      initial: '你', avatarUrl: '',
       identity: '点这里选择你的身份',
       oneLiner: '用一句话，让别人立刻知道你是谁、能带来什么。',
       tags: ['会介绍你', '随时在线'],
-      avatarStyle: 'gf-meinv', portraitUrl: DEFAULT_LIHE,
-      cardStyle: '--card-a:#66776f;--card-b:#d9c18d;', toneId: 'warm',
+      avatarStyle: DEFAULT_PRESET_ID, portraitUrl: '', portraitKind: 'identity',
+      cardStyle: '--card-a:#6366f1;--card-b:#a855f7;', toneId: 'warm',
     },
     customTag: '',
     titleOptions: TITLES,
@@ -73,7 +71,7 @@ Page({
       identity: '先决定别人第一眼怎么认识你。点一个身份，再补上称呼就好。',
       intro: '哪一句最像你？选中后还可以直接改字。',
       tags: '选 2–5 个你希望别人记住的关键词。',
-      portrait: '选择一套符合你气质的立绘与名片氛围。',
+      portrait: '选择名片气场或虚拟分身形象。缺省使用你的头像/姓名首字，不会自动套用陌生人物。',
       tone: '访客和你的 AI 分身聊天时，希望它怎么说话？',
     },
   },
@@ -82,23 +80,40 @@ Page({
     try {
       await ensureLogin();
       const mine = await request({ url: '/profile/mine' }).catch(() => null);
-      if (mine) this.applyMine(mine);
-    } catch (e) { /* 新用户仍可先编辑，发布时再次登录 */ }
+      if (!mine) {
+        const portrait = portraitStage(DEFAULT_PRESET_ID, 'new-card');
+        this.setData({
+          loading: false,
+          existing: false,
+          'card.portraitUrl': portrait.frames.idle,
+          'card.portraitKind': portrait.kind,
+          'card.cardStyle': styleFor(DEFAULT_PRESET_ID, 'new-card'),
+        });
+        return;
+      }
+      this.applyMine(mine);
+    } catch (e) {
+      wx.switchTab({ url: '/pages/discover/index' });
+      return;
+    }
     this.setData({ loading: false });
   },
 
   applyMine(mine) {
     const persona = mine.persona || {};
     const input = mine.personaInput || {};
-    const avatarStyle = mine.avatarStyle || 'gf-meinv';
+    const avatarStyle = mine.avatarStyle || DEFAULT_PRESET_ID;
+    const portrait = portraitStage(avatarStyle, mine.id);
     const toneHit = TONES.find((t) => t.id === input.style) || TONES.find((t) => (persona.tone || '').indexOf(t.label) >= 0) || TONES[1];
     const card = {
       realName: mine.realName || '你的名字',
+      initial: initial(mine.realName), avatarUrl: mine.avatarUrl || '',
       title: mine.title || '', company: mine.company || '', city: mine.city || '',
       oneLiner: persona.oneLiner || '用一句话，让别人立刻知道你是谁、能带来什么。',
       tags: (persona.tags || []).slice(0, 5),
       avatarStyle,
-      portraitUrl: portraitFor(avatarStyle, mine.id),
+      portraitUrl: portrait.frames.idle,
+      portraitKind: portrait.kind,
       cardStyle: styleFor(avatarStyle, mine.id),
       toneId: toneHit.id,
     };
@@ -121,6 +136,7 @@ Page({
       patch['card.identity'] = identity(card);
       if (key === 'title') patch.introChoices = introChoices(card);
     }
+    if (key === 'realName') patch['card.initial'] = initial(e.detail.value);
     this.setData(patch);
   },
 
@@ -158,11 +174,17 @@ Page({
   choosePortrait(e) {
     const id = e.currentTarget.dataset.value;
     const seed = this.data.profileId || 'new-card';
+    const portrait = portraitStage(id, seed);
     this.setData({
       'card.avatarStyle': id,
-      'card.portraitUrl': portraitFor(id, seed),
+      'card.portraitUrl': portrait.frames.idle,
+      'card.portraitKind': portrait.kind,
       'card.cardStyle': styleFor(id, seed),
     });
+  },
+
+  portraitError() {
+    this.setData({ 'card.portraitUrl': '', 'card.portraitKind': 'identity' });
   },
 
   chooseTone(e) { this.setData({ 'card.toneId': e.currentTarget.dataset.value }); },
@@ -176,7 +198,7 @@ Page({
     if (!c.tags.length) { this.setData({ topic: 'tags' }); wx.showToast({ title: '至少选择一个标签', icon: 'none' }); return; }
     const tone = TONES.find((t) => t.id === c.toneId) || TONES[1];
     this.setData({ saving: true });
-    wx.showLoading({ title: this.data.existing ? '正在保存…' : '正在生成名片…', mask: true });
+    wx.showLoading({ title: '正在保存…', mask: true });
     try {
       await ensureLogin();
       let id = this.data.profileId;
@@ -187,17 +209,22 @@ Page({
           request({ url: '/profile/avatar', method: 'PATCH', data: { avatarStyle: c.avatarStyle } }),
         ]);
       } else {
-        const created = await request({ url: '/profile', method: 'POST', data: {
-          realName: c.realName, title: c.title, company: c.company, city: c.city,
-          strengths: c.oneLiner, recentWork: '', howToKnow: c.tags.join('、'),
-          avatarStyle: c.avatarStyle, style: c.toneId,
-        } });
+        const created = await request({
+          url: '/profile', method: 'POST', data: {
+            realName: c.realName, title: c.title, company: c.company, city: c.city,
+            strengths: c.oneLiner, recentWork: '', howToKnow: '',
+            avatarStyle: c.avatarStyle, style: c.toneId,
+          },
+        });
         id = created.id;
-        await request({ url: '/profile/persona', method: 'PATCH', data: { oneLiner: c.oneLiner, tags: c.tags, tone: tone.tone } }).catch(() => {});
+        await request({
+          url: '/profile/persona', method: 'PATCH',
+          data: { oneLiner: c.oneLiner, tags: c.tags, tone: tone.tone },
+        });
       }
       wx.hideLoading();
-      wx.showToast({ title: this.data.existing ? '名片已更新' : '名片已发布', icon: 'success' });
-      setTimeout(() => wx.redirectTo({ url: `/pages/profile/index?id=${id}&mine=1${this.data.existing ? '' : '&fresh=1'}` }), 450);
+      wx.showToast({ title: '名片已更新', icon: 'success' });
+      setTimeout(() => wx.redirectTo({ url: `/pages/profile/index?id=${id}&mine=1` }), 450);
     } catch (e) {
       wx.hideLoading();
       wx.showToast({ title: e.message || '保存失败', icon: 'none' });

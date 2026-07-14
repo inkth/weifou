@@ -1,19 +1,26 @@
 // 预设动态形象库。
 // type:
 //   'css'(默认)  — 纯样式渐变 + 首字 + WXSS 动效（零资源、合规）
-//   'image'      — 静态图形象（如古风插画），支持按对话状态切表情图；图加载失败回退 css
+//   'image'      — 静态图形象（如古风插画），支持按舞台状态切表情图；图加载失败回退 css
 // css 动效 anim: 'flow'(渐变流动) | 'pulse'(呼吸缩放) | 'shine'(高光扫过)
 // 注意：colors 对 image 预设仍要填，作为未配置/加载失败时的回退色。
 //
 // image 形象示例（古风男女）——把图放 assets/avatars/ 或 COS，按下方格式加进 PRESETS：
 //   { id:'gf-her', name:'青衣', type:'image',
 //     images:{ idle:'/assets/avatars/her_idle.png',
-//              thinking:'/assets/avatars/her_think.png',   // 选填，无则回落 idle
+//              blink:'/assets/avatars/her_blink.png',       // 选填，名片/对话待机共用
+//              glance:'/assets/avatars/her_glance.png',     // 选填，名片/对话待机共用
+//              thinking:'/assets/avatars/her_think.png',    // 选填，无则回落 idle
 //              speaking:'/assets/avatars/her_speak.png' },  // 选填，AI 回复时显示
 //     colors:['#8b5cf6','#c4b5fd'] }
 //   组件会用 idle 图常驻、按 state 在各表情图间淡入淡出切换；只给 idle 一张也可用（纯静态 + CSS 呼吸漂浮）。
 //   详见 assets/avatars/README.md。
 const PRESETS = [
+  // 主推虚拟分身：名片与课程舞台共用同一套角色身份。
+  // 先用 idle + CSS 呼吸建立稳定识别，后续再按同一张脸补 blink / glance / speaking。
+  { id: 'healing-boy', name: '治愈男孩', type: 'image', look: 'warm', images: { idle: '/assets/avatars/healing-boy_idle.webp' }, colors: ['#60705c', '#d6bd84'] },
+  { id: 'healing-girl', name: '治愈女孩', type: 'image', look: 'warm', images: { idle: '/assets/avatars/healing-girl_idle.webp' }, colors: ['#b87468', '#edc8a5'] },
+
   { id: 'aurora', name: '极光', colors: ['#6366f1', '#a855f7', '#ec4899'], anim: 'flow' },
   { id: 'ocean', name: '深海', colors: ['#0ea5e9', '#2563eb'], anim: 'flow' },
   { id: 'mint', name: '薄荷', colors: ['#10b981', '#34d399'], anim: 'pulse' },
@@ -23,9 +30,9 @@ const PRESETS = [
   { id: 'coral', name: '珊瑚', colors: ['#fb7185', '#f43f5e'], anim: 'flow' },
   { id: 'forest', name: '森林', colors: ['#16a34a', '#065f46'], anim: 'shine' },
 
-  // ↓ 全屏立绘形象（type:'image'，fal 生成，见 scripts/gen-avatars.mjs）；对话页据此走"星野式全屏立绘"模式。
-  //   ⚠️ 单图 ~2.8MB，上线务必改 COS（images 里写 https 链接）；本地测试用包内路径即可。
-  { id: 'gf-meinv', name: '古风美女', type: 'image', images: { idle: '/assets/avatars/gf-meinv_idle.webp' }, colors: ['#9aa7c4', '#d8c7e0'] },
+  // ↓ 历史可明确选中的虚拟立绘（type:'image'，见 scripts/gen-avatars.mjs）。
+  //   包内帧应控制在 540px 宽、100KB 左右；表情帧增多后转 COS/分包，不挤占主包。
+  { id: 'gf-meinv', name: '古风分身', type: 'image', images: { idle: '/assets/avatars/gf-meinv_idle.webp' }, colors: ['#9aa7c4', '#d8c7e0'] },
 
   // ↓ 历史 Lottie 示例槽位（Lottie 运行时已移除）。id 可能已被用户选中存库，
   //   保留条目按 css 渐变渲染（此前因无人加载动画数据，实际也一直走 css 回退，视觉无变化）。
@@ -33,10 +40,10 @@ const PRESETS = [
   { id: 'lottie-wave', name: '波动', colors: ['#0ea5e9', '#22d3ee'], anim: 'flow' },
 ];
 
-// 默认全屏立绘（所有场景统一的立绘背景）。暂时全员共用 gf-meinv 这一张；
-// 将来做成可选立绘库时，每人 profile 自带 image 形象即覆盖此默认——只改这一处。
-const _meinv = PRESETS.find((p) => p.id === 'gf-meinv');
-const DEFAULT_LIHE = (_meinv && _meinv.images && _meinv.images.idle) || '/assets/avatars/gf-meinv_idle.webp';
+// 新用户无需判断，直接看到完成度最高的治愈女孩；之后仍可主动切换其他形象。
+// 非法/下线 id 仍只回退非人脸气场，避免把错误历史值误认成某个共享人物。
+const DEFAULT_PRESET_ID = 'healing-girl';
+const AUTO_PRESETS = PRESETS.filter((p) => p.type !== 'image');
 
 // 温度档（弹性体系核心，定义见 docs/design-tokens.md）。
 // 把 4 种沟通风格归到 3 档；一档同时建议 头像气质(look/渐变) + 文案语气(tone)。
@@ -88,16 +95,48 @@ function hashStr(s) {
   return h;
 }
 
-// 取预设；id 为空或非法时用 seed 确定性兜底
+// 取预设；空值代表尚未选择，使用产品默认；非法 id 只从非人脸气场中确定性兜底。
 function getPreset(id, seed) {
   const found = PRESETS.find((p) => p.id === id);
   if (found) return found;
-  return PRESETS[hashStr(seed) % PRESETS.length];
+  if (!id) return PRESETS.find((p) => p.id === DEFAULT_PRESET_ID) || PRESETS[0];
+  return AUTO_PRESETS[hashStr(seed) % AUTO_PRESETS.length] || PRESETS[0];
 }
 
-// 由 seed 选默认形象 id
+// 同一身份立绘的共享舞台协议。缺图帧一律返空，页面据此降级到用户头像/首字；
+// 能力由数据明示，页面不再靠猜测文件名决定是否可以眨眼或说话。
+function portraitStage(presetId, seed) {
+  const preset = getPreset(presetId, seed);
+  const images = preset.type === 'image' && preset.images ? preset.images : {};
+  const frames = {
+    idle: images.idle || '',
+    blink: images.blink || '',
+    glance: images.glance || '',
+    thinking: images.thinking || '',
+    speaking: images.speaking || '',
+  };
+  return {
+    presetId: preset.id,
+    kind: frames.idle ? 'illustration' : 'identity',
+    label: frames.idle ? '虚拟分身形象' : '个人身份气场',
+    frames,
+    capabilities: {
+      blink: !!frames.blink,
+      glance: !!frames.glance,
+      thinking: !!frames.thinking,
+      speaking: !!frames.speaking,
+    },
+  };
+}
+
+function portraitFrames(presetId, seed) {
+  return portraitStage(presetId, seed).frames;
+}
+
+// 新用户统一使用产品默认；保留 seed 参数以兼容已有调用方。
 function pickDefault(seed) {
-  return PRESETS[hashStr(seed) % PRESETS.length].id;
+  void seed;
+  return DEFAULT_PRESET_ID;
 }
 
 // 取姓名首字符（中文取首字，英文取首字母大写）
@@ -107,4 +146,7 @@ function initial(name) {
   return n[0].toUpperCase();
 }
 
-module.exports = { PRESETS, TONES, DEFAULT_TONE, DEFAULT_LIHE, toneForStyle, tierForPreset, getPreset, pickDefault, initial, hashStr };
+module.exports = {
+  PRESETS, TONES, DEFAULT_TONE, DEFAULT_PRESET_ID,
+  toneForStyle, tierForPreset, getPreset, portraitStage, portraitFrames, pickDefault, initial, hashStr,
+};

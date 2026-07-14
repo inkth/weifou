@@ -1,11 +1,15 @@
 const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
-const { PRESETS, getPreset, initial, DEFAULT_LIHE } = require('../../utils/avatars');
+const {
+  PRESETS, getPreset, portraitStage, tierForPreset, initial, DEFAULT_PRESET_ID,
+} = require('../../utils/avatars');
 const { track } = require('../../utils/track');
 
 // 首页就是用户的成品名片。新用户也先看到一个完整范例，只需补齐少量信息即可替换成自己。
+const DEFAULT_STAGE = cardStage(DEFAULT_PRESET_ID, 'new-card');
 const FALLBACK = {
   chief: {
+    ...DEFAULT_STAGE,
     name: '你的名字',
     initial: '你',
     identity: '你的身份 · 正在做的事',
@@ -19,9 +23,8 @@ const FALLBACK = {
     hasProfile: false,
     profileId: '',
     avatarUrl: '',
-    portraitUrl: DEFAULT_LIHE,
+    avatarStyle: DEFAULT_PRESET_ID,
     cardNo: '0001',
-    cardStyle: '--card-a:#7772c8; --card-b:#b9dded;',
     stats: null,
   },
 };
@@ -42,12 +45,19 @@ function identityLine(profile) {
 function cardStyle(avatarStyle, profileId) {
   const preset = getPreset(avatarStyle, profileId);
   const colors = preset.colors || ['#7772c8', '#b9dded'];
-  return `--card-a:${colors[0]}; --card-b:${colors[1] || colors[0]};`;
+  return `--card-a:${colors[0]}; --card-b:${colors[1] || colors[0]}; --amb-a:${colors[0]}; --amb-b:${colors[1] || colors[0]};`;
 }
 
-function portraitUrl(avatarStyle, profileId) {
-  const preset = getPreset(avatarStyle, profileId);
-  return (preset.type === 'image' && preset.images && preset.images.idle) || DEFAULT_LIHE;
+function cardStage(avatarStyle, profileId) {
+  const portrait = portraitStage(avatarStyle, profileId);
+  return {
+    cardStyle: cardStyle(avatarStyle, profileId),
+    portraitFrames: portrait.frames,
+    portraitKind: portrait.kind,
+    portraitLabel: portrait.label,
+    portraitCapabilities: portrait.capabilities,
+    stageTier: tierForPreset(avatarStyle, profileId).id,
+  };
 }
 
 function cardNo(profileId) {
@@ -77,11 +87,14 @@ Page({
     editorKind: '',
     editorTitle: '',
     savingEditor: false,
+    portraitPose: 'idle',
+    portraitMotion: '',
     draft: {},
     portraitOptions: PORTRAIT_OPTIONS,
   },
 
   onLoad() {
+    this._pageVisible = true;
     try {
       const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()) || {};
       this.setData({ statusBarH: info.statusBarHeight || 20 });
@@ -89,11 +102,22 @@ Page({
   },
 
   onShow() {
+    this._pageVisible = true;
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
     this.setData({ greeting: greet() });
-    this.load();
+    this._loadCard();
+  },
+
+  onHide() {
+    this._pageVisible = false;
+    this._clearCardIdleTimers();
+  },
+
+  onUnload() {
+    this._pageVisible = false;
+    this._clearCardIdleTimers();
   },
 
   async load() {
@@ -121,16 +145,17 @@ Page({
     ]);
 
     if (!profile) {
+      const stage = cardStage('', primary.profileId);
       this.setData({
         chief: {
           ...FALLBACK.chief,
+          ...stage,
           name: primary.name || '我的 AI 名片',
           initial: primary.initial || '名',
           oneLiner: primary.line || FALLBACK.chief.oneLiner,
           profileId: primary.profileId,
           hasProfile: true,
           online: true,
-          portraitUrl: portraitUrl('', primary.profileId),
           cardNo: cardNo(primary.profileId),
         },
         loading: false,
@@ -140,7 +165,9 @@ Page({
     }
 
     const persona = profile.persona || {};
+    const stage = cardStage(profile.avatarStyle, primary.profileId);
     const chief = {
+      ...stage,
       name: profile.realName || '我的 AI 名片',
       initial: initial(profile.realName),
       identity: identityLine(profile),
@@ -154,10 +181,8 @@ Page({
       hasProfile: true,
       profileId: primary.profileId,
       avatarUrl: profile.avatarUrl || '',
-      avatarStyle: profile.avatarStyle || '',
-      portraitUrl: portraitUrl(profile.avatarStyle, primary.profileId),
+      avatarStyle: profile.avatarStyle || DEFAULT_PRESET_ID,
       cardNo: cardNo(primary.profileId),
-      cardStyle: cardStyle(profile.avatarStyle, primary.profileId),
       stats: stats ? [
         { n: stats.pv || 0, label: '浏览' },
         { n: stats.uv || 0, label: '访客' },
@@ -168,11 +193,80 @@ Page({
     this.setData({ chief, loading: false, loaded: true });
   },
 
-  retry() { this.load(); },
+  _loadCard() {
+    this._clearCardIdleTimers();
+    return this.load().then(
+      () => this._startCardIdle(true),
+      () => this._startCardIdle(true),
+    );
+  },
+
+  retry() { this._loadCard(); },
+
+  _clearCardIdleTimers() {
+    if (this._cardPoseTimer) clearTimeout(this._cardPoseTimer);
+    if (this._cardPoseResetTimer) clearTimeout(this._cardPoseResetTimer);
+    if (this._cardMotionTimer) clearTimeout(this._cardMotionTimer);
+    if (this._cardMotionResetTimer) clearTimeout(this._cardMotionResetTimer);
+    this._cardPoseTimer = null;
+    this._cardPoseResetTimer = null;
+    this._cardMotionTimer = null;
+    this._cardMotionResetTimer = null;
+  },
+
+  _canCardIdle() {
+    return this._pageVisible && this.data.loaded && !this.data.loading && !this.data.editorOpen;
+  },
+
+  // 与课程舞台一致：idle 帧常驻，有同一张脸的变体帧才会低频覆盖。
+  // 当前立绘库多数只有 idle，此时仅保留身体重心微动，不拿课程导师的脸硬套。
+  _startCardIdle(reset) {
+    this._clearCardIdleTimers();
+    if (reset && (this.data.portraitPose !== 'idle' || this.data.portraitMotion)) {
+      this.setData({ portraitPose: 'idle', portraitMotion: '' });
+    }
+    if (!this._canCardIdle()) return;
+    this._scheduleCardPose();
+    this._scheduleCardMotion();
+  },
+
+  _scheduleCardPose() {
+    const capabilities = (this.data.chief && this.data.chief.portraitCapabilities) || {};
+    const poses = [];
+    if (capabilities.blink) poses.push('blink');
+    if (capabilities.glance) poses.push('glance');
+    if (!poses.length || !this._canCardIdle()) return;
+    this._cardPoseTimer = setTimeout(() => {
+      if (!this._canCardIdle()) return;
+      const pose = poses[Math.floor(Math.random() * poses.length)];
+      this.setData({ portraitPose: pose });
+      const duration = pose === 'blink' ? 120 : 900;
+      this._cardPoseResetTimer = setTimeout(() => {
+        if (!this._canCardIdle()) return;
+        this.setData({ portraitPose: 'idle' });
+        this._scheduleCardPose();
+      }, duration);
+    }, 4200 + Math.floor(Math.random() * 3800));
+  },
+
+  _scheduleCardMotion() {
+    if (!this._canCardIdle()) return;
+    this._cardMotionTimer = setTimeout(() => {
+      if (!this._canCardIdle()) return;
+      this.setData({ portraitMotion: 'shift' });
+      this._cardMotionResetTimer = setTimeout(() => {
+        if (!this._canCardIdle()) return;
+        this.setData({ portraitMotion: '' });
+        this._scheduleCardMotion();
+      }, 2200);
+    }, 9000 + Math.floor(Math.random() * 5000));
+  },
 
   enterCardEditor() {
-    wx.navigateTo({ url: '/pages/card-editor/index' });
+    this.startCardSetup();
   },
+
+  startCardSetup() { wx.navigateTo({ url: '/pages/card-editor/index' }); },
 
   viewPublicCard() {
     const chief = this.data.chief;
@@ -207,7 +301,7 @@ Page({
     this.setData({ editorOpen: true, editorKind: 'portrait', editorTitle: '选择名片气质', draft: {} });
   },
 
-  closeSheet() { this.setData({ editorOpen: false }); },
+  closeSheet() { this.setData({ editorOpen: false }, () => this._startCardIdle(true)); },
 
   onDraftInput(e) {
     this.setData({ [`draft.${e.currentTarget.dataset.key}`]: e.detail.value });
@@ -270,12 +364,16 @@ Page({
     if (this.data.savingEditor) return;
     const id = e.currentTarget.dataset.id;
     if (!this.data.chief.hasProfile) {
+      const stage = cardStage(id, 'new-card');
       this.setData({
         'chief.avatarStyle': id,
-        'chief.portraitUrl': portraitUrl(id, 'new-card'),
-        'chief.cardStyle': cardStyle(id, 'new-card'),
+        'chief.portraitFrames': stage.portraitFrames,
+        'chief.cardStyle': stage.cardStyle,
+        'chief.stageTier': stage.stageTier,
+        portraitPose: 'idle',
+        portraitMotion: '',
         editorOpen: false,
-      });
+      }, () => this._startCardIdle(true));
       wx.showToast({ title: '气质已切换', icon: 'success' });
       return;
     }
@@ -293,47 +391,24 @@ Page({
     wx.navigateTo({ url: '/pages/card-editor/index' });
   },
 
-  async publishNewCard() {
-    if (this.data.savingEditor) return;
-    const c = this.data.chief;
-    if (!c.title || !c.name || c.name === FALLBACK.chief.name) {
-      wx.showToast({ title: '先点姓名，填写你的身份', icon: 'none' });
-      this.openIdentity();
+  portraitError(e) {
+    const pose = (e && e.currentTarget && e.currentTarget.dataset.pose) || 'idle';
+    const path = `chief.portraitFrames.${pose}`;
+    if (pose === 'idle') {
+      this.setData({
+        [path]: '',
+        'chief.portraitKind': 'identity',
+        'chief.portraitLabel': '个人身份气场',
+        'chief.portraitCapabilities': { blink: false, glance: false, thinking: false, speaking: false },
+        portraitPose: 'idle',
+      });
       return;
     }
-    this.setData({ savingEditor: true });
-    wx.showLoading({ title: '正在生成名片…', mask: true });
-    try {
-      await ensureLogin();
-      const created = await request({
-        url: '/profile', method: 'POST', data: {
-          realName: c.name,
-          title: c.title,
-          company: c.company || '',
-          city: c.city || '',
-          strengths: c.oneLiner || (c.allTags || c.tags || []).join('、'),
-          recentWork: '',
-          howToKnow: (c.allTags || c.tags || []).join('、'),
-          avatarStyle: c.avatarStyle || 'gf-meinv',
-          style: '',
-        },
-      });
-      const personaPatch = { oneLiner: c.oneLiner };
-      if ((c.allTags || []).length) personaPatch.tags = c.allTags;
-      await request({ url: '/profile/persona', method: 'PATCH', data: personaPatch }).catch(() => {});
-      wx.hideLoading();
-      this.setData({ editing: false, editorOpen: false });
-      wx.redirectTo({ url: `/pages/profile/index?id=${created.id}&mine=1&fresh=1` });
-    } catch (e) {
-      wx.hideLoading();
-      wx.showToast({ title: e.message || '创建失败', icon: 'none' });
-    } finally { this.setData({ savingEditor: false }); }
-  },
-
-  portraitError() {
-    if (this.data.chief.portraitUrl !== DEFAULT_LIHE) {
-      this.setData({ 'chief.portraitUrl': DEFAULT_LIHE });
-    }
+    this.setData({
+      [path]: '',
+      [`chief.portraitCapabilities.${pose}`]: false,
+      portraitPose: 'idle',
+    });
   },
 
   noop() {},

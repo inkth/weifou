@@ -2,9 +2,16 @@
 
 存放 `type:'image'` 形象的插画 PNG，支持按对话状态切表情图。
 
+当前主推名片分身：
+
+- `healing-boy_idle.webp`：治愈男孩，暖棕发、苔绿色外套。
+- `healing-girl_idle.webp`：治愈女孩，暖棕发、杏粉色针织外套。
+
+两张均为 540×810 透明背景 WebP，来自同一张原创角色设定图；高分辨率生成母版保存在顶层 `assets-src/avatars/raw/`，不会进入小程序主包。
+
 ## 怎么加一个图形象
 
-1. 准备图片（建议 **正方形、半身居中、透明或纯色背景、统一风格**，如 1024×1024 古风男/女）。
+1. 准备图片（建议 **540×810、半身居中、透明背景、统一风格**），单帧 WebP 尽量控制在 100KB 内。
    - 至少 1 张 `idle`（常驻）。
    - 想要对话感，再出 `speaking`（AI 回复时显示）、`thinking`（思考时，选填）。
    - 同一形象各状态图务必**同一张脸/服饰/配色**（用图生图从 idle 改神情，保一致）。
@@ -16,6 +23,8 @@
    { id:'gf-her', name:'青衣', type:'image',
      images:{
        idle:'/assets/avatars/her_idle.png',
+       blink:'/assets/avatars/her_blink.png',       // 名片/对话待机可用
+       glance:'/assets/avatars/her_glance.png',     // 名片/对话待机可用
        thinking:'/assets/avatars/her_think.png',
        speaking:'/assets/avatars/her_speak.png',
      },
@@ -23,7 +32,10 @@
    ```
 
 ## 行为
-- 组件 `components/avatar` 对 image 形象：各状态图**叠放 + opacity 淡入淡出**切换；`state` 由调用方传入（聊天页 AI 回复时传 `speaking`）。
+- 舞台对 image 形象：各状态图**叠放 + opacity 淡入淡出**切换；名片待机只用 `idle / blink / glance`，对话或课程才使用 `thinking / speaking`。
+- 新用户不需要先判断，默认使用 `healing-girl`；用户主动切换后以所选形象为准。
+- 非法或已下线的预设 id 只从非人脸气场中降级，不会随机套用另一个人物。
+- 无 image 立绘时，身份舞台优先显示用户头像，否则显示姓名首字 + 个人气场。
 - 整体仍套用 CSS **呼吸/漂浮**活人感动效。
 - 任一图加载失败 → 自动回退 css 渐变形象，**绝不留白/破图**。
 - 只给 `idle` 一张也能用（纯静态半身 + CSS 微动）。

@@ -4,12 +4,12 @@
 
   <view class="topbar" style="padding-top:{{statusBarH}}px">
     <view>
-      <view class="brand-row"><text class="brand-star">✦</text> WEIFOU</view>
-      <view class="greeting">{{greeting}}，你的 AI 名片已就位</view>
+      <view class="brand-row"><text class="brand-star">✦</text><text>WEIFOU</text><text class="brand-cn">微否</text></view>
+      <view class="greeting">{{greeting}}，<text class="greeting-strong">{{chief.hasProfile ? '你的 AI 分身正在接待来访' : '你的 AI 分身已就位'}}</text></view>
     </view>
     <view class="settings-btn {{editing ? 'editing' : ''}}" hover-class="settings-btn-press" bindtap="toggleEditor">
       <view class="settings-dot"></view>
-      <text>{{editing ? '完成' : '设置'}}</text>
+      <text>{{editing ? '完成' : (chief.hasProfile ? '编辑' : '开始')}}</text>
     </view>
   </view>
 
@@ -23,38 +23,45 @@
       <text>资料暂未更新，点此重试</text>
     </view>
 
-    <view class="identity-stage {{chief.hasProfile ? '' : 'stage-demo'}} {{editing ? 'is-editing' : ''}}" style="{{chief.cardStyle}}" hover-class="stage-press" hover-stay-time="0" bindtap="enterCardEditor">
+    <view class="identity-stage stage-dark stage-in tier-{{chief.stageTier}} {{chief.hasProfile ? '' : 'stage-demo'}} {{chief.portraitKind === 'illustration' ? 'has-illustration' : 'has-identity'}} {{editing ? 'is-editing' : ''}} {{savingEditor ? 'stage-active' : ''}}" style="{{chief.cardStyle}}" hover-class="stage-press" hover-stay-time="0" bindtap="enterCardEditor">
       <view class="stage-sky"></view>
-      <view class="moon moon-a"></view>
-      <view class="moon moon-b"></view>
-      <view class="aura aura-a"></view>
-      <view class="aura aura-b"></view>
-      <view class="dust dust-1">✦</view>
-      <view class="dust dust-2">·</view>
-      <view class="dust dust-3">✧</view>
-      <view class="dust dust-4">·</view>
-      <view class="light-sweep"></view>
+      <view class="amb-layer">
+        <view class="amb-wash"></view>
+        <view class="amb-glow"></view>
+        <view class="amb-blob amb-blob-1"></view>
+        <view class="amb-blob amb-blob-2"></view>
+      </view>
 
-      <image class="character" src="{{chief.portraitUrl}}" mode="aspectFill" binderror="portraitError"/>
+      <view class="character-stack motion-{{portraitMotion}}">
+        <!-- 与课程舞台相同：idle 常驻，变体帧只做覆盖，切换过程不会透出背景。 -->
+        <image wx:if="{{chief.portraitFrames.idle}}" class="character character-idle is-visible" src="{{chief.portraitFrames.idle}}" mode="aspectFit" data-pose="idle" binderror="portraitError"/>
+        <view wx:else class="character character-fallback is-visible">
+          <view class="identity-avatar-orbit"></view>
+          <view class="identity-avatar-core">
+            <image wx:if="{{chief.avatarUrl}}" class="identity-avatar-image" src="{{chief.avatarUrl}}" mode="aspectFill"/>
+            <text wx:else class="identity-avatar-initial">{{chief.initial}}</text>
+          </view>
+          <view class="identity-avatar-caption">PERSONAL AI</view>
+        </view>
+        <image wx:if="{{chief.portraitFrames.blink}}" class="character character-blink {{portraitPose === 'blink' ? 'is-visible' : ''}}" src="{{chief.portraitFrames.blink}}" mode="aspectFit" data-pose="blink" binderror="portraitError"/>
+        <image wx:if="{{chief.portraitFrames.glance}}" class="character character-glance {{portraitPose === 'glance' ? 'is-visible' : ''}}" src="{{chief.portraitFrames.glance}}" mode="aspectFit" data-pose="glance" binderror="portraitError"/>
+      </view>
+      <view wx:if="{{!chief.hasProfile && chief.portraitKind === 'illustration'}}" class="companion-bubble">你好，我已经准备好替你介绍自己啦。</view>
       <view wx:if="{{editing}}" class="edit-hit portrait-hit" catchtap="openPortrait"><text class="edit-pencil">✎</text> 换立绘</view>
-      <view class="character-glow"></view>
       <view class="stage-vignette"></view>
 
       <view class="stage-head">
         <view class="live-pill {{chief.online ? '' : 'draft'}}">
           <text class="live-dot"></text>
-          {{chief.online ? 'AI 分身在线' : '编辑名片'}}
+          {{chief.online ? 'AI 分身在线' : 'AI 分身已就位'}}
         </view>
-        <view class="card-no">NO. {{chief.cardNo}}</view>
+        <view class="stage-identity-meta">
+          <view class="card-no">NO. {{chief.cardNo}}</view>
+          <view wx:if="{{chief.portraitKind === 'illustration'}}" class="portrait-kind">虚拟形象 · 可随时切换</view>
+        </view>
       </view>
 
       <view class="identity-copy">
-        <view class="mini-avatar-wrap">
-          <image wx:if="{{chief.avatarUrl}}" class="mini-avatar" src="{{chief.avatarUrl}}" mode="aspectFill"/>
-          <view wx:else class="mini-avatar mini-avatar-fallback">{{chief.initial}}</view>
-          <view class="mini-badge">AI</view>
-        </view>
-
         <view class="identity-main" bindtap="openIdentity">
           <view class="identity-kicker">MY DIGITAL SELF</view>
           <view class="person-name">{{chief.name}}</view>
@@ -67,6 +74,18 @@
         <view class="tags" wx:if="{{chief.tags.length}}" bindtap="openTags">
           <view class="tag-item" wx:for="{{chief.tags}}" wx:key="*this">{{item}}</view>
           <view wx:if="{{editing}}" class="tag-item tag-edit">＋ 修改</view>
+        </view>
+
+        <view class="stage-actions">
+          <button wx:if="{{!chief.hasProfile}}" class="stage-cta stage-build" catchtap="startCardSetup">
+            <text>完善我的名片</text><text class="stage-cta-arrow">→</text>
+          </button>
+          <block wx:else>
+            <button class="stage-cta stage-share" open-type="share" catchtap="noop">
+              <text>分享名片</text><text class="stage-cta-arrow">↗</text>
+            </button>
+            <button class="stage-cta stage-preview" catchtap="viewPublicCard">访客视角</button>
+          </block>
         </view>
 
       </view>
@@ -83,20 +102,26 @@
       <view class="quick-edit" bindtap="openTags">标签</view>
     </view>
 
-    <view class="foot-note">
-      <view class="foot-spark">✦</view>
-      <view class="foot-copy">
-        <view class="foot-title">一张会替你开口的名片</view>
-        <view class="foot-sub">改好资料后，分享出去的每一次对话都由分身接住</view>
+    <view wx:if="{{!chief.hasProfile}}" class="setup-panel" hover-class="setup-panel-press" bindtap="startCardSetup">
+      <view class="setup-step">01</view>
+      <view class="setup-copy">
+        <view class="setup-title">完善你的名片</view>
+        <view class="setup-sub">补充名字、身份和一句介绍，就可以分享</view>
+        <view class="setup-progress"><view class="setup-progress-bar"></view></view>
       </view>
+      <view class="setup-arrow">›</view>
     </view>
 
-    <view class="insight" wx:if="{{chief.stats}}">
-      <view class="insight-label">最近表现</view>
+    <view class="insight" wx:elif="{{chief.stats}}">
+      <view class="insight-label">分身接待记录</view>
       <view class="hstat" wx:for="{{chief.stats}}" wx:key="label">
         <text class="hstat-n">{{item.n}}</text>
         <text class="hstat-l">{{item.label}}</text>
       </view>
+    </view>
+    <view wx:elif="{{chief.hasProfile}}" class="home-live-note">
+      <view class="home-live-icon">✦</view>
+      <view><view class="home-live-title">分身已就位</view><view class="home-live-sub">分享后，访客无需下载就能直接和它聊</view></view>
     </view>
   </block>
 
