@@ -5,10 +5,7 @@ package toolagent
 
 import (
 	"encoding/json"
-	"log"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -41,7 +38,6 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/agents/detail/:id", auth, httpx.Handle(h.detail))
 	rg.GET("/agents/sessions/:id", auth, httpx.Handle(h.sessionList))         // :id = agentId → 我的历史会话
 	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))            // :id = sessionId → 该会话消息
-	rg.GET("/agents/skill/:id", auth, httpx.Handle(h.skill))                  // :id = agentId → 我在该学习型 Agent 的三维段位
 	rg.GET("/agents/concepts/:id", auth, httpx.Handle(h.concepts))            // :id = agentId → 我在该概念型 Agent 的点亮进度
 	rg.GET("/agents/knowledge-cards", auth, httpx.Handle(h.knowledgeCards))   // 我的→我的卡片：跨全部课程的章末知识卡片
 	rg.GET("/agents/streak", auth, httpx.Handle(h.streakInfo))                // 连续学习天数（全局一条）
@@ -141,28 +137,12 @@ func (h *Handler) chat(c *gin.Context) error {
 		return httpx.BadRequest("CONTENT_UNSAFE", "内容包含不当信息")
 	}
 
-	// 脚本课（零 AI 闯关）：准入在 scriptedChat 内按「开新关」计，跳过下面的按条扣次。
+	// 脚本课（零 AI 闯关）：准入在 scriptedChat 内按「开新关」计。
+	// 2026-07-16 死代码清理：全部课程均已注册剧本（courseScripts），LLM 自由对话路径退役；
+	// 无剧本视为配置错误，不再回落大模型。
 	scripted := courseScripts[a.Slug]
-
-	// 准入：会员畅用。概念课按「幕」门控——第一幕(Tier≤FreeTier)免费无限、更高幕需会员；
-	// 其余(工具 / 道德经试读)沿用「免费体验次数」计。
-	var member bool
-	remaining := -1
-	trialGated := false // 是否走了扣次模型（决定 AI 失败时是否退还免费次数）
-	if scripted != nil {
-		// 门控推迟到状态机内（只有「开新关」才过闸）
-	} else if a.Concept && a.FreeTier > 0 {
-		member = membership.IsActive(h.db, auth.UserID)
-		if !member && h.conceptTier(a.ID, req.Concept) > a.FreeTier {
-			return httpx.BadRequest("MEMBERSHIP_REQUIRED", "第一幕已学完 · 加入人类基本功计划，解锁全部能力路径")
-		}
-	} else {
-		var aerr error
-		member, remaining, aerr = h.checkAccess(auth.UserID, &a)
-		if aerr != nil {
-			return aerr
-		}
-		trialGated = !member
+	if scripted == nil {
+		return httpx.Internal("COURSE_SCRIPT_MISSING", "课程配置缺失，请稍后再试")
 	}
 
 	// 取/建会话：传了 sessionId 且属于本人本 Agent → 续聊；否则新开一段（一人一 Agent 支持多会话）。
@@ -182,129 +162,9 @@ func (h *Handler) chat(c *gin.Context) error {
 		Content: content, SafeCheckStatus: models.SafePass,
 	})
 
-	// 脚本课：整个课程流程走作者预写剧本状态机，从这里分流，不进大模型。
-	if scripted != nil {
-		return h.scriptedChat(c, &a, &session, scripted, &req, content)
-	}
-
-	// 最近 20 条历史 + 平台自编 system prompt + 学习状态注入。
-	// L1 主动教学：把学员进度/段位和本轮编排指令喂给模型，让它带着课来，而不是等着被问。
-	// 点选优先（全局交互范式）：回复末尾带选项行，服务端剥离后作为可点气泡下发。
-	// 产出型三门课（开口/言值/驭手）用「产出关也点选」变体：连该开口 / 写指令的环节也给可点成品，点选即完成。
-	directive := optionsDirective
-	if tapFirstProduce[a.Slug] {
-		directive = optionsDirectiveProduce
-	}
-	sysPrompt := a.SystemPrompt + "\n\n" + directive
-	var sk *models.AgentSkill
-	if a.Assess {
-		sk = h.loadSkill(auth.UserID, a.ID)
-		sysPrompt += "\n\n" + skillStateBrief(sk, !resume)
-	}
-	if a.Concept {
-		if brief := h.conceptStateBrief(auth.UserID, &a, !resume); brief != "" {
-			sysPrompt += "\n\n" + brief
-		}
-		// 复习挑战：追加快问快答编排（放进度简报之后，指令内已声明优先于开场编排）。
-		if req.Mode == "review" {
-			if d := h.reviewDirective(auth.UserID, a.ID); d != "" {
-				sysPrompt += "\n\n" + d
-			}
-		}
-		// 指定关卡：学员从闯关地图点选了某关，追加定向开课指令（slug 无效则静默忽略）。
-		if req.Concept != "" {
-			if d := h.conceptDirective(a.ID, req.Concept); d != "" {
-				sysPrompt += "\n\n" + d
-			}
-		}
-	}
-	var recent []models.AgentMessage
-	h.db.Where("session_id = ?", session.ID).Order("created_at desc").Limit(20).Find(&recent)
-	msgs := []deepseek.Message{{Role: "system", Content: sysPrompt}}
-	for i := len(recent) - 1; i >= 0; i-- {
-		msgs = append(msgs, deepseek.Message{Role: recent[i].Role, Content: recent[i].Content})
-	}
-	raw, derr := h.ds.Chat(msgs, deepseek.ChatOptions{Temperature: 0.7, MaxTokens: 800})
-	if derr != nil {
-		log.Printf("[ai] toolagent chat failed agent=%s user=%s: %v", a.Slug, auth.UserID, derr)
-		if trialGated {
-			// 非会员扣了免费体验但 AI 失败 → 退还 1 次（幕门控的免费幕不计次，无需退）。
-			h.db.Model(&models.AgentEntitlement{}).
-				Where("user_id = ? AND agent_id = ?", auth.UserID, a.ID).
-				UpdateColumn("remaining", gorm.Expr("remaining + 1"))
-		}
-		return httpx.Internal("AI_UPSTREAM_ERROR", "AI 服务暂时不可用，请稍后再试")
-	}
-	answer, options := splitOptions(strings.TrimSpace(raw))
-	safe := models.SafePass
-	if !h.security.CheckText(answer+"\n"+strings.Join(options, "\n"), auth.Openid) {
-		safe = models.SafeReject
-		answer = "抱歉，这部分内容不方便回答，我们换个话题继续吧。"
-		options = nil
-	}
-	// 入库存剥离选项后的正文：历史回放干净，模型看到的上下文也不带标记行。
-	// 选项另存一列（JSON）：本课纯点选无输入栏，复原历史会话时须重现气泡，否则卡片成死局。
-	optsJSON := ""
-	if len(options) > 0 {
-		if b, e := json.Marshal(options); e == nil {
-			optsJSON = string(b)
-		}
-	}
-	h.db.Create(&models.AgentMessage{
-		ID: idgen.New(), SessionID: session.ID, Role: models.RoleAssistant,
-		Content: answer, Options: optsJSON, SafeCheckStatus: safe,
-	})
-	h.db.Model(&session).Update("updated_at", time.Now())
-
-	resp := gin.H{"sessionId": session.ID, "answer": answer, "options": options, "member": member, "remaining": remaining}
-
-	// 连续学习天数：学习型（技能/概念）对话记一天；newDay 时前端做里程碑庆祝/提醒承诺邀请。
-	if a.Assess || a.Concept {
-		days, newDay, usedFreeze := bumpStreak(h.db, auth.UserID)
-		resp["streak"] = gin.H{"days": days, "newDay": newDay, "freeze": usedFreeze}
-	}
-
-	// 学习型 Agent（如英语陪练）：评估用户本轮表达、更新三维段位，给升级感。
-	// sk 已在组装 system prompt 时加载（状态注入），此处直接复用。
-	if a.Assess && sk != nil {
-		_, leveledUp := h.assessAndUpdate(sk, content)
-		resp["skill"] = skillView(sk)
-		resp["levelUp"] = leveledUp
-	}
-
-	// 概念型 Agent（学心理/学经济/学哲学）：判定本轮点亮/掌握的概念，更新进度，给「点亮/打通一档」的反馈。
-	// verdict（本轮答得对不对）只驱动前端舞台动作，不落库、不影响点亮。
-	if a.Concept {
-		if out := h.assessConcepts(&a, auth.UserID, content, answer); out != nil && out.View != nil {
-			resp["concept"] = out.View
-			resp["newlyLit"] = out.NewlyLit
-			resp["newlyMastered"] = out.NewlyMastered
-			resp["tierCleared"] = out.TierCleared
-			resp["verdict"] = out.Verdict
-		}
-	}
-
-	// member=true → remaining=-1（畅用，前端不显额度）。
-	httpx.OK(c, resp)
-	return nil
-}
-
-// skill 返回我在某学习型 Agent（:id = agentId）的三维段位档案；非学习型 Agent 返回 enabled=false。
-func (h *Handler) skill(c *gin.Context) error {
-	auth := middleware.Current(c)
-	var a models.ToolAgent
-	if err := h.db.First(&a, "id = ? AND enabled = ?", c.Param("id"), true).Error; err != nil {
-		return httpx.NotFound("AGENT_NOT_FOUND", "该 Agent 不存在或已下架")
-	}
-	if !a.Assess {
-		httpx.OK(c, gin.H{"enabled": false})
-		return nil
-	}
-	sk := h.loadSkill(auth.UserID, a.ID)
-	out := skillView(sk)
-	out["enabled"] = true
-	httpx.OK(c, out)
-	return nil
+	// 整个课程流程走作者预写剧本状态机，不进大模型
+	// （产出节点 Free 的判分是唯一 LLM 触点，在状态机内部）。
+	return h.scriptedChat(c, &a, &session, scripted, &req, content)
 }
 
 // concepts 返回我在某「概念型」Agent（:id = agentId）的点亮进度；非概念型 Agent 返回 enabled=false。
@@ -389,61 +249,6 @@ func (h *Handler) sessionList(c *gin.Context) error {
 	}
 	httpx.OK(c, out)
 	return nil
-}
-
-// ---------- 点选优先：选项行协议 ----------
-// 全局交互范式「点选为主、输入兜底」：Agent 每次回复末尾按 optionsDirective 附一行候选，
-// 服务端剥离该行、拆成 options 数组随回复下发，前端渲染成可点气泡；模型没给就没有，输入框兜底。
-
-const optionsDirective = `交互规则（点选优先，务必遵守）：
-用户在手机上更愿意点选而不是打字。你的每次回复，若结尾的提问 / 推进选择存在可枚举的典型回答，必须在回复的最后单独输出一行（前面空一行）：
-【选项】选项1｜选项2｜选项3
-- 2~4 个，每个不超过 16 字；用户点选后该文字会原样作为 TA 的回答发给你，所以选项要以用户口吻写、可直接当回答用，彼此差异明显。
-- 检验理解时优先设计成可点选的判断题 / 选择题：把正确项混在似是而非的干扰项里，让点选本身就是思考。
-- 例外：当你要求对方自由表达才算数时（如用英语开口说出一句话、自己举一个例子、用自己的话复述），不要输出选项行，让 TA 真正开口。
-- 选项行必须是整个回复的最后一行，除此之外不要出现「【选项】」字样。`
-
-// 产出型三门课（开口 / 言值 / 驭手）专用：点选优先到底——连"该开口说 / 该写指令"的产出关
-// 也照给可点成品，学员点选即算完成、即点亮；自己说 / 自己写（打字或语音）作为可选、不强制。
-var tapFirstProduce = map[string]bool{
-	"spoken-english": true,
-	"learn-speaking": true,
-	"learn-ai":       true,
-}
-
-const optionsDirectiveProduce = `交互规则（点选优先·产出关也点选，务必遵守）：
-用户在手机上更愿意点选而不是打字。你的每次回复，只要结尾在让学员产出（说一句英文 / 说一句台词 / 写一条指令）或做选择，都必须在回复的最后单独输出一行（前面空一行）：
-【选项】选项1｜选项2｜选项3
-- 2~4 个，彼此差异明显；用户点选后该文字会原样作为 TA 的回答发给你，所以每个选项都要写成【完整可用的成品】——完整的英文句 / 完整的台词 / 完整的指令，学员点一下就能直接当作 TA 的回答提交并通关。
-- 产出关也照给：即便到了"该你开口说 / 该你写指令"的环节，也要把 2~4 个完整示范答案放进选项行，让学员点选即完成、即点亮；想自己说 / 自己写（打字或语音）作为可选，鼓励但不强制、不拦路。
-- 检验理解时优先设计成可点选的判断题 / 选择题。
-- 选项行必须是整个回复的最后一行，除此之外不要出现「【选项】」字样。`
-
-// optsLineRe 匹配回复中的选项行（容忍模型偶发把它放在中间）。
-var optsLineRe = regexp.MustCompile(`(?m)^\s*【选项】\s*(.+?)\s*$`)
-
-// splitOptions 从模型回复中剥离选项行：返回干净正文 + 选项数组（无选项行则原样返回）。
-func splitOptions(answer string) (string, []string) {
-	m := optsLineRe.FindStringSubmatch(answer)
-	if m == nil {
-		return answer, nil
-	}
-	body := strings.TrimSpace(optsLineRe.ReplaceAllString(answer, ""))
-	opts := make([]string, 0, 4)
-	for _, p := range strings.FieldsFunc(m[1], func(r rune) bool { return r == '｜' || r == '|' }) {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		opts = append(opts, clipText(p, 30))
-		if len(opts) >= 4 {
-			break
-		}
-	}
-	if len(opts) == 0 {
-		return body, nil
-	}
-	return body, opts
 }
 
 // clipText 截断到最多 n 个字符（rune 安全）。
@@ -692,18 +497,19 @@ func Seed(db *gorm.DB) {
 			FreeTier: 1, Sort: 19, // 会员隐藏课压轴（新课递增后顺延）
 		},
 	}
-	// 课程保留名单采用物理清理：不再软退役（enabled=false 保留行+进度），
-	// 而是物理删除 presets 保留名单之外的所有工具 Agent——连行带子数据（含用户进度 user_concepts）
-	// 与创作型产出表一并铲平，不留痕迹。以 presets 的 slug 集合为唯一保留名单，幂等、自维护：
-	// 今后任何课程只需从 presets 移除，下次启动即被自动清除。
-	// 历史退役清单（现已全部物理删除，仅备忘）：
+	// 课程保留名单采用软退役（2026-07-16 回退物理清理）：presets 之外的课程只置 enabled=false，
+	// 行与全部子数据（含用户进度 user_concepts）原样保留。所有读路径都按 enabled=true 过滤，
+	// 退役课对用户不可见，但进度可随重新上架瞬间恢复——物理删除用户进度不可逆，代价不对称。
+	// 幂等、自维护：从 presets 移除即退役，加回 presets 下次启动即复活（Seed 更新分支不改 enabled，
+	// 复活需人工把该行 enabled 置回 true，防止误加名单导致意外上架）。
+	// 历史退役清单（2026-07 物理删除时代已铲平，仅备忘）：
 	// - 2026-07-04：经济/哲学/思想/科学/审美（收缩课程线）。
 	// - 2026-07-05：道德经（44关精选·通行本）→ 由 daodejing-full 取代；面试教练/商业军师/写小说/做音乐（技能线）。
 	keepSlugs := make([]string, len(presets))
 	for i := range presets {
 		keepSlugs[i] = presets[i].Slug
 	}
-	purgeAgentsNotIn(db, keepSlugs)
+	retireAgentsNotIn(db, keepSlugs)
 
 	for i := range presets {
 		p := presets[i]
@@ -726,26 +532,14 @@ func Seed(db *gorm.DB) {
 	}
 }
 
-// purgeAgentsNotIn 物理删除 slug 不在 keepSlugs 名单内的所有工具 Agent 及其全部关联数据（幂等）。
-// 与「软退役」（enabled=false 留行留进度）不同：保留名单外的课程不留任何痕迹，故连行带子数据
-// （会话/消息/权益/置顶/段位/概念课程表/用户进度/学习提醒）、连创作型产出表一起删。
-func purgeAgentsNotIn(db *gorm.DB, keepSlugs []string) {
-	var ids []string
-	db.Model(&models.ToolAgent{}).Where("slug NOT IN ?", keepSlugs).Pluck("id", &ids)
-	if len(ids) > 0 {
-		// 消息挂在会话上：先按会话删消息，再删会话本身。
-		sessionIDs := db.Model(&models.AgentSession{}).Select("id").Where("agent_id IN ?", ids)
-		db.Where("session_id IN (?)", sessionIDs).Delete(&models.AgentMessage{})
-		db.Where("agent_id IN ?", ids).Delete(&models.AgentSession{})
-		db.Where("agent_id IN ?", ids).Delete(&models.AgentEntitlement{})
-		db.Where("agent_id IN ?", ids).Delete(&models.AgentPin{})
-		db.Where("agent_id IN ?", ids).Delete(&models.AgentSkill{})
-		db.Where("agent_id IN ?", ids).Delete(&models.AgentConcept{})
-		db.Where("agent_id IN ?", ids).Delete(&models.UserConcept{})
-		db.Where("agent_id IN ?", ids).Delete(&models.LearnReminder{})
-		db.Where("slug NOT IN ?", keepSlugs).Delete(&models.ToolAgent{})
-	}
-	// 创作型产出表（Work/Chapter/Song 模型已移除、AutoMigrate 不再管理）——整表丢弃，数据与结构都不留。
+// retireAgentsNotIn 软退役 slug 不在 keepSlugs 名单内的所有工具 Agent（幂等）：
+// 只置 enabled=false，行与子数据（会话/消息/权益/概念课程表/用户进度/提醒）全部保留。
+// 所有读路径均按 enabled=true 过滤，退役课对用户不可见；重新上架时进度无损恢复。
+func retireAgentsNotIn(db *gorm.DB, keepSlugs []string) {
+	db.Model(&models.ToolAgent{}).
+		Where("slug NOT IN ? AND enabled = ?", keepSlugs, true).
+		Update("enabled", false)
+	// 创作型产出表（Work/Chapter/Song 模型已移除、AutoMigrate 不再管理）——历史遗留一次性清理，保持幂等。
 	for _, t := range []string{"chapters", "songs", "works"} {
 		if db.Migrator().HasTable(t) {
 			_ = db.Migrator().DropTable(t)

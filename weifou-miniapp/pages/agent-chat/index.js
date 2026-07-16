@@ -1,25 +1,15 @@
 const { ensureLogin } = require('../../utils/auth');
 const {
-  agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts, chatAgent,
+  agentDetail, agentSessions, sessionMessages, agentConcepts, chatAgent,
   remindLearn,
 } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
 const { fmtDateTime } = require('../../utils/datetime');
-const { requestLearnRemind, LEARN_REMIND_TMPL_ID } = require('../../utils/subscribe');
+const { requestLearnRemind, loadTmpls, tmplReady } = require('../../utils/subscribe');
 const { buildNodes, iconForLevel, STATE_TEXT, STATE_CTA } = require('../../utils/learn-nodes');
 
 // streak 里程碑：只在这些天数弹庆祝，其余日子安静（轻而真，不做焦虑轰炸）
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
-
-// 横版「会走的路」几何（rpx）：相邻节点圆心步距 / 轨道左右留白 / 视口宽（rpx 恒为 750）
-// PAD 须 ≥ HERO_GAP + 主角半宽（33），否则第一关的对峙位会被视口左沿裁掉半张脸
-const ROAD_STEP = 132;
-const ROAD_PAD = 144;
-const ROAD_VW = 750;
-// 目标关滚到视口这个比例处（左侧留出「已走过的路」的成就感）
-const ROAD_LEAD = 0.33;
-// 主角站当前关左侧这个距离处对峙（不再踩在关卡上）——关卡即对手，出招才有的放矢
-const HERO_GAP = 80;
 
 // 听力门标记（与服务端 script_learn_english.go 的 listenMark 同一约定）：
 // 英语课消息里该标记行的下一行英文「只播不显」——正文遮成占位，自动朗读，🔊 可重听。
@@ -29,23 +19,10 @@ const LISTEN_MASK = '▂ ▂ ▂ ▂ ▂ ▂ ▂ ▂';
 // 课程语音偏好跨课程保留；首次默认自动播放，但只在用户主动进入学习页后触发。
 const VOICE_PREFS_KEY = 'weifou_lesson_voice_prefs';
 
-// 战斗动作层只给判断型课程（题型=看穿一个说法，关卡天然是对手）。
-// 开口（英语）是开口练习、知常（道德经）调性不合，都保持纯行走舞台。
-const DUEL_SLUGS = {
-  'learn-psychology': 1, 'learn-logic': 1, 'learn-marketing': 1,
-  'learn-ai': 1, 'learn-speaking': 1,
-};
-
-// 吉祥物「负鼠」姿势图（scripts/gen-mascot.mjs 派生自同一张母版）。它是玩家小人、不是课程角色，
-// 所以全部概念课共用一只——与「身份面不戴别人的脸」不冲突：那条规矩管的是分身立绘。
-const MASCOT = {
-  idle:  '/assets/mascot/possum_idle.webp',
-  walk:  '/assets/mascot/possum_walk.webp',
-  atk:   '/assets/mascot/possum_atk.webp',
-  win:   '/assets/mascot/possum_win.webp',
-  dead:  '/assets/mascot/possum_dead.webp',
-  think: '/assets/mascot/possum_think.webp',
-};
+// 产出节点（Free）兜底选项：与服务端 script.go 的 optFreeSkip 逐字一致。
+// 服务端只在产出节点下发这一个选项——它就是「本轮要学员自己开口/动笔」的识别信号，
+// 前端据此把底部点选换成产出条（打字 + 按住说话），真开口/真动笔从此不再只能跳过。
+const FREE_SKIP = '这句先欠着，直接过关';
 
 // 同一数字人的低帧率待机状态。全部预加载后只切透明度，避免眼神切换时闪白。
 const MENTOR_PORTRAITS = {
@@ -71,6 +48,9 @@ Page({
     quotaText: '',
     messages: [],
     options: [],          // 本轮可点选项 [{ t, en }]（服务端剥离下发；点选即答；en=英文句可朗读）
+    freeMode: false,      // 产出节点：底栏换成「打字/按住说话」产出条（服务端只发兜底跳过选项时置真）
+    freeText: '',         // 产出条草稿（语音识别结果也填这里，学员确认后再发）
+    recState: '',         // '' / recording：按住说话状态（驱动麦克风按钮样式与提示）
     englishAudio: false,  // 仅英语课（spoken-english）：英文选项 + 示范句配🔊朗读、示范句自动播
     pending: false,
     loading: true,
@@ -79,9 +59,8 @@ Page({
     sessions: [],         // 历史会话（抽屉）
     currentSessionId: '', // 当前续聊的会话；空 = 新开一段（下一条消息创建）
     historyVisible: false,
-    skill: null,          // 学习型 Agent 的三维段位档案（null/enabled=false 时不展示）
     concept: null,        // 概念型 Agent 的点亮进度（null/enabled=false 时不展示）
-    gameSkin: false,      // 学习课（有段位或点亮进度）套「游戏事件卡」皮：固定舞台+事件卡流+底部点选；分身聊天保持原样
+    gameSkin: false,      // 学习课（有点亮进度）套「游戏事件卡」皮：固定舞台+事件卡流+底部点选；分身聊天保持原样
     mapVisible: false,    // 学习中默认收起课程地图；点击进度后以底部抽屉展开
     lessonCard: null,     // 单卡学习：当前助手任务/反馈，不再把整段聊天铺在屏幕上
     lessonChoice: '',     // 本轮用户选择，作为卡片内的轻量上下文
@@ -90,21 +69,10 @@ Page({
     reviewDue: 0,         // 到期待复习的概念数（>0 时进度条上出现「复习挑战」徽章）
     remindState: '',      // 提醒承诺条：'' 隐藏 / offer 邀请 / done 已订
     celebrate: null,      // 庆祝浮层：{ up, name, sub }，触发后短暂展示（升级 / 点亮 / 掌握共用）
-    // —— 横版「会走的路」（概念课舞台=地图合一）——
-    nodes: [],            // 扁平关卡节点 [{ idx,slug,name,state,icon,rx,boss,memberLocked,... }]
-    roadSections: [],     // 幕旗 [{ key,tier,theme,tone,flagX }]
-    currentIndex: -1,     // 当前关扁平下标（角色停靠点；-1=全通关）
-    trackWidth: 0,        // 轨道总宽 rpx
-    heroX: 0,             // 角色 translateX rpx
-    walking: false,       // 走路动画开关
-    roadScrollLeft: 0,    // 横向 scroll 位置 px（rpx→px 已换算）
-    roadAnim: false,      // 横向 scroll 是否带动画（首屏 false 瞬移，走路 true 跟随）
+    // —— 课程地图（列表抽屉）——
+    nodes: [],            // 扁平关卡节点 [{ idx,slug,name,state,icon,boss,memberLocked,... }]
+    currentIndex: -1,     // 当前关扁平下标（-1=全通关）
     card: null,           // 关卡卡片抽屉
-    // —— 战斗动作层（判断型概念课）：舞台不承载信息，只把对话事件翻译成身体语言 ——
-    heroAct: '',          // 主角动作：'atk' 出招冲刺 / 'win' 击破欢呼 / 'dead' 装死诈尸
-    foeAct: '',           // 对手动作：'hit' 受击 / 'taunt' 挑衅（答对未拿下）/ 'strike' 反击（答错）/ 'down' 被击破
-    duelIdx: -1,          // 对手＝哪个节点（通常=currentIndex；击破瞬间锁旧关，防状态翻转后丢动画）
-    heroImg: MASCOT.idle, // 负鼠当前姿势图（由 _pose 按 动作>走路>思考>待机 的优先级算出）
     mentorSpeaking: false,// 数字人语音播放状态，只驱动轻量口播反馈
     mentorPaused: false,  // 语音被用户暂停，与播放结束分开，供“继续”操作
     voiceAutoPlay: true,  // 新讲解默认自动播放（跨课程持久化）
@@ -126,14 +94,11 @@ Page({
       this.setData({ loading: false });
       return;
     }
-    // rpx→px 系数：横向 scroll-left 单位是 px，而坐标全用 rpx，须换算（漏换算高分屏镜头会偏）
-    try {
-      const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()) || {};
-      this._rpx = (info.windowWidth || 375) / 750;
-    } catch (e) { this._rpx = 0.5; }
     // 从闯关地图点关进来：记下目标关卡，数据就绪后自动开课
     this._targetConcept = query.concept || '';
     this._autoStart = query.auto === '1';
+    // 从技能页「到期复习」条进来：数据就绪后直接开复习挑战
+    this._autoReview = query.review === '1';
     const voicePrefs = this._readVoicePrefs();
     // 跳转参数带上就先用：name（顶栏）、icon/accent（骨架外壳配色），无网也能画出「像样的空页」
     this.setData({
@@ -153,17 +118,17 @@ Page({
     this._load();
   },
 
-  // 本页数据加载（并发拉 详情/会话/会员/技能/概念）。抽成独立方法，供「网络失败重试」复用。
+  // 本页数据加载（并发拉 详情/会话/会员/概念）。抽成独立方法，供「网络失败重试」复用。
   // 失败不再只弹 toast——置 errored 让页内出现「重试」骨架，避免慢网/断网时白屏发愣。
   async _load() {
     const id = this.data.id;
     this.setData({ loading: true, errored: false });
+    loadTmpls().catch(() => {}); // 预热订阅模板缓存：streak newDay 时同步判断 tmplReady('learnRemind')
     try {
-      const [d, sessions, ms, sk, cp] = await Promise.all([
+      const [d, sessions, ms, cp] = await Promise.all([
         agentDetail(id),
         agentSessions(id).catch(() => []),
         membershipStatus().catch(() => ({ isMember: false })),
-        agentSkill(id).catch(() => ({ enabled: false })),
         agentConcepts(id).catch(() => ({ enabled: false })),
       ]);
       const member = !!ms.isMember;
@@ -201,27 +166,31 @@ Page({
         lessonCard: lesson.card,
         lessonChoice: lesson.choice,
         lessonTitle: d.guide || d.name || '当前练习',
-        lessonProgress: sk && sk.enabled ? `阶段 ${sk.level || 1}` : '',
+        lessonProgress: '',
         options: restoredOptions,
+        freeMode: this._isFreeOpts(restoredOptions),
         currentSessionId,
         sessions: this._decorate(sessions || []),
-        skill: sk && sk.enabled ? sk : null,
         concept: cp && cp.enabled ? this._concept(cp) : null,
         // 游戏皮（含隐藏顶部商业条）以主接口的 concept/assess 布尔为准——它必然成功（名字/图标都靠它）；
-        // 次要的 skill/concept 进度接口带 catch 回落，单独当判据会在慢网时漏出「开通会员」商业条。
-        gameSkin: !!(d.concept || d.assess || (sk && sk.enabled) || (cp && cp.enabled)),
+        // 次要的 concept 进度接口带 catch 回落，单独当判据会在慢网时漏出「开通会员」商业条。
+        gameSkin: !!(d.concept || d.assess || (cp && cp.enabled)),
         reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
         englishAudio: this._englishAudio,
         loading: false,
       });
       if (d.name) wx.setNavigationBarTitle({ title: d.name });
-      // 课程页改为数字人陪学，不再触发对峙/战斗表演。
-      this._duelOn = false;
       this._scrollEnd();
-      // 概念课：铺横版路，角色停当前关，镜头瞬移定位（首屏不见滚动飞入）
-      if (cp && cp.enabled) this._applyRoad(cp, false);
+      // 概念课：铺课程地图节点，定位当前关
+      if (cp && cp.enabled) this._applyRoad(cp);
       let openingRound = false;
-      if (this._autoStart && this._targetConcept) {
+      if (this._autoReview && cp && cp.enabled) {
+        // 到期复习直达：进页即开复习挑战（先清徽章防连点，与 startReview 一致）
+        this._autoReview = false;
+        openingRound = true;
+        this.setData({ reviewDue: 0, mapVisible: false, lessonTitle: '复习挑战', lessonProgress: '快速复习' });
+        this._ask('开始复习挑战', 'review');
+      } else if (this._autoStart && this._targetConcept) {
         // 兼容旧入口（带 concept&auto=1）：新开一段直接开该关
         this._autoStart = false;
         this.setData({
@@ -293,27 +262,15 @@ Page({
     return { ...cp, cur, curPct, allDone };
   },
 
-  // 铺「横版会走的路」：摊平节点 → 补横向坐标 rx → 角色停当前关 → 镜头定位。
-  // animate=false 首屏瞬移；true 仅用于罕见的一致性全量校准（见 _ask 末尾）。
-  _applyRoad(cp, animate) {
+  // 铺课程地图：摊平节点、定位当前关（地图=列表抽屉；横版路与负鼠舞台已退役）。
+  _applyRoad(cp) {
     const built = buildNodes(cp);
-    const nodes = built.nodes.map((n) => ({ ...n, rx: ROAD_PAD + n.idx * ROAD_STEP }));
-    const TONES = ['butter', 'sky', 'mint', 'lilac'];
-    const roadSections = built.sections.map((s, i) => ({
-      key: s.key, tier: s.tier, theme: s.theme,
-      tone: TONES[i % TONES.length],
-      flagX: ROAD_PAD + s.startIndex * ROAD_STEP,
-    }));
+    const nodes = built.nodes;
     const idx = built.currentIndex >= 0 ? built.currentIndex : Math.max(0, nodes.length - 1);
     this._roadNodes = nodes; // 实例副本，供查找/增量，不进 setData
     this.setData({
       nodes,
-      roadSections,
       currentIndex: built.currentIndex,
-      trackWidth: nodes.length ? ROAD_PAD * 2 + (nodes.length - 1) * ROAD_STEP : 0,
-      heroX: ROAD_PAD + idx * ROAD_STEP - HERO_GAP,
-      roadAnim: !!animate,
-      roadScrollLeft: this._roadLeft(idx),
       lessonTitle: nodes[idx] ? nodes[idx].name : '课程已完成',
       lessonProgress: nodes.length ? `第 ${Math.min(idx + 1, nodes.length)} / ${nodes.length} 节` : '',
     });
@@ -347,56 +304,6 @@ Page({
     });
   },
 
-  // 目标关对应的横向 scroll-left（px）：把它滚到视口 ~1/3 处
-  _roadLeft(idx) {
-    const leftRpx = Math.max(0, ROAD_PAD + idx * ROAD_STEP - ROAD_VW * ROAD_LEAD);
-    return Math.round(leftRpx * (this._rpx || 0.5));
-  },
-
-  // 角色走到目标关的对峙位：translateX 平移 + 走路 bob + 镜头跟随（rx 与节点同式，对齐恒等不错位）
-  _walkTo(destIndex) {
-    this.setData({
-      walking: true,
-      heroX: ROAD_PAD + destIndex * ROAD_STEP - HERO_GAP,
-      roadAnim: true,
-      roadScrollLeft: this._roadLeft(destIndex),
-      duelIdx: destIndex, // 新对手就位
-      heroImg: this._pose(this.data.heroAct, true, this.data.pending),
-    });
-    if (this._walkTimer) clearTimeout(this._walkTimer);
-    this._walkTimer = setTimeout(() => this.setData({
-      walking: false,
-      heroImg: this._pose(this.data.heroAct, false, this.data.pending),
-    }), 720);
-  },
-
-  // 负鼠该摆哪个姿势：动作 > 走路 > 思考 > 待机。
-  // 动作压过 pending，所以「点选出招 → 服务端还在想」会先冲刺、动作播完再自然落到挠头。
-  _pose(act, walking, pending) {
-    if (act && MASCOT[act]) return MASCOT[act];
-    if (walking) return MASCOT.walk;
-    if (pending) return MASCOT.think;
-    return MASCOT.idle;
-  },
-
-  // 战斗动作一拍：切姿势图 + 设动作类名，一次性播完自清。idx 缺省＝当前关。
-  // 姿势由图管（装死图本身就是四脚朝天），CSS 只管位移与时序，两边不要都做同一件事。
-  _duel(heroAct, foeAct, ms, idx) {
-    if (this._duelTimer) clearTimeout(this._duelTimer);
-    const act = heroAct || '';
-    this.setData({
-      heroAct: act,
-      foeAct: foeAct || '',
-      duelIdx: typeof idx === 'number' ? idx : this.data.currentIndex,
-      heroImg: this._pose(act, this.data.walking, this.data.pending),
-    });
-    this._duelTimer = setTimeout(() => this.setData({
-      heroAct: '', foeAct: '',
-      heroImg: this._pose('', this.data.walking, this.data.pending),
-    }), ms || 520);
-  },
-
-  // 点横版节点 → 关卡卡片抽屉（软锁：锁定关也能点开预览，CTA 变「提前解锁」）
   openCard(e) {
     const slug = e.currentTarget.dataset.slug;
     const n = (this._roadNodes || []).find((x) => x.slug === slug);
@@ -414,7 +321,6 @@ Page({
   startNode() {
     const c = this.data.card;
     if (!c) return;
-    this._reviewing = false; // 开新关＝回到对峙，战斗动作层恢复
     this.setData({ card: null });
     if (c.memberLocked) { this.goMembership(); return; }
     // 新开一段会话 + 带 concept 让教练用该关钩子开场（与秒开一致）
@@ -439,7 +345,6 @@ Page({
     const idx = this.data.currentIndex;
     const cur = this._roadNodes && idx >= 0 ? this._roadNodes[idx] : null;
     if (cur && cur.memberLocked) { this.goMembership(); return; }
-    this._reviewing = false;
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     this.setData({
       messages,
@@ -448,20 +353,11 @@ Page({
       lessonTitle: cur ? cur.name : this.data.lessonTitle,
       currentSessionId: '',
       options: [],
+      freeMode: false,
+      freeText: '',
       mapVisible: false,
     });
     this._ask('开始这一关', undefined, cur ? cur.slug : undefined);
-  },
-
-  // 点进度条＝镜头拉回当前关（用户横滚看远处后的「回家」键）。
-  // 路即唯一地图：图鉴抽屉与 learn-map 页已退役，总览/跳转都在路上完成。
-  recenterRoad() {
-    if (!this.data.nodes.length) return;
-    const idx = this.data.currentIndex >= 0 ? this.data.currentIndex : this.data.nodes.length - 1;
-    let left = this._roadLeft(idx);
-    // 手滚不回写 data，同值 setData 是 no-op 滚不回来——同值时挪 1px 强制生效
-    if (left === this.data.roadScrollLeft) left += 1;
-    this.setData({ roadAnim: true, roadScrollLeft: left });
   },
 
   _decorate(sessions) {
@@ -471,7 +367,6 @@ Page({
   // 复习挑战：快问快答已点亮概念（检索练习，答对保住/升级档位）。
   startReview() {
     if (this.data.pending) return;
-    this._reviewing = true; // 复习态：战斗动作层歇场，开新关/新会话时复位
     this.setData({ reviewDue: 0, mapVisible: false, lessonTitle: '复习挑战', lessonProgress: '快速复习' }); // 先清徽章：防连点
     this._ask('开始复习挑战', 'review');
   },
@@ -488,7 +383,7 @@ Page({
   async onRemindTap() {
     try { wx.setStorageSync(this._remindKey(), 1); } catch (e) {} // 无论结果，今天不再邀请
     const res = await requestLearnRemind();
-    if (res && res[LEARN_REMIND_TMPL_ID] === 'accept') {
+    if (res && res.accepted) {
       try {
         const r = await remindLearn(this.data.id);
         this.setData({ remindState: 'done' });
@@ -502,6 +397,73 @@ Page({
     }
   },
 
+  // ============ 产出节点：打字 / 按住说话（真开口·真动笔） ============
+  // 服务端 Free 节点只发「先欠着」兜底选项；这里给出真正的产出入口：
+  // 打字直接发，语音走 WechatSI 识别→填入输入框→学员确认后发（识别难免出错，不自动发送）。
+
+  onFreeInput(e) {
+    this.setData({ freeText: e.detail.value || '' });
+  },
+
+  sendFree() {
+    const t = (this.data.freeText || '').trim();
+    if (!t || this.data.pending) return;
+    this.setData({ freeText: '' });
+    this._ask(t);
+  },
+
+  skipFree() {
+    if (this.data.pending) return;
+    this.setData({ freeText: '' });
+    this._ask(FREE_SKIP);
+  },
+
+  // WechatSI 语音识别管理器（懒加载单例）。识别结果只填输入框，不代发。
+  _recorder() {
+    if (this._rec !== undefined) return this._rec;
+    const plugin = this._siPlugin();
+    if (!plugin || !plugin.getRecordRecognitionManager) { this._rec = null; return null; }
+    const rec = plugin.getRecordRecognitionManager();
+    rec.onStop = (res) => {
+      const text = ((res && res.result) || '').trim();
+      const patch = { recState: '' };
+      if (text) {
+        // 追加而不是覆盖：支持分几口气说完一句话
+        patch.freeText = ((this.data.freeText || '') + text).slice(0, 300);
+      } else if (this.data.recState === 'recording') {
+        wx.showToast({ title: '没听清，再说一遍？', icon: 'none' });
+      }
+      this.setData(patch);
+    };
+    rec.onError = () => {
+      if (this.data.recState) this.setData({ recState: '' });
+      wx.showToast({ title: '语音识别不可用，打字也一样算数', icon: 'none' });
+    };
+    this._rec = rec;
+    return rec;
+  },
+
+  onMicStart() {
+    if (this.data.pending || this.data.recState === 'recording') return;
+    const rec = this._recorder();
+    if (!rec) { wx.showToast({ title: '语音暂不可用，打字也一样算数', icon: 'none' }); return; }
+    // 录音时停掉导师语音，避免 TTS 混进麦克风
+    if (this._audio && this.data.mentorSpeaking) this._audio.stop();
+    this.setData({ recState: 'recording' });
+    try {
+      rec.start({ lang: 'zh_CN', duration: 60000 });
+      wx.vibrateShort && wx.vibrateShort({ type: 'light' });
+    } catch (e) {
+      this.setData({ recState: '' });
+    }
+  },
+
+  onMicEnd() {
+    if (this.data.recState !== 'recording') return;
+    const rec = this._recorder();
+    try { rec && rec.stop(); } catch (e) { this.setData({ recState: '' }); }
+  },
+
   // 点选选项 = 原样作为回答发送（点选为主、输入兜底）
   pickOption(e) {
     const t = e.currentTarget.dataset.t;
@@ -510,12 +472,6 @@ Page({
     // 老结构靠跟读 Say 节点自动播；重构去掉 Say 后，改由点选驱动（见 _ask 里 sayLine 兜底）。
     if (this._englishAudio && this._isEnglishText(t) && this.data.voiceAutoPlay && !this.data.voiceMuted) {
       this._speak(t);
-    }
-    // 出招：点选即答，主角向当前关冲一记、对手受击晃动。
-    // 复习挑战不打当前关（考的是别处的概念，冲错对象比不冲更违和）。
-    if (this._duelOn && !this._reviewing && this.data.currentIndex >= 0) {
-      this._answerTurn = true;
-      this._duel('atk', 'hit', 520);
     }
     this._ask(t);
   },
@@ -532,10 +488,11 @@ Page({
       mentorPhase: 'listening',
       mentorPose: 'idle',
       options: [],
+      freeMode: false,
+      freeText: '',
+      recState: '',
       messages: askedMessages,
       lessonChoice: visibleChoice,
-      // 出招动作未播完时不抢姿势（_pose 里动作压过 pending），播完自然落到挠头
-      heroImg: this._pose(this.data.heroAct, this.data.walking, true),
     });
     // 先用一个很短的“我听到了”身体反馈承接点击，再进入思考，避免点击后人物立即僵住。
     this._mentorThinkTimer = setTimeout(() => {
@@ -562,19 +519,11 @@ Page({
         currentSessionId: data.sessionId || this.data.currentSessionId,
         options: this._toOpts(data.options),
         pending: false,
+        freeMode: this._isFreeOpts(this._toOpts(data.options)),
         mentorPhase: data.verdict === 'right' ? 'affirm' : (data.verdict === 'wrong' ? 'reassure' : 'idle'),
         mentorPose: 'idle',
-        heroImg: this._pose(this.data.heroAct, this.data.walking, false),
       };
       let milestone = false;
-      // 学习型 Agent：更新三维段位，升级时弹庆祝浮层
-      if (data.skill) {
-        patch.skill = { enabled: true, ...data.skill };
-        if (data.levelUp) {
-          milestone = true;
-          this._celebrate({ up: '升级！', name: data.skill.levelName, sub: '你的英语又上了一个台阶' });
-        }
-      }
       // 概念型 Agent：更新点亮进度。仅打通一档或真正掌握时庆祝。
       if (data.concept) {
         patch.concept = this._concept({ enabled: true, ...data.concept });
@@ -610,7 +559,6 @@ Page({
           const oldIdx = this.data.currentIndex;
           const curNode = oldIdx >= 0 ? rn[oldIdx] : null;
           const curDone = curNode && (lit.indexOf(curNode.name) >= 0 || mastered.indexOf(curNode.name) >= 0);
-          if (curDone) this._duelWin = oldIdx; // 击破动画锁定旧关（patch 落地后 currentIndex 已翻页）
           if (curDone) {
             let ni = -1;
             for (let i = oldIdx + 1; i < rn.length; i++) {
@@ -622,12 +570,10 @@ Page({
               patch.currentIndex = ni;
               patch.lessonTitle = rn[ni].name;
               patch.lessonProgress = `第 ${ni + 1} / ${rn.length} 节`;
-              this._walkDest = ni;
             } else {
-              patch.currentIndex = -1; // 全通关：角色停末关
+              patch.currentIndex = -1; // 全通关
               patch.lessonTitle = '课程已完成';
               patch.lessonProgress = `${rn.length} / ${rn.length} 节`;
-              this._walkDest = rn.length - 1;
             }
           }
         }
@@ -641,7 +587,7 @@ Page({
           milestone = true;
           this._celebrate({ up: '连续学习', name: `${days} 天`, sub: '能把学习变成习惯的人是少数，你在其中' });
         }
-        if (LEARN_REMIND_TMPL_ID && !this.data.remindState && !this._remindAskedToday()) {
+        if (tmplReady('learnRemind') && !this.data.remindState && !this._remindAskedToday()) {
           patch.remindState = 'offer';
         }
       }
@@ -664,45 +610,17 @@ Page({
       // 新卡片默认播讲解；英语课优先播示范句/听力句，避免中英文两段争抢。
       this._autoSpeakLesson(data.answer);
       setTimeout(() => this._startMentorIdle(!patch.answerFeedback), 0);
-      // 战斗动作层第二拍（第一拍「出招」在 pickOption 即时播完）。按服务端 verdict 分派：
-      // 点亮＝击破 > 答错＝反击+装死诈尸 > 答对未拿下＝对手挑衅还站着 > 教学轮＝安静。
-      // verdict 为空（讲解/开场/模型拿不准）时不演戏——舞台宁可静，也不要每轮乱晃。
-      const won = typeof this._duelWin === 'number';
-      if (this._duelOn && !this._reviewing) {
-        if (won) {
-          this._duel('win', 'down', 660, this._duelWin);
-        } else if (this._answerTurn && this.data.currentIndex >= 0) {
-          const v = data.verdict || '';
-          if (v === 'wrong') this._duel('dead', 'strike', 1500);
-          else if (v === 'right') this._duel('', 'taunt', 560);
-        }
-      }
-      this._answerTurn = false;
-      this._duelWin = null;
-      // 角色走到新当前关（在 concept setData 落地后，与彩带同拍；有击破戏时先播完再起步）
-      if (typeof this._walkDest === 'number') {
-        const dest = this._walkDest;
-        this._walkDest = null;
-        if (this._duelOn && won) {
-          if (this._walkDelay) clearTimeout(this._walkDelay);
-          this._walkDelay = setTimeout(() => this._walkTo(dest), 700);
-        } else {
-          this._walkTo(dest);
-        }
-      }
       // 一致性护栏：极少数情况（复习跨幕等）增量与服务端 current 不符，才全量校准（正常路径不触发）。
-      // 必须确认 concept 带完整 tiers，否则精简版会摊平出空路 → 误清空整条路。
+      // 必须确认 concept 带完整 tiers，否则精简版会摊平出空节点表 → 误清空整张地图。
       if (data.concept && data.concept.tiers && data.concept.tiers.length && this._roadNodes) {
         const auth = buildNodes({ enabled: true, ...data.concept });
         if (auth.currentIndex !== this.data.currentIndex) {
-          this._applyRoad({ enabled: true, ...data.concept }, true);
+          this._applyRoad({ enabled: true, ...data.concept });
         }
       }
     } catch (e) {
       this._clearMentorThinkTimer();
-      this._answerTurn = false;
-      this._duelWin = null;
-      this.setData({ pending: false, mentorPhase: 'idle', mentorPose: 'idle', heroImg: this._pose(this.data.heroAct, this.data.walking, false) }, () => this._startMentorIdle(true));
+      this.setData({ pending: false, mentorPhase: 'idle', mentorPose: 'idle' }, () => this._startMentorIdle(true));
       if (e.code === 'MEMBERSHIP_REQUIRED') {
         wx.showModal({
           title: '第一幕已学完',
@@ -728,10 +646,9 @@ Page({
   // 新开一段：清回开场白、清空 currentSessionId，下一条消息会创建新会话
   newSession() {
     this._stopMentorIdle(true);
-    this._reviewing = false;
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     const lesson = this._lessonFocus(messages);
-    this.setData({ messages, lessonCard: lesson.card, lessonChoice: '', currentSessionId: '', historyVisible: false, options: [], mapVisible: false }, () => this._startMentorIdle(true));
+    this.setData({ messages, lessonCard: lesson.card, lessonChoice: '', currentSessionId: '', historyVisible: false, options: [], freeMode: false, freeText: '', mapVisible: false }, () => this._startMentorIdle(true));
     this._scrollEnd();
   },
 
@@ -757,7 +674,6 @@ Page({
       this.setData({ historyVisible: false }, () => this._startMentorIdle(true));
       return;
     }
-    this._reviewing = false;
     this.setData({ historyVisible: false });
     try {
       const msgs = await sessionMessages(sid);
@@ -769,6 +685,8 @@ Page({
         lessonChoice: lesson.choice,
         currentSessionId: sid,
         options: [],
+        freeMode: false,
+        freeText: '',
         mapVisible: false,
       }, () => this._startMentorIdle(true));
       this._scrollEnd();
@@ -781,15 +699,13 @@ Page({
   onUnload() {
     this._pageDestroyed = true;
     this._pageVisible = false;
+    if (this.data.recState === 'recording') { try { this._rec && this._rec.stop(); } catch (e) {} }
     this._clearMentorIdleTimers();
     this._clearMentorThinkTimer();
     this._stopMentorMouth(false);
     this._ttsRequestId = (this._ttsRequestId || 0) + 1;
     if (this._celebTimer) clearTimeout(this._celebTimer);
     if (this._feedbackTimer) clearTimeout(this._feedbackTimer);
-    if (this._walkTimer) clearTimeout(this._walkTimer);
-    if (this._duelTimer) clearTimeout(this._duelTimer);
-    if (this._walkDelay) clearTimeout(this._walkDelay);
     if (this._audio) { this._audio.destroy(); this._audio = null; }
   },
 
@@ -805,6 +721,7 @@ Page({
 
   onHide() {
     this._pageVisible = false;
+    if (this.data.recState === 'recording') { try { this._rec && this._rec.stop(); } catch (e) {} }
     this._clearMentorIdleTimers();
     this._clearMentorThinkTimer();
     this._stopMentorMouth(false);
@@ -825,6 +742,11 @@ Page({
   _toOpts(list) {
     const on = this._englishAudio;
     return (list || []).map((t) => ({ t, en: on && this._isEnglishText(t) }));
+  },
+
+  // 本轮是否产出节点：服务端在 Free 节点只发唯一兜底选项（跳过），据此切换产出条。
+  _isFreeOpts(opts) {
+    return !!(opts && opts.length === 1 && opts[0].t === FREE_SKIP);
   },
 
   // 从助手气泡里抽出「跟读示范句」：剧本把它放在「读出这句：\n」/「读一遍：\n」标记后的那一行。

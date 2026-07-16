@@ -59,7 +59,7 @@ page { background: var(--bg); height: 100%; }
 .course-voice-setting-copy { flex: 1 1 auto; min-width: 0; }
 .course-voice-setting-title { color: var(--ink); font-size: 26rpx; font-weight: 750; }
 .course-voice-setting-sub { margin-top: 5rpx; color: var(--sub); font-size: 21rpx; line-height: 1.4; }
-.course-map-skill, .course-map-progress {
+.course-map-progress {
   margin-bottom: 16rpx;
   padding: 20rpx 22rpx;
   background: var(--surface-sunken);
@@ -157,20 +157,6 @@ page { background: var(--bg); height: 100%; }
 .chat-retry-ic { font-size: 34rpx; color: var(--accent); font-weight: 800; }
 
 /* 三维段位面板（升级感）：果冻进度条 */
-.skill { flex: 0 0 auto; background: var(--surface); padding: 16rpx 28rpx 20rpx; border-top: var(--bw-thin) solid var(--border); }
-.sk-head { display: flex; align-items: center; gap: 16rpx; margin-bottom: 14rpx; }
-.sk-tier { display: flex; align-items: baseline; gap: 8rpx; flex: 0 0 auto; }
-.sk-lv { font-size: 22rpx; font-weight: 800; color: var(--accent-strong); letter-spacing: 0.5rpx; }
-.sk-name { font-size: 28rpx; font-weight: 800; color: var(--ink); }
-.sk-hint { font-size: 22rpx; color: var(--accent-strong); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sk-note { font-size: 22rpx; color: var(--sub); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sk-bars { display: flex; gap: 22rpx; }
-.sk-bar { flex: 1 1 0; display: flex; align-items: center; gap: 8rpx; }
-.sk-bl { font-size: 20rpx; color: var(--faint); flex: 0 0 auto; }
-.sk-track { flex: 1 1 auto; height: 18rpx; border-radius: var(--r-full); background: var(--fill); overflow: hidden; }
-.sk-fill { position: relative; height: 100%; border-radius: var(--r-full); background: var(--accent); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
-.sk-fill::after { content: ''; position: absolute; left: 8rpx; right: 8rpx; top: 3rpx; height: 5rpx; border-radius: var(--r-full); background: rgba(255, 255, 255, 0.35); }
-.sk-bv { font-size: 20rpx; color: var(--ink-2); flex: 0 0 auto; width: 36rpx; text-align: right; }
 
 /* 概念型 Agent：点亮进度条（果冻） */
 .cprog { flex: 0 0 auto; background: var(--surface); padding: 16rpx 28rpx 20rpx; border-top: var(--bw-thin) solid var(--border); }
@@ -630,186 +616,43 @@ page { background: var(--bg); height: 100%; }
 /* 全站无输入栏：点选气泡即底栏，补齐 iPhone 底部安全区（在 .opts 之后，覆盖其 padding-bottom） */
 .opts-tail { padding-bottom: calc(10rpx + env(safe-area-inset-bottom)); }
 
-/* ===================================================================== */
-/* 横版「会走的路」：概念课舞台=地图合一。矮版水平带，角色沿路前进、停在关卡左侧对峙。 */
-/* 几何与 JS 对齐：STEP=132rpx 圆心步距、PAD=144rpx 留白（≥对峙距+主角半宽，护住第一关）、节点 88rpx 圆。 */
-/* ===================================================================== */
-.road-stage {
-  position: relative; flex: 0 0 auto; overflow: hidden;
-  background: var(--surface);
-  padding: 6rpx 0 10rpx;
-  border-bottom: var(--bw-thin) solid var(--border);
+/* —— 产出条（真开口·真动笔）：Free 节点的底栏，打字 + 按住说话 + 欠着跳过 —— */
+.produce {
+  flex: 0 0 auto; padding: 18rpx 24rpx 10rpx;
+  background: var(--surface); border-top: var(--bw-thin) solid var(--border);
 }
-
-/* —— 阶段2 场景层 —— */
-/* 远景：天空渐变铺满舞台，固定不随路（无限远的天）。overflow 裁云山 */
-.road-sky {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-  background: linear-gradient(180deg, #e9f5ff 0%, #edfbf3 46%, var(--paper) 76%);
+.produce-row { display: flex; align-items: flex-end; gap: 14rpx; }
+.produce-input {
+  flex: 1 1 auto; min-height: 68rpx; max-height: 220rpx;
+  padding: 16rpx 22rpx; box-sizing: border-box;
+  background: var(--fill); border: var(--bw-thin) solid var(--border);
+  border-radius: var(--r-lg); font-size: 28rpx; line-height: 1.5; color: var(--ink);
 }
-/* accent 远山：一排淡圆丘落在地平线，随课变色 */
-.road-hills {
-  position: absolute; left: -24rpx; right: -24rpx; bottom: 44rpx; height: 104rpx;
-  opacity: 0.13;
-  background:
-    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 24rpx 100% / 220rpx 150rpx no-repeat,
-    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 210rpx 100% / 300rpx 200rpx no-repeat,
-    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 470rpx 100% / 240rpx 168rpx no-repeat,
-    radial-gradient(closest-side, var(--sky-accent) 98%, transparent) 690rpx 100% / 320rpx 212rpx no-repeat;
+.produce-mic {
+  flex: 0 0 auto; width: 84rpx; height: 84rpx; border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center; font-size: 38rpx;
+  background: var(--surface); border: var(--bw-thin) solid var(--border);
+  box-shadow: var(--shadow-card);
 }
-/* 飘云：三圆拼一朵，缓慢左右浮（与 scroll 无关，纯动感） */
-.cloud {
-  position: absolute; width: 88rpx; height: 30rpx; background: #fff;
-  border-radius: 30rpx; opacity: 0.9;
+.produce-mic.recording {
+  background: var(--accent); border-color: var(--accent);
+  animation: micPulse 1s ease-in-out infinite;
 }
-.cloud::before, .cloud::after { content: ''; position: absolute; background: #fff; border-radius: 50%; }
-.cloud::before { width: 46rpx; height: 46rpx; left: 12rpx; top: -20rpx; }
-.cloud::after { width: 32rpx; height: 32rpx; right: 14rpx; top: -12rpx; }
-.cloud-a { top: 18rpx; left: 10%; animation: cloudDrift 9s ease-in-out infinite; }
-.cloud-b { top: 40rpx; left: 56%; width: 68rpx; height: 24rpx; opacity: 0.78; animation: cloudDrift 13s ease-in-out infinite reverse; }
-@keyframes cloudDrift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(26rpx); } }
-/* 前景：草地基底，随 track 1:1 横滚。顶沿=地平线，节点/路坐其上 */
-.road-ground {
-  position: absolute; left: 0; top: 130rpx; height: 76rpx; z-index: 0;
-  background: linear-gradient(180deg, #bfeecd 0%, #93dcae 100%);
-  border-top: 3rpx solid #7fd0a0;
-}
-.road-stage .gs-hist {
-  position: absolute; top: 12rpx; right: 24rpx; z-index: 8;
-  padding: 8rpx 20rpx; font-size: 22rpx; color: var(--ink-2);
-  background: var(--fill); border: var(--bw-thin) solid var(--border); border-radius: var(--r-full);
-}
-.road-stage .gs-hist:active { transform: scale(0.97); }
-.road-stage .gs-quota { position: relative; z-index: 2; text-align: center; }
-/* 抬到天空层之上（sky 是绝对定位，scroll 默认 static 会被其遮住） */
-.road-scroll { position: relative; z-index: 1; width: 100%; height: 190rpx; white-space: nowrap; }
-.road-track { position: relative; height: 190rpx; }
-
-/* 草地上的小径（暖土色带底影，坐在地平线上沿） */
-.road-line {
-  position: absolute; left: 0; right: 0; top: 118rpx; height: 16rpx; z-index: 1;
-  background: #ecd3a8; border-radius: var(--r-full);
-  box-shadow: 0 4rpx 12rpx rgba(114, 86, 48, 0.10);
-}
-
-/* 幕旗 checkpoint：浮在该幕首节点上方，中心对齐首节点圆心 */
-.road-flag {
-  position: absolute; top: 4rpx; z-index: 3; transform: translateX(-50%);
-  padding: 4rpx 18rpx; border-radius: var(--r-full);
-  font-size: 20rpx; font-weight: 800; white-space: nowrap;
-}
-.road-flag.tone-butter { background: var(--pop-butter); color: var(--pop-butter-ink); }
-.road-flag.tone-sky    { background: var(--pop-sky);    color: var(--pop-sky-ink); }
-.road-flag.tone-mint   { background: var(--pop-mint);   color: var(--pop-mint-ink); }
-.road-flag.tone-lilac  { background: var(--pop-lilac);  color: var(--pop-lilac-ink); }
-
-/* 节点：88rpx 圆形里程碑，绝对定位（left=圆心，-44 半径居中）。 */
-.rnode {
-  position: absolute; top: 81rpx; margin-left: -44rpx; z-index: 2;
-  width: 88rpx; height: 88rpx; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.1s var(--ease);
-}
-.rnode:active { transform: scale(0.94); }
-.rnode-img { width: 48rpx; height: 48rpx; }
-.rnode-face { font-size: 40rpx; line-height: 1; }
-.rnode.locked    { background: var(--fill); box-shadow: var(--shadow-hair); }
-.rnode.locked .rnode-img { opacity: 0.55; }
-.rnode.available { background: var(--surface); border: 4rpx solid var(--accent); box-shadow: var(--shadow-card); }
-.rnode.current   { background: var(--accent); box-shadow: var(--shadow-accent); }
-.rnode.lit       { background: var(--accent); box-shadow: var(--shadow-accent); }
-.rnode.mastered  { background: var(--gold);   box-shadow: var(--shadow-card); }
-/* Boss 关：金边预告分量 */
-.rnode.boss { border: 4rpx solid var(--gold); box-shadow: var(--shadow-card); }
-.rnode.mlock .rnode-img, .rnode.mlock .rnode-face { opacity: 0.5; filter: grayscale(0.35); }
-.rnode-lock { position: absolute; right: -6rpx; bottom: -6rpx; font-size: 26rpx; line-height: 1; }
-
-/* 当前关外圈脉冲（沿用 learn-map 节拍） */
-.rnode-pulse {
-  position: absolute; inset: -14rpx; border-radius: 50%;
-  border: 6rpx solid var(--accent); opacity: 0.5;
-  animation: rnodePulse 1.6s ease-out infinite; pointer-events: none;
-}
-@keyframes rnodePulse {
-  0% { transform: scale(0.9); opacity: 0.55; }
-  70%, 100% { transform: scale(1.12); opacity: 0; }
-}
-
-/* 角色「负鼠」：覆盖在路上（宽 0 内部居中），translateX 平移到当前关对峙位。
-   脚落在小径下沿（top + 图高 - 图内留白 ≈ 134rpx 的路面）。 */
-.hero {
-  position: absolute; top: 44rpx; left: 0; width: 0;
-  display: flex; justify-content: center; pointer-events: none; z-index: 5;
-  transition: transform 0.7s var(--ease-out);
-}
-.hero-img { width: 96rpx; height: 96rpx; filter: drop-shadow(0 6rpx 0 rgba(0, 0, 0, 0.10)); }
-/* 走路：bob 上下。图本身已是侧身迈步，不再叠 rotate（会拧着走） */
-.hero.walk .hero-img { animation: heroWalk 0.28s ease-in-out infinite; }
-@keyframes heroWalk {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10rpx); }
-}
-
-/* —— 战斗动作层（判断型概念课）：出招/欢呼/装死在 hero-img、受击/挑衅/击破在 rnode。 —
-   姿势由图管，CSS 只管位移与时序——两边都做同一件事就会「躺两次」。
-   全部只动 transform、一次性播完由 JS 摘 class；与 .hero 行内 translateX 分层不打架。 */
-/* 出招：向对手（右侧当前关）冲一记再弹回（图已是冲刺姿态） */
-.hero.atk .hero-img { animation: heroAtk 0.5s var(--ease); }
-@keyframes heroAtk {
-  0%, 100% { transform: translateX(0); }
-  38%      { transform: translateX(56rpx); }
-  70%      { transform: translateX(-6rpx); }
-}
-/* 击破欢呼：跳起，落地接走路（图已是举手欢呼） */
-.hero.win .hero-img { animation: heroWin 0.62s var(--ease); }
-@keyframes heroWin {
-  0%, 100% { transform: translateY(0); }
-  35%      { transform: translateY(-36rpx) scale(1.06); }
-  70%      { transform: translateY(0) scale(1.03); }
-}
-/* 装死诈尸（答错）：被打退砸地 → 躺尸 → 抽搐 → 弹起来当无事发生。
-   图已是四脚朝天，这里只做击退位移与停顿；瞬切姿势正是卡通里「啪一下躺了」的笑点。
-   这是答错的全部惩罚：没有扣血扣分，只有一场喜剧——重试永远零成本。 */
-.hero.dead .hero-img { animation: heroDead 1.5s var(--ease); }
-@keyframes heroDead {
-  0%        { transform: translate(0, 0); }
-  12%       { transform: translate(-30rpx, -12rpx); }
-  24%, 66%  { transform: translate(-40rpx, 14rpx); }
-  72%       { transform: translate(-40rpx, 8rpx); }
-  78%       { transform: translate(-40rpx, 14rpx); }
-  90%       { transform: translate(-8rpx, -10rpx); }
-  100%      { transform: translate(0, 0); }
-}
-/* 反击（答错）：对手后撤蓄力，朝主角（左）撞一记 */
-.rnode.strike { animation: foeStrike 0.6s var(--ease); }
-@keyframes foeStrike {
-  0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(14rpx) scale(1.06); }
-  46%      { transform: translateX(-28rpx); }
-  72%      { transform: translateX(6rpx); }
-}
-/* 受击：被顶得后仰晃动 */
-.rnode.hit { animation: foeHit 0.5s var(--ease); }
-@keyframes foeHit {
-  0%, 100% { transform: translateX(0); }
-  30%      { transform: translateX(16rpx) rotate(7deg); }
-  62%      { transform: translateX(-8rpx) rotate(-3deg); }
-}
-/* 挑衅：这轮没被拿下，鼓起来晃两下「我还站着」 */
-.rnode.taunt { animation: foeTaunt 0.55s var(--ease); }
-@keyframes foeTaunt {
+@keyframes micPulse {
   0%, 100% { transform: scale(1); }
-  30%      { transform: scale(1.14) rotate(-7deg); }
-  65%      { transform: scale(1.06) rotate(6deg); }
+  50%      { transform: scale(1.08); }
 }
-/* 击破：鼓到最大→瘪下去→回正（同拍图标已翻成 ⭐/👑，读作「被点亮收服」） */
-.rnode.down { animation: foeDown 0.64s var(--ease); }
-@keyframes foeDown {
-  0%   { transform: scale(1); }
-  28%  { transform: scale(1.28); }
-  55%  { transform: scale(0.8) rotate(-10deg); }
-  100% { transform: scale(1); }
+.produce-send {
+  flex: 0 0 auto; padding: 20rpx 30rpx; border-radius: var(--r-full);
+  background: var(--accent); color: #fff; font-size: 26rpx; font-weight: 800;
 }
+.produce-send.disabled { opacity: 0.4; }
+.produce-send:active { transform: scale(0.97); }
+.produce-skip {
+  margin-top: 14rpx; text-align: center;
+  font-size: 22rpx; color: var(--faint); padding: 8rpx 0;
+}
+
 
 /* —— 关卡卡片抽屉（自 learn-map 搬入；复用本页 .drawer-mask 贴底遮罩）—— */
 .lc-drawer {

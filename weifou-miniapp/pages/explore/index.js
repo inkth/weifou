@@ -147,6 +147,9 @@ Page({
         courseCount: this._agents.length,
         // 连续 ≥2 天才展示（第 1 天谈不上"连续"，安静）
         streak: st && st.days >= 2 ? st : null,
+        // 到期复习：间隔重复的到期总数 + 到期最多的那门课（点条直达它的复习挑战）
+        reviewDue: (summary && summary.reviewDue) || 0,
+        reviewAgent: (summary && summary.reviewAgent) || null,
         loading: false,
       });
       this.renderCategory(selectedCategory);
@@ -208,6 +211,13 @@ Page({
     // 透传 icon/accent：对话页无网时也能立刻画出对的头像+配色骨架
     // game=1：技能页进来的都是课，首帧即套游戏皮，免得加载窗口先闪一下普通聊天顶栏（含「解锁全课」）
     wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}&game=1` });
+  },
+
+  // 到期复习条：直达到期最多那门课的复习挑战（review=1 由对话页自动开局）。
+  goReview() {
+    const r = this.data.reviewAgent;
+    if (!r) return;
+    wx.navigateTo({ url: `/pages/agent-chat/index?id=${r.id}&name=${encodeURIComponent(r.name || '')}&accent=${encodeURIComponent(r.accent || '')}&icon=${encodeURIComponent(r.icon || '')}&game=1&review=1` });
   },
 
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },

@@ -29,12 +29,17 @@ func (h *Handler) learningSummary(c *gin.Context) error {
 		Distinct("s.agent_id").
 		Count(&learningCourses)
 
+	// 跨课程到期复习总数 + 到期最多的那门课（技能页「到期复习」入口直达它）。
+	reviewDueTotal, reviewAgent := h.reviewDueAcross(auth.UserID)
+
 	resp := gin.H{
 		"streak": gin.H{
 			"days": streak.Current, "best": streak.Best, "todayDone": todayDone,
 		},
 		"mastered":        mastered,
 		"learningCourses": learningCourses,
+		"reviewDue":       reviewDueTotal,
+		"reviewAgent":     reviewAgent,
 		"current":         nil,
 	}
 
@@ -83,4 +88,32 @@ func (h *Handler) learningSummary(c *gin.Context) error {
 	}
 	httpx.OK(c, resp)
 	return nil
+}
+
+// reviewDueAcross 汇总用户全部课程的到期复习数，并返回到期最多的那门课的入口信息（无到期返回 nil）。
+// 用户学过的课 ≤ 课程总数（17），逐课数一遍开销可忽略。
+func (h *Handler) reviewDueAcross(userID string) (int, gin.H) {
+	var agentIDs []string
+	h.db.Model(&models.UserConcept{}).
+		Where("user_id = ? AND level >= 1", userID).
+		Distinct("agent_id").Pluck("agent_id", &agentIDs)
+	total := 0
+	bestDue := 0
+	var best gin.H
+	for _, aid := range agentIDs {
+		var a models.ToolAgent
+		if h.db.First(&a, "id = ? AND enabled = ?", aid, true).Error != nil {
+			continue // 退役课不催复习
+		}
+		n := dueCount(h.db, userID, aid)
+		if n <= 0 {
+			continue
+		}
+		total += n
+		if n > bestDue {
+			bestDue = n
+			best = gin.H{"id": a.ID, "name": a.Name, "subject": a.Subject, "icon": a.Icon, "accent": a.Accent, "due": n}
+		}
+	}
+	return total, best
 }
