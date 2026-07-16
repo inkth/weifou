@@ -93,15 +93,15 @@ func TestTiersLabeled(t *testing.T) {
 // 三幕课结构守护（人生设计/好好相爱）：三幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
 func TestThreeActCoursesStructure(t *testing.T) {
 	for name, list := range map[string][]seedConcept{
-		"人生设计":   lifedesignConcepts,
-		"好好相爱":   loveConcepts,
-		"把幸福练出来": happinessConcepts,
-		"让文字办事":  writingConcepts,
-		"学什么都快":  learningConcepts,
-		"争取更多":   negotiationConcepts,
-		"习惯的复利":  habitsConcepts,
-		"看懂生意":   businessConcepts,
-		"把心练稳":   meditationConcepts,
+		"人生设计":   curricula["learn-lifedesign"],
+		"好好相爱":   curricula["learn-love"],
+		"把幸福练出来": curricula["learn-happiness"],
+		"让文字办事":  curricula["learn-writing"],
+		"学什么都快":  curricula["learn-learning"],
+		"争取更多":   curricula["learn-negotiation"],
+		"习惯的复利":  curricula["learn-habits"],
+		"看懂生意":   curricula["learn-business"],
+		"把心练稳":   curricula["learn-meditation"],
 	} {
 		if len(list) != 21 {
 			t.Fatalf("%s 应为 21 关，实际 %d", name, len(list))
@@ -125,6 +125,7 @@ func TestThreeActCoursesStructure(t *testing.T) {
 
 // 约会课结构守护：四幕各 7 关（6 常规 + 1 综合关 Boss），综合关必须是每幕末关。
 func TestDatingCourseFourActsOfSeven(t *testing.T) {
+	datingConcepts := curricula["learn-dating"]
 	if len(datingConcepts) != 28 {
 		t.Fatalf("清醒去爱应为 28 关，实际 %d", len(datingConcepts))
 	}
@@ -146,6 +147,7 @@ func TestDatingCourseFourActsOfSeven(t *testing.T) {
 
 // 英语课结构守护：四幕各 8 关（7 常规 + 1 全英模拟面 Boss），模拟面必须是每幕末关。
 func TestEnglishCourseHasFourActsOfEight(t *testing.T) {
+	englishScenarios := curricula["spoken-english"]
 	if len(englishScenarios) != 32 {
 		t.Fatalf("英语反应力应为 32 关，实际 %d", len(englishScenarios))
 	}

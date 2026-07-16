@@ -97,7 +97,7 @@ func checkOptions(t *testing.T, agentSlug, slug, field string, opts []tapOption)
 }
 
 func TestEnglishReviewUsesTransferVariants(t *testing.T) {
-	for slug, lv := range learnEnglishScript {
+	for slug, lv := range courseScripts["spoken-english"] {
 		// 全英模拟面（每幕 Boss）：听力门→两轮裁决→拼句两步，五节点单链，逐节点恰一个前进出口。
 		if strings.HasPrefix(slug, "boss-") {
 			if len(lv.Nodes) != 5 {
@@ -165,8 +165,8 @@ func TestCourseScriptsCorrectVaries(t *testing.T) {
 // 第一阶段要求每章至少两关有变式；后续题库扩充时再提高到逐关覆盖。
 func TestLearnAITransferCoverage(t *testing.T) {
 	covered := map[string]int{}
-	for _, c := range aiConcepts {
-		if len(learnAIScript[c.Slug].Variants) > 0 {
+	for _, c := range curricula["learn-ai"] {
+		if len(courseScripts["learn-ai"][c.Slug].Variants) > 0 {
 			covered[c.Theme]++
 		}
 	}

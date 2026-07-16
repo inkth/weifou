@@ -26,7 +26,10 @@ import (
 
 // tapOption 一个可点选项：Label 是点选气泡文字（≤20 字），Reply 是选中后的预写回应。
 // 用在检验关时：正确项的 Reply=肯定语（为什么对），错误项的 Reply=温柔纠偏（不直给答案）。
-type tapOption struct{ Label, Reply string }
+type tapOption struct {
+	Label string `json:"label"`
+	Reply string `json:"reply,omitempty"`
+}
 
 // levelScript 一关的作者化剧本。Hook 与检验题面复用 curatedContent（不重复维护）。
 // 两种形态：
@@ -35,34 +38,21 @@ type tapOption struct{ Label, Reply string }
 //     每个选项自带对方的预写反应（后果演给学员看）与去向；走到 NodeClear 即点亮。
 //     此时 Taps 不用；CheckOpts 仍必填——复习挑战（检索练习）用它快问快答升掌握。
 type levelScript struct {
-	Taps      []tapOption    // 开场点选（2-3 项，接住 Hook 结尾的提问；节点图关卡置空）
-	Nodes     []scriptNode   // 多轮分支节点图（对手戏）；空 = 两段式
-	CheckOpts []tapOption    // 检验关选项（两段式的主流程门；节点图关卡只用于复习挑战）
-	Correct   int            // CheckOpts 中正确项下标
-	Variants  []checkVariant // 复习挑战变式题库（经 attachVariants 挂载；空 = 复习退回主检验题）
-	Clear     string         // 点亮语：一句收官 + 下一关悬念钩子
-	Note      string         // 战报（≤20 字，落 UserConcept.Note，复习/卡片流回显）
+	Taps      []tapOption    `json:"taps,omitempty"`      // 开场点选（2-3 项，接住 Hook 结尾的提问；节点图关卡置空）
+	Nodes     []scriptNode   `json:"nodes,omitempty"`     // 多轮分支节点图（对手戏）；空 = 两段式
+	CheckOpts []tapOption    `json:"checkOpts,omitempty"` // 检验关选项（两段式的主流程门；节点图关卡只用于复习挑战）
+	Correct   int            `json:"correct"`             // CheckOpts 中正确项下标
+	Variants  []checkVariant `json:"variants,omitempty"`  // 复习挑战变式题库（空 = 复习退回主检验题）
+	Clear     string         `json:"clear,omitempty"`     // 点亮语：一句收官 + 下一关悬念钩子
+	Note      string         `json:"note,omitempty"`      // 战报（≤20 字，落 UserConcept.Note，复习/卡片流回显）
 }
 
 // checkVariant 复习挑战的变式题：换语料/换场景考同一概念的迁移应用。复习优先抽变式——
 // 主检验题闯关时已见过，原题重考只测「记住正确句」，测不出掌握。
 type checkVariant struct {
-	Ask     string      // 变式题面（复习时替代 curatedContent 的 Check）
-	Opts    []tapOption // 变式选项（恰一项正确；错误项 Reply=温柔纠偏，不直给答案）
-	Correct int
-}
-
-// attachVariants 把课程文件里独立维护的变式题库挂到剧本上（各课程文件 init 时调用）。
-// 独立成表是为了让主剧本与变式题分开演进，互不搅动 diff；挂载时防御主剧本里不存在的 slug。
-func attachVariants(script map[string]levelScript, variants map[string][]checkVariant) {
-	for slug, vs := range variants {
-		lv, ok := script[slug]
-		if !ok {
-			continue
-		}
-		lv.Variants = append(lv.Variants, vs...)
-		script[slug] = lv
-	}
+	Ask     string      `json:"ask"`  // 变式题面（复习时替代 curatedContent 的 Check）
+	Opts    []tapOption `json:"opts"` // 变式选项（恰一项正确；错误项 Reply=温柔纠偏，不直给答案）
+	Correct int         `json:"correct"`
 }
 
 // scriptNode 对手戏的一个节点。三种节点：
@@ -75,14 +65,14 @@ func attachVariants(script map[string]levelScript, variants map[string][]checkVa
 //     LLM 按课程 rubric（freeJudgeRubrics）判定：通过 = 直升「已掌握」；不过 = 点出方向再试（不罚）；
 //     判定服务失败或学员点「先欠着」= 正常点亮通关，绝不因 AI 不可用卡住主流程。
 type scriptNode struct {
-	Prompt   string
-	Options  []nodeOption
-	Say      string // 跟读目标句（非空 = 跟读节点，Options 置空）
-	SayOK    string // 跟读命中的回应
-	SayFail  string // 未命中的鼓励语（引擎会自动补「再读一遍」提示）
-	SayNext  int    // 跟读命中后的去向（NodeClear 或节点下标）
-	Free     string // 产出题面（非空 = 产出节点，Options/Say 置空）：迁移场面 + 开口指令
-	FreeNext int    // 产出完成后的去向（NodeClear 或节点下标）
+	Prompt   string       `json:"prompt,omitempty"`
+	Options  []nodeOption `json:"options,omitempty"`
+	Say      string       `json:"say,omitempty"`      // 跟读目标句（非空 = 跟读节点，Options 置空）
+	SayOK    string       `json:"sayOk,omitempty"`    // 跟读命中的回应
+	SayFail  string       `json:"sayFail,omitempty"`  // 未命中的鼓励语（引擎会自动补「再读一遍」提示）
+	SayNext  int          `json:"sayNext,omitempty"`  // 跟读命中后的去向（NodeClear 或节点下标）
+	Free     string       `json:"free,omitempty"`     // 产出题面（非空 = 产出节点，Options/Say 置空）：迁移场面 + 开口指令
+	FreeNext int          `json:"freeNext,omitempty"` // 产出完成后的去向（NodeClear 或节点下标）
 }
 
 // nodeOption 对手戏选项：Label = 学员的原话候选（≤20 字），Reply = 对方的预写反应 + 教练点破。
@@ -98,30 +88,6 @@ const (
 	NodeClear = -2 // 通关：点亮本关
 )
 
-// courseScripts：agent slug → concept slug → 剧本。有剧本的课程走脚本引擎，其余照旧走 LLM。
-// 迁移判据（2026-07-06 定调，2026-07-12 补完）：概念课（检验=判断/找茬）适合脚本化；
-// 产出课（英语/沟通/AI，点亮判据=学员真实产出）先点选化保流畅，再用产出节点（Free）保课魂——
-// 识别≠产出，章末大关的最后一拍必须留给学员自己的原话（跳过不罚，判过直升掌握）。
-var courseScripts = map[string]map[string]levelScript{
-	"daodejing-full":    daodejingFullScript,
-	"learn-logic":       learnLogicScript,
-	"learn-psychology":  learnPsychologyScript,
-	"learn-marketing":   learnMarketingScript,
-	"learn-speaking":    learnSpeakingScript,    // 节点图对手戏（产出课点选化第一门）
-	"learn-ai":          learnAIScript,          // 节点图指令对比+找茬（产出课点选化第二门）
-	"spoken-english":    learnEnglishScript,     // 两轮场景裁决+迁移（纯点选、零LLM）
-	"learn-lifedesign":  learnLifedesignScript,  // 人生设计三幕21关（两段式概念课、零LLM）
-	"learn-love":        learnLoveScript,        // 好好相爱三幕21关（判断关+对手戏混合、零LLM）
-	"learn-happiness":   learnHappinessScript,   // 把幸福练出来三幕21关（两段式判断关、零LLM）
-	"learn-writing":     learnWritingScript,     // 让文字办事三幕21关（判断关+综合关真动笔产出节点）
-	"learn-learning":    learnLearningScript,    // 学什么都快三幕21关（两段式判断关、零LLM、元课程）
-	"learn-negotiation": learnNegotiationScript, // 争取更多三幕21关（四场对手戏+终局真开口产出节点）
-	"learn-habits":      learnHabitsScript,      // 习惯的复利三幕21关（两段式判断关、零LLM、自指streak）
-	"learn-business":    learnBusinessScript,    // 看懂生意三幕21关（两段式判断关、零LLM、老板视角）
-	"learn-dating":      learnDatingScript,      // 清醒去爱四幕28关（判断关+六场对手戏+资料真动笔/初见真开口）
-	"learn-meditation":  learnMeditationScript,  // 把心练稳三幕21关（两段式判断关、零LLM、真练习）
-}
-
 // 脚本课阶段（存 AgentSession.ScriptStage）。
 const (
 	stageTap    = "tap"    // 已发 Hook，等开场点选
@@ -130,6 +96,10 @@ const (
 	stageDone   = "done"   // 本关已收尾，等「顺路下一关/回地图/再来一题」
 	stageReview = "review" // 复习挑战：等 Check 作答（答对升「已掌握」）
 )
+
+// listenMark 听力门标记（与前端 agent-chat 的 LISTEN_MARK 同一约定）：
+// 英语课消息里该标记行的下一行英文「只播不显」。内容外置后约定常量留在引擎侧，由测试守护剧本遵守。
+const listenMark = "🎧 只听不看："
 
 // 收尾/复习导航固定选项（前端点选即原文发回，按文字匹配）。
 const (
@@ -567,15 +537,6 @@ func (st *scriptTurn) reviewQuestion(slug string, vi int) (string, []tapOption, 
 }
 
 // ---------- 产出节点判定（脚本课唯一的 LLM 触点）----------
-
-// freeJudgeRubrics：产出节点的判定口径，按课程配置（rubric 里写清尺子与及格线，输出 JSON）。
-// 有 Free 节点的课程必须在这里登记（TestCourseScriptsComplete 守护），否则产出关只收不判。
-var freeJudgeRubrics = map[string]string{
-	"learn-speaking":    speakingFreeJudge,
-	"learn-writing":     writingFreeJudge,
-	"learn-negotiation": negotiationFreeJudge,
-	"learn-dating":      datingFreeJudge,
-}
 
 type freeVerdict struct {
 	Pass bool   `json:"pass"`
