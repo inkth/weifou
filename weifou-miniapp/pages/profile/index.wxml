@@ -1,3 +1,5 @@
+<immersive-nav title="{{profile ? profile.realName + ' 的 AI 主页' : 'AI 主页'}}" />
+
 <view class="page" wx:if="{{profile}}">
   <!-- 晒点：刚生成完的庆祝时刻，分享意愿峰值 -->
   <view class="card fresh-card" wx:if="{{fresh && isMine && profile.persona}}">

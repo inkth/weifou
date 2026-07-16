@@ -214,7 +214,6 @@ Page({
         englishAudio: this._englishAudio,
         loading: false,
       });
-      if (d.name) wx.setNavigationBarTitle({ title: d.name });
       // 课程页改为数字人陪学，不再触发对峙/战斗表演。
       this._duelOn = false;
       this._scrollEnd();

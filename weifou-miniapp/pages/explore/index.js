@@ -1,17 +1,17 @@
-// 技能 tab =「人类基本功计划」：多条能力路径，第一幕免费、全课会员解锁后续。
+// 技能 tab =「人类基本功计划」：列表只负责课程发现，VIP 边界在具体章节地图中表达。
 // 首页已收敛为纯名片，不再承载「添加到首页」，故此处只做浏览 + 进入。
 // 上架范围由服务端 /agents（enabled=true）决定，前端不再做名单过滤。
 const { ensureLogin } = require('../../utils/auth');
-const { listAgents, learnStreak, learningSummary } = require('../../utils/agent');
-const { status: membershipStatus } = require('../../utils/membership');
+const { listAgents, learningSummary } = require('../../utils/agent');
 
-// 四个用户目标，而不是十五个并列入口。课程的营销表达独立于教学长介绍：
-// 列表负责说清「学完能做什么」，进课后再展开研究依据与完整路径。
+// 全部课程可直接浏览，也可按四个用户目标筛选。课程的营销表达独立于教学长介绍：
+// 卡片先说清「学完能做什么」，再用服务端的课程介绍补足内容与方法。
 const CATEGORIES = [
-  { key: 'cognition', name: '认知', copy: '看清世界与自己', featuredSlug: 'learn-logic' },
-  { key: 'work', name: '成事', copy: '把想法变成结果', featuredSlug: 'learn-ai' },
-  { key: 'life', name: '生活', copy: '设计更好的日常', featuredSlug: 'learn-habits' },
-  { key: 'relation', name: '关系', copy: '理解人，也表达自己', featuredSlug: 'learn-speaking' },
+  { key: 'all', name: '全部' },
+  { key: 'cognition', name: '认知' },
+  { key: 'work', name: '事业' },
+  { key: 'life', name: '成长' },
+  { key: 'relation', name: '关系' },
 ];
 
 const COURSE_PRESENTATION = {
@@ -47,6 +47,14 @@ const COURSE_PRESENTATION = {
     category: 'relation', outcome: '看懂心动、接住冲突、养住长期关系',
     highlights: ['识别吸引', '修复冲突', '长期联结'], courseMeta: '21 关 · 3 幕',
   },
+  'learn-dating': {
+    category: 'relation', outcome: '在心动中保持判断，真诚地开始或结束关系',
+    highlights: ['认识自己', '保持判断', '真约起来'], courseMeta: '28 关 · 4 幕',
+  },
+  'learn-meditation': {
+    category: 'life', outcome: '把注意力练稳，在走神和情绪起伏中随时回来',
+    highlights: ['注意力训练', '情绪调节', '日常正念'], courseMeta: '21 关 · 3 幕',
+  },
   'learn-happiness': {
     category: 'life', outcome: '识别幸福错觉，把有效行动放进这一周',
     highlights: ['幸福误判', '情绪纠偏', '行动设计'], courseMeta: '21 关 · 3 幕',
@@ -77,18 +85,21 @@ const COURSE_PRESENTATION = {
   },
 };
 
-function decorate(a, isMember, index) {
+const COURSE_COVER_BASE = '/assets/courses/covers';
+
+function decorate(a, index) {
   const order = index + 1;
   const presentation = COURSE_PRESENTATION[a.slug] || {};
+  const hasCover = Object.prototype.hasOwnProperty.call(COURSE_PRESENTATION, a.slug);
   return {
     ...a,
     courseNo: order < 10 ? `0${order}` : `${order}`,
+    cardTone: order % 3,
+    cover: hasCover ? `${COURSE_COVER_BASE}/${a.slug}.webp` : '',
     marketCategory: presentation.category || 'cognition',
     outcome: presentation.outcome || a.tagline,
     highlights: presentation.highlights || [],
     courseMeta: presentation.courseMeta || '',
-    accessLabel: isMember ? '会员畅学' : '第一幕免费',
-    ctaLabel: isMember ? '开始学习' : '免费开始',
   };
 }
 
@@ -96,14 +107,9 @@ Page({
   data: {
     statusBarH: 20,
     loading: true,
-    isMember: false,
     hasCourses: false,
-    courseCount: 0,
     categories: CATEGORIES,
-    selectedCategory: 'cognition',
-    selectedCategoryName: '认知',
-    selectedCategoryCopy: '看清世界与自己',
-    featured: null,
+    selectedCategory: 'all',
     courses: [],
   },
 
@@ -125,14 +131,11 @@ Page({
     this.setData({ loading: true });
     try { await ensureLogin(); } catch (e) {}
     try {
-      const [list, ms, st, summary] = await Promise.all([
+      const [list, summary] = await Promise.all([
         listAgents().catch(() => []),
-        membershipStatus().catch(() => ({ isMember: false })),
-        learnStreak().catch(() => null),
         learningSummary().catch(() => null),
       ]);
-      const isMember = !!ms.isMember;
-      this._agents = (list || []).map((a, index) => decorate(a, isMember, index));
+      this._agents = (list || []).map((a, index) => decorate(a, index));
       this._summary = summary || null;
 
       // 回访用户先看到最近所学；手动切过分类后，返回页面仍尊重用户选择。
@@ -142,11 +145,9 @@ Page({
         if (current) selectedCategory = current.marketCategory;
       }
       this.setData({
-        isMember,
         hasCourses: this._agents.length > 0,
-        courseCount: this._agents.length,
         // 连续 ≥2 天才展示（第 1 天谈不上"连续"，安静）
-        streak: st && st.days >= 2 ? st : null,
+        streak: summary && summary.streak && summary.streak.days >= 2 ? summary.streak : null,
         loading: false,
       });
       this.renderCategory(selectedCategory);
@@ -166,37 +167,33 @@ Page({
   renderCategory(key) {
     const category = CATEGORIES.find((item) => item.key === key) || CATEGORIES[0];
     const all = this._agents || [];
-    const candidates = all.filter((item) => item.marketCategory === category.key);
+    const candidates = category.key === 'all' ? all : all.filter((item) => item.marketCategory === category.key);
     const current = this._summary && this._summary.current;
-    let featured = current && candidates.find((item) => item.id === current.id);
-    const isCurrent = !!featured;
-    if (!featured) {
-      featured = candidates.find((item) => item.slug === category.featuredSlug) || candidates[0] || null;
-    }
-
-    if (featured) {
+    const currentCourse = current && candidates.find((item) => item.id === current.id);
+    const ordered = currentCourse
+      ? [currentCourse, ...candidates.filter((item) => item.id !== currentCourse.id)]
+      : candidates;
+    const courses = ordered.map((item) => {
+      const isCurrent = !!(current && item.id === current.id);
       const total = isCurrent ? Number(current.total || 0) : 0;
       const lit = isCurrent ? Number(current.lit || 0) : 0;
-      featured = {
-        ...featured,
-        featuredLabel: isCurrent ? '继续学习' : '本类推荐',
-        ctaLabel: isCurrent ? '继续学习' : (this.data.isMember ? '开始学习' : '免费开始第一幕'),
+      const courseCategory = CATEGORIES.find((entry) => entry.key === item.marketCategory);
+      return {
+        ...item,
+        categoryName: (courseCategory && courseCategory.name) || '认知',
+        isCurrent,
+        cardLabel: isCurrent ? '继续学习' : `${(courseCategory && courseCategory.name) || '认知'}课程`,
+        enterLabel: isCurrent ? '继续学习' : '查看课程',
         showProgress: isCurrent && total > 0,
         progressPercent: isCurrent ? Number(current.progressPercent || 0) : 0,
         progressText: isCurrent && total > 0 ? `已点亮 ${lit}/${total}` : '',
       };
-    }
+    });
 
     this.setData({
-      categories: CATEGORIES.map((item) => ({
-        ...item,
-        count: all.filter((course) => course.marketCategory === item.key).length,
-      })),
+      categories: CATEGORIES,
       selectedCategory: category.key,
-      selectedCategoryName: category.name,
-      selectedCategoryCopy: category.copy,
-      featured,
-      courses: candidates.filter((item) => !featured || item.id !== featured.id),
+      courses,
     });
   },
 
@@ -209,6 +206,4 @@ Page({
     // game=1：技能页进来的都是课，首帧即套游戏皮，免得加载窗口先闪一下普通聊天顶栏（含「解锁全课」）
     wx.navigateTo({ url: `/pages/agent-chat/index?id=${id}&name=${encodeURIComponent(name || '')}&accent=${encodeURIComponent((a && a.accent) || '')}&icon=${encodeURIComponent((a && a.icon) || '')}&game=1` });
   },
-
-  goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
 });

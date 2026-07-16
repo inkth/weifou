@@ -1,0 +1,17 @@
+<view class="nav theme-{{theme}} {{transparent ? 'is-transparent' : ''}}"
+      style="height:{{statusBarHeight + navigationHeight}}px;">
+  <view class="status" style="height:{{statusBarHeight}}px;"></view>
+  <view class="bar" style="height:{{navigationHeight}}px; padding-left:{{sideWidth}}px; padding-right:{{sideWidth}}px;">
+    <view class="back-hit" bindtap="onBack" aria-role="button" aria-label="{{isRoot ? '返回首页' : '返回'}}">
+      <view wx:if="{{isRoot}}" class="home-icon">
+        <view class="home-roof"></view>
+        <view class="home-body"></view>
+      </view>
+      <view wx:else class="back-icon"></view>
+    </view>
+    <view class="copy">
+      <view class="title">{{title}}</view>
+      <view wx:if="{{subtitle}}" class="subtitle">{{subtitle}}</view>
+    </view>
+  </view>
+</view>

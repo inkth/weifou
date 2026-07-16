@@ -1,11 +1,10 @@
 <view class="page {{gameSkin ? 'game' : ''}}" style="--accent: {{accent}};">
-  <!-- 顶部：身份 + 额度/会员。游戏皮（学习课）隐藏整条——身份交给原生标题栏，付费只在真该收时出现（成交克制）。 -->
+  <immersive-nav title="{{name || (gameSkin ? 'AI 陪学' : 'AI 助手')}}" subtitle="{{gameSkin ? guide : ''}}" transparent="{{gameSkin}}" />
+
+  <!-- 普通 Agent 的额度与操作条；身份名称由沉浸式导航承载。 -->
   <view wx:if="{{!gameSkin}}" class="topbar">
-    <view class="tb-ic" style="background: {{accent}}1a; color: {{accent}};">{{icon}}</view>
-    <view class="tb-mid">
-      <view class="tb-name">{{name}}</view>
-      <view class="tb-quota">{{quotaText}}</view>
-    </view>
+    <view class="tb-quota">{{quotaText}}</view>
+    <view class="tb-spacer"></view>
     <view class="tb-act" bindtap="openHistory">历史</view>
     <!-- 会员状态没回来前不亮商业按钮：防其他入口进课程时在加载窗口闪出「解锁全课」 -->
     <view wx:if="{{!member && !loading}}" class="tb-buy" bindtap="goMembership">解锁全课</view>
@@ -223,7 +222,7 @@
     </view>
   </view>
 
-  <!-- 庆祝浮层：升级 / 点亮 / 掌握共用（全屏彩带 + 大字弹簧） -->
+  <!-- 学习页内庆祝浮层：底下课程内容保持可见，不制造“跳转到新页面”的感觉。 -->
   <view wx:if="{{celebrate}}" class="celebrate" style="--accent: {{accent}};">
     <view class="confetti">
       <view class="cf cf-1"></view><view class="cf cf-2"></view><view class="cf cf-3"></view>

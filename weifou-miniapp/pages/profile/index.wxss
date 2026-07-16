@@ -1,7 +1,7 @@
 @import "../../styles/stage.wxss";
 
 /* 公开名片：人物优先，AI 气场只在 Hero 内轻微出现。 */
-.page { padding: 36rpx 32rpx 120rpx; min-height: 100vh; box-sizing: border-box; background: var(--bg); }
+.page { padding: 36rpx 32rpx 120rpx; box-sizing: border-box; background: var(--bg); }
 
 .card {
   background: var(--surface);

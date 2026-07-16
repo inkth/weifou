@@ -1,4 +1,6 @@
 <view class="page {{liheSrc ? 'lihe' : ''}}">
+  <immersive-nav title="{{realName ? '和 ' + realName + ' 的 AI 聊聊' : 'AI 分身'}}" transparent="{{liheSrc ? true : false}}" />
+
   <!-- 全屏立绘背景（星野式）：avatar 为 image 类型时铺满，气泡浮于其上；fixed 不随消息滚动 -->
   <view wx:if="{{liheSrc}}" class="lihe-bg">
     <image class="lihe-img" src="{{liheSrc}}" mode="aspectFill"/>

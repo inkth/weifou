@@ -1,11 +1,9 @@
 page { background: var(--bg); height: 100%; }
 .page { display: flex; flex-direction: column; height: 100vh; }
 
-.topbar { display: flex; align-items: center; padding: 18rpx 28rpx; background: var(--surface); border-bottom: var(--bw-thin) solid var(--border); flex: 0 0 auto; }
-.tb-ic { width: 64rpx; height: 64rpx; border-radius: var(--r-md); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 34rpx; }
-.tb-mid { flex: 1 1 auto; min-width: 0; margin-left: 18rpx; }
-.tb-name { font-size: 30rpx; font-weight: 800; color: var(--ink); }
-.tb-quota { font-size: 23rpx; color: var(--sub); margin-top: 2rpx; }
+.topbar { display: flex; align-items: center; padding: 12rpx 28rpx; background: var(--surface); border-bottom: var(--bw-thin) solid var(--border); flex: 0 0 auto; }
+.tb-spacer { flex: 1 1 auto; min-width: 16rpx; }
+.tb-quota { flex: 0 1 auto; min-width: 0; font-size: 23rpx; color: var(--sub); }
 .tb-buy { flex: 0 0 auto; padding: 12rpx 28rpx; background: var(--accent); color: var(--on-accent); font-size: 25rpx; font-weight: 800; border: none; border-radius: var(--r-md); box-shadow: var(--shadow-accent); transition: transform 0.1s var(--ease), box-shadow 0.1s var(--ease); }
 .tb-buy:active { transform: scale(0.985); background: var(--accent-strong); }
 .tb-act { flex: 0 0 auto; margin-left: 12rpx; padding: 10rpx 22rpx; background: var(--fill); color: var(--ink-2); font-size: 24rpx; border: var(--bw-thin) solid var(--border); border-radius: var(--r-full); transition: transform 0.1s var(--ease); }
@@ -220,13 +218,13 @@ page { background: var(--bg); height: 100%; }
 .cp-fill { position: relative; height: 100%; border-radius: var(--r-full); background: var(--accent); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 .cp-fill::after { content: ''; position: absolute; left: 8rpx; right: 8rpx; top: 4rpx; height: 6rpx; border-radius: var(--r-full); background: rgba(255, 255, 255, 0.35); }
 
-/* 庆祝浮层：克制彩带 + 里程碑大字 */
-.celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
-.celeb-card { position: relative; z-index: 2; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 64rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
+/* 学习页内庆祝浮层：完全透明，不遮掉正在学习的舞台与卡片。 */
+.celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: transparent; animation: celebFade 0.25s ease; pointer-events: none; overflow: hidden; }
+.celeb-card { position: relative; z-index: 2; max-width: 620rpx; padding: 48rpx 64rpx; text-align: center; background: transparent; border: 0; box-shadow: none; animation: celebPop 0.42s var(--ease-spring); }
 .celeb-spark { font-size: 72rpx; line-height: 1; animation: sparkBounce 0.6s var(--ease-spring); }
 .celeb-up { display: inline-block; font-size: 24rpx; font-weight: 800; color: #574825; letter-spacing: 4rpx; margin-top: 12rpx; padding: 4rpx 18rpx; background: var(--gold); border-radius: var(--r-full); box-shadow: var(--shadow-hair); }
-.celeb-name { font-size: 56rpx; font-weight: 800; color: var(--ink); margin-top: 8rpx; animation: namePop 0.5s var(--ease-spring) 0.08s both; }
-.celeb-sub { font-size: 24rpx; color: var(--sub); margin-top: 12rpx; }
+.celeb-name { font-size: 56rpx; font-weight: 800; color: var(--ink); margin-top: 8rpx; text-shadow: 0 2rpx 12rpx rgba(255, 255, 255, 0.96); animation: namePop 0.5s var(--ease-spring) 0.08s both; }
+.celeb-sub { font-size: 24rpx; color: var(--ink-2); margin-top: 12rpx; text-shadow: 0 2rpx 10rpx rgba(255, 255, 255, 0.96); }
 @keyframes celebFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes celebPop { 0% { opacity: 0; transform: scale(0.7); } 60% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
 @keyframes sparkBounce { 0% { transform: scale(0.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }

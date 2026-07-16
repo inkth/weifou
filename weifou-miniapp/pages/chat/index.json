@@ -1,4 +1,6 @@
 {
-  "navigationBarTitleText": "问我的 AI",
-  "usingComponents": {}
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "immersive-nav": "/components/immersive-nav/index"
+  }
 }

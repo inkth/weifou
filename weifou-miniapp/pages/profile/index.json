@@ -1,9 +1,9 @@
 {
-  "navigationBarTitleText": "AI 主页",
-  "navigationBarBackgroundColor": "#1a1c24",
-  "navigationBarTextStyle": "white",
+  "navigationStyle": "custom",
   "backgroundColor": "#ffffff",
   "enableShareAppMessage": true,
   "enableShareTimeline": true,
-  "usingComponents": {}
+  "usingComponents": {
+    "immersive-nav": "/components/immersive-nav/index"
+  }
 }

@@ -1,4 +1,6 @@
 {
-  "navigationBarTitleText": "AI 助手",
-  "usingComponents": {}
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "immersive-nav": "/components/immersive-nav/index"
+  }
 }

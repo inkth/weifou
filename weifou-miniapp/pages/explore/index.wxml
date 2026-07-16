@@ -1,120 +1,72 @@
 <view class="mkt" style="padding-top:{{statusBarH}}px">
   <view class="mkt-top">
-    <view class="mkt-kicker">HUMAN SKILLS · 研究驱动</view>
-    <view class="mkt-h1">关键时刻，知道怎么做</view>
-    <view class="mkt-sub">在真实场景里练判断、表达与行动，把知识从“知道”变成“会用”</view>
+    <view class="mkt-kicker">HUMAN SKILLS · AI 时代的必修课</view>
+    <view class="mkt-h1">AI 时代，什么仍然值得学？</view>
+    <view class="mkt-sub">从全球优质公开课程与经典研究中，精选真正有用的知识，重做成轻松、可互动、能练会的课程。</view>
     <view wx:if="{{streak}}" class="mkt-streak">连续 {{streak.days}} 天{{streak.todayDone ? '' : ' · 今天待练习'}}</view>
   </view>
 
   <block wx:if="{{loading}}">
-    <view class="skel-feature">
-      <view class="skel skel-feature-kicker"></view>
-      <view class="skel skel-feature-title"></view>
-      <view class="skel skel-feature-copy"></view>
-      <view class="skel skel-feature-btn"></view>
-    </view>
-    <view class="skel-card" wx:for="{{[1, 2]}}" wx:key="*this">
-      <view class="skel skel-ic"></view>
-      <view class="skel-lines">
-        <view class="skel skel-l1"></view>
-        <view class="skel skel-l2"></view>
-      </view>
+    <view class="skel-course" wx:for="{{[1, 2]}}" wx:key="*this">
+      <view class="skel skel-course-label"></view>
+      <view class="skel skel-course-title"></view>
+      <view class="skel skel-course-copy"></view>
+      <view class="skel skel-course-desc"></view>
+      <view class="skel skel-course-footer"></view>
     </view>
   </block>
 
   <block wx:else>
     <block wx:if="{{hasCourses}}">
-      <view class="choice-head">
-        <view class="choice-title">你现在最想改变什么？</view>
-        <view class="choice-note">四条路径，选一条开始</view>
-      </view>
-
       <view class="category-tabs">
         <view wx:for="{{categories}}" wx:key="key"
               class="category-tab {{selectedCategory === item.key ? 'active' : ''}}"
               data-category="{{item.key}}" bindtap="selectCategory">
           <text class="category-name">{{item.name}}</text>
-          <text class="category-count">{{item.count || 0}}</text>
         </view>
       </view>
 
-      <view class="category-intro">
-        <text class="category-intro-name">{{selectedCategoryName}}</text>
-        <text class="category-intro-copy">{{selectedCategoryCopy}}</text>
-      </view>
-
-      <view wx:if="{{featured}}" class="feature-card"
-            data-id="{{featured.id}}" data-name="{{featured.name}}"
-            hover-class="card-press" hover-stay-time="0" bindtap="open">
-        <view class="feature-topline">
-          <view class="feature-label">{{featured.featuredLabel}}</view>
-          <view class="feature-number">COURSE {{featured.courseNo}}</view>
-        </view>
-        <view class="feature-heading">
-          <view class="feature-icon">{{featured.icon}}</view>
-          <view class="feature-title-wrap">
-            <view class="feature-subject">{{featured.subject}}</view>
-            <view class="feature-title">{{featured.name}}</view>
+      <block wx:for="{{courses}}" wx:key="id">
+        <view class="course-card tone-{{item.cardTone}} {{item.isCurrent ? 'is-current' : ''}}"
+              data-id="{{item.id}}" data-name="{{item.name}}"
+              hover-class="card-press" hover-stay-time="0" bindtap="open">
+          <view class="course-topline">
+            <view class="course-label">{{item.cardLabel}}</view>
+            <view class="course-number">COURSE {{item.courseNo}}</view>
           </view>
-        </view>
-        <view class="feature-outcome">{{featured.outcome}}</view>
-        <view class="feature-highlights" wx:if="{{featured.highlights.length}}">
-          <text class="feature-highlight" wx:for="{{featured.highlights}}" wx:for-item="point" wx:key="*this">{{point}}</text>
-        </view>
-        <view wx:if="{{featured.showProgress}}" class="feature-progress">
-          <view class="feature-progress-row">
-            <text>{{featured.progressText}}</text>
-            <text>{{featured.progressPercent}}%</text>
+
+          <view class="course-heading">
+            <view class="course-icon {{item.cover ? 'has-cover' : ''}}">
+              <image wx:if="{{item.cover}}" class="course-cover" src="{{item.cover}}" mode="aspectFill" lazy-load></image>
+              <text wx:else>{{item.icon}}</text>
+            </view>
+            <view class="course-title-wrap">
+              <view class="course-subject">{{item.subject}}</view>
+              <view class="course-title">{{item.name}}</view>
+            </view>
           </view>
-          <view class="feature-progress-track"><view class="feature-progress-fill" style="width:{{featured.progressPercent}}%"></view></view>
-        </view>
-        <view class="feature-meta">
-          <text>{{featured.courseMeta}}</text>
-          <text class="feature-access">{{featured.accessLabel}}</text>
-        </view>
-        <view class="feature-cta">
-          <text>{{featured.ctaLabel}}</text>
-          <view class="ic ic-chevron"></view>
-        </view>
-      </view>
 
-      <!-- 先让用户看见课程价值，再说明会员捆绑价值。 -->
-      <view class="mbr {{isMember ? 'on' : ''}}" hover-class="card-press" hover-stay-time="0" bindtap="goMembership">
-        <view class="ic ic-crown mbr-ic"></view>
-        <view class="mbr-copy">
-          <view class="mbr-title">{{isMember ? '会员有效 · 全部课程畅学' : '解锁全部 ' + courseCount + ' 门完整课程'}}</view>
-          <view class="mbr-sub">{{isMember ? '进阶关卡、复习挑战和后续新课均已包含' : '进阶关卡、复习挑战和后续新课均包含'}}</view>
-        </view>
-        <text class="mbr-go">{{isMember ? '查看 ›' : '方案 ›'}}</text>
-      </view>
+          <view class="course-outcome">{{item.outcome}}</view>
+          <view wx:if="{{item.description}}" class="course-description">{{item.description}}</view>
 
-      <view class="ability-head" wx:if="{{courses.length}}">
-        <view>
-          <view class="ability-title">更多{{selectedCategoryName}}课程</view>
-          <view class="ability-copy">从一个真实问题开始练</view>
-        </view>
-        <view class="ability-sub">{{courses.length}} 门</view>
-      </view>
-
-      <view class="mcard" wx:for="{{courses}}" wx:key="id"
-            data-id="{{item.id}}" data-name="{{item.name}}"
-            hover-class="card-press" hover-stay-time="0" bindtap="open">
-        <view class="mcard-main">
-          <view class="mcard-ic"><text>{{item.icon}}</text><text class="mcard-order">{{item.courseNo}}</text></view>
-          <view class="mcard-meta">
-            <view class="mcard-subject">{{item.subject}}</view>
-            <view class="mcard-name">{{item.name}}</view>
-            <view class="mcard-outcome">{{item.outcome}}</view>
+          <view class="course-highlights" wx:if="{{item.highlights.length}}">
+            <text class="course-highlight" wx:for="{{item.highlights}}" wx:for-item="point" wx:key="*this">{{point}}</text>
           </view>
-        </view>
-        <view class="mcard-foot">
-          <view class="mcard-course-meta">
+
+          <view wx:if="{{item.showProgress}}" class="course-progress">
+            <view class="course-progress-row">
+              <text>{{item.progressText}}</text>
+              <text>{{item.progressPercent}}%</text>
+            </view>
+            <view class="course-progress-track"><view class="course-progress-fill" style="width:{{item.progressPercent}}%"></view></view>
+          </view>
+
+          <view class="course-meta">
             <text wx:if="{{item.courseMeta}}">{{item.courseMeta}}</text>
-            <text class="mcard-access">{{item.accessLabel}}</text>
+            <view class="course-enter"><text>{{item.enterLabel}}</text><view class="ic ic-chevron"></view></view>
           </view>
-          <view class="mcard-go"><text>{{item.ctaLabel}}</text><view class="ic ic-chevron"></view></view>
         </view>
-      </view>
+      </block>
     </block>
 
     <view wx:else class="empty-wrap">
