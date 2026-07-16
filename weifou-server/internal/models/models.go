@@ -419,16 +419,20 @@ func (AgentConcept) TableName() string { return "agent_concepts" }
 
 // UserConcept 用户在某概念上的掌握档位。Level：0 未触及 / 1 已点亮 / 2 已掌握。
 // 设计纪律同 AgentSkill：「只升不降」——状态差的一轮不掉档（消除惩罚感），每次对话都可能点亮新概念。
+// 间隔重复（2026-07-16）：ReviewCount/ReviewDue 驱动扩展式复习调度——复习答对间隔翻档（3→7→14→30→60天），
+// 答错回到次日重来（只缩间隔不降 Level，惩罚落在日程不落在成就上）。ReviewDue 零值=老数据，读取端按旧 3/7 天规则兜底。
 type UserConcept struct {
-	ID        string    `gorm:"primaryKey;size:32" json:"id"`
-	UserID    string    `gorm:"size:32;uniqueIndex:idx_uc_user_concept" json:"userId"`
-	ConceptID string    `gorm:"size:32;uniqueIndex:idx_uc_user_concept" json:"conceptId"`
-	AgentID   string    `gorm:"size:32;index:idx_uc_user_agent" json:"agentId"` // 冗余，便于按 Agent 聚合 X/100
-	Level     int       `json:"level"`                                          // 0/1/2
-	Touches   int       `json:"touches"`                                        // 命中次数
-	Note      string    `gorm:"size:120" json:"note"`                           // 本课战报：判定器一句话（≤20字），latest-wins；空轮不覆盖
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID          string    `gorm:"primaryKey;size:32" json:"id"`
+	UserID      string    `gorm:"size:32;uniqueIndex:idx_uc_user_concept" json:"userId"`
+	ConceptID   string    `gorm:"size:32;uniqueIndex:idx_uc_user_concept" json:"conceptId"`
+	AgentID     string    `gorm:"size:32;index:idx_uc_user_agent" json:"agentId"` // 冗余，便于按 Agent 聚合 X/100
+	Level       int       `json:"level"`                                          // 0/1/2
+	Touches     int       `json:"touches"`                                        // 命中次数
+	Note        string    `gorm:"size:120" json:"note"`                           // 本课战报：判定器一句话（≤20字），latest-wins；空轮不覆盖
+	ReviewCount int       `json:"reviewCount"`                                    // 连续复习答对次数（决定当前间隔档；答错清零）
+	ReviewDue   time.Time `json:"reviewDue"`                                      // 下次到期复习时间（零值=旧数据，按旧规则兜底）
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (UserConcept) TableName() string { return "user_concepts" }

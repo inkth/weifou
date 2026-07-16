@@ -117,7 +117,12 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		membershipH: mbrH,
 		referralH:   referralH,
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
-		clientcfgH:  clientcfg.NewHandler(vpayClient.Ready()),
+		clientcfgH: clientcfg.NewHandler(vpayClient.Ready(), clientcfg.SubscribeTmpls{
+			Answered:    cfg.SubscribeAnsweredTmpl,
+			NewQuestion: cfg.SubscribeNewQuestionTmpl,
+			Lead:        cfg.SubscribeLeadTmpl,
+			LearnRemind: cfg.SubscribeLearnRemindTmpl,
+		}),
 		uploadH:     upload.NewHandler(uploadStore, publicHost+"/api/uploads", cfg.JWTSecret),
 		scheduler:   tasks.NewScheduler(db, paymentH, referralH, cfg.OrderTimeoutMin),
 	}

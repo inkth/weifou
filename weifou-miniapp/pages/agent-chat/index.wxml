@@ -45,7 +45,7 @@
         >
           <text>{{voiceMuted ? '🔇' : '🔊'}}</text>
         </view>
-        <view wx:if="{{concept || skill}}" class="lesson-stage-progress" catchtap="toggleMap" hover-class="mentor-action-press" hover-stay-time="0">
+        <view wx:if="{{concept}}" class="lesson-stage-progress" catchtap="toggleMap" hover-class="mentor-action-press" hover-stay-time="0">
           <text>{{lessonProgress || '学习进度'}}</text><text class="lesson-stage-chevron">›</text>
         </view>
       </view>
@@ -100,7 +100,8 @@
           </view>
           <view wx:if="{{pending}}" class="lesson-thinking"><text></text><text></text><text></text></view>
         </view>
-        <view wx:if="{{options.length && !pending}}" class="lesson-instruction">选择一个最接近的答案</view>
+        <view wx:if="{{options.length && !pending && !freeMode}}" class="lesson-instruction">选择一个最接近的答案</view>
+        <view wx:if="{{freeMode && !pending}}" class="lesson-instruction">这一拍要你自己的原话——说砸了也不罚</view>
         <!-- 兜底：复原出的旧卡没有点选项（纯点选无输入栏会成死局）时，给一键重开当前关 -->
         <view wx:if="{{lessonCard && !options.length && !pending}}" class="lesson-restart" bindtap="restartLevel" hover-class="card-press" hover-stay-time="0">
           <text class="lesson-restart-ic">↻</text><text>重新学习这一节</text>
@@ -143,8 +144,31 @@
     <text class="remind-text">✓ 说定了，明天见</text>
   </view>
 
-  <!-- 本轮可点选项：点选即答（全站纯点选、无输入栏）。opts-tail 补齐 iPhone 底部安全区，让点选气泡即底栏 -->
-  <view class="opts opts-tail {{gameSkin ? 'game-options' : ''}}" wx:if="{{options.length && !pending}}" style="--accent: {{accent}};">
+  <!-- 产出节点：打字 / 按住说话（真开口·真动笔）。识别结果先进输入框，学员确认后再发 -->
+  <view class="produce opts-tail" wx:if="{{freeMode && !pending}}" style="--accent: {{accent}};">
+    <view class="produce-row">
+      <textarea
+        class="produce-input"
+        value="{{freeText}}"
+        maxlength="300"
+        auto-height
+        cursor-spacing="16"
+        placeholder="{{recState === 'recording' ? '正在听你说…' : '把你的原话打出来，或按住 🎙️ 说'}}"
+        bindinput="onFreeInput"
+      />
+      <view
+        class="produce-mic {{recState === 'recording' ? 'recording' : ''}}"
+        bindtouchstart="onMicStart"
+        bindtouchend="onMicEnd"
+        bindtouchcancel="onMicEnd"
+      >🎙️</view>
+      <view class="produce-send {{freeText ? '' : 'disabled'}}" bindtap="sendFree">说出去</view>
+    </view>
+    <view class="produce-skip" bindtap="skipFree">这句先欠着，直接过关 ›</view>
+  </view>
+
+  <!-- 本轮可点选项：点选即答（点选为主、产出关输入）。opts-tail 补齐 iPhone 底部安全区，让点选气泡即底栏 -->
+  <view class="opts opts-tail {{gameSkin ? 'game-options' : ''}}" wx:if="{{options.length && !pending && !freeMode}}" style="--accent: {{accent}};">
     <view class="opt-chip {{item.en ? 'opt-chip-en' : ''}}" wx:for="{{options}}" wx:key="t" data-t="{{item.t}}" bindtap="pickOption">
       <text wx:if="{{gameSkin}}" class="opt-index">{{index + 1}}</text>
       <text class="opt-tx">{{item.t}}</text>
@@ -170,22 +194,6 @@
           <view class="course-voice-setting-sub">进入课程和切换讲解时自动播放</view>
         </view>
         <switch checked="{{voiceAutoPlay}}" bindchange="onToggleVoiceAutoPlay" color="{{accent}}" />
-      </view>
-
-      <view wx:if="{{skill}}" class="skill course-map-skill">
-        <view class="sk-head">
-          <view class="sk-tier">
-            <text class="sk-lv">当前阶段</text>
-            <text class="sk-name">{{skill.levelName}}</text>
-          </view>
-          <view wx:if="{{skill.assessed === 0}}" class="sk-hint">用英文开口，我来给你定级 →</view>
-          <view wx:elif="{{skill.note}}" class="sk-note">{{skill.note}}</view>
-        </view>
-        <view class="sk-bars">
-          <view class="sk-bar"><text class="sk-bl">流利</text><view class="sk-track"><view class="sk-fill" style="width: {{skill.fluency}}%;"></view></view><text class="sk-bv">{{skill.fluency}}</text></view>
-          <view class="sk-bar"><text class="sk-bl">准确</text><view class="sk-track"><view class="sk-fill" style="width: {{skill.accuracy}}%;"></view></view><text class="sk-bv">{{skill.accuracy}}</text></view>
-          <view class="sk-bar"><text class="sk-bl">表达</text><view class="sk-track"><view class="sk-fill" style="width: {{skill.expression}}%;"></view></view><text class="sk-bv">{{skill.expression}}</text></view>
-        </view>
       </view>
 
       <view wx:if="{{concept}}" class="cprog course-map-progress">

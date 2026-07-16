@@ -94,6 +94,21 @@
       <view class="quick-edit" bindtap="openTags">标签</view>
     </view>
 
+    <!-- 续学钩子：只对学过课的用户出现——首页打开即见「今天接着学」 -->
+    <view wx:if="{{learn}}" class="learn-hook" hover-class="learn-hook-press" hover-stay-time="0" bindtap="goLearn">
+      <view class="learn-hook-icon" style="background: {{learn.accent}}22;">{{learn.icon}}</view>
+      <view class="learn-hook-copy">
+        <view class="learn-hook-title">继续学「{{learn.subject}}」</view>
+        <view class="learn-hook-sub">
+          <text wx:if="{{learn.total}}">已点亮 {{learn.lit}}/{{learn.total}}</text>
+          <text wx:if="{{learn.streakDays >= 2}}"> · 连学 {{learn.streakDays}} 天{{learn.todayDone ? '' : '，今天还没学'}}</text>
+          <text wx:elif="{{!learn.todayDone}}"> · 今天还没学</text>
+          <text wx:if="{{learn.reviewDue > 0}}"> · 🔁 {{learn.reviewDue}} 个待复习</text>
+        </view>
+      </view>
+      <view class="learn-hook-go">继续 →</view>
+    </view>
+
     <view class="insight" wx:if="{{chief.stats}}">
       <view class="insight-label">分身接待记录</view>
       <view class="hstat" wx:for="{{chief.stats}}" wx:key="label">

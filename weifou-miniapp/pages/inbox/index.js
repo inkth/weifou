@@ -5,7 +5,7 @@ const { ensureLogin } = require('../../utils/auth');
 const { fmtDateTime } = require('../../utils/datetime');
 const { hostQuestions, answerQuestion } = require('../../utils/asyncq');
 const { request } = require('../../utils/request');
-const { requestNewQuestionNotify, NEW_QUESTION_TMPL_ID } = require('../../utils/subscribe');
+const { requestNewQuestionNotify, loadTmpls, tmplReady } = require('../../utils/subscribe');
 
 // 访客点名要本人亲自答（escalatedAt）→ 比普通「分身已答」更优先、更醒目。
 function statusText(q) {
@@ -23,7 +23,7 @@ Page({
     profileId: '', // 空态「分享你的问答箱」的分享落点
     questions: [],
     pendingCount: 0, // 待你跟进（未亲自答）条数
-    canNotify: !!NEW_QUESTION_TMPL_ID, // 新提问订阅模板已配才显示入口（未配静默降级）
+    canNotify: false, // 新提问订阅模板已配才显示入口（服务端下发，onLoad 异步置位；未配静默降级）
     statusBarH: 20, // 自定义导航：顶部留出状态栏高度，去掉原生白色标题栏
   },
 
@@ -32,6 +32,8 @@ Page({
       const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()) || {};
       this.setData({ statusBarH: info.statusBarHeight || 20 });
     } catch (e) { /* 兜底默认 20 */ }
+    // 订阅模板由服务端下发：拉到（且已配置）才亮「新提问提醒」入口
+    loadTmpls().then(() => this.setData({ canNotify: tmplReady('newQuestion') }));
   },
 
   onShow() {
@@ -105,7 +107,7 @@ Page({
   async enableNotify() {
     const res = await requestNewQuestionNotify();
     if (res.skipped) return; // 模板未配（此时入口本就不显示）
-    if (res[NEW_QUESTION_TMPL_ID] === 'accept') {
+    if (res.accepted) {
       wx.showToast({ title: '已开启，新提问会微信通知你', icon: 'success' });
     } else {
       wx.showToast({ title: '未开启提醒', icon: 'none' });

@@ -1,5 +1,6 @@
 const { ensureLogin } = require('../../utils/auth');
 const { request } = require('../../utils/request');
+const { learningSummary } = require('../../utils/agent');
 const {
   PRESETS, getPreset, portraitStage, tierForPreset, initial, DEFAULT_PRESET_ID,
 } = require('../../utils/avatars');
@@ -75,6 +76,13 @@ Page({
     portraitOptions: PORTRAIT_OPTIONS,
   },
 
+  // 续学钩子 → 直达当前课（首帧套游戏皮，与技能页入口一致）
+  goLearn() {
+    const l = this.data.learn;
+    if (!l) return;
+    wx.navigateTo({ url: `/pages/agent-chat/index?id=${l.id}&name=${encodeURIComponent(l.name || '')}&accent=${encodeURIComponent(l.accent || '')}&icon=${encodeURIComponent(l.icon || '')}&game=1` });
+  },
+
   onLoad() {
     this._pageVisible = true;
     try {
@@ -104,6 +112,24 @@ Page({
   async load() {
     this.setData({ loading: true, errored: false });
     try { await ensureLogin(); } catch (e) { /* 未登录仍展示成品范例 */ }
+
+    // 续学钩子：有正在学的课就在名片下方递上「继续学习」，不打扰没学过的用户。
+    // 与名片主流程解耦：失败静默（钩子缺席 ≠ 首页坏了）。
+    learningSummary()
+      .then((s) => {
+        if (!this._pageVisible) return;
+        const cur = s && s.current;
+        this.setData({
+          learn: cur ? {
+            id: cur.id, name: cur.name, subject: cur.subject || cur.name, icon: cur.icon, accent: cur.accent,
+            lit: cur.lit || 0, total: cur.total || 0, percent: cur.progressPercent || 0,
+            streakDays: (s.streak && s.streak.days) || 0,
+            todayDone: !!(s.streak && s.streak.todayDone),
+            reviewDue: s.reviewDue || 0,
+          } : null,
+        });
+      })
+      .catch(() => {});
 
     let cards = null;
     try { cards = await request({ url: '/home/agents' }); }

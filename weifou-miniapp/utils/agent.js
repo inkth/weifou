@@ -26,12 +26,6 @@ function sessionMessages(sessionId) {
   return request({ url: `/agents/messages/${sessionId}` });
 }
 
-// 我在某「学习型」Agent（如英语陪练）的三维段位档案。
-// 非学习型 Agent 返回 { enabled: false }；学习型返回 { enabled, level, levelName, fluency, accuracy, expression, assessed, note }。
-function agentSkill(agentId) {
-  return request({ url: `/agents/skill/${agentId}` });
-}
-
 // 我在某「概念型」学习 Agent（如学心理/会说话）的点亮进度。
 // 非概念型返回 { enabled: false }；概念型返回 { enabled, total, lit, mastered, due,
 // tiers:[{tier, lit, total, concepts:[{slug, name, blurb, hook, note, level, theme}]}] }（note=本课战报）。
@@ -87,6 +81,6 @@ function listVisitors() {
 }
 
 module.exports = {
-  listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts,
+  listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentConcepts,
   chatAgent, learnStreak, learningSummary, knowledgeCards, remindLearn, pinAgent, unpinAgent, listVisitors,
 };

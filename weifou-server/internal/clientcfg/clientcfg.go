@@ -12,9 +12,22 @@ import (
 
 type Handler struct {
 	vpayReady bool // 虚拟支付是否已配置就绪（决定小程序端虚拟商品入口是否下发，未就绪则隐藏避免点了报错）
+	// 订阅消息模板 ID（服务端 .env 真源，随 /config/entries 下发给前端）：
+	// 前端不再硬编码模板 ID——公众平台申请到模板后填服务器 .env 重启即全链路生效，无需小程序发版。
+	subscribeTmpls SubscribeTmpls
 }
 
-func NewHandler(vpayReady bool) *Handler { return &Handler{vpayReady: vpayReady} }
+// SubscribeTmpls 各订阅消息模板 ID；空串=未配置（前端静默降级，不弹授权）。
+type SubscribeTmpls struct {
+	Answered    string `json:"answered"`    // 访客：你的提问已回答
+	NewQuestion string `json:"newQuestion"` // 主人：有人问了你的问答箱
+	Lead        string `json:"lead"`        // 主人：有新的访客线索
+	LearnRemind string `json:"learnRemind"` // 学员：学习提醒（明天叫你继续）
+}
+
+func NewHandler(vpayReady bool, tmpls SubscribeTmpls) *Handler {
+	return &Handler{vpayReady: vpayReady, subscribeTmpls: tmpls}
+}
 
 func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/config/entries", httpx.Handle(h.entries))
@@ -31,9 +44,10 @@ func (h *Handler) entries(c *gin.Context) error {
 		virtualVisible = h.vpayReady
 	}
 	httpx.OK(c, gin.H{
-		"virtualGoods": virtualVisible,
-		"agent":        virtualVisible,
-		"membership":   virtualVisible,
+		"virtualGoods":   virtualVisible,
+		"agent":          virtualVisible,
+		"membership":     virtualVisible,
+		"subscribeTmpls": h.subscribeTmpls,
 	})
 	return nil
 }

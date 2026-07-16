@@ -196,13 +196,9 @@ func (h *Handler) scriptedChat(c *gin.Context, a *models.ToolAgent, session *mod
 	resp := gin.H{"sessionId": session.ID, "answer": st.answer, "options": st.options, "member": member, "remaining": st.remaining}
 	days, newDay, usedFreeze := bumpStreak(h.db, auth.UserID)
 	resp["streak"] = gin.H{"days": days, "newDay": newDay, "freeze": usedFreeze}
-	// 技能型脚本课（如开口）：通关即一轮有效开口，三维段位确定性爬升（零 AI）。
-	if a.Assess {
-		sk := h.loadSkill(auth.UserID, a.ID)
-		if st.cleared {
-			resp["levelUp"] = h.bumpSkillScripted(sk, st.clearedNote)
-		}
-		resp["skill"] = skillView(sk)
+	// verdict：本轮作答的确定性对错（right/wrong/空=非作答轮），驱动前端舞台的肯定/安抚相位，不落库。
+	if st.verdict != "" {
+		resp["verdict"] = st.verdict
 	}
 	if st.progress != nil {
 		resp["concept"] = st.progress
@@ -223,11 +219,10 @@ type scriptTurn struct {
 	openid string // 产出节点的 LLM 判定语要过 msg_sec_check，与主聊天路径同一道闸
 	member bool
 
-	answer      string
-	options     []string
-	remaining   int    // 非会员本轮后剩余试读关数；-1 = 会员/未扣
-	cleared     bool   // 本轮是否通关点亮（Assess 课据此做确定性段位爬升）
-	clearedNote string // 通关关卡的战报（作段位 LastNote）
+	answer    string
+	options   []string
+	remaining int    // 非会员本轮后剩余试读关数；-1 = 会员/未扣
+	verdict   string // 本轮作答对错 "right"/"wrong"/""（非作答轮）；只驱动舞台肯定/安抚相位，不落库
 
 	progress                gin.H
 	newlyLit, newlyMastered []string
@@ -324,8 +319,10 @@ func (st *scriptTurn) onNode(session *models.AgentSession, content string) {
 	nd := lv.Nodes[session.ScriptNode]
 	if nd.Say != "" {
 		if matchSay(content, nd.Say) {
+			st.verdict = "right"
 			st.leaveNode(session, lv, slug, nd.SayOK, nd.SayNext)
 		} else {
+			st.verdict = "wrong"
 			st.answer = nd.SayFail + "\n\n🎙️ 再按住麦克风读一遍：\n" + nd.Say
 		}
 		return
@@ -345,10 +342,12 @@ func (st *scriptTurn) onNode(session *models.AgentSession, content string) {
 	}
 	opt := nd.Options[idx]
 	if opt.Next == NodeRetry {
+		st.verdict = "wrong"
 		st.answer = opt.Reply + "\n\n⏪ 时间倒回，这句重说："
 		st.options = nodeLabels(nd.Options)
 		return
 	}
+	st.verdict = "right"
 	st.leaveNode(session, lv, slug, opt.Reply, opt.Next)
 }
 
@@ -400,12 +399,14 @@ func (st *scriptTurn) onFreeNode(session *models.AgentSession, lv levelScript, s
 		if note != "" {
 			reply = "🎯 " + note
 		}
+		st.verdict = "right"
 		st.leaveNodeAt(session, lv, slug, reply, nd.FreeNext, 2)
 		return
 	}
 	if note == "" {
 		note = "差一口气——想想这句在三把尺子上塌了哪把：事办成了吗？关系稳住了吗？自己掉价没有？"
 	}
+	st.verdict = "wrong"
 	st.answer = note + "\n\n⏪ 时间倒回，换个说法再说一遍："
 	st.options = []string{optFreeSkip}
 }
@@ -435,10 +436,12 @@ func (st *scriptTurn) onCheck(session *models.AgentSession, content string) {
 		return
 	}
 	if idx != lv.Correct {
+		st.verdict = "wrong"
 		st.answer = lv.CheckOpts[idx].Reply
 		st.options = shuffledLabels(lv.CheckOpts)
 		return
 	}
+	st.verdict = "right"
 	st.clearLevel(session, slug, lv.CheckOpts[idx].Reply, 1)
 }
 
@@ -462,8 +465,6 @@ func (st *scriptTurn) clearLevel(session *models.AgentSession, slug, reply strin
 	} else {
 		st.options = []string{optMap, optReviewMore} // 全课终关：只剩回味与复习
 	}
-	st.cleared = true
-	st.clearedNote = lv.Note
 	session.ScriptStage = stageDone
 }
 
@@ -500,15 +501,23 @@ func (st *scriptTurn) review(session *models.AgentSession, content string, fresh
 			st.options = shuffledLabels(opts)
 			return nil
 		case idx != correct:
+			st.verdict = "wrong"
+			// 间隔重复：答错清档、次日重来（只缩日程，Level 不降）。
+			if c := st.concept(slug); c != nil {
+				st.h.reviewMark(st.userID, c.ID, st.a.Slug, false)
+			}
 			st.answer = opts[idx].Reply
 			st.options = shuffledLabels(opts)
 			return nil
 		}
+		st.verdict = "right"
 		c := st.concept(slug)
 		name := slug
 		if c != nil {
 			name = c.Name
 			st.light(c, 2, "") // 复习答对 → 已掌握；空 note 不覆盖旧战报
+			// 间隔重复：答对升档，间隔扩展（3→7→14→30→60天）。
+			st.h.reviewMark(st.userID, c.ID, st.a.Slug, true)
 		}
 		st.answer = opts[idx].Reply + "\n\n✅ 复习通过，「" + name + "」升到已掌握。"
 		st.options = []string{optReviewMore, optBackCourse}
@@ -659,7 +668,7 @@ func (st *scriptTurn) light(c *models.AgentConcept, target int, note string) {
 	} else if target >= 1 && old < 1 {
 		st.newlyLit = append(st.newlyLit, c.Name)
 	}
-	st.h.bumpConcept(st.userID, st.a.ID, c.ID, target, note)
+	st.h.bumpConcept(st.userID, st.a.ID, st.a.Slug, c.ID, target, note)
 	if target > old {
 		levels[c.ID] = target
 	}

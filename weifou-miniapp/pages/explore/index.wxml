@@ -18,6 +18,16 @@
 
   <block wx:else>
     <block wx:if="{{hasCourses}}">
+      <!-- 到期复习入口：记忆的窗口期比新课优先——有到期项时置顶提示，直达到期最多的那门课 -->
+      <view wx:if="{{reviewDue > 0 && reviewAgent}}" class="review-bar" bindtap="goReview" hover-class="card-press" hover-stay-time="0">
+        <view class="review-ic">🔁</view>
+        <view class="review-copy">
+          <view class="review-title">{{reviewDue}} 个概念到期待复习</view>
+          <view class="review-sub">趁没忘光，快问快答保住它们 · {{reviewAgent.subject || reviewAgent.name}}</view>
+        </view>
+        <view class="review-go">去复习</view>
+      </view>
+
       <view class="category-tabs">
         <view wx:for="{{categories}}" wx:key="key"
               class="category-tab {{selectedCategory === item.key ? 'active' : ''}}"

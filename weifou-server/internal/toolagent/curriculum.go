@@ -14,7 +14,6 @@
 package toolagent
 
 import (
-	"encoding/json"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,7 +22,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"weifou-server/internal/deepseek"
 	"weifou-server/internal/idgen"
 	"weifou-server/internal/models"
 )
@@ -2311,18 +2309,50 @@ func buildConceptPrompt(head string, list []seedConcept) string {
 	return b.String()
 }
 
-// ============================ 复习引擎（检索练习） ============================
+// ============================ 复习引擎（检索练习 + 间隔重复） ============================
 // 点亮≠记住：隔期抽查（retrieval practice）才是把概念钉进长期记忆的机制。
-// 到期窗口：已点亮(1) 3 天、已掌握(2) 7 天没再碰过 → 到期。
-// touches 每次命中都刷新 updated_at，所以「对话里又聊到」天然等于「复习过」。
+// 2026-07-16 升级为扩展式间隔（Anki 精神、比 SM-2 简化）：间隔档 3→7→14→30→60 天，
+// 复习答对升档、答错回到次日（ReviewCount 清零；Level 依旧只升不降——日程可以退，成就不退）。
+// 课内重玩/再命中同样算一次成功检索：按当前档重新起表（bumpConcept 内）。
+// 旧数据（ReviewDue 零值）按旧规则兜底：已点亮 3 天、已掌握 7 天未碰 → 到期。
+
+// reviewIntervals 复习间隔档（天）。ReviewCount 索引，越答越稀。
+var reviewIntervals = []int{3, 7, 14, 30, 60}
 
 const (
-	reviewDueLitDays      = 3
+	reviewDueLitDays      = 3 // 旧数据兜底窗口
 	reviewDueMasteredDays = 7
+	reviewFailDelayHours  = 24 // 复习答错：次日重来
 )
 
+// reviewIntervalDays 当前档的间隔天数。英语课首档 1 天（新场景次日先复习）。
+func reviewIntervalDays(slug string, count int) int {
+	if count <= 0 {
+		if slug == "spoken-english" {
+			return 1
+		}
+		return reviewIntervals[0]
+	}
+	if count >= len(reviewIntervals) {
+		return reviewIntervals[len(reviewIntervals)-1]
+	}
+	return reviewIntervals[count]
+}
+
+// dueBy 该档位是否到期：新数据看 ReviewDue，旧数据（零值）按 3/7 天兜底。
+func dueBy(uc *models.UserConcept, now time.Time, litDays, masteredDays int) bool {
+	if !uc.ReviewDue.IsZero() {
+		return !now.Before(uc.ReviewDue)
+	}
+	days := litDays
+	if uc.Level >= 2 {
+		days = masteredDays
+	}
+	return now.Sub(uc.UpdatedAt) >= time.Duration(days)*24*time.Hour
+}
+
 // reviewPick 挑该用户在该 Agent 下待复习的概念，最久未碰的在前。
-// onlyDue=true 只要过了到期窗口的；false 则不设窗口（用户主动要复习时，抽最生疏的也行）。
+// onlyDue=true 只要到期的；false 则不设窗口（用户主动要复习时，抽最生疏的也行）。
 // limit<=0 表示不限量（用于数徽章）。
 func reviewPick(db *gorm.DB, userID, agentID string, limit int, onlyDue bool) []models.AgentConcept {
 	var ucs []models.UserConcept
@@ -2335,18 +2365,12 @@ func reviewPick(db *gorm.DB, userID, agentID string, limit int, onlyDue bool) []
 	litDays, masteredDays := reviewDueLitDays, reviewDueMasteredDays
 	var agent models.ToolAgent
 	if db.Select("slug").First(&agent, "id = ?", agentID).Error == nil && agent.Slug == "spoken-english" {
-		litDays = 1 // 新场景次日先复习；掌握后每 7 天回访一次（7、14、21...）。
+		litDays = 1 // 兜底规则的英语特例（新数据由 reviewIntervalDays 管）。
 	}
 	var ids []string
 	for i := range ucs {
-		if onlyDue {
-			days := litDays
-			if ucs[i].Level >= 2 {
-				days = masteredDays
-			}
-			if now.Sub(ucs[i].UpdatedAt) < time.Duration(days)*24*time.Hour {
-				continue
-			}
+		if onlyDue && !dueBy(&ucs[i], now, litDays, masteredDays) {
+			continue
 		}
 		ids = append(ids, ucs[i].ConceptID)
 		if limit > 0 && len(ids) >= limit {
@@ -2374,71 +2398,6 @@ func reviewPick(db *gorm.DB, userID, agentID string, limit int, onlyDue bool) []
 // dueCount 到期待复习的概念数（首页催课条 / 对话页复习徽章共用）。
 func dueCount(db *gorm.DB, userID, agentID string) int {
 	return len(reviewPick(db, userID, agentID, 0, true))
-}
-
-// reviewDirective 复习挑战的编排指令（chat mode=review 时追加为 system 段）。
-// 优先抽到期的；没有到期就抽最生疏的已点亮概念——学员主动要复习不该被拒之门外。
-// 一个可复习的概念都没有（还没点亮过任何东西）时返回 ""。
-func (h *Handler) reviewDirective(userID, agentID string) string {
-	picked := reviewPick(h.db, userID, agentID, 3, true)
-	if len(picked) == 0 {
-		picked = reviewPick(h.db, userID, agentID, 3, false)
-	}
-	if len(picked) == 0 {
-		return ""
-	}
-	var b strings.Builder
-	b.WriteString("== 复习挑战（快问快答，仅你可见；本指令优先于上面的开场编排）==\n")
-	b.WriteString("学员点了「复习挑战」。本轮起只做快问快答复习，不开新概念：一次只出一题，等学员回答后先判定——答对就一句确认加一个小延伸，答错或含糊就一句话纠正讲透——再出下一题。全部问完后用一两句总结战果（哪些保住了、哪个建议重学），语气轻快，别拖长。\n待复习概念（按生疏程度排）：\n")
-	for i := range picked {
-		c := picked[i]
-		b.WriteString(strconv.Itoa(i+1) + ". " + c.Name + "（" + c.Blurb + "）")
-		if c.Check != "" {
-			b.WriteString(" 检验题：" + c.Check)
-		} else {
-			b.WriteString(" 检验题：你自拟一道应用/迁移型的题（换个生活场景让学员自己用，不考背定义）。")
-		}
-		b.WriteString("\n")
-	}
-	b.WriteString("== 复习挑战结束 ==")
-	return b.String()
-}
-
-// conceptDirective 「指定关卡」编排指令（学员从闯关地图点选某关进来时追加为 system 段）。
-// slug 不在课程表里返回 ""（容错：地图数据过期/参数被篡改都不该打断对话）。
-// conceptTier 返回某关(slug)所属的幕(Tier)，供「第一幕免费」门控用。
-// 空/未知 slug → 1：不拦自由练习（无 slug 的泛聊按第一幕放行），只锁地图上明确点进的更高幕关卡。
-func (h *Handler) conceptTier(agentID, slug string) int {
-	if slug == "" {
-		return 1
-	}
-	var c models.AgentConcept
-	if h.db.Select("tier").First(&c, "agent_id = ? AND slug = ?", agentID, slug).Error != nil || c.Tier <= 0 {
-		return 1
-	}
-	return c.Tier
-}
-
-func (h *Handler) conceptDirective(agentID, slug string) string {
-	var c models.AgentConcept
-	if h.db.First(&c, "agent_id = ? AND slug = ?", agentID, slug).Error != nil {
-		return ""
-	}
-	var b strings.Builder
-	b.WriteString("== 指定关卡（仅你可见；本指令优先于上面的开场编排）==\n")
-	b.WriteString("学员从闯关地图点选了『" + c.Name + "』（" + c.Blurb + "）。本轮直接以它开课：\n")
-	if c.Hook != "" {
-		b.WriteString("开场用这个精编钩子（可贴学员语境微调措辞）：" + c.Hook + "\n")
-	} else {
-		b.WriteString("开场你自拟一个具体到画面的场景任务（把学员直接丢进情境，不要问「想学什么」）。\n")
-	}
-	if c.Check != "" {
-		b.WriteString("讲透后用精编检验题检验：" + c.Check + "\n")
-	} else {
-		b.WriteString("讲透后你自拟一道应用/迁移型检验（换个场景让学员自己用），学员过了才算真点亮。\n")
-	}
-	b.WriteString("通关后问一句：回地图挑下一关，还是顺路继续？\n== 指定关卡结束 ==")
-	return b.String()
 }
 
 // ============================ 点亮引擎 ============================
@@ -2620,302 +2579,16 @@ func tierClearedSet(concepts []models.AgentConcept, levels map[string]int) map[i
 	return res
 }
 
-type conceptAssessResult struct {
-	Touched  []string `json:"touched"`
-	Mastered []string `json:"mastered"`
-	Note     string   `json:"note"`
-	Verdict  string   `json:"verdict"` // right/wrong/空：本轮学员判断对错（仅判断型课的判定器产出，驱动舞台动作层）
-}
-
-// assessOutcome 汇总一轮判定的对外结果（字段多，用结构体而非多返回值）。
-type assessOutcome struct {
-	View          gin.H
-	NewlyLit      []string
-	NewlyMastered []string
-	TierCleared   []string
-	// Verdict：本轮学员答得对不对——"right"/"wrong"/""(非答题轮或不适用)。
-	// 与点亮解耦：答对未必点亮（还差迁移/检验），点亮必然答对。舞台据此演戏，不落库。
-	Verdict string
-}
-
-// 判定器可产出的 verdict 取值；模型给别的一律当中性丢弃（防臆造驱动错误动画）。
-func normalizeVerdict(v string) string {
-	switch strings.ToLower(strings.TrimSpace(v)) {
-	case "right":
-		return "right"
-	case "wrong":
-		return "wrong"
-	}
-	return ""
-}
-
-// verdictRule：判断型课程（心理/逻辑/营销/会用AI/会说话）判定器共用的 verdict 规则段。
-// 英语（真开口，无对错）与道德经（落地体悟，无对错）不注入——它们的舞台也不演战斗。
-const verdictRule = `
-另外判定本轮学员**答得对不对**（与点亮无关：答对未必够点亮，点亮必然答对）：
-- verdict="right"：学员本轮做出了判断/给出了作答，且方向正确（导师予以肯定、确认、顺势推进）。
-- verdict="wrong"：学员本轮做出了判断/给出了作答，但明确错了（导师纠正、指出问题、反驳、说「不对/其实」）。
-- verdict=""：本轮不是作答——导师在讲解/开场/抛问题，或学员只回「好/懂了/继续」这类无实质内容的话。拿不准就给 ""。`
-
-const conceptAssessPrompt = `你是「概念掌握判定器」。下面给你一份某学习领域的核心概念清单（每行格式 slug|概念名），以及用户与导师的一轮对话。判断这一轮里用户对清单中哪些概念有了**实质参与**，以及是否**展现出真正的理解**。
-规则：
-- touched（=点亮）：用户**实质参与过**的概念——用户自己尝试解释过、举过例、回答了导师围绕它的提问、或把它对应到了自己的事上。导师单方面讲到而用户没有任何回应的，**不算** touched。只放清单里确实存在的 slug，没有就给空数组。
-- mastered（=掌握）：用户答对了检验并能自己迁移应用（独立解释/举出贴切新例）的概念 slug（必须也在 touched 里）。把握不准就别放。
-- 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。` + verdictRule + `
-只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>","verdict":"right|wrong|"}`
-
-// englishAssessPrompt：LLM 兜底路径的场景反应判定语义；主课程由确定性脚本直接判定。
-const englishAssessPrompt = `你是「英语场景反应判定器」。下面给你一份英语场景关卡清单，以及学员与教练的一轮对话。判断学员在哪些场景完成了核心表达判断，以及是否达到迁移水平。
-规则：
-- touched（=点亮）：学员完成了该场景的核心英文表达判断或任务回应。
-- mastered（=掌握）：学员在换语料、换信息或突发状况中仍能迁移同一沟通策略（必须也在 touched 里）。
-- 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。
-只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>"}`
-
-// aiAssessPrompt：会用AI 的判定语义——「概念」是实操任务关，点亮的标准是真动手。
-const aiAssessPrompt = `你是「AI 使用实操判定器」。下面给你一份「会用AI」课程的任务关卡清单（每行格式 slug|关卡名），以及学员与教练的一轮对话。判断这一轮里学员在清单中哪些关卡上**真的动了手**，以及是否**达到掌握水平**。
-规则：
-- touched（=点亮）：学员本轮提交了该关的核心动作——给出了一条给 AI 的指令、改写了一版、或对 AI 的说法做出核验判断（**点选教练给的示范指令，或自己写，都算**）。只听教练讲、或只回「懂了/好的」的，**不算**。只放清单里确实存在的 slug，没有就给空数组。
-- mastered（=掌握）：学员的产出质量过硬（指令包含目标/背景/格式等关键要素，或核验判断准确有依据），且在教练追加变体任务时仍能接住（必须也在 touched 里）。把握不准就别放。
-- 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。` + verdictRule + `
-只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>","verdict":"right|wrong|"}`
-
-// speakingAssessPrompt：会说话的判定语义——「概念」是对手戏情境关，点亮的标准是说出自己的原话。
-const speakingAssessPrompt = `你是「沟通实战判定器」。下面给你一份「会说话」课程的情境关卡清单（每行格式 slug|关卡名），以及学员与教练的一轮对话。判断这一轮里学员在清单中哪些关卡上**真的开口了**，以及是否**达到掌握水平**。
-规则：
-- touched（=点亮）：学员本轮给出了该情境下的具体台词，并基本完成该关核心任务（拒了/要了/道了歉/敬了酒）（**点选教练给的示范台词，或自己说，都算**）。只描述策略（如「我会委婉拒绝」）、或只回「懂了/好的」的，**不算**。只放清单里确实存在的 slug，没有就给空数组。
-- mastered（=掌握）：学员的原话同时守住「事办成 + 关系稳住 + 自己不掉价（不卑不亢：没跪着求，也没炸了场）」三个目标，且在教练抛出加压变体（对方纠缠/发火/道德绑架）时仍能用自己的话接住（必须也在 touched 里）。把握不准就别放。
-- 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。` + verdictRule + `
-只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>","verdict":"right|wrong|"}`
-
-// daodejingAssessPrompt：道德经的判定语义——「概念」是一章一坎，点亮的标准是把这章思想落到自己的真实处境上（防玄谈）。
-const daodejingAssessPrompt = `你是「道德经应用判定器」。下面给你一份「道德经」课程的关卡清单（每行格式 slug|关卡名，每关对应一章的一个核心思想），以及学员与向导的一轮对话。判断这一轮里学员在清单中哪些关卡上**真的把这一章的思想用到了自己的实际处境**，以及是否**达到掌握水平**。
-规则：
-- touched（=点亮）：学员本轮**结合自己的真实处境**，用这一章的思想做了一次具体的分析或判断——把道理落到了一件具体的事上（自己的纠结/选择/关系/习惯）。只放清单里确实存在的 slug，没有就给空数组。
-- 特别警惕「玄谈陷阱」：只是复述原文、只顺着说了几句「无为」「不争」「顺其自然」这类漂亮话、或只回「说得好有道理」，却没落到具体的事上，**一律不算** touched。
-- mastered（=掌握）：学员不仅用上了，还能迁移——举出贴切的新例子，或在向导追问变体时仍能用这一章的思想接住（必须也在 touched 里）。把握不准就别放。
-- 宁缺毋滥：完全没对上就都空。绝不臆造清单外的 slug。
-只输出 JSON：{"touched":["slug"],"mastered":[],"note":"<中文一句、20字内、可空>"}`
-
-// conceptAssessPrompts：按 agent slug 覆盖判定 prompt；未列出的走默认 conceptAssessPrompt。
-var conceptAssessPrompts = map[string]string{
-	"spoken-english": englishAssessPrompt,
-	"learn-ai":       aiAssessPrompt,
-	"learn-speaking": speakingAssessPrompt,
-	"daodejing-full": daodejingAssessPrompt,
-}
-
-// assessConcepts 对本轮一问一答判定点亮/掌握，按「只升不降」更新 user_concepts。
-// 判定 prompt 按 agent slug 分派（英语=真开口语义，其余=概念理解语义）。
-// 失败时返回当前进度、无新增、verdict 空（不拖累主对话，舞台安静）。
-func (h *Handler) assessConcepts(a *models.ToolAgent, userID, userMsg, assistantMsg string) *assessOutcome {
-	agentID := a.ID
-	concepts := h.conceptList(agentID)
-	if len(concepts) == 0 {
-		return nil
-	}
-	bySlug := make(map[string]*models.AgentConcept, len(concepts))
-	var lines strings.Builder
-	for i := range concepts {
-		c := &concepts[i]
-		bySlug[c.Slug] = c
-		lines.WriteString(c.Slug)
-		lines.WriteString("|")
-		lines.WriteString(c.Name)
-		lines.WriteString("\n")
-	}
-	levels, notes := h.userConceptLevels(userID, agentID)
-
-	assessPrompt := conceptAssessPrompt
-	if p, ok := conceptAssessPrompts[a.Slug]; ok {
-		assessPrompt = p
-	}
-	userContent := "概念清单：\n" + lines.String() + "\n本轮对话：\n用户：" + userMsg + "\n导师：" + assistantMsg
-	raw, err := h.ds.Chat(
-		[]deepseek.Message{
-			{Role: "system", Content: assessPrompt},
-			{Role: "user", Content: userContent},
-		},
-		deepseek.ChatOptions{Temperature: 0, MaxTokens: 200, ResponseFormat: "json_object"},
-	)
-	if err != nil {
-		return &assessOutcome{View: conceptProgressView(a.Slug, concepts, levels, notes)}
-	}
-	var r conceptAssessResult
-	if jerr := json.Unmarshal([]byte(strings.TrimSpace(raw)), &r); jerr != nil {
-		return &assessOutcome{View: conceptProgressView(a.Slug, concepts, levels, notes)}
-	}
-
-	preCleared := tierClearedSet(concepts, levels) // 更新前已打通的档
-
-	mastery := make(map[string]bool, len(r.Mastered))
-	for _, s := range r.Mastered {
-		mastery[s] = true
-	}
-	touched := make(map[string]bool, len(r.Touched)+len(r.Mastered))
-	for _, s := range r.Touched {
-		touched[s] = true
-	}
-	for s := range mastery {
-		touched[s] = true // mastered 必含于 touched
-	}
-
-	// 第一遍：解析有效命中，算档位变化（战报要写给谁取决于全局：先看完再写）。
-	type hit struct {
-		c      *models.AgentConcept
-		target int
-		up     bool
-	}
-	var hits []hit
-	upCount := 0
-	var newlyLit, newlyMastered []string
-	for slug := range touched {
-		c := bySlug[slug]
-		if c == nil {
-			continue // 模型臆造的清单外 slug，丢弃
-		}
-		target := 1
-		if mastery[slug] {
-			target = 2
-		}
-		old := levels[c.ID]
-		if target >= 2 && old < 2 {
-			newlyMastered = append(newlyMastered, c.Name)
-		} else if target >= 1 && old < 1 {
-			newlyLit = append(newlyLit, c.Name)
-		}
-		up := target > old
-		if up {
-			upCount++
-		}
-		hits = append(hits, hit{c: c, target: target, up: up})
-	}
-	// 战报归属：判定器的 note 是轮级的一句话——写给本轮升档的概念；无升档且只命中一个则写它；
-	// 多命中无升档不写（同一句话盖到多行反而失真）。空轮永不覆盖旧战报（bumpConcept 内守护）。
-	roundNote := clipText(strings.TrimSpace(r.Note), 80)
-	for _, ht := range hits {
-		note := ""
-		if roundNote != "" && (ht.up || (upCount == 0 && len(hits) == 1)) {
-			note = roundNote
-			notes[ht.c.ID] = roundNote // 返回视图即时新鲜
-		}
-		h.bumpConcept(userID, agentID, ht.c.ID, ht.target, note) // 命中即 +touches；档位只升不降
-		if ht.target > levels[ht.c.ID] {
-			levels[ht.c.ID] = ht.target
-		}
-	}
-
-	// 本轮新打通的档（入门/进阶）。
-	tLabels, tOrder := tiersFor(a.Slug)
-	postCleared := tierClearedSet(concepts, levels)
-	var tierCleared []string
-	for _, t := range tOrder {
-		if postCleared[t] && !preCleared[t] {
-			tierCleared = append(tierCleared, tLabels[t])
-		}
-	}
-
-	view := conceptProgressView(a.Slug, concepts, levels, notes)
-	if roundNote != "" {
-		view["note"] = roundNote
-	}
-	return &assessOutcome{
-		View:          view,
-		NewlyLit:      newlyLit,
-		NewlyMastered: newlyMastered,
-		TierCleared:   tierCleared,
-		Verdict:       normalizeVerdict(r.Verdict),
-	}
-}
-
-// conceptStateBrief 拼「学员进度」system 注入段（L1 主动教学的燃料）：分档进度、最近点亮、
-// 建议下一个概念（按课程表顺序取第一个未点亮，天然入门优先）+ 本轮编排指令。
-// fresh=true 表示新会话（要做开场编排：接续 + 场景钩子开课）。只给模型看，绝不直接展示给用户。
-func (h *Handler) conceptStateBrief(userID string, a *models.ToolAgent, fresh bool) string {
-	agentID := a.ID
-	concepts := h.conceptList(agentID)
-	if len(concepts) == 0 {
-		return ""
-	}
-	levels, _ := h.userConceptLevels(userID, agentID)
-
-	litByTier, totByTier := map[int]int{}, map[int]int{}
-	lit, mastered := 0, 0
-	byID := make(map[string]*models.AgentConcept, len(concepts))
-	var next *models.AgentConcept
-	for i := range concepts {
-		c := &concepts[i]
-		byID[c.ID] = c
-		totByTier[c.Tier]++
-		if levels[c.ID] >= 1 {
-			lit++
-			litByTier[c.Tier]++
-		} else if next == nil {
-			next = c
-		}
-		if levels[c.ID] >= 2 {
-			mastered++
-		}
-	}
-
-	// 最近点亮的 2 个（按更新时间），用于「接续」
-	var recent []models.UserConcept
-	h.db.Where("user_id = ? AND agent_id = ? AND level >= 1", userID, agentID).
-		Order("updated_at desc").Limit(2).Find(&recent)
-	var recentNames []string
-	for i := range recent {
-		if c := byID[recent[i].ConceptID]; c != nil {
-			recentNames = append(recentNames, c.Name)
-		}
-	}
-
-	tLabels, tOrder := tiersFor(a.Slug)
-	var b strings.Builder
-	b.WriteString("== 学员进度（仅你可见，据此编排本轮；绝不把这段原样复述给学员）==\n进度：")
-	for _, t := range tOrder {
-		if totByTier[t] == 0 {
-			continue
-		}
-		b.WriteString(tLabels[t] + " " + strconv.Itoa(litByTier[t]) + "/" + strconv.Itoa(totByTier[t]) + "　")
-	}
-	b.WriteString("已点亮；已掌握 " + strconv.Itoa(mastered) + " 个。\n")
-	if len(recentNames) > 0 {
-		b.WriteString("最近点亮：" + strings.Join(recentNames, "、") + "。\n")
-	}
-	if next != nil {
-		b.WriteString("建议下一个概念：" + next.Name + "（" + next.Theme + "｜" + next.Blurb + "）。\n")
-		if next.Hook != "" {
-			b.WriteString("　开课钩子（精编，用它开场，可贴学员语境微调措辞）：" + next.Hook + "\n")
-		}
-		if next.Check != "" {
-			b.WriteString("　检验题（精编，讲透后用它检验，学员答上来才算真点亮）：" + next.Check + "\n")
-		}
-	} else {
-		b.WriteString("整张地图已点亮：转入复习深化，挑「已点亮未掌握」的概念出检验，往掌握推。\n")
-	}
-	if n := dueCount(h.db, userID, agentID); n > 0 {
-		b.WriteString("待复习：有 " + strconv.Itoa(n) + " 个已点亮的概念好几天没碰了。若学员没带自己的问题来，可先提议花一分钟快问快答热个身，再开新课。\n")
-	}
-	if fresh {
-		if lit == 0 {
-			b.WriteString("编排：这是学员的第一课。欢迎一句后，直接用「建议下一个概念」的生活场景钩子问题开课，不要问「想学什么」这类开放题。")
-		} else {
-			b.WriteString("编排：新的一节课。先用一句话接续进度（如「上次我们点亮了 X」），再用「建议下一个概念」的场景钩子问题开课。")
-		}
-		b.WriteString("若学员带着自己的问题来，先跟着 TA 的问题走，把相关概念顺势教透。\n")
-	}
-	b.WriteString("== 进度结束 ==")
-	return b.String()
-}
-
 // bumpConcept 命中某概念：touches+1，档位 level 只升不降（upsert）。
 // note 非空时写入战报（latest-wins）；空 note 不覆盖旧战报。
-func (h *Handler) bumpConcept(userID, agentID, conceptID string, level int, note string) {
+func (h *Handler) bumpConcept(userID, agentID, slug, conceptID string, level int, note string) {
+	now := time.Now()
 	var uc models.UserConcept
 	if err := h.db.First(&uc, "user_id = ? AND concept_id = ?", userID, conceptID).Error; err == gorm.ErrRecordNotFound {
 		uc = models.UserConcept{
 			ID: idgen.New(), UserID: userID, AgentID: agentID, ConceptID: conceptID,
 			Level: level, Touches: 1, Note: note,
+			ReviewDue: now.Add(time.Duration(reviewIntervalDays(slug, 0)) * 24 * time.Hour),
 		}
 		if cerr := h.db.Create(&uc).Error; cerr == nil {
 			return
@@ -2929,7 +2602,28 @@ func (h *Handler) bumpConcept(userID, agentID, conceptID string, level int, note
 	if note != "" {
 		updates["note"] = note
 	}
+	// 课内再命中（重玩/顺路聊到）= 一次成功检索：按当前间隔档重新起表，不升档。
+	updates["review_due"] = now.Add(time.Duration(reviewIntervalDays(slug, uc.ReviewCount)) * 24 * time.Hour)
 	h.db.Model(&uc).Updates(updates)
+}
+
+// reviewMark 复习挑战的调度回写：答对升档（间隔翻倍扩展），答错清档、次日重来。
+// 只动日程（ReviewCount/ReviewDue），不动 Level——「只升不降」的成就纪律不被复习打破。
+func (h *Handler) reviewMark(userID, conceptID, slug string, success bool) {
+	var uc models.UserConcept
+	if h.db.First(&uc, "user_id = ? AND concept_id = ?", userID, conceptID).Error != nil {
+		return
+	}
+	now := time.Now()
+	count := 0
+	if success {
+		count = uc.ReviewCount + 1
+	}
+	due := now.Add(time.Duration(reviewIntervalDays(slug, count)) * 24 * time.Hour)
+	if !success {
+		due = now.Add(reviewFailDelayHours * time.Hour)
+	}
+	h.db.Model(&uc).Updates(map[string]interface{}{"review_count": count, "review_due": due})
 }
 
 // ============================ 首页催课条（L2 再入口主动） ============================
@@ -2989,21 +2683,6 @@ func NudgeLine(db *gorm.DB, a *models.ToolAgent, userID string) (string, bool) {
 			return prefix + "整张地图已点亮 · 还剩 " + strconv.Itoa(len(concepts)-mastered) + " 个概念待「掌握」", true
 		}
 		return "整张地图已通关 🎉 随时来聊聊新的困惑", true
-	}
-	if a.Assess {
-		var sk models.AgentSkill
-		if db.First(&sk, "user_id = ? AND agent_id = ?", userID, a.ID).Error != nil || sk.Assessed == 0 {
-			return "", false // 未定级：tagline 已是邀请
-		}
-		level := levelFromDims(sk.Fluency, sk.Accuracy, sk.Expression)
-		weak, min := "流利", sk.Fluency
-		if sk.Accuracy < min {
-			weak, min = "准确", sk.Accuracy
-		}
-		if sk.Expression < min {
-			weak = "表达"
-		}
-		return prefix + "Lv." + strconv.Itoa(level) + " " + tierName(level) + " · 弱项「" + weak + "」，今天练两句？", true
 	}
 	return "", false
 }
