@@ -43,6 +43,7 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))            // :id = sessionId → 该会话消息
 	rg.GET("/agents/skill/:id", auth, httpx.Handle(h.skill))                  // :id = agentId → 我在该学习型 Agent 的三维段位
 	rg.GET("/agents/concepts/:id", auth, httpx.Handle(h.concepts))            // :id = agentId → 我在该概念型 Agent 的点亮进度
+	rg.GET("/agents/knowledge-cards", auth, httpx.Handle(h.knowledgeCards))   // 我的→我的卡片：跨全部课程的章末知识卡片
 	rg.GET("/agents/streak", auth, httpx.Handle(h.streakInfo))                // 连续学习天数（全局一条）
 	rg.GET("/agents/learning-summary", auth, httpx.Handle(h.learningSummary)) // 我的页：最近课程 + 全局成长摘要
 	rg.POST("/agents/:id/chat", auth, httpx.Handle(h.chat))
@@ -323,6 +324,13 @@ func (h *Handler) concepts(c *gin.Context) error {
 	out["freeTier"] = a.FreeTier                   // 免费幕阈值（learn-map 据此对 Tier>FreeTier 的关标会员锁）
 	out["isMember"] = membership.IsActive(h.db, auth.UserID)
 	httpx.OK(c, out)
+	return nil
+}
+
+// knowledgeCards 返回我跨全部课程收集到的章末知识卡片（我的→我的卡片页）。
+func (h *Handler) knowledgeCards(c *gin.Context) error {
+	auth := middleware.Current(c)
+	httpx.OK(c, h.loadKnowledgeCards(auth.UserID))
 	return nil
 }
 

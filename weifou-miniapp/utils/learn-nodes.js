@@ -58,6 +58,8 @@ function buildNodes(cp) {
         blurb: c.blurb,
         hook: c.hook || '',
         note: c.note || '',
+        takeaway: c.takeaway || '',
+        source: c.source || '',
         state,
         emoji,
         icon: ICON_BASE + STATE_ICONS[state] + '.webp',

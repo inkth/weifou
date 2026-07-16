@@ -232,6 +232,23 @@ page { background: var(--bg); height: 100%; }
 @keyframes sparkBounce { 0% { transform: scale(0.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @keyframes namePop { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
+/* 章末知识卡片：Boss 关通关专属，卡面样式沿用 celeb-card 但不自动消失、多两个操作按钮 */
+.cc-mask { position: fixed; inset: 0; z-index: 61; display: flex; align-items: center; justify-content: center; background: var(--glass-light); animation: celebFade 0.25s ease; padding: 0 48rpx; }
+.cc-card { position: relative; width: 100%; background: var(--surface); border-radius: var(--r-2xl); padding: 48rpx 44rpx; text-align: center; box-shadow: var(--shadow-pop); animation: celebPop 0.42s var(--ease-spring); }
+.cc-badge { display: inline-block; font-size: 24rpx; font-weight: 800; color: var(--accent-ink); padding: 6rpx 20rpx; background: var(--accent-soft); border-radius: var(--r-full); }
+.cc-takeaway { margin-top: 24rpx; font-size: 34rpx; font-weight: 700; color: var(--ink); line-height: 1.6; }
+.cc-source { margin-top: 12rpx; font-size: 24rpx; color: var(--sub); }
+.cc-actions { display: flex; gap: 16rpx; margin-top: 40rpx; }
+.cc-btn {
+  flex: 1; font-size: 28rpx; font-weight: 700; line-height: 1;
+  padding: 22rpx 0; border-radius: var(--r-full);
+  background: var(--fill); color: var(--ink-2);
+  border: none; margin: 0;
+}
+.cc-btn::after { border: none; }
+.cc-btn-primary { background: var(--accent); color: #fff; }
+.cc-btn-primary:active { background: var(--accent-strong); }
+
 /* 彩带：12 枚糖纸小方块，错峰下落一次（与 2.4s 自动收起节拍吻合） */
 .confetti { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .cf { position: absolute; top: 0; width: 14rpx; height: 22rpx; border-radius: 4rpx; animation: cfFall 1.6s ease-in both; }

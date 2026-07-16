@@ -269,6 +269,21 @@ Page({
     }, 2400);
   },
 
+  // 章末知识卡片：Boss 关通关专属，不自动消失——用户主动点掉或分享。
+  _showChapterCard(node) {
+    this._stopMentorIdle(true);
+    wx.vibrateShort && wx.vibrateShort({ type: 'medium' });
+    this.setData({
+      chapterCard: {
+        name: node.name, takeaway: node.takeaway, source: node.source,
+        accent: this.data.accent,
+      },
+    });
+  },
+  onCloseChapterCard() {
+    this.setData({ chapterCard: null }, () => this._startMentorIdle(true));
+  },
+
   // 概念进度装饰：挑出「当前正在攻的档」(第一个未点满的档，都满则最后一档) 给头部进度条用。
   _concept(cp) {
     const tiers = cp.tiers || [];
@@ -571,7 +586,12 @@ Page({
           this._celebrate({ up: '完成阶段', name: `${cleared[0]}篇`, sub: `你已完成「${cleared[0]}」，继续下一阶段` });
         } else if (mastered.length) {
           milestone = true;
-          this._celebrate({ up: '已掌握', name: mastered[0], sub: mastered.length > 1 ? `${mastered.length} 个概念你已经能说清楚` : '你已经能自己说清楚了' });
+          const bossNode = (this._roadNodes || []).find((x) => x.name === mastered[0]);
+          if (bossNode && bossNode.boss && bossNode.takeaway) {
+            this._showChapterCard(bossNode);
+          } else {
+            this._celebrate({ up: '已掌握', name: mastered[0], sub: mastered.length > 1 ? `${mastered.length} 个概念你已经能说清楚` : '你已经能自己说清楚了' });
+          }
         }
         // 横版路增量点亮 + 角色前进（只 patch 变化的节点，不整表重建，防闪 & 省 setData 体积）
         if (this._roadNodes && this._roadNodes.length) {
@@ -1160,5 +1180,17 @@ Page({
   _scrollEnd() {
     const n = this.data.messages.length;
     if (n > 0) this.setData({ scrollTo: 'm' + (n - 1) });
+  },
+
+  // 章末知识卡片「分享这张卡」：文字转发，不生成海报图（海报长图是另一个待做项目）。
+  onShareAppMessage() {
+    const cc = this.data.chapterCard;
+    if (cc) {
+      return {
+        title: `${cc.takeaway}（${cc.source}）`,
+        path: `/pages/agent-chat/index?id=${this.data.id}`,
+      };
+    }
+    return { title: this.data.name || '来看看这个 AI 分身', path: `/pages/agent-chat/index?id=${this.data.id}` };
   },
 });

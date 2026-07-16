@@ -61,6 +61,13 @@ function learningSummary() {
   return request({ url: '/agents/learning-summary' });
 }
 
+// 我跨全部课程收集到的章末知识卡片（我的→我的卡片页）。
+// 返回 { totalCards, unlockedCount, courses:[{agentSlug, name, icon, accent, unlocked, total,
+// cards:[{slug, name, tier, tierLabel, unlocked, takeaway, source}]}] }（未解锁卡片 takeaway/source 为空）。
+function knowledgeCards() {
+  return request({ url: '/agents/knowledge-cards' });
+}
+
 // 学习提醒承诺：订阅消息授权成功后落账，服务端明天这个点发一条提醒。
 function remindLearn(agentId) {
   return request({ url: `/agents/${agentId}/remind`, method: 'POST', data: {} });
@@ -81,5 +88,5 @@ function listVisitors() {
 
 module.exports = {
   listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentSkill, agentConcepts,
-  chatAgent, learnStreak, learningSummary, remindLearn, pinAgent, unpinAgent, listVisitors,
+  chatAgent, learnStreak, learningSummary, knowledgeCards, remindLearn, pinAgent, unpinAgent, listVisitors,
 };

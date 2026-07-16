@@ -239,6 +239,19 @@
     </view>
   </view>
 
+  <!-- 章末知识卡片：Boss 关通关专属，不自动消失——需主动「留在本子里」或「分享」 -->
+  <view wx:if="{{chapterCard}}" class="cc-mask">
+    <view class="cc-card" style="--accent: {{chapterCard.accent}};">
+      <view class="cc-badge">👑 本章通关 · {{chapterCard.name}}</view>
+      <view class="cc-takeaway">{{chapterCard.takeaway}}</view>
+      <view class="cc-source">—— {{chapterCard.source}}</view>
+      <view class="cc-actions">
+        <view class="cc-btn" bindtap="onCloseChapterCard">留在本子里</view>
+        <button class="cc-btn cc-btn-primary" open-type="share">分享这张卡</button>
+      </view>
+    </view>
+  </view>
+
   <!-- 关卡卡片抽屉：点横版节点弹出（软锁也能预览），CTA 同页开课 -->
   <view class="drawer-mask" wx:if="{{card}}" bindtap="closeCard">
     <view class="lc-drawer" catchtap="noop" style="--accent: {{accent}};">

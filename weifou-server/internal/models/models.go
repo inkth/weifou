@@ -223,9 +223,9 @@ const (
 	OrderAgent      = "agent"      // 旧：单 Agent 次卡（已被会员制取代，保留兼容）
 	OrderMembership = "membership" // 会员：一价解锁全部工具 Agent（虚拟商品，平台自营、不分账）
 
-	OrderPending   = "pending"
-	OrderPaid      = "paid"
-	OrderClosed    = "closed"
+	OrderPending = "pending"
+	OrderPaid    = "paid"
+	OrderClosed  = "closed"
 )
 
 type Order struct {
@@ -401,16 +401,18 @@ func (AgentSkill) TableName() string { return "agent_skills" }
 // AgentConcept 某「概念型」学习 Agent（Concept=true）的课程表：该领域的核心概念清单（平台 seed，按 agent_id+slug 幂等）。
 // 与 AgentSkill 的三维段位是两套互补的进度机制：技能型走三维分数，概念型走「点亮 X/100」。
 type AgentConcept struct {
-	ID      string `gorm:"primaryKey;size:32" json:"id"`
-	AgentID string `gorm:"size:32;uniqueIndex:idx_concept_agent_slug" json:"agentId"` // FK ToolAgent
-	Slug    string `gorm:"size:64;uniqueIndex:idx_concept_agent_slug" json:"slug"`    // Agent 内稳定 id，如 "anchoring"
-	Theme   string `gorm:"size:48;index" json:"theme"`                                // 主题分组，如 "认知偏误"
-	Tier    int    `gorm:"default:1" json:"tier"`                                     // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
-	Name    string `gorm:"size:64" json:"name"`                                       // 概念名，如 "锚定效应"
-	Blurb   string `gorm:"size:255" json:"blurb"`                                     // 一句话点题（前端展示 + 给打点 LLM 锚定）
-	Hook    string `gorm:"type:text" json:"-"`                                        // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟。text：帛书课含整章原文，远超 255
-	Check   string `gorm:"type:text" json:"-"`                                        // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
-	Sort    int    `gorm:"default:0" json:"sort"`
+	ID       string `gorm:"primaryKey;size:32" json:"id"`
+	AgentID  string `gorm:"size:32;uniqueIndex:idx_concept_agent_slug" json:"agentId"` // FK ToolAgent
+	Slug     string `gorm:"size:64;uniqueIndex:idx_concept_agent_slug" json:"slug"`    // Agent 内稳定 id，如 "anchoring"
+	Theme    string `gorm:"size:48;index" json:"theme"`                                // 主题分组，如 "认知偏误"
+	Tier     int    `gorm:"default:1" json:"tier"`                                     // 分档：1 入门 / 2 进阶（成就感按档给，避免大分母劝退）
+	Name     string `gorm:"size:64" json:"name"`                                       // 概念名，如 "锚定效应"
+	Blurb    string `gorm:"size:255" json:"blurb"`                                     // 一句话点题（前端展示 + 给打点 LLM 锚定）
+	Hook     string `gorm:"type:text" json:"-"`                                        // 人工精编：开课钩子（生活场景问题，导师用它开场）；空=未精编，模型自拟。text：帛书课含整章原文，远超 255
+	Check    string `gorm:"type:text" json:"-"`                                        // 人工精编：检验题（应用/迁移型，讲透后用它检验；复习挑战也用它）
+	Takeaway string `gorm:"type:text" json:"-"`                                        // 策展知识卡片一句话结论：仅章末 Boss 关非空，通关时弹卡展示
+	Source   string `gorm:"size:64" json:"-"`                                          // 知识卡引用来源短标注，如 "Gottman 情绪实验室"
+	Sort     int    `gorm:"default:0" json:"sort"`
 }
 
 func (AgentConcept) TableName() string { return "agent_concepts" }
@@ -518,8 +520,8 @@ type ReferralBinding struct {
 func (ReferralBinding) TableName() string { return "referral_bindings" }
 
 const (
-	ReferralRewardPending   = "pending" // 推荐人奖励等待观察期结束
-	ReferralRewardGranted   = "granted" // 已发放
+	ReferralRewardPending = "pending" // 推荐人奖励等待观察期结束
+	ReferralRewardGranted = "granted" // 已发放
 )
 
 // ReferralReward 一笔成功邀请的奖励账目（每个被邀人一生只产生一条）。

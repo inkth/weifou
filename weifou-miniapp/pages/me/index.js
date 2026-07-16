@@ -88,6 +88,8 @@ Page({
   goSkills() { wx.switchTab({ url: '/pages/explore/index' }); },
   goCardEditor() { wx.navigateTo({ url: '/pages/card-editor/index' }); },
   goMembership() { wx.navigateTo({ url: '/pages/membership/index' }); },
+  // 我的卡片：跨全部课程收集到的章末知识卡片
+  goKnowledgeCards() { wx.navigateTo({ url: '/pages/knowledge-cards/index' }); },
   // 名片夹：我交换过名片的人（点开直接问对方分身）
   goConnections() { wx.navigateTo({ url: '/pages/connections/index' }); },
   goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },

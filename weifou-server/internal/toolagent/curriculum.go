@@ -15,6 +15,7 @@ package toolagent
 
 import (
 	"encoding/json"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -126,6 +127,11 @@ var curricula = map[string][]seedConcept{
 // hookCheck 人工精编内容（开课钩子 + 检验题）。与 seedConcept 分开存，SeedConcepts 时按 slug 合并写入。
 type hookCheck struct{ Hook, Check string }
 
+// bossCard 章末知识卡片：一句策展结论 + 引用来源。只给「综合关/Boss关」配（章的收尾），
+// 按 concept slug 直接键入（不分课程），SeedConcepts 里零值安全地按 slug 查表写入。
+// learn-marketing 50 关平铺无章节边界，本课不参与，通关沿用通用庆祝浮层。
+type bossCard struct{ Takeaway, Source string }
+
 // curatedContent：agent slug → concept slug → 精编内容。六门课全部精编。
 // 这是这条产品线的护城河：钩子制造好奇缺口、检验题考迁移应用——不是模型现编能稳定给出的品质。
 var curatedContent = map[string]map[string]hookCheck{
@@ -147,6 +153,9 @@ var curatedContent = map[string]map[string]hookCheck{
 	"learn-meditation":  meditationContent,
 	"daodejing-full":    daodejingFullContent,
 }
+
+// bossCardContent 定义见 boss_cards.go（章末 Boss 关 slug → 知识卡片，覆盖 16 门课全部 68 个 Boss 关；
+// learn-marketing 无章节边界不参与）。
 
 // ============================ 英语陪练 · 场景关卡课程表 ============================
 // 「概念」在这门课里 = 真实场合：点亮 = 能辨认自然、得体、能把任务办成的英文回应；
@@ -2258,19 +2267,20 @@ func SeedConcepts(db *gorm.DB) {
 		for i := range list {
 			sc := list[i]
 			hc := content[sc.Slug]
+			bc := bossCardContent[sc.Slug] // 非 Boss 关零值安全，Takeaway/Source 为空
 			slugs = append(slugs, sc.Slug)
 			var existing models.AgentConcept
 			if db.Where("agent_id = ? AND slug = ?", agent.ID, sc.Slug).First(&existing).Error == gorm.ErrRecordNotFound {
 				db.Create(&models.AgentConcept{
 					ID: idgen.New(), AgentID: agent.ID, Slug: sc.Slug,
 					Theme: sc.Theme, Tier: sc.Tier, Name: sc.Name, Blurb: sc.Blurb,
-					Hook: hc.Hook, Check: hc.Check, Sort: i,
+					Hook: hc.Hook, Check: hc.Check, Takeaway: bc.Takeaway, Source: bc.Source, Sort: i,
 				})
 				continue
 			}
 			db.Model(&existing).Updates(map[string]interface{}{
 				"theme": sc.Theme, "tier": sc.Tier, "name": sc.Name, "blurb": sc.Blurb,
-				"hook": hc.Hook, "check": hc.Check, "sort": i,
+				"hook": hc.Hook, "check": hc.Check, "takeaway": bc.Takeaway, "source": bc.Source, "sort": i,
 			})
 		}
 		// 清除不在当前清单的旧概念（user_concepts 里的孤儿记录无害，进度视图只遍历现有概念）。
@@ -2486,7 +2496,7 @@ func conceptProgressView(agentSlug string, concepts []models.AgentConcept, level
 		if lv >= 2 {
 			a.mastered++
 		}
-		a.items = append(a.items, gin.H{"slug": c.Slug, "name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme, "hook": c.Hook, "note": notes[c.ID]})
+		a.items = append(a.items, gin.H{"slug": c.Slug, "name": c.Name, "blurb": c.Blurb, "level": lv, "theme": c.Theme, "hook": c.Hook, "note": notes[c.ID], "takeaway": c.Takeaway, "source": c.Source})
 	}
 	tiers := make([]gin.H, 0, len(order))
 	for _, t := range order {
@@ -2506,6 +2516,88 @@ func conceptProgressView(agentSlug string, concepts []models.AgentConcept, level
 func (h *Handler) loadConceptProgress(userID string, a *models.ToolAgent) gin.H {
 	levels, notes := h.userConceptLevels(userID, a.ID)
 	return conceptProgressView(a.Slug, h.conceptList(a.ID), levels, notes)
+}
+
+// loadKnowledgeCards 聚合该用户跨全部课程的章末知识卡片（GET /agents/knowledge-cards：我的→我的卡片）。
+// 一次查询取全部 Boss 关（Takeaway 非空，跨 agent），按课程分组；未解锁（level<2）的卡片隐去
+// Takeaway/Source 只留剪影——不通关不能白嫖结论，否则削弱「通关才揭晓」的游戏动机。
+func (h *Handler) loadKnowledgeCards(userID string) gin.H {
+	var concepts []models.AgentConcept
+	h.db.Where("takeaway <> ''").Order("agent_id, sort").Find(&concepts)
+	if len(concepts) == 0 {
+		return gin.H{"totalCards": 0, "unlockedCount": 0, "courses": []gin.H{}}
+	}
+
+	agentIDs := make([]string, 0, 16)
+	seenAgent := make(map[string]bool, 16)
+	conceptIDs := make([]string, 0, len(concepts))
+	for i := range concepts {
+		conceptIDs = append(conceptIDs, concepts[i].ID)
+		if !seenAgent[concepts[i].AgentID] {
+			seenAgent[concepts[i].AgentID] = true
+			agentIDs = append(agentIDs, concepts[i].AgentID)
+		}
+	}
+
+	var agents []models.ToolAgent
+	h.db.Where("id IN ?", agentIDs).Find(&agents)
+	agentByID := make(map[string]models.ToolAgent, len(agents))
+	for i := range agents {
+		agentByID[agents[i].ID] = agents[i]
+	}
+
+	var ucs []models.UserConcept
+	h.db.Where("user_id = ? AND concept_id IN ?", userID, conceptIDs).Find(&ucs)
+	levels := make(map[string]int, len(ucs))
+	for i := range ucs {
+		levels[ucs[i].ConceptID] = ucs[i].Level
+	}
+
+	type courseAgg struct {
+		agent           models.ToolAgent
+		cards           []gin.H
+		unlocked, total int
+	}
+	byAgent := make(map[string]*courseAgg, len(agents))
+	order := make([]string, 0, len(agents))
+	total, unlockedCount := 0, 0
+	for i := range concepts {
+		cpt := concepts[i]
+		a, ok := agentByID[cpt.AgentID]
+		if !ok {
+			continue // Agent 已下架，跳过（不展示已下架课程的卡）
+		}
+		agg := byAgent[cpt.AgentID]
+		if agg == nil {
+			agg = &courseAgg{agent: a}
+			byAgent[cpt.AgentID] = agg
+			order = append(order, cpt.AgentID)
+		}
+		labels, _ := tiersFor(a.Slug)
+		unlocked := levels[cpt.ID] >= 2
+		total++
+		agg.total++
+		card := gin.H{"slug": cpt.Slug, "name": cpt.Name, "tier": cpt.Tier, "tierLabel": labels[cpt.Tier], "unlocked": unlocked, "takeaway": "", "source": ""}
+		if unlocked {
+			unlockedCount++
+			agg.unlocked++
+			card["takeaway"] = cpt.Takeaway
+			card["source"] = cpt.Source
+		}
+		agg.cards = append(agg.cards, card)
+	}
+	sort.Slice(order, func(i, j int) bool { return byAgent[order[i]].agent.Sort < byAgent[order[j]].agent.Sort })
+
+	courses := make([]gin.H, 0, len(order))
+	for _, id := range order {
+		agg := byAgent[id]
+		courses = append(courses, gin.H{
+			"agentSlug": agg.agent.Slug, "agentId": agg.agent.ID, "name": agg.agent.Name,
+			"icon": agg.agent.Icon, "accent": agg.agent.Accent,
+			"unlocked": agg.unlocked, "total": agg.total, "cards": agg.cards,
+		})
+	}
+	return gin.H{"totalCards": total, "unlockedCount": unlockedCount, "courses": courses}
 }
 
 // tierClearedSet 返回「已点满（lit==total）」的档位集合，用于检测本轮新打通了哪档。

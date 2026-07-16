@@ -1,0 +1,39 @@
+<view class="page">
+  <view class="hd">
+    <view class="hd-title">我的卡片</view>
+    <view class="hd-sub muted">已收集 {{unlockedCount}} / {{totalCards}} 张</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading muted">加载中…</view>
+
+  <block wx:elif="{{courses.length}}">
+    <view class="course-section" wx:for="{{courses}}" wx:key="agentSlug" style="--accent: {{item.accent}};">
+      <view class="course-hd">
+        <view class="course-icon">{{item.icon}}</view>
+        <view class="course-name">{{item.name}}</view>
+        <view class="course-progress">{{item.unlocked}}/{{item.total}}</view>
+      </view>
+      <view class="cardgrid">
+        <block wx:for="{{item.cards}}" wx:for-item="card" wx:key="slug">
+          <view wx:if="{{card.unlocked}}" class="kc kc-unlocked">
+            <view class="kc-tier">{{card.tierLabel}} · {{card.name}}</view>
+            <view class="kc-takeaway">{{card.takeaway}}</view>
+            <view class="kc-foot">
+              <view class="kc-source">—— {{card.source}}</view>
+              <button class="kc-share" open-type="share" data-slug="{{card.slug}}">分享</button>
+            </view>
+          </view>
+          <view wx:else class="kc kc-locked">
+            <view class="kc-lock-emoji">🔒</view>
+            <view class="kc-locked-name">{{card.tierLabel}} · {{card.name}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </block>
+
+  <view wx:elif="{{!loading}}" class="empty">
+    <view class="empty-title">还没有收集到卡片</view>
+    <view class="muted">通关任意一门课的章末 Boss 关，就能拿到第一张</view>
+  </view>
+</view>

@@ -84,6 +84,11 @@
         </view>
         <view class="ic ic-chevron cell-arrow"></view>
       </view>
+      <view class="cell" bindtap="goKnowledgeCards">
+        <view class="cell-icon"><view class="ic ic-cards"></view></view>
+        <view class="cell-copy"><view class="cell-label">我的卡片</view><view class="cell-sub">看看你收集到的知识卡片</view></view>
+        <view class="ic ic-chevron cell-arrow"></view>
+      </view>
       <view class="cell" bindtap="goConnections">
         <view class="cell-icon"><view class="ic ic-user"></view></view>
         <view class="cell-copy"><view class="cell-label">名片夹</view><view class="cell-sub">查看交换过名片的人</view></view>

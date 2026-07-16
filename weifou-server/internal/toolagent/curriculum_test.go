@@ -32,6 +32,52 @@ func TestCuratedContentComplete(t *testing.T) {
 	}
 }
 
+// isBossConcept 判定标准与前端 utils/learn-nodes.js 的 isBoss() 完全同构：
+// slug 以 "boss-" 开头，或 Name 含 "综合关"/"Boss"（涵盖英语课的 slug 前缀写法、
+// 逻辑课的 "Boss·xxx" 命名、其余课程的 "综合关·xxx" 命名、道德经无连字符的 "boss1".."boss9"）。
+func isBossConcept(c seedConcept) bool {
+	return strings.HasPrefix(c.Slug, "boss-") || strings.Contains(c.Name, "综合关") || strings.Contains(c.Name, "Boss")
+}
+
+// 章末知识卡片护城河：每个 Boss/综合关都必须配一句策展 Takeaway + Source（learn-marketing 50 关平铺无
+// 章节边界，不参与，跳过）；bossCardContent 里也不能有指向不存在概念的多余条目（防 slug 手误）。
+func TestBossCardsComplete(t *testing.T) {
+	seen := make(map[string]bool, len(bossCardContent))
+	total := 0
+	for agentSlug, list := range curricula {
+		if agentSlug == "learn-marketing" {
+			continue
+		}
+		for _, c := range list {
+			if !isBossConcept(c) {
+				continue
+			}
+			total++
+			seen[c.Slug] = true
+			bc, ok := bossCardContent[c.Slug]
+			if !ok {
+				t.Errorf("%s/%s 是章末 Boss 关，但缺少知识卡片", agentSlug, c.Slug)
+				continue
+			}
+			tw := []rune(bc.Takeaway)
+			if len(tw) < 10 || len(tw) > 40 {
+				t.Errorf("%s/%s 的 Takeaway 长度 %d 超出合理范围（10-40字）：%q", agentSlug, c.Slug, len(tw), bc.Takeaway)
+			}
+			if src := []rune(bc.Source); len(src) == 0 || len(src) > 20 {
+				t.Errorf("%s/%s 的 Source 长度 %d 超出合理范围（1-20字）：%q", agentSlug, c.Slug, len(src), bc.Source)
+			}
+		}
+	}
+	for slug := range bossCardContent {
+		if !seen[slug] {
+			t.Errorf("bossCardContent 条目 %s 不对应任何课程的 Boss 关（slug 手误？）", slug)
+		}
+	}
+	if total != len(bossCardContent) {
+		t.Errorf("Boss 关总数 %d 与 bossCardContent 条目数 %d 不一致", total, len(bossCardContent))
+	}
+}
+
 // 档位守护：每个概念的 Tier 必须在该课程的档位表里有标签（防 tier 手误 / 新增幕漏配幕名）。
 func TestTiersLabeled(t *testing.T) {
 	for agentSlug, list := range curricula {
