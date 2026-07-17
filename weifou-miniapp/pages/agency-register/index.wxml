@@ -1,0 +1,160 @@
+<view class="agency-page">
+  <view class="hero">
+    <view class="hero-grid"></view>
+    <view class="hero-glow hero-glow-a"></view>
+    <view class="hero-glow hero-glow-b"></view>
+    <view class="hero-content">
+      <view class="brand-row">
+        <view class="brand-mark"><view class="brand-orbit"></view><text>微</text></view>
+        <view class="brand-name">微否合作伙伴计划</view>
+        <view class="invite-badge" wx:if="{{form.inviteCode}}">专属邀请</view>
+      </view>
+      <view class="hero-kicker"><text class="live-dot"></text> PARTNER PROGRAM</view>
+      <view class="hero-title">把好产品带给<text>更多人</text></view>
+      <view class="hero-desc">申请成为微否代理商，连接正在寻找 AI 时代成长方式的个人、团队与组织。</view>
+      <view class="hero-metrics">
+        <view class="metric"><view class="metric-value">15+</view><view class="metric-label">核心能力课程</view></view>
+        <view class="metric-line"></view>
+        <view class="metric"><view class="metric-value">AI</view><view class="metric-label">个性化陪练</view></view>
+        <view class="metric-line"></view>
+        <view class="metric"><view class="metric-value">专属</view><view class="metric-label">合作申请通道</view></view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <view class="loading-line loading-line-lg skel"></view>
+    <view class="loading-line skel"></view>
+    <view class="loading-card skel"></view>
+  </view>
+
+  <block wx:else>
+    <view wx:if="{{application && !editing}}" class="status-wrap">
+      <view class="status-card status-{{statusMeta.tone}}">
+        <view class="status-icon">
+          <view wx:if="{{application.status === 'approved'}}" class="status-check">✓</view>
+          <view wx:elif="{{application.status === 'rejected'}}" class="status-pencil">✦</view>
+          <view wx:elif="{{application.status === 'suspended'}}" class="status-pause">—</view>
+          <view wx:else class="status-clock"><view class="clock-hand"></view></view>
+        </view>
+        <view class="status-eyebrow">{{statusMeta.eyebrow}}</view>
+        <view class="status-title">{{statusMeta.title}}</view>
+        <view class="status-desc">{{statusMeta.desc}}</view>
+        <view wx:if="{{application.reviewNote}}" class="review-note">
+          <view class="review-label">审核建议</view>
+          <view>{{application.reviewNote}}</view>
+        </view>
+        <view class="application-no">申请编号 · {{application.id}}</view>
+        <button wx:if="{{statusMeta.action}}" class="status-action" bindtap="startEdit">{{statusMeta.action}}</button>
+      </view>
+    </view>
+
+    <view wx:if="{{!application || editing}}" id="apply-form" class="content">
+      <view class="section-intro">
+        <view class="section-index">01</view>
+        <view>
+          <view class="section-title">确认你的合作基础</view>
+          <view class="section-sub">资料仅用于代理商注册与后续合作联系</view>
+        </view>
+      </view>
+
+      <view class="form-card">
+        <view class="field">
+          <view class="field-label">真实姓名 <text>*</text></view>
+          <input class="field-input" value="{{form.name}}" maxlength="20" data-key="name" bindinput="onInput" placeholder="请输入你的姓名" placeholder-class="placeholder"/>
+        </view>
+        <view class="field">
+          <view class="field-label">联系电话 <text>*</text></view>
+          <input class="field-input" value="{{form.phone}}" type="number" maxlength="11" data-key="phone" bindinput="onInput" placeholder="用于审核与合作沟通" placeholder-class="placeholder"/>
+        </view>
+        <view class="field">
+          <view class="field-label">所在地区 <text>*</text></view>
+          <picker mode="region" value="{{regionParts}}" bindchange="onRegionChange">
+            <view class="field-picker {{form.region ? '' : 'is-placeholder'}}">
+              <text>{{form.region || '请选择省 / 市 / 区'}}</text><text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">主要渠道类型 <text>*</text></view>
+          <picker range="{{channels}}" range-key="label" value="{{channelIndex}}" bindchange="onChannelChange">
+            <view class="field-picker {{channelIndex >= 0 ? '' : 'is-placeholder'}}">
+              <text>{{channelLabel || '请选择最符合的一项'}}</text><text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">可触达用户规模 <text>*</text></view>
+          <picker range="{{audiences}}" range-key="label" value="{{audienceIndex}}" bindchange="onAudienceChange">
+            <view class="field-picker {{audienceIndex >= 0 ? '' : 'is-placeholder'}}">
+              <text>{{audienceLabel || '请选择大致规模'}}</text><text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+        <view class="field field-last">
+          <view class="field-label">渠道与推广经验 <text>*</text></view>
+          <textarea class="field-textarea" value="{{form.experience}}" maxlength="500" data-key="experience" bindinput="onInput" placeholder="例如：运营什么社群、服务哪些客户、过去做过哪些推广……" placeholder-class="placeholder"/>
+          <view class="text-count">{{experienceCount}} / 500</view>
+        </view>
+      </view>
+
+      <view class="section-intro section-intro-second">
+        <view class="section-index">02</view>
+        <view>
+          <view class="section-title">完成代理商注册</view>
+          <view class="section-sub">邀请码为选填，提交后即时开通</view>
+        </view>
+      </view>
+
+      <view class="form-card compact-card">
+        <view class="field field-last">
+          <view class="field-label">邀请码 / 推荐编号</view>
+          <input class="field-input" value="{{form.inviteCode}}" maxlength="32" data-key="inviteCode" bindinput="onInput" placeholder="没有可留空" placeholder-class="placeholder"/>
+        </view>
+      </view>
+
+      <view class="consent-row" bindtap="toggleConsent">
+        <view class="consent-box {{form.consent ? 'checked' : ''}}"><text wx:if="{{form.consent}}">✓</text></view>
+        <view class="consent-copy">我确认以上资料真实有效，并同意用于代理商注册与合作联系。</view>
+      </view>
+
+      <button class="submit-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="submit">
+        {{saving ? '正在注册' : (application ? '更新并重新注册' : '注册成为代理商')}}
+      </button>
+      <button wx:if="{{application}}" class="cancel-btn" bindtap="cancelEdit">取消修改</button>
+      <view class="submit-tip">提交后自动开通代理商资格；平台保留对异常账号暂停合作的权利</view>
+    </view>
+
+    <view class="why-wrap">
+      <view class="why-eyebrow">WHY WEIFOU</view>
+      <view class="why-title">一起做长期有价值的事</view>
+      <view class="benefit-grid">
+        <view class="benefit-card">
+          <view class="benefit-no">A</view><view class="benefit-title">清晰的产品价值</view><view class="benefit-desc">围绕 AI 分身与核心能力成长，面对真实、长期的用户需求。</view>
+        </view>
+        <view class="benefit-card">
+          <view class="benefit-no">B</view><view class="benefit-title">专属合作支持</view><view class="benefit-desc">提供产品资料、推广物料与合作流程支持，让沟通更高效。</view>
+        </view>
+        <view class="benefit-card benefit-wide">
+          <view class="benefit-no">C</view><view class="benefit-title">共同成长的伙伴关系</view><view class="benefit-desc">从首批区域与垂直场景开始，把用户反馈真正带回产品。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="process-wrap">
+      <view class="process-title">入驻流程</view>
+      <view class="process-row">
+        <view class="process-item"><view class="process-dot active">1</view><view>提交资料</view></view>
+        <view class="process-line"></view>
+        <view class="process-item"><view class="process-dot">2</view><view>即时开通</view></view>
+        <view class="process-line"></view>
+        <view class="process-item"><view class="process-dot">3</view><view>开始合作</view></view>
+      </view>
+    </view>
+  </block>
+
+  <view class="footer">
+    <view class="footer-mark">微否</view>
+    <view>每个人的 AI 分身</view>
+  </view>
+</view>

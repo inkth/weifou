@@ -5,6 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"weifou-server/internal/agency"
 	"weifou-server/internal/answer"
 	"weifou-server/internal/asyncq"
 	"weifou-server/internal/auth"
@@ -51,6 +52,7 @@ type App struct {
 	homeH       *home.Handler
 	membershipH *membership.Handler
 	referralH   *referral.Handler
+	agencyH     *agency.Handler
 	mpH         *mp.Handler
 	clientcfgH  *clientcfg.Handler
 	uploadH     *upload.Handler
@@ -116,6 +118,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		homeH:       home.NewHandler(db, cfg.JWTSecret),
 		membershipH: mbrH,
 		referralH:   referralH,
+		agencyH:     agency.NewHandler(db, cfg.JWTSecret),
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH: clientcfg.NewHandler(vpayClient.Ready(), clientcfg.SubscribeTmpls{
 			Answered:    cfg.SubscribeAnsweredTmpl,
@@ -123,8 +126,8 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 			Lead:        cfg.SubscribeLeadTmpl,
 			LearnRemind: cfg.SubscribeLearnRemindTmpl,
 		}),
-		uploadH:     upload.NewHandler(uploadStore, publicHost+"/api/uploads", cfg.JWTSecret),
-		scheduler:   tasks.NewScheduler(db, paymentH, referralH, cfg.OrderTimeoutMin),
+		uploadH:   upload.NewHandler(uploadStore, publicHost+"/api/uploads", cfg.JWTSecret),
+		scheduler: tasks.NewScheduler(db, paymentH, referralH, cfg.OrderTimeoutMin),
 	}
 	return a
 }
@@ -146,6 +149,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	a.homeH.Register(api)
 	a.membershipH.Register(api)
 	a.referralH.Register(api)
+	a.agencyH.Register(api)
 	a.mpH.Register(api)
 	a.clientcfgH.Register(api)
 	a.uploadH.Register(api)
