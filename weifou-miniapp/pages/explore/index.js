@@ -128,7 +128,10 @@ Page({
   },
 
   async load() {
-    this.setData({ loading: true });
+    // stale-while-revalidate：有旧数据就先画着、后台静默刷新，骨架屏只留给真正的首次进入。
+    // 否则每次切回本 Tab 都闪一次骨架——最高频的「不流畅」感知点。
+    const firstLoad = !this._agents;
+    if (firstLoad) this.setData({ loading: true });
     try { await ensureLogin(); } catch (e) {}
     try {
       const [list, summary] = await Promise.all([
@@ -155,8 +158,11 @@ Page({
       });
       this.renderCategory(selectedCategory);
     } catch (e) {
-      this.setData({ loading: false });
-      wx.showToast({ title: (e && e.message) || '加载失败', icon: 'none' });
+      // 静默刷新失败：旧内容继续可用，不打扰；首载失败才提示
+      if (firstLoad) {
+        this.setData({ loading: false });
+        wx.showToast({ title: (e && e.message) || '加载失败', icon: 'none' });
+      }
     }
   },
 

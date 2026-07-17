@@ -36,6 +36,7 @@ func (h *Handler) Register(rg *gin.RouterGroup) {
 	rg.GET("/agents", auth, httpx.Handle(h.list))
 	rg.GET("/agents/mine", auth, httpx.Handle(h.mine))
 	rg.GET("/agents/detail/:id", auth, httpx.Handle(h.detail))
+	rg.GET("/agents/enter/:id", auth, httpx.Handle(h.enter)) // 课程页聚合首屏：详情+会话+最近消息+概念进度+会员态，一次往返
 	rg.GET("/agents/sessions/:id", auth, httpx.Handle(h.sessionList))         // :id = agentId → 我的历史会话
 	rg.GET("/agents/messages/:id", auth, httpx.Handle(h.messages))            // :id = sessionId → 该会话消息
 	rg.GET("/agents/concepts/:id", auth, httpx.Handle(h.concepts))            // :id = agentId → 我在该概念型 Agent 的点亮进度
@@ -194,16 +195,10 @@ func (h *Handler) knowledgeCards(c *gin.Context) error {
 	return nil
 }
 
-// messages 返回指定会话（:id = sessionId）的消息流；仅本人会话可见，否则空。
-func (h *Handler) messages(c *gin.Context) error {
-	auth := middleware.Current(c)
-	var session models.AgentSession
-	if err := h.db.First(&session, "id = ? AND user_id = ?", c.Param("id"), auth.UserID).Error; err != nil {
-		httpx.OK(c, []gin.H{})
-		return nil
-	}
+// messageRows 组装一段会话的消息流（按时间正序，最多 200 条）。
+func (h *Handler) messageRows(sessionID string) []gin.H {
 	var msgs []models.AgentMessage
-	h.db.Where("session_id = ?", session.ID).Order("created_at asc").Limit(200).Find(&msgs)
+	h.db.Where("session_id = ?", sessionID).Order("created_at asc").Limit(200).Find(&msgs)
 	out := make([]gin.H, 0, len(msgs))
 	for _, m := range msgs {
 		row := gin.H{"role": m.Role, "content": m.Content, "createdAt": m.CreatedAt}
@@ -216,16 +211,14 @@ func (h *Handler) messages(c *gin.Context) error {
 		}
 		out = append(out, row)
 	}
-	httpx.OK(c, out)
-	return nil
+	return out
 }
 
-// sessionList 返回我与某 Agent（:id = agentId）的历史会话，最近活动倒序。
+// sessionRows 组装我与某 Agent 的历史会话列表，最近活动倒序。
 // 标题取该会话第一条用户消息，附最后一条消息预览；无消息的空会话不展示。
-func (h *Handler) sessionList(c *gin.Context) error {
-	auth := middleware.Current(c)
+func (h *Handler) sessionRows(userID, agentID string) []gin.H {
 	var sessions []models.AgentSession
-	h.db.Where("agent_id = ? AND user_id = ?", c.Param("id"), auth.UserID).
+	h.db.Where("agent_id = ? AND user_id = ?", agentID, userID).
 		Order("updated_at desc").Limit(50).Find(&sessions)
 	out := make([]gin.H, 0, len(sessions))
 	for i := range sessions {
@@ -247,7 +240,63 @@ func (h *Handler) sessionList(c *gin.Context) error {
 			"updatedAt":   s.UpdatedAt,
 		})
 	}
-	httpx.OK(c, out)
+	return out
+}
+
+// messages 返回指定会话（:id = sessionId）的消息流；仅本人会话可见，否则空。
+func (h *Handler) messages(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var session models.AgentSession
+	if err := h.db.First(&session, "id = ? AND user_id = ?", c.Param("id"), auth.UserID).Error; err != nil {
+		httpx.OK(c, []gin.H{})
+		return nil
+	}
+	httpx.OK(c, h.messageRows(session.ID))
+	return nil
+}
+
+// sessionList 返回我与某 Agent（:id = agentId）的历史会话。
+func (h *Handler) sessionList(c *gin.Context) error {
+	auth := middleware.Current(c)
+	httpx.OK(c, h.sessionRows(auth.UserID, c.Param("id")))
+	return nil
+}
+
+// enter 课程页聚合首屏（GET /agents/enter/:id）：详情 + 历史会话 + 最近会话消息 + 概念进度 + 会员态,
+// 一次往返替代前端原本的 4 个并发请求 + 1 个串行请求（sessions→messages 的瀑布是移动网络下白付的 RTT）。
+func (h *Handler) enter(c *gin.Context) error {
+	auth := middleware.Current(c)
+	var a models.ToolAgent
+	if err := h.db.First(&a, "id = ? AND enabled = ?", c.Param("id"), true).Error; err != nil {
+		return httpx.NotFound("AGENT_NOT_FOUND", "该 Agent 不存在或已下架")
+	}
+	var ent models.AgentEntitlement
+	var ep *models.AgentEntitlement
+	if h.db.First(&ent, "user_id = ? AND agent_id = ?", auth.UserID, a.ID).Error == nil {
+		ep = &ent
+	}
+	sessions := h.sessionRows(auth.UserID, a.ID)
+	messages := []gin.H{}
+	if len(sessions) > 0 {
+		if sid, ok := sessions[0]["sessionId"].(string); ok {
+			messages = h.messageRows(sid)
+		}
+	}
+	concept := gin.H{"enabled": false}
+	if a.Concept {
+		concept = h.loadConceptProgress(auth.UserID, &a)
+		concept["enabled"] = true
+		concept["due"] = dueCount(h.db, auth.UserID, a.ID)
+		concept["freeTier"] = a.FreeTier
+		concept["isMember"] = membership.IsActive(h.db, auth.UserID)
+	}
+	httpx.OK(c, gin.H{
+		"detail":   h.card(&a, ep),
+		"member":   membership.IsActive(h.db, auth.UserID),
+		"sessions": sessions,
+		"messages": messages,
+		"concept":  concept,
+	})
 	return nil
 }
 

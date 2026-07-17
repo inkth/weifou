@@ -26,6 +26,12 @@ function sessionMessages(sessionId) {
   return request({ url: `/agents/messages/${sessionId}` });
 }
 
+// 课程页聚合首屏：详情+历史会话+最近会话消息+概念进度+会员态，一次往返。
+// 返回 { detail, member, sessions, messages, concept }；老服务端无此接口时 404，调用方回落并发旧路。
+function agentEnter(agentId) {
+  return request({ url: `/agents/enter/${agentId}` });
+}
+
 // 我在某「概念型」学习 Agent（如学心理/会说话）的点亮进度。
 // 非概念型返回 { enabled: false }；概念型返回 { enabled, total, lit, mastered, due,
 // tiers:[{tier, lit, total, concepts:[{slug, name, blurb, hook, note, level, theme}]}] }（note=本课战报）。
@@ -81,6 +87,6 @@ function listVisitors() {
 }
 
 module.exports = {
-  listAgents, myAgents, agentDetail, agentSessions, sessionMessages, agentConcepts,
+  listAgents, myAgents, agentDetail, agentEnter, agentSessions, sessionMessages, agentConcepts,
   chatAgent, learnStreak, learningSummary, knowledgeCards, remindLearn, pinAgent, unpinAgent, listVisitors,
 };

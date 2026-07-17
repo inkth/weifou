@@ -1,6 +1,6 @@
 const { ensureLogin } = require('../../utils/auth');
 const {
-  agentDetail, agentSessions, sessionMessages, agentConcepts, chatAgent,
+  agentDetail, agentEnter, agentSessions, sessionMessages, agentConcepts, chatAgent,
   remindLearn,
 } = require('../../utils/agent');
 const { status: membershipStatus } = require('../../utils/membership');
@@ -125,22 +125,32 @@ Page({
     this.setData({ loading: true, errored: false });
     loadTmpls().catch(() => {}); // 预热订阅模板缓存：streak newDay 时同步判断 tmplReady('learnRemind')
     try {
-      const [d, sessions, ms, cp] = await Promise.all([
-        agentDetail(id),
-        agentSessions(id).catch(() => []),
-        membershipStatus().catch(() => ({ isMember: false })),
-        agentConcepts(id).catch(() => ({ enabled: false })),
-      ]);
-      const member = !!ms.isMember;
+      // 聚合首屏（/agents/enter）：详情+会话+最近消息+概念进度+会员态一次往返，
+      // 消掉旧路「4 并发 + sessions→messages 串行」在移动网络上多付的 RTT。
+      // 老服务端没有该接口（404）时回落旧的并发路径，前后端发版时序互不卡脖子。
+      let d; let sessions; let member; let cp; let msgs;
+      try {
+        const en = await agentEnter(id);
+        d = en.detail; sessions = en.sessions || []; member = !!en.member;
+        cp = en.concept || { enabled: false }; msgs = en.messages || [];
+      } catch (err) {
+        const [d2, s2, ms2, cp2] = await Promise.all([
+          agentDetail(id),
+          agentSessions(id).catch(() => []),
+          membershipStatus().catch(() => ({ isMember: false })),
+          agentConcepts(id).catch(() => ({ enabled: false })),
+        ]);
+        d = d2; sessions = s2 || []; member = !!ms2.isMember; cp = cp2; msgs = null;
+      }
       // 英语课（开口 spoken-english）专属：英文句配朗读。早于建 messages 置位，供 _decorateMsgs 用。
       this._englishAudio = !!(d && d.slug === 'spoken-english');
       // 默认载入最近一段会话；没有则以开场白起新的一段
       let messages = [];
       let currentSessionId = '';
       let restoredOptions = [];
-      if (sessions && sessions.length) {
+      if (sessions.length) {
         currentSessionId = sessions[0].sessionId;
-        const msgs = await sessionMessages(currentSessionId).catch(() => []);
+        if (msgs === null) msgs = await sessionMessages(currentSessionId).catch(() => []);
         messages = this._decorateMsgs((msgs || []).map((m) => ({ role: m.role, content: m.content })));
         // 恢复「最后一张助手卡」（与 _lessonFocus 取的卡一致）的点选项——服务端随消息回传。
         // 本课纯点选无输入栏，不回填气泡则复原的卡片没法作答成死局；老会话未存 options 时为空，走页面兜底重开。
@@ -152,6 +162,10 @@ Page({
       }
       if (messages.length === 0 && d.greeting) messages = [{ role: 'assistant', content: d.greeting }];
       const lesson = this._lessonFocus(messages);
+      // 完整消息数组存实例变量；游戏皮界面只渲染 lessonCard，整段历史随轮次线性膨胀，
+      // 每轮全量 setData 是长会话卡顿的头号来源——课程模式下不喂渲染层（见 _msgData）。
+      const gs = !!(d.concept || d.assess || (cp && cp.enabled));
+      this._messages = messages;
       this.setData({
         name: d.name,
         guide: d.guide || '',
@@ -162,7 +176,7 @@ Page({
         remaining: d.freeTrialRemaining,
         freeTier: d.freeTier || 0,
         quotaText: this._quota(member),
-        messages,
+        messages: gs ? [] : messages,
         lessonCard: lesson.card,
         lessonChoice: lesson.choice,
         lessonTitle: d.guide || d.name || '当前练习',
@@ -174,7 +188,7 @@ Page({
         concept: cp && cp.enabled ? this._concept(cp) : null,
         // 游戏皮（含隐藏顶部商业条）以主接口的 concept/assess 布尔为准——它必然成功（名字/图标都靠它）；
         // 次要的 concept 进度接口带 catch 回落，单独当判据会在慢网时漏出「开通会员」商业条。
-        gameSkin: !!(d.concept || d.assess || (cp && cp.enabled)),
+        gameSkin: gs,
         reviewDue: cp && cp.enabled ? (cp.due || 0) : 0,
         englishAudio: this._englishAudio,
         loading: false,
@@ -193,7 +207,7 @@ Page({
         // 兼容旧入口（带 concept&auto=1）：新开一段直接开该关
         this._autoStart = false;
         this.setData({
-          messages: this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [],
+          ...this._msgData(this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : []),
           currentSessionId: '',
         });
         openingRound = true;
@@ -275,6 +289,14 @@ Page({
     });
   },
 
+  // 维护完整消息数组：真源在 this._messages；游戏皮（课程）模式不喂渲染层——
+  // 界面只渲染 lessonCard 一张卡，整段历史每轮全量 setData 纯属陪跑且随会话线性膨胀。
+  // 普通聊天流模式（分身对话）仍照常同步到 data.messages。
+  _msgData(messages) {
+    this._messages = messages;
+    return this.data.gameSkin ? {} : { messages };
+  },
+
   // 学习页只呈现最后一张助手卡；完整消息仍保留用于历史与服务端上下文。
   _lessonFocus(messages) {
     const list = messages || [];
@@ -326,7 +348,7 @@ Page({
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     const lesson = this._lessonFocus(messages);
     this.setData({
-      messages,
+      ...this._msgData(messages),
       lessonCard: lesson.card,
       lessonChoice: '',
       lessonTitle: c.name || '当前练习',
@@ -346,7 +368,7 @@ Page({
     if (cur && cur.memberLocked) { this.goMembership(); return; }
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     this.setData({
-      messages,
+      ...this._msgData(messages),
       lessonCard: this._lessonFocus(messages).card,
       lessonChoice: '',
       lessonTitle: cur ? cur.name : this.data.lessonTitle,
@@ -480,8 +502,9 @@ Page({
     this._stopMentorIdle(true);
     this._clearMentorThinkTimer();
     const visibleChoice = (content === '开始这一关' || content === '开始复习挑战') ? '' : content;
-    const askedMessages = this.data.messages.concat({ role: 'user', content });
+    const askedMessages = (this._messages || this.data.messages || []).concat({ role: 'user', content });
     this.setData({
+      ...this._msgData(askedMessages),
       pending: true,
       answerFeedback: '',
       mentorPhase: 'listening',
@@ -490,7 +513,6 @@ Page({
       freeMode: false,
       freeText: '',
       recState: '',
-      messages: askedMessages,
       lessonChoice: visibleChoice,
     });
     // 先用一个很短的“我听到了”身体反馈承接点击，再进入思考，避免点击后人物立即僵住。
@@ -506,9 +528,9 @@ Page({
       const member = !!data.member;
       const remaining = member ? this.data.remaining : data.remaining;
       const answerMsg = this._decorateMsgs([{ role: 'assistant', content: data.answer }])[0];
-      const answeredMessages = this.data.messages.concat(answerMsg);
+      const answeredMessages = (this._messages || []).concat(answerMsg);
       const patch = {
-        messages: answeredMessages,
+        ...this._msgData(answeredMessages),
         lessonCard: answerMsg,
         lessonChoice: visibleChoice,
         member,
@@ -633,7 +655,7 @@ Page({
       } else {
         const errorMsg = { role: 'assistant', content: e.message || '出错了，请稍后再试' };
         this.setData({
-          messages: this.data.messages.concat(errorMsg),
+          ...this._msgData((this._messages || []).concat(errorMsg)),
           lessonCard: errorMsg,
         });
         this._scrollEnd();
@@ -647,7 +669,7 @@ Page({
     this._stopMentorIdle(true);
     const messages = this.data.greeting ? [{ role: 'assistant', content: this.data.greeting }] : [];
     const lesson = this._lessonFocus(messages);
-    this.setData({ messages, lessonCard: lesson.card, lessonChoice: '', currentSessionId: '', historyVisible: false, options: [], freeMode: false, freeText: '', mapVisible: false }, () => this._startMentorIdle(true));
+    this.setData({ ...this._msgData(messages), lessonCard: lesson.card, lessonChoice: '', currentSessionId: '', historyVisible: false, options: [], freeMode: false, freeText: '', mapVisible: false }, () => this._startMentorIdle(true));
     this._scrollEnd();
   },
 
@@ -679,7 +701,7 @@ Page({
       const messages = this._decorateMsgs((msgs || []).map((m) => ({ role: m.role, content: m.content })));
       const lesson = this._lessonFocus(messages);
       this.setData({
-        messages,
+        ...this._msgData(messages),
         lessonCard: lesson.card,
         lessonChoice: lesson.choice,
         currentSessionId: sid,
@@ -1099,7 +1121,7 @@ Page({
   },
 
   _scrollEnd() {
-    const n = this.data.messages.length;
+    const n = (this._messages || this.data.messages || []).length;
     if (n > 0) this.setData({ scrollTo: 'm' + (n - 1) });
   },
 
