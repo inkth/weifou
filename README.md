@@ -80,9 +80,6 @@ API 默认位于 `http://localhost:3000/api`，健康检查为 `/healthz`。
 | GET | `/api/visit/stats/mine` | 查看访问统计 |
 | GET | `/api/share/bundle/:profileId` | 获取海报数据与小程序码 |
 | GET | `/api/membership/status` | 查询会员状态 |
-| GET · POST | `/api/agency/application` | 查询或提交代理商注册资料（自动通过） |
-
-代理商入口为独立小程序页面 `pages/agency-register/index`，不出现在普通用户 Tab 中；招商二维码可通过 `inviteCode` 或小程序码 `scene` 参数预填推荐编号。
 
 ## 提审提示
 

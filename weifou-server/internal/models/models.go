@@ -547,37 +547,6 @@ type ReferralReward struct {
 
 func (ReferralReward) TableName() string { return "referral_rewards" }
 
-// ========== 代理商入驻 ==========
-
-const (
-	AgencyApplicationPending   = "pending"
-	AgencyApplicationApproved  = "approved"
-	AgencyApplicationRejected  = "rejected"
-	AgencyApplicationSuspended = "suspended"
-)
-
-// AgencyApplication 代理商入驻资料。
-// 当前采用自动通过：首次提交即 approved；运营侧仍可暂停资格，方便后续接入风控。
-type AgencyApplication struct {
-	ID           string     `gorm:"primaryKey;size:32" json:"id"`
-	UserID       string     `gorm:"uniqueIndex;size:32" json:"userId"`
-	Name         string     `gorm:"size:64" json:"name"`
-	Phone        string     `gorm:"size:32" json:"phone"`
-	Region       string     `gorm:"size:128" json:"region"`
-	ChannelType  string     `gorm:"size:32" json:"channelType"`
-	AudienceSize string     `gorm:"size:32" json:"audienceSize"`
-	Experience   string     `gorm:"type:text" json:"experience"`
-	InviteCode   string     `gorm:"size:64;index" json:"inviteCode,omitempty"`
-	Status       string     `gorm:"size:16;default:pending;index" json:"status"`
-	ReviewNote   string     `gorm:"type:text" json:"reviewNote,omitempty"`
-	ConsentAt    time.Time  `json:"consentAt"`
-	ReviewedAt   *time.Time `json:"reviewedAt,omitempty"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	UpdatedAt    time.Time  `json:"updatedAt"`
-}
-
-func (AgencyApplication) TableName() string { return "agency_applications" }
-
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -590,6 +559,5 @@ func AllModels() []interface{} {
 		&AgentConcept{}, &UserConcept{}, &LearnStreak{}, &LearnReminder{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 		&ReferralBinding{}, &ReferralReward{},
-		&AgencyApplication{},
 	}
 }

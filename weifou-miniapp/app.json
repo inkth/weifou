@@ -14,8 +14,7 @@
     "pages/agents/index",
     "pages/agent-chat/index",
     "pages/membership/index",
-    "pages/knowledge-cards/index",
-    "pages/agency-register/index"
+    "pages/knowledge-cards/index"
   ],
   "tabBar": {
     "custom": true,
