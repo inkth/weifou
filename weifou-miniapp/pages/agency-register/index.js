@@ -145,6 +145,10 @@ Page({
     wx.pageScrollTo({ scrollTop: 0, duration: 260 });
   },
 
+  goAgencyCenter() {
+    wx.redirectTo({ url: '/pages/agency-center/index' });
+  },
+
   onInput(e) {
     const key = e.currentTarget.dataset.key;
     const value = e.detail.value;

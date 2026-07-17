@@ -1,0 +1,100 @@
+<view class="center-page">
+  <view class="hero">
+    <view class="hero-grid"></view>
+    <view class="hero-glow"></view>
+    <view class="hero-content">
+      <view class="hero-eyebrow"><text class="live-dot"></text> WEIFOU PARTNER</view>
+      <view class="hero-title">代理商中心</view>
+      <view class="hero-sub">每一次真实连接，都沉淀成你的长期影响力</view>
+
+      <view wx:if="{{!loading}}" class="code-card">
+        <view>
+          <view class="code-label">我的 4 位专属邀请码</view>
+          <view class="code-value">{{agencyCode}}</view>
+        </view>
+        <view class="copy-btn" bindtap="copyCode">复制</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <view class="loading-card skel"></view><view class="loading-card skel"></view>
+  </view>
+
+  <block wx:else>
+    <view class="share-panel">
+      <view class="share-copy">
+        <view class="share-title">邀请新伙伴</view>
+        <view class="share-desc">好友打开后自动绑定你的邀请码，后续注册与会员开通都会计入数据。</view>
+        <button class="share-btn" open-type="share">分享给好友</button>
+      </view>
+      <view class="qr-wrap">
+        <image wx:if="{{qrcode}}" class="qr-image" src="{{qrcode}}" mode="aspectFit" bindtap="saveQrcode"/>
+        <view wx:elif="{{qrLoading}}" class="qr-loading">生成中</view>
+        <view wx:else class="qr-retry" bindtap="loadQrcode">重新生成</view>
+        <view class="qr-tip">{{qrcode ? '点击保存' : '专属小程序码'}}</view>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <view><view class="section-eyebrow">PERFORMANCE</view><view class="section-title">邀请数据</view></view>
+      <view class="update-note">下拉刷新</view>
+    </view>
+
+    <view class="stat-primary">
+      <view class="stat-main">
+        <view class="stat-value">{{totalInvited}}</view>
+        <view class="stat-label">累计归因用户</view>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-main">
+        <view class="stat-value">{{paidCount}}</view>
+        <view class="stat-label">会员开通用户</view>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-main">
+        <view class="stat-value">{{conversionRate}}<text>%</text></view>
+        <view class="stat-label">付费转化率</view>
+      </view>
+    </view>
+
+    <view class="stat-secondary">
+      <view class="mini-stat"><view class="mini-value">{{newUserCount}}</view><view class="mini-label">其中新注册</view></view>
+      <view class="mini-stat"><view class="mini-value">{{todayCount}}</view><view class="mini-label">今日新增</view></view>
+      <view class="mini-stat"><view class="mini-value">{{monthCount}}</view><view class="mini-label">本月新增</view></view>
+    </view>
+
+    <view class="definition-card">
+      <view class="definition-title">数据口径</view>
+      <view class="definition-row"><text class="definition-dot"></text><text>归因用户：首次通过你的邀请进入并成功绑定</text></view>
+      <view class="definition-row"><text class="definition-dot paid"></text><text>会员开通：绑定后完成会员支付，历史订单不倒算</text></view>
+    </view>
+
+    <view class="section-head recent-head">
+      <view><view class="section-eyebrow">RECENT</view><view class="section-title">最近邀请</view></view>
+      <view class="record-count">最多展示 20 条</view>
+    </view>
+
+    <view wx:if="{{recent.length}}" class="record-list">
+      <view class="record" wx:for="{{recent}}" wx:key="invitedAt">
+        <view class="record-avatar">{{item.displayInitial}}</view>
+        <view class="record-copy">
+          <view class="record-name">{{item.displayName}}</view>
+          <view class="record-time">{{item.invitedText}}</view>
+        </view>
+        <view class="record-tags">
+          <text wx:if="{{item.newUser}}" class="record-tag new">新注册</text>
+          <text class="record-tag {{item.paid ? 'paid' : ''}}">{{item.paid ? '已开通' : '已绑定'}}</text>
+        </view>
+      </view>
+    </view>
+    <view wx:else class="empty-record">
+      <view class="empty-orbit"><view></view></view>
+      <view class="empty-title">第一位伙伴正在路上</view>
+      <view class="empty-desc">分享专属邀请卡，成功绑定后会出现在这里</view>
+      <button class="empty-share" open-type="share">立即邀请</button>
+    </view>
+  </block>
+
+  <view class="footer">微否合作伙伴计划 · 数据仅供本人查看</view>
+</view>

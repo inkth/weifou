@@ -81,8 +81,12 @@ API 默认位于 `http://localhost:3000/api`，健康检查为 `/healthz`。
 | GET | `/api/share/bundle/:profileId` | 获取海报数据与小程序码 |
 | GET | `/api/membership/status` | 查询会员状态 |
 | GET · POST | `/api/agency/application` | 查询或提交代理商注册资料（自动通过） |
+| GET | `/api/agency/dashboard` | 代理商邀请码、邀请与付费转化数据 |
+| POST | `/api/agency/bind` | 用户首次绑定代理商邀请码 |
+| GET | `/api/agency/qrcode` | 获取代理商专属小程序码 |
 
 代理商入口为独立小程序页面 `pages/agency-register/index`，不出现在普通用户 Tab 中；招商二维码可通过 `inviteCode` 或小程序码 `scene` 参数预填推荐编号。
+代理商推广邀请码采用从 `1112` 开始递增的 4 位数字，由数据库事务锁保证并发分配唯一。
 
 ## 提审提示
 

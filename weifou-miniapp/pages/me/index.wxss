@@ -136,6 +136,8 @@
 .identity-ai { position: absolute; right: -6rpx; bottom: -6rpx; display: flex; align-items: center; justify-content: center; width: 28rpx; height: 28rpx; border: 2rpx solid #fff; border-radius: 9rpx; color: #fff; background: var(--accent-deep); font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; font-size: 10rpx; font-weight: 900; }
 .cell-icon { color: var(--ink-2); background: var(--fill); }
 .cell-icon .ic { font-size: 34rpx; }
+.agency-cell { background: linear-gradient(90deg, #fff, #f8f7fd); }
+.agency-icon { color: #fff; background: linear-gradient(145deg, #7772c8, #4f4a8b); font-size: 27rpx; font-weight: 850; box-shadow: 0 8rpx 22rpx rgba(91,86,159,.18); }
 .cell-copy { min-width: 0; flex: 1; }
 .cell-label { color: var(--ink); font-size: 27rpx; line-height: 1.35; font-weight: 700; }
 .cell-sub { margin-top: 5rpx; color: var(--sub); font-size: 19rpx; line-height: 1.4; }
