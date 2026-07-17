@@ -235,7 +235,7 @@ type Order struct {
 	Status        string     `gorm:"size:16;default:pending;index:idx_order_status_time" json:"status"`
 	Amount        int        `json:"amount"`
 	PayerOpenid   string     `gorm:"size:64;index:idx_order_payer" json:"payerOpenid"`
-	PayerUserID   *string    `gorm:"size:32;index" json:"payerUserId,omitempty"`
+	PayerUserID   *string    `gorm:"size:32" json:"payerUserId,omitempty"`
 	AgentID       *string    `gorm:"size:32" json:"agentId,omitempty"` // OrderAgent：购买的工具 Agent
 	PlanID        *string    `gorm:"size:32" json:"planId,omitempty"`  // OrderMembership：购买的会员套餐
 	Platform      string     `gorm:"size:16" json:"platform"`          // 下单端 ios/android/devtools（iOS 虚拟支付红线分流/兜底）
@@ -561,7 +561,6 @@ const (
 type AgencyApplication struct {
 	ID           string     `gorm:"primaryKey;size:32" json:"id"`
 	UserID       string     `gorm:"uniqueIndex;size:32" json:"userId"`
-	AgencyCode   *string    `gorm:"uniqueIndex;size:16" json:"agencyCode,omitempty"`
 	Name         string     `gorm:"size:64" json:"name"`
 	Phone        string     `gorm:"size:32" json:"phone"`
 	Region       string     `gorm:"size:128" json:"region"`
@@ -579,19 +578,6 @@ type AgencyApplication struct {
 
 func (AgencyApplication) TableName() string { return "agency_applications" }
 
-// AgencyUserBinding 代理商邀请归因。每个用户只绑定一次，先到先得；
-// 付费统计只计算绑定时间之后完成的会员订单。
-type AgencyUserBinding struct {
-	ID            string    `gorm:"primaryKey;size:32" json:"id"`
-	AgencyUserID  string    `gorm:"size:32;index:idx_agency_binding_owner_time" json:"agencyUserId"`
-	InviteeUserID string    `gorm:"uniqueIndex;size:32" json:"inviteeUserId"`
-	AgencyCode    string    `gorm:"size:16;index" json:"agencyCode"`
-	NewUser       bool      `gorm:"default:false;index" json:"newUser"`
-	CreatedAt     time.Time `gorm:"index:idx_agency_binding_owner_time" json:"createdAt"`
-}
-
-func (AgencyUserBinding) TableName() string { return "agency_user_bindings" }
-
 // AllModels 用于 AutoMigrate
 func AllModels() []interface{} {
 	return []interface{}{
@@ -604,6 +590,6 @@ func AllModels() []interface{} {
 		&AgentConcept{}, &UserConcept{}, &LearnStreak{}, &LearnReminder{},
 		&Membership{}, &MembershipPlan{}, &MembershipLead{},
 		&ReferralBinding{}, &ReferralReward{},
-		&AgencyApplication{}, &AgencyUserBinding{},
+		&AgencyApplication{},
 	}
 }

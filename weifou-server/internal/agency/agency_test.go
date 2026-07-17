@@ -1,9 +1,6 @@
 package agency
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
 func validInput() applicationInput {
 	return applicationInput{
@@ -41,26 +38,5 @@ func TestValidateInput(t *testing.T) {
 				t.Fatalf("got %#v, want code %s", err, tt.code)
 			}
 		})
-	}
-}
-
-func TestAgencyCodePattern(t *testing.T) {
-	for _, code := range []string{"1112", "2048", "9999"} {
-		if !agencyCodePattern.MatchString(code) {
-			t.Fatalf("valid agency code rejected: %q", code)
-		}
-	}
-	for _, code := range []string{"111", "10000", "WF12345678", "12A4"} {
-		if agencyCodePattern.MatchString(code) {
-			t.Fatalf("invalid agency code accepted: %q", code)
-		}
-	}
-}
-
-func TestMaskedUserDoesNotExposeFullID(t *testing.T) {
-	fullID := "user-sensitive-123456789"
-	masked := maskedUser(fullID)
-	if strings.Contains(masked, fullID) || masked != "用户 456789" {
-		t.Fatalf("unexpected masked id: %q", masked)
 	}
 }

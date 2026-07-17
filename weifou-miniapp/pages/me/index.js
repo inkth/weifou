@@ -21,9 +21,6 @@ Page({
     showMembership: true,
     isMember: false,
     expiresText: '',
-    isAgency: false,
-    agencyCode: '',
-    agencyInvitedCount: 0,
     summary: { streak: { days: 0, best: 0, todayDone: false }, mastered: 0, learningCourses: 0 },
     currentCourse: null,
     statusBarH: 20, // 自定义导航：顶部留出状态栏高度，去掉原生白色标题栏
@@ -48,11 +45,10 @@ Page({
     try {
       await ensureLogin();
       await loadEntries();
-      const [me, summary, membership, agency] = await Promise.all([
+      const [me, summary, membership] = await Promise.all([
         request({ url: '/user/me' }).catch(() => ({})),
         learningSummary().catch(() => null),
         membershipStatus().catch(() => ({ isMember: false })),
-        request({ url: '/agency/dashboard' }).catch(() => ({ isAgency: false })),
       ]);
       const isMember = !!membership.isMember;
       const memberEntry = entryVisible('membership', true);
@@ -63,9 +59,6 @@ Page({
         showMembership: memberEntry || isMember,
         isMember,
         expiresText: expiryText(membership.expiresAt),
-        isAgency: !!agency.isAgency,
-        agencyCode: agency.agencyCode || '',
-        agencyInvitedCount: Number(agency.totalInvited || 0),
         summary: summary || this.data.summary,
         currentCourse: (summary && summary.current) || null,
         loading: false,
@@ -99,7 +92,6 @@ Page({
   goKnowledgeCards() { wx.navigateTo({ url: '/pages/knowledge-cards/index' }); },
   // 名片夹：我交换过名片的人（点开直接问对方分身）
   goConnections() { wx.navigateTo({ url: '/pages/connections/index' }); },
-  goAgencyCenter() { wx.navigateTo({ url: '/pages/agency-center/index' }); },
   goSettings() { wx.navigateTo({ url: '/pages/settings/index' }); },
 
   // 分享活名片：落到 chat（会说话的你）—— 别人点开能直接问你、和你聊，而不只是看一段简介。

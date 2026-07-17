@@ -118,7 +118,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client) *App {
 		homeH:       home.NewHandler(db, cfg.JWTSecret),
 		membershipH: mbrH,
 		referralH:   referralH,
-		agencyH:     agency.NewHandler(db, cfg.JWTSecret, loginClient, cfg.Env),
+		agencyH:     agency.NewHandler(db, cfg.JWTSecret),
 		mpH:         mp.NewHandler(db, mpLogin, mbrH, cfg.MpToken, cfg.H5BaseURL),
 		clientcfgH: clientcfg.NewHandler(vpayClient.Ready(), clientcfg.SubscribeTmpls{
 			Answered:    cfg.SubscribeAnsweredTmpl,

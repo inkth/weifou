@@ -94,14 +94,6 @@
         <view class="cell-copy"><view class="cell-label">名片夹</view><view class="cell-sub">查看交换过名片的人</view></view>
         <view class="ic ic-chevron cell-arrow"></view>
       </view>
-      <view wx:if="{{isAgency}}" class="cell agency-cell" bindtap="goAgencyCenter">
-        <view class="cell-icon agency-icon">合</view>
-        <view class="cell-copy">
-          <view class="cell-label">代理商中心</view>
-          <view class="cell-sub">邀请码 {{agencyCode}} · 已邀请 {{agencyInvitedCount}} 人</view>
-        </view>
-        <view class="ic ic-chevron cell-arrow"></view>
-      </view>
       <view class="cell" bindtap="goSettings">
         <view class="cell-icon"><view class="ic ic-settings"></view></view>
         <view class="cell-copy"><view class="cell-label">设置</view><view class="cell-sub">资料、隐私与账号管理</view></view>

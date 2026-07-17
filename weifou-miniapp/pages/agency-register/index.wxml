@@ -45,7 +45,6 @@
           <view>{{application.reviewNote}}</view>
         </view>
         <view class="application-no">申请编号 · {{application.id}}</view>
-        <button wx:if="{{application.status === 'approved'}}" class="status-action" bindtap="goAgencyCenter">进入代理商中心</button>
         <button wx:if="{{statusMeta.action}}" class="status-action" bindtap="startEdit">{{statusMeta.action}}</button>
       </view>
     </view>
